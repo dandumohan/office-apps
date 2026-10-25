@@ -9,7 +9,7 @@
 :root{
   --ink:#32363a; --muted:#6a6d70; --nav:#2f4f73; --nav-soft:#4a74a4; --icon:#7a9fca; --link:#0a6ed1;
   --tile:#ffffff; --tile-hover:#f1f4f8; --line:rgba(47,79,115,.28); --focus:#000;
-  --bar:#b9cee5; --shell-h:48px; --hdr:96px;
+  --bar:#b9cee5; --shell-h:66px; --hdr:96px;
   --font:"72","72full",Arial,Helvetica,sans-serif;
 }
 *{box-sizing:border-box}
@@ -35,7 +35,7 @@ header{position:sticky;top:0;z-index:20;background:var(--bar);box-shadow:0 1px 0
 
 /* DMN SOFT logo */
 .logo{display:flex;align-items:center;gap:.65rem;flex:none;color:#8c2f00;text-decoration:none;border-radius:4px}
-.dmn-mark{width:46px;height:46px;flex:none;overflow:visible}
+.dmn-mark{width:60px;height:60px;flex:none;overflow:visible}
 .logo-text{font:700 18px/1 var(--font);letter-spacing:.05em}
 .logo-text span{margin-left:.35em;font-weight:400;color:#9a3412}
 .sep{flex:none;width:1px;height:30px;background:var(--line)}
@@ -101,11 +101,11 @@ main{padding:6px 50px 30vh}
 .aa-links a:hover{background:#f3f6fa;text-decoration:underline}
 
 @media (max-width:40rem){
-  :root{--shell-h:48px}
+  :root{--shell-h:58px}
   .shell{padding:0 14px;gap:.75rem}
   .brand,.sep{display:none}
   .logo-text{font-size:15px}
-  .dmn-mark{width:38px;height:38px}
+  .dmn-mark{width:50px;height:50px}
   .tabs{margin:0 12px;gap:1.4rem}
   main{padding:4px 12px 30vh}
   .sec-title{margin-left:4px}
@@ -123,7 +123,7 @@ main{padding:6px 50px 30vh}
 
 <header id="hdr">
   <div class="shell" id="shell">
-    <a class="logo" href="./" aria-label="DMN SOFT"><svg class="dmn-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g class="dmn-orbit"><circle class="dmn-dot" cx="32.00" cy="5.80" r="2.3" fill="#e8590c" style="animation-delay:-0.00s"/><circle class="dmn-dot" cx="47.40" cy="10.80" r="1.6" fill="#e8590c" style="animation-delay:-0.24s"/><circle class="dmn-dot" cx="56.92" cy="23.90" r="2.3" fill="#e8590c" style="animation-delay:-0.48s"/><circle class="dmn-dot" cx="56.92" cy="40.10" r="1.6" fill="#e8590c" style="animation-delay:-0.72s"/><circle class="dmn-dot" cx="47.40" cy="53.20" r="2.3" fill="#e8590c" style="animation-delay:-0.96s"/><circle class="dmn-dot" cx="32.00" cy="58.20" r="1.6" fill="#e8590c" style="animation-delay:-1.20s"/><circle class="dmn-dot" cx="16.60" cy="53.20" r="2.3" fill="#e8590c" style="animation-delay:-1.44s"/><circle class="dmn-dot" cx="7.08" cy="40.10" r="1.6" fill="#e8590c" style="animation-delay:-1.68s"/><circle class="dmn-dot" cx="7.08" cy="23.90" r="2.3" fill="#e8590c" style="animation-delay:-1.92s"/><circle class="dmn-dot" cx="16.60" cy="10.80" r="1.6" fill="#e8590c" style="animation-delay:-2.16s"/></g><g class="dmn-petals"><ellipse cx="32" cy="20.8" rx="5.2" ry="9.2" fill="#e8590c" transform="rotate(0 32 32)"/><ellipse cx="32" cy="20.8" rx="5.2" ry="9.2" fill="#ff8a3d" transform="rotate(60 32 32)"/><ellipse cx="32" cy="20.8" rx="5.2" ry="9.2" fill="#e8590c" transform="rotate(120 32 32)"/><ellipse cx="32" cy="20.8" rx="5.2" ry="9.2" fill="#ff8a3d" transform="rotate(180 32 32)"/><ellipse cx="32" cy="20.8" rx="5.2" ry="9.2" fill="#e8590c" transform="rotate(240 32 32)"/><ellipse cx="32" cy="20.8" rx="5.2" ry="9.2" fill="#ff8a3d" transform="rotate(300 32 32)"/></g><circle cx="32" cy="32" r="3.4" fill="#2f4f73"/></svg><span class="logo-text">DMN<span>SOFT</span></span></a>
+    <a class="logo" href="./" aria-label="DMN SOFT"><svg class="dmn-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><g class="dmn-orbit"><circle class="dmn-dot" cx="32.00" cy="4.00" r="2.3" fill="#e8590c" style="animation-delay:-0.00s"/><circle class="dmn-dot" cx="48.46" cy="9.35" r="1.6" fill="#e8590c" style="animation-delay:-0.24s"/><circle class="dmn-dot" cx="58.63" cy="23.35" r="2.3" fill="#e8590c" style="animation-delay:-0.48s"/><circle class="dmn-dot" cx="58.63" cy="40.65" r="1.6" fill="#e8590c" style="animation-delay:-0.72s"/><circle class="dmn-dot" cx="48.46" cy="54.65" r="2.3" fill="#e8590c" style="animation-delay:-0.96s"/><circle class="dmn-dot" cx="32.00" cy="60.00" r="1.6" fill="#e8590c" style="animation-delay:-1.20s"/><circle class="dmn-dot" cx="15.54" cy="54.65" r="2.3" fill="#e8590c" style="animation-delay:-1.44s"/><circle class="dmn-dot" cx="5.37" cy="40.65" r="1.6" fill="#e8590c" style="animation-delay:-1.68s"/><circle class="dmn-dot" cx="5.37" cy="23.35" r="2.3" fill="#e8590c" style="animation-delay:-1.92s"/><circle class="dmn-dot" cx="15.54" cy="9.35" r="1.6" fill="#e8590c" style="animation-delay:-2.16s"/></g><g class="dmn-petals"><ellipse cx="32" cy="19.4" rx="5.8" ry="11.6" fill="#e8590c" transform="rotate(0 32 32)"/><ellipse cx="32" cy="19.4" rx="5.8" ry="11.6" fill="#ff8a3d" transform="rotate(60 32 32)"/><ellipse cx="32" cy="19.4" rx="5.8" ry="11.6" fill="#e8590c" transform="rotate(120 32 32)"/><ellipse cx="32" cy="19.4" rx="5.8" ry="11.6" fill="#ff8a3d" transform="rotate(180 32 32)"/><ellipse cx="32" cy="19.4" rx="5.8" ry="11.6" fill="#e8590c" transform="rotate(240 32 32)"/><ellipse cx="32" cy="19.4" rx="5.8" ry="11.6" fill="#ff8a3d" transform="rotate(300 32 32)"/></g><circle cx="32" cy="32" r="11.6" fill="#2f4f73" stroke="#ffffff" stroke-width="1.4"/><text x="32" y="35.2" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="8.6" font-weight="700" fill="#ffffff" letter-spacing=".2">DMN</text></svg><span class="logo-text">DMN<span>SOFT</span></span></a>
     <span class="sep" aria-hidden="true"></span>
     <div class="brand">Office applications<small>SF Division, Chittoor</small></div>
     <button id="homeBtn" class="homebtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="allApps">Home

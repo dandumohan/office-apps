@@ -4190,8 +4190,8 @@
   /* ===== Nursery > Nursery Transactions (the Seedling Portal) and Reports > Mreports (the report generator), embedded; both use this app's signed-in connection ===== */
   const NURTXN_SCREEN_HTML = /*@@NURTXN_HTML@@*/ null;
   const MREPORTS_SCREEN_HTML = /*@@MREPORTS_HTML@@*/ null;
-  function loadNurTxnFrame() { const f = document.getElementById('nurtxnFrame'); if (!f) return; if (NURTXN_SCREEN_HTML) f.srcdoc = NURTXN_SCREEN_HTML; else f.src = 'Mnursery.html'; }
-  function loadMreportsFrame() { const f = document.getElementById('mreportsFrame'); if (!f) return; if (MREPORTS_SCREEN_HTML) f.srcdoc = MREPORTS_SCREEN_HTML; else f.src = 'Macc_rpt.html'; }
+  function loadNurTxnFrame() { const f = document.getElementById('nurtxnFrame'); if (!f) return; if (NURTXN_SCREEN_HTML) f.srcdoc = NURTXN_SCREEN_HTML; else f.src = 'nursery/index.html'; }
+  function loadMreportsFrame() { const f = document.getElementById('mreportsFrame'); if (!f) return; if (MREPORTS_SCREEN_HTML) f.srcdoc = MREPORTS_SCREEN_HTML; else f.src = 'mreports/index.html'; }
   window.__NURSERY__ = { sb: () => db() };
   window.__MREPORTS__ = { sb: () => db(), can: () => permCan('Reports', 'V') };
   let currentNursery = 'planting';
@@ -8773,7 +8773,7 @@
   // required, and Batch No must be unique within the estimate.
   let faPreview = [];
   let faExistingBatchNos = [];  // lowercased Batch_No values already used for the current estimate
-  let faExistingBatches = [];   // [{batch_no, date}] history for the current estimate, deduped by batch_no
+  let faExistingBatches = [];   // [{batch_no, date, amount}] history for the current estimate, deduped by batch_no
   let faTotalBalanceFund = 0;   // sum of balance_fund across all tasks of the estimate currently open in the planner
 
   function faFormatDate_(d) {
@@ -8808,9 +8808,15 @@
       faExistingBatches = [];
       (existingFa || []).forEach(f => {
         const b = String(f.Batch_No || '').trim();
-        if (!b || seenBatches[b]) return;
-        seenBatches[b] = true;
-        faExistingBatches.push({ batch_no: b, date: f.Application_Date || '' });
+        if (!b) return;
+        const amt = Number(f.Amount) || 0;
+        if (seenBatches[b]) {
+          // Same batch spans several task rows: add up the amount.
+          seenBatches[b].amount += amt;
+          return;
+        }
+        seenBatches[b] = { batch_no: b, date: f.Application_Date || '', amount: amt };
+        faExistingBatches.push(seenBatches[b]);
       });
 
       const totalAdvCredited = (estAdvances || []).reduce((s, a) => {
@@ -8870,7 +8876,7 @@
       <div style="margin-bottom:14px;">
         <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">Previous Batches for this Estimate</div>
         <div style="display:flex; flex-wrap:wrap; gap:8px;">
-          ${faExistingBatches.map(b => `<span style="font-size:12px; padding:3px 8px; border:1px solid var(--border); border-radius:12px;">${String(b.batch_no).replace(/</g, '&lt;')} &middot; ${faFormatDate_(b.date)}</span>`).join('')}
+          ${faExistingBatches.map(b => `<span style="font-size:12px; padding:3px 8px; border:1px solid var(--border); border-radius:12px;">${String(b.batch_no).replace(/</g, '&lt;')} &middot; ${faFormatDate_(b.date)} &middot; <b>${inr(b.amount)}</b></span>`).join('')}
         </div>
       </div>` : '';
 

@@ -6,66 +6,101 @@
 <title>Office applications – SF Division, Chittoor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
 <style>
 :root{
-  --paper:#eef2ef; --surface:#ffffff; --ink:#16261f; --muted:#56655e; --line:#cfdad3;
-  --accent:#1f5c45; --accent-ink:#ffffff; --tint:#e3eee8; --focus:#0b6bcb;
-  --font:'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --forest:#123d33;      /* header band */
+  --moss:#1f6b53;        /* links, buttons */
+  --moss-dark:#175240;
+  --gold:#c39a3a;        /* single thin accent rule */
+  --paper:#f3f6f4;       /* page */
+  --surface:#ffffff;
+  --ink:#14221d;
+  --muted:#53655e;
+  --line:#d3dcd7;
+  --tint:#e6f0eb;
+  --focus:#0b63c4;
+  --serif:'Source Serif 4',Georgia,'Times New Roman',serif;
+  --sans:'Source Sans 3',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--paper);color:var(--ink);font:400 1rem/1.5 var(--font)}
-main{max-width:52rem;margin:0 auto;padding:2.5rem 1.25rem 3rem}
-h1{font-size:2rem;line-height:1.15;margin:0;font-weight:700;letter-spacing:-.01em}
-.sub{margin:.35rem 0 0;color:var(--muted);font-size:1.0625rem}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 1.0625rem/1.5 var(--sans)}
 
-.quick{margin:2rem 0 1.75rem;padding:1.25rem;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+/* header */
+.masthead{position:relative;overflow:hidden;background:var(--forest);color:#fff;border-bottom:4px solid var(--gold)}
+.contours{position:absolute;inset:0;width:100%;height:100%;color:rgba(255,255,255,.11);pointer-events:none}
+.masthead .in{position:relative;max-width:60rem;margin:0 auto;padding:3rem 1.5rem 5.25rem}
+.masthead h1{margin:0;font:700 2.5rem/1.1 var(--serif);letter-spacing:-.01em}
+.masthead p{margin:.6rem 0 0;font-size:1.1875rem;color:#cfe3da}
+
+main{max-width:60rem;margin:0 auto;padding:0 1.5rem 3rem}
+
+/* quick open panel overlaps the header */
+.quick{position:relative;margin-top:-2.75rem;padding:1.25rem 1.5rem 1.35rem;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(18,61,51,.12)}
 .quick label{display:block;font-weight:700;margin-bottom:.5rem}
-.quick .row{display:flex;gap:.625rem;flex-wrap:wrap}
-select,input[type=search]{font:inherit;color:var(--ink);background:#fff;border:1px solid #8fa399;border-radius:4px;padding:.6rem .75rem;min-height:2.75rem}
-select{flex:1 1 16rem;min-width:0}
-button{font:inherit;font-weight:700;color:var(--accent-ink);background:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:.6rem 1.5rem;min-height:2.75rem;cursor:pointer}
-button:hover{background:#174a38}
-button:disabled{background:#8fa399;border-color:#8fa399;cursor:not-allowed}
+.row{display:flex;gap:.75rem;flex-wrap:wrap}
+select,input[type=search]{font:inherit;color:var(--ink);background:#fff;border:1px solid #8ea299;border-radius:6px;padding:.65rem .8rem;min-height:2.875rem}
+select{flex:1 1 18rem;min-width:0}
+button{font:inherit;font-weight:700;color:#fff;background:var(--moss);border:1px solid var(--moss);border-radius:6px;padding:.65rem 1.75rem;min-height:2.875rem;cursor:pointer;transition:background-color .15s}
+button:hover{background:var(--moss-dark)}
+button:disabled{background:#94a79e;border-color:#94a79e;cursor:not-allowed}
 :focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.hint{margin:.6rem 0 0;color:var(--muted);font-size:.9375rem}
 
-.filter{display:flex;align-items:center;gap:.75rem;margin:0 0 .5rem;flex-wrap:wrap}
-.filter input{flex:1 1 14rem}
+/* filter */
+.filter{display:flex;align-items:center;gap:1rem;margin:2rem 0 .25rem;flex-wrap:wrap}
+.filter input{flex:1 1 16rem}
 .count{color:var(--muted);font-size:.9375rem}
 
-section{margin-top:1.75rem}
-h2{font-size:1.125rem;margin:0 0 .25rem;padding-bottom:.5rem;border-bottom:2px solid var(--accent);font-weight:700}
-.apps{list-style:none;margin:0;padding:0}
-.apps li{border-bottom:1px solid var(--line)}
-.apps a{display:grid;grid-template-columns:1fr auto;gap:.25rem 1.5rem;align-items:baseline;padding:.9rem .5rem;color:inherit;text-decoration:none}
+/* groups */
+section{margin-top:2rem}
+h2{margin:0 0 .75rem;font:700 1.375rem/1.2 var(--serif);color:var(--forest)}
+.apps{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.apps li+li{border-top:1px solid var(--line)}
+.apps a{display:grid;grid-template-columns:auto 1fr auto;gap:.25rem 1.1rem;align-items:center;padding:1rem 1.25rem;color:inherit;text-decoration:none;transition:background-color .15s}
 .apps a:hover{background:var(--tint)}
-.name{font-weight:700;font-size:1.0625rem;color:var(--accent)}
-.apps a:hover .name{text-decoration:underline;text-underline-offset:3px}
-.desc{grid-column:1;color:var(--ink);max-width:40rem}
-.path{grid-column:2;grid-row:1;color:var(--muted);font-size:.875rem;white-space:nowrap}
-.last{grid-column:2;grid-row:2;justify-self:end;font-size:.875rem;font-weight:700;color:var(--accent)}
+.icon{grid-row:1/3;display:grid;place-items:center;width:3rem;height:3rem;border-radius:8px;background:var(--tint);color:var(--moss)}
+.apps a:hover .icon{background:#fff}
+.icon svg{width:1.6rem;height:1.6rem;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.name{font-weight:700;font-size:1.125rem;line-height:1.25}
+.desc{grid-column:2;color:var(--muted);max-width:42rem}
+.act{grid-column:3;grid-row:1/3;display:flex;flex-direction:column;align-items:flex-end;gap:.35rem}
+.open{display:inline-block;padding:.45rem 1.1rem;border:1.5px solid var(--moss);border-radius:6px;color:var(--moss);font-weight:700;font-size:.9375rem;background:#fff;transition:background-color .15s,color .15s}
+.apps a:hover .open{background:var(--moss);color:#fff}
+.last{font-size:.8125rem;font-weight:700;color:#7a5a12;background:#f7edd2;border-radius:999px;padding:.1rem .6rem}
 .empty{margin:2rem 0;color:var(--muted)}
-footer{margin-top:2.5rem;color:var(--muted);font-size:.9375rem}
-@media (max-width:34rem){
-  h1{font-size:1.625rem}
-  .apps a{grid-template-columns:1fr}
-  .path,.last{grid-column:1;grid-row:auto;justify-self:start}
+footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--muted);font-size:.9375rem}
+
+@media (max-width:40rem){
+  .masthead .in{padding:2.25rem 1.25rem 4.5rem}
+  .masthead h1{font-size:1.9rem}
+  main{padding:0 1rem 2.5rem}
+  .apps a{grid-template-columns:auto 1fr;padding:.9rem 1rem}
+  .desc{grid-row:2}
+  .act{grid-column:2;grid-row:3;flex-direction:row;align-items:center;justify-content:space-between;margin-top:.5rem}
+  .icon{grid-row:1/4;align-self:start}
 }
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<main>
-  <h1>Office applications</h1>
-  <p class="sub">SF Division, Chittoor</p>
+<header class="masthead">
+  <svg class="contours" viewBox="0 0 1200 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"><path d="M0,28.0 L24,31.7 L48,35.0 L72,37.7 L96,39.4 L120,40.0 L144,39.7 L168,38.6 L192,37.0 L216,35.2 L240,33.6 L264,32.4 L288,31.9 L312,32.1 L336,33.0 L360,34.3 L384,35.8 L408,37.1 L432,37.9 L456,38.0 L480,37.1 L504,35.3 L528,32.5 L552,29.1 L576,25.5 L600,21.8 L624,18.6 L648,16.2 L672,14.7 L696,14.4 L720,15.0 L744,16.4 L768,18.3 L792,20.4 L816,22.4 L840,23.9 L864,24.7 L888,24.8 L912,24.2 L936,23.1 L960,21.9 L984,20.8 L1008,20.2 L1032,20.3 L1056,21.3 L1080,23.2 L1104,26.0 L1128,29.3 L1152,32.9 L1176,36.4 L1200,39.4"/><path d="M0,62.1 L24,65.3 L48,67.0 L72,67.1 L96,65.8 L120,63.4 L144,60.4 L168,57.3 L192,54.6 L216,52.8 L240,52.0 L264,52.3 L288,53.4 L312,55.2 L336,57.1 L360,58.6 L384,59.2 L408,58.6 L432,56.6 L456,53.3 L480,48.8 L504,43.6 L528,38.1 L552,33.1 L576,28.9 L600,26.1 L624,24.9 L648,25.3 L672,27.1 L696,30.1 L720,33.6 L744,37.2 L768,40.3 L792,42.6 L816,43.8 L840,43.9 L864,43.1 L888,41.6 L912,40.0 L936,38.8 L960,38.3 L984,39.0 L1008,41.1 L1032,44.4 L1056,48.8 L1080,53.8 L1104,59.0 L1128,63.7 L1152,67.4 L1176,69.7 L1200,70.4"/><path d="M0,95.3 L24,94.2 L48,91.2 L72,87.1 L96,82.3 L120,77.8 L144,74.0 L168,71.4 L192,70.4 L216,70.7 L240,72.3 L264,74.4 L288,76.4 L312,77.8 L336,78.0 L360,76.4 L384,73.1 L408,68.1 L432,61.9 L456,55.0 L480,48.2 L504,42.3 L528,37.8 L552,35.4 L576,35.1 L600,37.0 L624,40.6 L648,45.5 L672,50.9 L696,56.1 L720,60.5 L744,63.5 L768,65.0 L792,65.0 L816,63.9 L840,62.0 L864,60.1 L888,58.9 L912,58.8 L936,60.4 L960,63.6 L984,68.4 L1008,74.3 L1032,80.8 L1056,87.0 L1080,92.4 L1104,96.1 L1128,97.8 L1152,97.3 L1176,94.7 L1200,90.3"/><path d="M0,114.9 L24,108.5 L48,101.9 L72,95.7 L96,90.8 L120,87.7 L144,86.5 L168,87.1 L192,89.0 L216,91.4 L240,93.6 L264,94.7 L288,94.2 L312,91.5 L336,86.8 L360,80.2 L384,72.4 L408,64.3 L432,56.6 L456,50.5 L480,46.5 L504,45.2 L528,46.6 L552,50.6 L576,56.6 L600,63.8 L624,71.3 L648,78.1 L672,83.5 L696,87.1 L720,88.7 L744,88.4 L768,86.7 L792,84.4 L816,82.3 L840,81.1 L864,81.6 L888,84.0 L912,88.4 L936,94.5 L960,101.7 L984,109.2 L1008,116.0 L1032,121.3 L1056,124.3 L1080,124.7 L1104,122.2 L1128,117.3 L1152,110.5 L1176,102.5 L1200,94.4"/><path d="M0,108.7 L24,106.2 L48,104.2 L72,103.1 L96,102.7 L120,103.1 L144,103.9 L168,104.8 L192,105.5 L216,105.8 L240,105.4 L264,104.1 L288,102.1 L312,99.4 L336,96.5 L360,93.5 L384,90.9 L408,89.0 L432,88.1 L456,88.3 L480,89.6 L504,91.8 L528,94.7 L552,97.9 L576,101.1 L600,103.8 L624,105.9 L648,107.2 L672,107.6 L696,107.3 L720,106.5 L744,105.5 L768,104.7 L792,104.3 L816,104.6 L840,105.7 L864,107.5 L888,109.9 L912,112.6 L936,115.3 L960,117.5 L984,119.0 L1008,119.6 L1032,119.0 L1056,117.3 L1080,114.8 L1104,111.6 L1128,108.1 L1152,104.8 L1176,101.9 L1200,99.7"/><path d="M0,119.7 L24,118.3 L48,118.0 L72,118.8 L96,120.1 L120,121.5 L144,122.6 L168,122.8 L192,121.9 L216,119.9 L240,116.8 L264,112.9 L288,108.8 L312,104.9 L336,101.8 L360,100.0 L384,99.7 L408,101.0 L432,103.9 L456,108.1 L480,113.0 L504,118.2 L528,123.0 L552,127.0 L576,129.8 L600,131.3 L624,131.5 L648,130.7 L672,129.3 L696,127.7 L720,126.4 L744,125.9 L768,126.5 L792,128.2 L816,130.9 L840,134.3 L864,137.9 L888,141.3 L912,143.8 L936,145.1 L960,144.8 L984,143.0 L1008,139.6 L1032,135.0 L1056,129.7 L1080,124.3 L1104,119.4 L1128,115.3 L1152,112.5 L1176,111.1 L1200,111.0"/><path d="M0,131.4 L24,132.8 L48,134.8 L72,136.8 L96,138.2 L120,138.3 L144,137.0 L168,134.2 L192,130.2 L216,125.4 L240,120.6 L264,116.3 L288,113.3 L312,112.2 L336,113.2 L360,116.3 L384,121.4 L408,127.8 L432,134.9 L456,142.0 L480,148.3 L504,153.2 L528,156.3 L552,157.6 L576,157.2 L600,155.5 L624,153.1 L648,150.7 L672,149.0 L696,148.3 L720,149.1 L744,151.3 L768,154.7 L792,158.9 L816,163.0 L840,166.6 L864,168.9 L888,169.3 L912,167.7 L936,163.9 L960,158.4 L984,151.6 L1008,144.2 L1032,136.9 L1056,130.6 L1080,125.8 L1104,122.9 L1128,121.9 L1152,122.7 L1176,124.9 L1200,127.7"/><path d="M0,148.6 L24,151.4 L48,153.1 L72,153.2 L96,151.6 L120,148.2 L144,143.4 L168,138.1 L192,132.9 L216,128.8 L240,126.6 L264,126.8 L288,129.7 L312,135.1 L336,142.6 L360,151.5 L384,160.7 L408,169.5 L432,176.8 L456,182.1 L480,184.9 L504,185.4 L528,183.9 L552,180.9 L576,177.3 L600,173.9 L624,171.5 L648,170.6 L672,171.6 L696,174.2 L720,178.1 L744,182.7 L768,187.0 L792,190.2 L816,191.7 L840,190.7 L864,187.2 L888,181.2 L912,173.3 L936,164.2 L960,154.9 L984,146.2 L1008,139.1 L1032,134.2 L1056,131.8 L1080,131.9 L1104,134.1 L1128,137.7 L1152,142.1 L1176,146.2 L1200,149.4"/><path d="M0,176.1 L24,176.1 L48,175.5 L72,174.2 L96,172.5 L120,170.6 L144,169.0 L168,167.9 L192,167.6 L216,168.3 L240,170.0 L264,172.6 L288,176.0 L312,179.7 L336,183.4 L360,186.7 L384,189.3 L408,190.9 L432,191.6 L456,191.3 L480,190.2 L504,188.6 L528,186.9 L552,185.4 L576,184.4 L600,184.0 L624,184.3 L648,185.3 L672,186.7 L696,188.3 L720,189.6 L744,190.5 L768,190.5 L792,189.6 L816,187.7 L840,184.9 L864,181.5 L888,177.7 L912,174.1 L936,170.9 L960,168.5 L984,167.1 L1008,166.7 L1032,167.3 L1056,168.7 L1080,170.6 L1104,172.6 L1128,174.5 L1152,175.8 L1176,176.5 L1200,176.5"/><path d="M0,192.0 L24,190.3 L48,188.0 L72,185.6 L96,183.8 L120,182.8 L144,183.2 L168,185.1 L192,188.4 L216,192.9 L240,198.2 L264,203.9 L288,209.2 L312,213.6 L336,216.8 L360,218.5 L384,218.5 L408,217.2 L432,214.9 L456,212.0 L480,209.1 L504,206.6 L528,204.9 L552,204.3 L576,204.7 L600,206.1 L624,208.0 L648,209.9 L672,211.4 L696,212.0 L720,211.4 L744,209.3 L768,205.9 L792,201.3 L816,196.0 L840,190.5 L864,185.4 L888,181.3 L912,178.5 L936,177.3 L960,177.7 L984,179.5 L1008,182.4 L1032,185.8 L1056,189.2 L1080,192.2 L1104,194.3 L1128,195.3 L1152,195.3 L1176,194.3 L1200,192.7"/><path d="M0,204.8 L24,202.3 L48,200.6 L72,200.2 L96,201.7 L120,205.1 L144,210.2 L168,216.7 L192,224.0 L216,231.2 L240,237.7 L264,242.7 L288,245.8 L312,246.7 L336,245.6 L360,242.7 L384,238.7 L408,234.1 L432,229.7 L456,226.1 L480,223.9 L504,223.0 L528,223.6 L552,225.3 L576,227.5 L600,229.7 L624,231.0 L648,231.1 L672,229.4 L696,225.9 L720,220.8 L744,214.4 L768,207.4 L792,200.6 L816,194.6 L840,190.1 L864,187.7 L888,187.4 L912,189.3 L936,192.9 L960,197.7 L984,202.9 L1008,208.0 L1032,212.1 L1056,214.9 L1080,216.2 L1104,216.0 L1128,214.7 L1152,212.8 L1176,210.9 L1200,209.7"/></g></svg>
+  <div class="in">
+    <h1>Office applications</h1>
+    <p>SF Division, Chittoor</p>
+  </div>
+</header>
 
+<main>
   <div class="quick">
     <label for="pick">Choose an application</label>
     <div class="row">
       <select id="pick" aria-describedby="hint"></select>
       <button id="go" type="button" disabled>Open</button>
     </div>
-    <p id="hint" class="count" style="margin:.5rem 0 0">The application opens in this tab. Use your browser’s back button to return here.</p>
+    <p id="hint" class="hint">The application opens in this tab. Use your browser’s back button to return here.</p>
   </div>
 
   <div class="filter">
@@ -80,7 +115,17 @@ footer{margin-top:2.5rem;color:var(--muted);font-size:.9375rem}
 </main>
 
 <script>
-/* To add an application: copy the files to the repository and add one line here. */
+/* To add an application: copy its file to the repository and add one line below. */
+const ICONS={
+  tokens:'<circle cx="12" cy="12" r="9"/><path d="M8.5 8h7M8.5 11h7M10 8a3 3 0 0 1 0 6H8.5l5.5 4"/>',
+  fsr:'<rect x="5" y="3" width="14" height="18" rx="2"/><rect x="8" y="6" width="8" height="3.5" rx=".5"/><path d="M8.5 13h.01M12 13h.01M15.5 13h.01M8.5 16.5h.01M12 16.5h.01M15.5 16.5h.01"/>',
+  dms:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  proceedings:'<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
+  plantation:'<path d="M12 3l5 7h-3l4 7H6l4-7H7z"/><path d="M12 17v4"/>',
+  nursery:'<path d="M12 21v-8"/><path d="M12 13c0-4-3-6-7-6 0 4 3 6 7 6z"/><path d="M12 15c0-3 2-5 6-5 0 3-2 5-6 5z"/>',
+  reports:'<path d="M4 20h16M7 20v-7M12 20V6M17 20v-10"/>',
+  kanban:'<rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/>'
+};
 const GROUPS=[
   {title:'Accounts and estimates', apps:[
     {id:'tokens', name:'Token dashboard', path:'Mtokenboard.html', desc:'Tokens, budget, APOs, estimates, vouchers, Mbook, withdrawals, nursery, personnel, vehicle and procurement in one place.'},
@@ -105,7 +150,6 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 let last=''; try{ last=localStorage.getItem('officeLauncherLast')||''; }catch(e){}
 const remember=id=>{ try{ localStorage.setItem('officeLauncherLast',id); }catch(e){} };
 const find=id=>ALL.find(a=>a.id===id);
-
 function openApp(id){ const a=find(id); if(!a) return; remember(id); location.href=a.path; }
 
 /* drop-down */
@@ -123,8 +167,10 @@ function render(){
     const rows=g.apps.filter(a=>!q||(a.name+' '+a.desc+' '+a.path).toLowerCase().includes(q));
     n+=rows.length; if(!rows.length) return '';
     return '<section><h2>'+esc(g.title)+'</h2><ul class="apps">'+rows.map(a=>
-      '<li><a href="'+a.path+'" data-id="'+a.id+'"><span class="name">'+esc(a.name)+'</span><span class="path">'+esc(a.path)+'</span>'+
-      '<span class="desc">'+esc(a.desc)+'</span>'+(a.id===last?'<span class="last">Last opened</span>':'')+'</a></li>').join('')+'</ul></section>';
+      '<li><a href="'+a.path+'" data-id="'+a.id+'"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">'+ICONS[a.id]+'</svg></span>'+
+      '<span class="name">'+esc(a.name)+'</span>'+
+      '<span class="act">'+(a.id===last?'<span class="last">Last opened</span>':'')+'<span class="open">Open</span></span>'+
+      '<span class="desc">'+esc(a.desc)+'</span></a></li>').join('')+'</ul></section>';
   }).join('');
   $('none').hidden=n>0; $('count').textContent=n+' of '+ALL.length+' shown';
 }

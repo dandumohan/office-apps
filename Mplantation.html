@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plantation Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style> 
+        body { font-family: 'Inter', sans-serif; } 
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden flex flex-col">
+
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="fixed inset-0 bg-green-900 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
+            <h2 class="text-2xl font-bold text-green-900 mb-6 text-center">Login</h2>
+            <form id="loginForm" class="space-y-4">
+                <input type="email" id="username" autocomplete="username" placeholder="Email" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500">
+                <input type="password" id="password" autocomplete="current-password" placeholder="Password" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500">
+                <button type="submit" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold hover:bg-green-700 transition">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="hidden flex flex-col h-screen overflow-hidden">
+        <header class="bg-green-900 text-white p-4 shadow-lg flex-none">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-xl font-bold">Chittoor District Plantation Progress - 2026</h1>
+                <span id="userNameDisplay" class="font-semibold italic"></span>
+                <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">Logout</button>
+            </div>
+            <div class="grid grid-cols-3 gap-6 text-center text-sm border-t border-green-700 pt-4">
+                <div><div class="font-bold">Target</div><div class="opacity-80">3443.000 Ha <br> 105.700 Lakhs</div></div>
+                <div><div class="font-bold">Achievement</div><div id="achieveStats" class="opacity-80">...</div></div>
+                <div><div class="font-bold">Balance</div><div id="balanceStats" class="opacity-80">...</div></div>
+            </div>
+        </header>
+
+        <main class="flex-1 flex overflow-hidden">
+            <section class="w-80 border-r bg-white p-6 overflow-y-auto">
+                <!-- Added id="formTitle" here so JS can find it -->
+                <h2 id="formTitle" class="text-lg font-bold text-green-900 mb-4">New Entry</h2>
+                <form id="plantForm" class="space-y-4">
+                    <input type="hidden" id="hiddenId">
+                    <select id="dept" required class="w-full p-2.5 border rounded-lg bg-gray-50 text-sm"></select>
+                     <div>
+                      <p class="text-xs text-green-600 mt-1">Enter planted Date</p>
+                      <input type="date" id="date" required class="w-full p-2.5 border rounded-lg">
+                      </div>
+                      <div>
+                      <div>
+                      <p class="text-xs text-green-600 mt-1">Enter no.of Plants</p>
+                      <input type="number" id="plants" placeholder="Plants" required class="w-full p-2.5 border rounded-lg">
+                      </div>
+                      <div>
+                      <p class="text-xs text-green-600 mt-1">Enter area in Hectares (e.g., 2.5).</p>
+                      <input type="number" id="area" placeholder="Area (Ha)" step="0.01" required class="w-full p-2.5 border rounded-lg">
+                      </div>
+                      <p class="text-xs text-green-600 mt-1">Enter source of Plants</p>
+                    <select id="source" required class="w-full p-2.5 border rounded-lg bg-gray-50 text-sm">
+                        <option value="">Select Source</option>
+                        <option value="Departmental Nursery">Departmental Nursery</option>
+                        <option value="Forest Department">Forest Department Nursery</option>
+                        <option value="Private Nursery">Private Nursery</option>
+                    </select>
+                    <button type="submit" id="submitBtn" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition text-sm">Save Record</button>
+                </form>
+            </section>
+
+            <section class="flex-1 overflow-y-auto p-6 bg-gray-50">
+                <div id="accordionContainer" class="space-y-4"></div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ewnrcnfyiulrjritaeam.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3bnJjbmZ5aXVscmpyaXRhZWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTEwMDYsImV4cCI6MjEwNzc2NzAwNn0.rbJNPpBgS4k2uKxM9Igk6S7rN_FL3gZcoJu-8jkgeD8';   // public anon key; access is controlled by the database's security rules
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+        let allData = [];
+        let me = { id: '', name: '', email: '', can: { V: false, A: false, E: false, D: false } };
+
+        // who is signed in, and what may they do in the "Plantation" module (same rules as the database enforces)
+        async function loadMe(user) {
+            me = { id: user.id, name: '', email: user.email || '', can: { V: false, A: false, E: false, D: false } };
+            const ops = ['V', 'A', 'E', 'D'];
+            const res = await Promise.all(ops.map(op => sb.rpc('plantation_can', { op })));
+            ops.forEach((op, i) => { me.can[op] = res[i].data === true; });
+            const p = await sb.from('profiles').select('name').eq('id', user.id).maybeSingle();
+            me.name = (p.data && p.data.name) || me.email;
+        }
+        async function enter(user, fresh) {
+            await loadMe(user);
+            if (!me.can.V) {
+                alert('You do not have access to the Plantation module. Please ask an administrator.');
+                await sb.auth.signOut(); location.reload(); return;
+            }
+            if (fresh) await logLogin('Login');
+            showDashboard(me.name);
+        }
+        async function logLogin(event) {
+            try { await sb.from('login_log').insert({ ts: new Date().toISOString(), identity: me.email, name: me.name, method: 'Plantation Tracker', event: event, result: 'Success', details: '', device: navigator.userAgent.slice(0, 120) }); } catch (e) { /* logging must never block */ }
+        }
+        document.addEventListener('DOMContentLoaded', async () => {
+            const { data } = await sb.auth.getSession();
+            if (data && data.session) await enter(data.session.user, false);
+        });
+
+
+        function isLocked(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            return (now - date) / (1000 * 60 * 60 * 24) > 7;
+        }
+
+    
+       
+       
+       // Example: If sendAction looks like this, make sure it handles errors correctly
+async function sendAction(action, p) {
+    try {
+        const T = sb.from('plantation_data');
+        const fields = () => ({ department: p.department, plant_date: p.date, area_ha: Number(p.area_ha), no_of_plants: Math.round(Number(p.no_of_plants)), source_of_plants: p.source_of_plants });
+        let r, needRow = false;
+        if (action === 'CREATE') r = await T.insert(Object.assign({ id: p.id }, fields()));
+        else if (action === 'UPDATE') { needRow = true; r = await T.update(fields()).eq('id', p.id).select('id'); }
+        else if (action === 'DELETE') { needRow = true; r = await T.delete().eq('id', p.id).select('id'); }
+        else if (action === 'LOCK') { needRow = true; r = await T.update({ locked: true }).eq('id', p.id).select('id'); }
+        else return { status: 'success' };
+        if (r.error) return { status: 'error', message: r.error.message };
+        if (needRow && (!r.data || !r.data.length)) return { status: 'error', message: 'Not allowed, or the record no longer exists.' };
+        return { status: 'success' };
+    } catch (e) { return { status: 'error', message: (e && e.message) || String(e) }; }
+}
+       
+       
+        async function init() {
+            try {
+                const [dRes, pRes] = await Promise.all([
+                    sb.from('plantation_departments').select('name').order('name'),
+                    sb.from('plantation_data').select('*').order('created_at', { ascending: true })
+                ]);
+                if (dRes.error) throw dRes.error;
+                if (pRes.error) throw pRes.error;
+                allData = pRes.data.map(r => ({ id: r.id, department: r.department, date: r.plant_date, area_ha: r.area_ha,
+                    no_of_plants: r.no_of_plants, source_of_plants: r.source_of_plants, cdt: r.locked }));
+                const select = document.getElementById('dept');
+                select.innerHTML = '<option value="">Select Department</option>';
+                dRes.data.forEach(d => { select.innerHTML += `<option value="${d.name}">${d.name}</option>`; });
+                render();
+            } catch (e) { console.error("Init error", e); alert('Could not load data: ' + (e.message || e)); }
+        }
+        
+      // Add a global variable to track open departments
+let openDepartments = new Set();
+
+function render() {
+    const container = document.getElementById('accordionContainer');
+    // Save current scroll position if needed
+    container.innerHTML = '';
+    let totalA = 0, totalP = 0;
+    
+    const grouped = allData.reduce((acc, row) => {
+        if (!acc[row.department]) acc[row.department] = { rows: [], plants: 0, area: 0 };
+        acc[row.department].rows.push(row);
+        acc[row.department].plants += Number(row.no_of_plants || 0);
+        acc[row.department].area += Number(row.area_ha || 0);
+        totalA += Number(row.area_ha || 0);
+        totalP += Number(row.no_of_plants || 0);
+        return acc;
+    }, {});
+
+    document.getElementById('achieveStats').innerHTML = `Area: ${totalA.toFixed(3)} Ha<br>Plants: ${(totalP/100000).toFixed(3)} Lakhs`;
+    document.getElementById('balanceStats').innerHTML = `Area: ${(3443-totalA).toFixed(3)} Ha<br>Plants: ${((10570000-totalP)/100000).toFixed(3)} Lakhs`;
+
+    Object.keys(grouped).forEach(dept => {
+        const d = grouped[dept];
+        const isOpen = openDepartments.has(dept); // Check if this dept was open
+        
+        container.innerHTML += `
+            <div class="bg-white rounded-xl border border-gray-200">
+                <button onclick="toggleDept('${dept}')" class="w-full p-4 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition">
+                    <span class="font-bold text-green-900">${dept} ${isOpen ? '▲' : '▼'}</span>
+                    <span class="text-xs text-green-700 text-right"> 
+                        ${d.area.toFixed(3)} Ha <br> ${(d.plants/100000).toFixed(3)} Lakhs 
+                    </span>
+                </button>
+                <div class="${isOpen ? '' : 'hidden'} border-t p-4">
+                    <table class="w-full text-sm">
+                        <!-- ... rest of your table code ... -->
+                        <tbody>${d.rows.map(r => {
+                            const isLocked = r.cdt === true || String(r.cdt).trim().toUpperCase() === "TRUE";
+                            return `<tr class="border-b">
+                                <td class="py-2 text-right">${r.no_of_plants}</td>
+                                <td class="py-2 text-right">${r.area_ha}</td>
+                                <td class="py-2 text-center">${r.date.substring(0,10)}</td>
+                                <td class="py-2 flex gap-2 justify-center">
+                                ${isLocked ? '<i class="fas fa-lock text-gray-400 py-1" title="Locked"></i>' : `
+                                    ${me.can.E ? `<button onclick="editRecord('${r.id}')" class="text-blue-600 p-1"><i class="fas fa-edit"></i></button>` : ''}
+                                    ${me.can.D ? `<button onclick="deleteRecord('${r.id}')" class="text-red-600 p-1"><i class="fas fa-trash"></i></button>` : ''}
+                                    ${me.can.E ? `<button onclick="lockRecord('${r.id}')" class="text-orange-600 p-1"><i class="fas fa-lock"></i></button>` : ''}
+                                `}
+                                </td>
+                            </tr>`;
+                        }).join('')}</tbody>
+                    </table>
+                </div>
+            </div>`;
+    });
+}
+
+// Add this helper function to your script
+function toggleDept(deptName) {
+    if (openDepartments.has(deptName)) {
+        openDepartments.delete(deptName);
+    } else {
+        openDepartments.add(deptName);
+    }
+    render(); // Re-render to apply the class change
+}
+                             
+        document.getElementById('plantForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            const isUpdate = !!document.getElementById('hiddenId').value;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Processing...";
+            
+            try {
+                const payload = {
+                    action: isUpdate ? 'UPDATE' : 'CREATE',
+                    id: document.getElementById('hiddenId').value || crypto.randomUUID(),
+                    department: document.getElementById('dept').value,
+                    date: document.getElementById('date').value,
+                    area_ha: document.getElementById('area').value,
+                    no_of_plants: document.getElementById('plants').value,
+                    source_of_plants: document.getElementById('source').value
+                };
+                const result = await sendAction(payload.action, payload);
+                if(result.status === 'success') {
+                    document.getElementById('plantForm').reset();
+                    document.getElementById('hiddenId').value = '';
+                    document.getElementById('formTitle').innerText = "New Entry";
+                    await init(); 
+                } else alert("Error: " + (result.message || "Unknown"));
+            } finally {
+                // This block runs regardless of success or failure, re-enabling the button
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Save Record";
+            }
+        };
+
+        // Standard Login/Init logic...
+       // Authentication Handlers
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button'); btn.disabled = true;
+            try {
+                const { data, error } = await sb.auth.signInWithPassword({
+                    email: document.getElementById('username').value.trim().toLowerCase(),
+                    password: document.getElementById('password').value });
+                if (error || !data || !data.user) { alert('The email address or password is incorrect.'); return; }
+                await enter(data.user, true);
+            } finally { btn.disabled = false; }
+        };
+       
+       
+      function showDashboard(username) { 
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('mainContent').classList.remove('hidden');
+      document.getElementById('userNameDisplay').innerText = `Welcome, ${username}`;
+      document.getElementById('plantForm').classList.toggle('hidden', !(me.can.A || me.can.E));
+      init();
+                
+        }
+        
+        
+        
+        async function logout() {
+    await logLogin('Logout');
+    await sb.auth.signOut();
+    location.reload();
+}
+          
+          
+          
+        function editRecord(id) {
+    const rec = allData.find(r => r.id == id);
+    
+    // Safety check in case the record doesn't exist
+    if (!rec) { 
+        alert("Record missing."); 
+        return; 
+    }
+
+    // Bulletproof lock check: Handles true, "TRUE", "true ", etc.
+    if (rec.cdt === true || String(rec.cdt).trim().toUpperCase() === "TRUE") { 
+        alert("Record is locked."); 
+        return; 
+    }
+    
+    document.getElementById('hiddenId').value = rec.id;
+    document.getElementById('dept').value = rec.department;
+    document.getElementById('date').value = rec.date.substring(0,10);
+    document.getElementById('area').value = rec.area_ha;
+    document.getElementById('plants').value = rec.no_of_plants;
+    document.getElementById('source').value = rec.source_of_plants;
+    document.getElementById('formTitle').innerText = "Edit Record";
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
+               
+                   
+                 
+               
+// Ensure this function is defined in the same scope as deleteRecord
+async function fetchRecords(localData = null) {
+    // If we pass local data, update the UI instantly without hitting Google
+    if (localData) {
+        allData = localData;
+        render(); 
+        return;
+    }
+
+    try {
+        // Fetch from real Google Apps Script endpoint
+        await init(); 
+    } catch (error) {
+        console.error("Error fetching records:", error);
+    }
+}
+
+
+async function deleteRecord(id) {
+    const rec = allData.find(r => r.id == id);
+    
+    if (!rec) { 
+        alert("Record not found."); 
+        return; 
+    }
+    
+    if (rec.cdt === true || String(rec.cdt).toUpperCase() === "TRUE") { 
+        alert("Record is locked."); 
+        return; 
+    }
+    
+    if (!confirm("Delete this record?")) return;
+    
+    try {
+        // Send delete command to server
+        const dr = await sendAction('DELETE', { id });
+        if (dr.status !== 'success') throw new Error(dr.message);
+        
+        // Filter out the deleted record locally
+        const updatedData = allData.filter(item => item.id !== id);
+        
+        // Force immediate UI redraw using the local data array
+        await fetchRecords(updatedData);
+        
+        alert("Record deleted successfully.");
+    } catch (error) {
+        alert("Failed to delete: " + (error.message || "server error"));
+        console.error(error);
+    }
+}
+   async function lockRecord(id) {
+  if (!confirm("Are you sure you want to lock this record? Once locked, it cannot be modified or deleted.")) return;
+  const r = await sendAction('LOCK', { id });
+  if (r.status === 'success') {
+    alert('Record locked successfully!');
+    fetchRecords(allData.map(item => item.id == id ? { ...item, cdt: true } : item));
+  } else alert('Error: ' + r.message);
+}
+    
+       
+       
+   
+    </script>
+</body>
+</html>

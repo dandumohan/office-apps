@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Professional Kanban Board</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-slate-50 p-6 font-sans">
+    <!-- Login screen -->
+    <div id="login" class="max-w-sm mx-auto mt-24 bg-white p-8 rounded-2xl shadow-sm hidden">
+        <h1 class="text-xl font-bold text-slate-700 mb-6 text-center">Kanban Board</h1>
+        <form onsubmit="signIn(event)">
+            <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">User name (email)</label>
+            <input id="email" type="email" required autocomplete="username" class="w-full p-2 border rounded-lg mb-4" placeholder="you@example.com">
+            <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Password</label>
+            <input id="password" type="password" required minlength="6" autocomplete="current-password" class="w-full p-2 border rounded-lg mb-4" placeholder="Password">
+            <button type="submit" class="w-full bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700">Log in</button>
+            <button type="button" onclick="signUp()" class="w-full mt-2 bg-slate-100 text-slate-600 px-6 py-2 rounded-lg font-bold hover:bg-slate-200">Create account</button>
+        </form>
+        <p id="loginMsg" class="text-xs text-center mt-4 text-slate-400"></p>
+    </div>
+
+    <div id="app" class="max-w-6xl mx-auto hidden">
+        <div class="bg-white p-6 rounded-2xl shadow-sm mb-8">
+            <div class="flex flex-wrap gap-4 items-end">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Task</label>
+                    <input id="t" class="w-full p-2 border rounded-lg" placeholder="What needs doing?">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Due Date</label>
+                    <input id="d" type="date" class="p-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Priority</label>
+                    <select id="p" class="p-2 border rounded-lg">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <button onclick="add()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700">Add Task</button>
+                <button onclick="exportData()" class="bg-slate-500 text-white px-4 py-2 rounded-lg">Save File</button>
+                <input type="file" id="importFile" class="hidden" onchange="importData(event)">
+                <button onclick="document.getElementById('importFile').click()" class="bg-slate-500 text-white px-4 py-2 rounded-lg">Upload File</button>
+            </div>
+            <div class="flex items-center justify-between mt-3">
+                <p id="status" class="text-xs text-slate-400"></p>
+                <p class="text-xs text-slate-400">
+                    <span id="userEmail"></span>
+                    <button onclick="signOut()" class="ml-3 text-red-400 font-bold">Log out</button>
+                </p>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="bg-white p-6 rounded-2xl shadow-sm mb-8"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div id="tasks" class="bg-white p-4 rounded-2xl border border-slate-200 scroll-area"></div>
+            <div id="processing" class="bg-white p-4 rounded-2xl border border-slate-200 scroll-area"></div>
+            <div id="completed" class="bg-white p-4 rounded-2xl border border-slate-200 scroll-area"></div>
+        </div>
+
+        <!-- Tasks Box: sits under the board -->
+        <div id="box" class="mt-8 bg-white p-4 rounded-2xl border-2 border-dashed border-slate-300"></div>
+    </div>
+
+    <script>
+        // ====== CONFIG: paste your values from Supabase > Project Settings > API ======
+    const SUPABASE_URL = 'https://ewnrcnfyiulrjritaeam.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3bnJjbmZ5aXVscmpyaXRhZWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTEwMDYsImV4cCI6MjEwNzc2NzAwNn0.rbJNPpBgS4k2uKxM9Igk6S7rN_FL3gZcoJu-8jkgeD8';
+        // ===============================================================================
+
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const STAGES = ['tasks', 'processing', 'completed'];
+        let data = [];
+
+        // Show/hide state for each board (remembered in this browser)
+        let show = { dashboard: true, tasks: true, processing: true, completed: true, box: true };
+        try { Object.assign(show, JSON.parse(localStorage.getItem('kanban_show')) || {}); } catch (e) {}
+
+        function toggleBoard(key) {
+            show[key] = !show[key];
+            try { localStorage.setItem('kanban_show', JSON.stringify(show)); } catch (e) {}
+            render();
+        }
+
+        function header(label, color, key, count) {
+            const on = show[key];
+            return `<div class="flex items-center justify-between ${on ? 'mb-4' : ''}">
+                <h3 class="font-bold ${color} uppercase text-sm tracking-widest">${label}${count === undefined ? '' : ` <span class="text-slate-300 font-normal">(${count})</span>`}</h3>
+                <button onclick="toggleBoard('${key}')" role="switch" aria-checked="${on}" title="${on ? 'Hide' : 'Show'} tasks"
+                    class="relative w-9 h-5 rounded-full transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-300'}">
+                    <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${on ? 'translate-x-4' : ''}"></span>
+                </button>
+            </div>`;
+        }
+
+        function setStatus(msg, isError) {
+            const el = document.getElementById('status');
+            el.textContent = msg || '';
+            el.className = 'text-xs mt-3 ' + (isError ? 'text-red-500' : 'text-slate-400');
+        }
+
+        function esc(s) {
+            return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function fromRow(r) {
+            return { id: r.id, t: r.title, d: r.due_date, p: r.priority, s: r.status, boxed: !!r.boxed, sort: r.sort_order, cc: r.completed_count || 0, history: r.date_history || [] };
+        }
+
+        async function load() {
+            const { data: rows, error } = await sb.from('tasks').select('*').order('sort_order', { ascending: true });
+            if (error) { setStatus('Load failed: ' + error.message, true); return; }
+            data = rows.map(fromRow);
+            setStatus('');
+            render();
+        }
+
+        async function add() {
+            let t = document.getElementById('t'), d = document.getElementById('d'), p = document.getElementById('p');
+            if (!t.value.trim()) return;
+            let date = d.value ? new Date(d.value) : new Date();
+            let fmt = `${date.getDate().toString().padStart(2,'0')}-${(date.getMonth()+1).toString().padStart(2,'0')}-${date.getFullYear()}`;
+            const { error } = await sb.from('tasks').insert({ title: t.value.trim(), due_date: fmt, priority: p.value, status: 'tasks', boxed: false, date_history: [] });
+            if (error) { setStatus('Add failed: ' + error.message, true); return; }
+            t.value = '';
+            load();
+        }
+
+        async function edit(id) {
+            let item = data.find(x => x.id === id);
+            if (!item) return;
+            let history = [...item.history];
+            let update = {};
+
+            let newT = prompt("Edit Task (leave blank to keep current):", item.t);
+            if (newT && newT.trim() !== "") update.title = newT.trim();
+
+            let newD = prompt("Update Date (DD-MM-YYYY) - Previous will be saved:", item.d);
+            if (newD && newD.trim() !== "" && newD !== item.d) {
+                history.push(item.d);
+                update.due_date = newD.trim();
+                update.date_history = history;
+            }
+
+            let newP = prompt("Edit Priority (low/medium/high):", item.p);
+            if (newP && ['low','medium','high'].includes(newP.trim().toLowerCase())) update.priority = newP.trim().toLowerCase();
+
+            if (Object.keys(update).length === 0) return;
+            const { error } = await sb.from('tasks').update(update).eq('id', id);
+            if (error) { setStatus('Edit failed: ' + error.message, true); return; }
+            load();
+        }
+
+        async function move(id, dir) {
+            let item = data.find(x => x.id === id);
+            let next = STAGES[STAGES.indexOf(item.s) + dir];
+            if (!next) return;
+            const update = { status: next };
+            // Every entry into Completed increases the counter: C1, C2, C3...
+            if (next === 'completed') update.completed_count = item.cc + 1;
+            const { error } = await sb.from('tasks').update(update).eq('id', id);
+            if (error) { setStatus('Move failed: ' + error.message, true); return; }
+            load();
+        }
+
+        // Down arrow: send to the Tasks Box. Up arrow: bring back to the board (its original column).
+        async function box(id, boxed) {
+            const { error } = await sb.from('tasks').update({ boxed }).eq('id', id);
+            if (error) { setStatus('Move failed: ' + error.message, true); return; }
+            load();
+        }
+
+        // Up arrow on the board: swap places with the task just above it in the same column.
+        async function moveUp(id) {
+            const item = data.find(x => x.id === id);
+            const col = data.filter(x => x.s === item.s && !x.boxed);
+            const idx = col.findIndex(x => x.id === id);
+            if (idx <= 0) return;
+            const above = col[idx - 1];
+            const r1 = await sb.from('tasks').update({ sort_order: above.sort }).eq('id', item.id);
+            const r2 = await sb.from('tasks').update({ sort_order: item.sort }).eq('id', above.id);
+            const err = r1.error || r2.error;
+            if (err) { setStatus('Move failed: ' + err.message, true); return; }
+            load();
+        }
+
+        async function del(id) {
+            const { error } = await sb.from('tasks').delete().eq('id', id);
+            if (error) { setStatus('Delete failed: ' + error.message, true); return; }
+            load();
+        }
+
+        function card(item, inBox, isTop) {
+            let div = document.createElement('div');
+            div.className = `p-4 mb-3 border-l-4 rounded-lg shadow-sm bg-white border ${item.p==='high'?'border-l-red-500':item.p==='medium'?'border-l-amber-400':'border-l-blue-400'}`;
+            const s = item.s;
+            div.innerHTML = `
+                <p class="font-bold text-sm">${esc(item.t)}
+                    ${item.cc > 0 ? `<span class="ml-2 text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">C${item.cc}</span>` : ''}
+                </p>
+                <p class="text-[10px] text-slate-400 mt-1">📅 Due: ${esc(item.d)} | ⚠️ ${esc(item.p.toUpperCase())}${inBox ? ` | 📌 ${esc(s)}` : ''}
+                    ${item.history.length ? `<br><span class="text-slate-300 italic">Prev: ${item.history.map(esc).join(', ')}</span>` : ''}
+                </p>
+                <div class="flex gap-2 mt-3 items-center">
+                    <button onclick="edit('${item.id}')" class="text-blue-500 text-xs font-bold px-2">✎ Edit</button>
+                    ${!inBox && s!=='tasks'?`<button onclick="move('${item.id}',-1)" class="text-xs bg-slate-100 px-2 rounded">←</button>`:''}
+                    ${!inBox && s!=='completed'?`<button onclick="move('${item.id}',1)" class="text-xs bg-slate-100 px-2 rounded">→</button>`:''}
+                    ${!inBox && !isTop ? `<button onclick="moveUp('${item.id}')" title="Move up in this column" class="text-xs bg-slate-100 px-2 rounded">↑</button>` : ''}
+                    ${inBox ? `<button onclick="box('${item.id}', false)" title="Move up to board" class="text-xs bg-slate-100 px-2 rounded">↑</button>` : ''}
+                    ${!inBox ? `<button onclick="box('${item.id}', true)" title="Move down to Tasks Box" class="text-xs bg-slate-100 px-2 rounded">↓</button>` : ''}
+                    <button onclick="del('${item.id}')" class="text-red-400 text-xs ml-auto">Delete</button>
+                </div>`;
+            return div;
+        }
+
+        function parseDue(str) {
+            const [dd, mm, yy] = String(str).split('-').map(Number);
+            if (!dd || !mm || !yy) return null;
+            return new Date(yy, mm - 1, dd);
+        }
+
+        function renderDashboard() {
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const total = data.length;
+            const todo = data.filter(i => i.s === 'tasks').length;
+            const prog = data.filter(i => i.s === 'processing').length;
+            const done = data.filter(i => i.s === 'completed').length;
+            const open = data.filter(i => i.s !== 'completed');
+            const overdue = open.filter(i => { const d = parseDue(i.d); return d && d < today; }).length;
+            const dueToday = open.filter(i => { const d = parseDue(i.d); return d && d.getTime() === today.getTime(); }).length;
+            const highOpen = open.filter(i => i.p === 'high').length;
+            const parked = data.filter(i => i.boxed).length;
+            const completions = data.reduce((n, i) => n + (i.cc || 0), 0);
+            const pct = total ? Math.round(done / total * 100) : 0;
+
+            const stat = (label, value, color) => `
+                <div class="p-4 rounded-xl border border-slate-100 bg-slate-50">
+                    <p class="text-2xl font-bold ${color}">${value}</p>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase mt-1">${label}</p>
+                </div>`;
+
+            const prio = (label, key, bar) => {
+                const n = open.filter(i => i.p === key).length;
+                const w = open.length ? Math.round(n / open.length * 100) : 0;
+                return `<div class="flex items-center gap-3 text-xs text-slate-500">
+                    <span class="w-16">${label}</span>
+                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full ${bar}" style="width:${w}%"></div></div>
+                    <span class="w-6 text-right font-bold">${n}</span>
+                </div>`;
+            };
+
+            document.getElementById('dashboard').innerHTML = header('Dashboard', 'text-slate-600', 'dashboard') + (!show.dashboard ? '' : `
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                    ${stat('Total tasks', total, 'text-slate-700')}
+                    ${stat('To do', todo, 'text-slate-500')}
+                    ${stat('In progress', prog, 'text-amber-500')}
+                    ${stat('Completed', done, 'text-emerald-500')}
+                    ${stat('Overdue', overdue, 'text-red-500')}
+                    ${stat('Due today', dueToday, 'text-blue-500')}
+                    ${stat('High priority (open)', highOpen, 'text-red-500')}
+                    ${stat('In Tasks Box', parked, 'text-slate-500')}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-500 mb-1">
+                            <span class="font-bold uppercase text-slate-400">Completion</span><span class="font-bold">${pct}%</span>
+                        </div>
+                        <div class="h-3 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width:${pct}%"></div></div>
+                        <p class="text-xs text-slate-400 mt-2">Total times tasks entered Completed: <span class="font-bold text-slate-500">${completions}</span></p>
+                    </div>
+                    <div class="space-y-2">
+                        <p class="text-xs font-bold uppercase text-slate-400">Open tasks by priority</p>
+                        ${prio('High', 'high', 'bg-red-500')}
+                        ${prio('Medium', 'medium', 'bg-amber-400')}
+                        ${prio('Low', 'low', 'bg-blue-400')}
+                    </div>
+                </div>`);
+        }
+
+        function render() {
+            renderDashboard();
+            STAGES.forEach(s => {
+                let col = document.getElementById(s);
+                const count = data.filter(i => i.s === s && !i.boxed).length;
+                col.innerHTML = header(s==='tasks'?'Tasks List':s, s==='tasks'?'text-slate-500':s==='processing'?'text-amber-500':'text-emerald-500', s, count);
+                let first = true;
+                data.forEach(item => {
+                    if (show[s] && item.s === s && !item.boxed) {
+                        col.appendChild(card(item, false, first));
+                        first = false;
+                    }
+                });
+            });
+
+            let boxEl = document.getElementById('box');
+            const boxed = data.filter(i => i.boxed);
+            boxEl.innerHTML = header('Tasks Box', 'text-slate-600', 'box', boxed.length);
+            if (!show.box) {
+                // hidden: header only
+            } else if (!boxed.length) {
+                boxEl.innerHTML += `<p class="text-xs text-slate-400">Click ↓ on a task to move it here.</p>`;
+            } else {
+                let wrap = document.createElement('div');
+                wrap.className = 'grid grid-cols-1 md:grid-cols-3 gap-x-6';
+                boxed.forEach(item => wrap.appendChild(card(item, true)));
+                boxEl.appendChild(wrap);
+            }
+        }
+
+        function exportData() {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'tasks.json'; a.click();
+        }
+
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const items = JSON.parse(ev.target.result);
+                    const base = Date.now() / 1000;
+                    const rows = items.map((i, n) => ({
+                        sort_order: base + n * 0.001,
+                        title: i.t, due_date: i.d, priority: i.p || 'low',
+                        status: STAGES.includes(i.s) ? i.s : 'tasks',
+                        boxed: !!i.boxed,
+                        completed_count: i.cc || 0,
+                        date_history: i.history || []
+                    }));
+                    const { error } = await sb.from('tasks').insert(rows);
+                    if (error) throw error;
+                    load();
+                } catch (err) {
+                    setStatus('Import failed: ' + err.message, true);
+                }
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        // ---------- Authentication ----------
+        let channel = null;
+
+        function loginMsg(msg, isError) {
+            const el = document.getElementById('loginMsg');
+            el.textContent = msg || '';
+            el.className = 'text-xs text-center mt-4 ' + (isError ? 'text-red-500' : 'text-slate-400');
+        }
+
+        function showApp(session) {
+            const loggedIn = !!session;
+            document.getElementById('login').classList.toggle('hidden', loggedIn);
+            document.getElementById('app').classList.toggle('hidden', !loggedIn);
+            if (loggedIn) {
+                document.getElementById('userEmail').textContent = session.user.email;
+                load();
+                if (!channel) {
+                    channel = sb.channel('tasks-changes')
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => load())
+                        .subscribe();
+                }
+            } else {
+                data = [];
+                if (channel) { sb.removeChannel(channel); channel = null; }
+            }
+        }
+
+        async function signIn(e) {
+            e.preventDefault();
+            loginMsg('Signing in...');
+            const { error } = await sb.auth.signInWithPassword({
+                email: document.getElementById('email').value.trim(),
+                password: document.getElementById('password').value
+            });
+            if (error) loginMsg(error.message, true); else loginMsg('');
+        }
+
+        async function signUp() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            if (!email || password.length < 6) { loginMsg('Enter an email and a password of at least 6 characters.', true); return; }
+            loginMsg('Creating account...');
+            const { data: res, error } = await sb.auth.signUp({ email, password });
+            if (error) { loginMsg(error.message, true); return; }
+            if (!res.session) loginMsg('Account created. Check your email to confirm it, then log in.');
+        }
+
+        async function signOut() { await sb.auth.signOut(); }
+
+        sb.auth.onAuthStateChange((event, session) => {
+            if (['INITIAL_SESSION', 'SIGNED_IN', 'SIGNED_OUT'].includes(event)) showApp(session);
+        });
+    </script>
+</body>
+</html>

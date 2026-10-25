@@ -1,0 +1,2118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--@@CONFIG@@-->
+<meta name="build" content="@@BUILD@@">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mreports</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f6f7f9;--card:#fff;--fg:#1d2330;--mut:#6b7280;--bd:#d9dde3;--ac:#1f6feb;--err:#b42318}
+  @media (prefers-color-scheme:dark){:root{--bg:#14171c;--card:#1d2128;--fg:#e8eaee;--mut:#9aa3b2;--bd:#323944;--ac:#4c8dff;--err:#ff8a80}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px 14px}
+  main{max-width:520px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--mut);margin:0 0 18px;font-size:13px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:14px}
+  label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+  input,select,button{width:100%;font:inherit;padding:9px 10px;border-radius:7px;border:1px solid var(--bd);background:var(--bg);color:var(--fg)}
+  button{background:var(--ac);color:#fff;border-color:var(--ac);cursor:pointer;margin-top:14px}
+  button.sec{background:transparent;color:var(--fg);border-color:var(--bd)}
+  button:disabled{opacity:.55;cursor:default}
+  #msg{font-size:13px;min-height:20px;margin-top:8px}
+  #msg.err{color:var(--err)}
+  .hide{display:none!important}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;overflow:auto;padding:16px 10px}
+  .modal .box{background:var(--card);border:1px solid var(--bd);border-radius:10px;max-width:560px;margin:0 auto;padding:16px}
+  .modal fieldset{border:1px solid var(--bd);border-radius:8px;margin:0 0 12px;padding:6px 12px 12px}
+  .modal legend{font-weight:600;font-size:13px;padding:0 6px}
+  .modal input.miss{border-color:var(--err)}
+  .modal .note{font-size:12px;color:var(--mut)}
+  .modal .err{color:var(--err);font-size:13px;min-height:18px;margin-top:6px}
+  .tbl{width:100%;border-collapse:collapse;font-size:13px}.tbl td,.tbl th{border-bottom:1px solid var(--bd);padding:5px 4px;text-align:left}.tbl button{width:auto;margin:0 2px;padding:3px 8px;font-size:12px}
+  .chk{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--mut)}.chk input{width:auto}
+  .row{display:flex;gap:8px}.row>*{flex:1}
+  .row.top button{margin:0 0 14px}
+  html.emb{--bg:#f6f7f9;--card:#fff;--fg:#1d2330;--mut:#6b7280;--bd:#d9dde3;--ac:#1f6feb;--err:#b42318}
+  html.emb #loginCard,html.emb #outBtn{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1>Mreports</h1>
+  <p class="sub">Fund applications, vouchers, registers and dockets</p>
+
+  <div class="card" id="loginCard">
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username">
+    <label for="pw">Password</label>
+    <input id="pw" type="password" autocomplete="current-password">
+    <button id="loginBtn">Sign in &amp; load data</button>
+  </div>
+
+  <div class="card hide" id="genCard">
+    <div class="row top">
+      <button class="sec" id="reloadBtn">Reload data</button>
+      <button class="sec" id="outBtn">Sign out</button>
+    </div>
+    <label for="fDoc" style="margin-top:0">Document</label>
+    <select id="fDoc">
+      <option value="fa">Fund Application (VA-2, VA-2A, VA-6A)</option>
+      <option value="cir">Cheque Issue Register</option>
+      <option value="vch">Vouchers (VA-6)</option>
+      <option value="f61">Form 61 (schedule docket)</option>
+      <option value="cb">Cash Book (monthly, by scheme)</option>
+      <option value="faix">Form FA.IX</option>
+      <option value="lop">LOP (schedule docket)</option>
+      <option value="wr">Work Register (per estimate)</option>
+      <option value="so">S.O Register (sanction orders)</option>
+      <option value="ben">Beneficiary Report (bank particulars)</option>
+      <option value="vssres">VSS Resolution (from fund application)</option>
+    </select>
+    <div class="row">
+      <div id="dScheme"><label for="fScheme">Scheme</label><select id="fScheme"></select></div>
+      <div id="dBatch"><label for="fBatch">Batch No</label><select id="fBatch"></select></div>
+    </div>
+    <div class="row hide" id="dSo">
+      <div><label for="fSoYear">Year</label><select id="fSoYear"></select></div>
+      <div><label for="fSoType">Type of S.O.</label><select id="fSoType"><option value="">All</option><option>DSO</option><option>RSO</option><option>CSO</option></select></div>
+    </div>
+    <div id="dBen" class="hide"><label for="fBen">Beneficiary</label><select id="fBen"></select>
+      <label class="chk"><input type="checkbox" id="fBenReview"> Review / edit details before generating</label></div>
+    <div id="dCb" class="hide"><div class="row"><div><label for="fCbVss">VSS</label><select id="fCbVss"></select></div><div><label for="fCbMonth">Month</label><select id="fCbMonth"></select></div></div></div>
+    <div id="dVssRes" class="hide"><label for="fMeet">VSS meeting</label><select id="fMeet"></select>
+      <div class="row"><div><label for="fLang">Language</label><select id="fLang"><option value="both">English + Telugu</option><option value="en">English</option><option value="te">Telugu</option></select></div></div>
+      <button class="sec" id="meetBtn" type="button">Manage VSS meetings (add / edit / delete)</button></div>
+    <div id="dDocket" class="hide"><label for="fDocket">Docket (scheme / month)</label><select id="fDocket" size="6"></select></div>
+    <div id="dFaDate" class="hide"><label for="fFaDate">Fund application date</label><select id="fFaDate"></select></div>
+    <div id="dEsti"><label for="fEsti">Estimate</label>
+    <select id="fEsti"></select></div>
+    <button id="genBtn">Generate PDF</button>
+  </div>
+  <div id="msg"></div>
+  <p class="sub" style="margin-top:14px">Build @@BUILD@@</p>
+</main>
+<div id="meetModal" class="modal hide"><div class="box" id="meetBox"></div></div>
+<div id="benModal" class="modal hide"><div class="box" id="benBox"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+"use strict";
+/* ============================ CONFIG ============================ */
+// The anon key is public by design; row-level security decides what a user may read.
+// Never put a service_role key here.
+const CFG = window.APP_CONFIG || {};
+const SB_URL = CFG.supabaseUrl || "https://ewnrcnfyiulrjritaeam.supabase.co";
+const SB_KEY = CFG.anonKey || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3bnJjbmZ5aXVscmpyaXRhZWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTEwMDYsImV4cCI6MjEwNzc2NzAwNn0.rbJNPpBgS4k2uKxM9Igk6S7rN_FL3gZcoJu-8jkgeD8";
+const CONFIG = {
+  division: "S.F Chittoor", section: "S.F Chittoor", range: "S.F Chittoor",
+  vss_default: "",
+  scheme_display_map: { "NH-69": "NHAI" },
+  measured_by_default: "F.R.O, S.F. Chittoor Range",
+  fro_block: ["FOREST RANGE OFFICER", "SOCIAL FORESTRY RANGE", "CHITTOOR"],
+  chairman_block: ["CHAIRMAN"],
+  // VSS resolution wording, English and Telugu. {vss} {date} {scheme} {total} {no} {rdate} {ramt} are filled in. The Telugu is a first draft - please check it.
+  vss_res: {
+    en: {
+      title: "{vss} VANA SAMRAKSHANA SAMITHI RESOLUTION",
+      intro: "On this day, {date}, in the evening, a meeting of the {vss} Vana Samrakshana Samithi (V.S.S.) committee was held and the resolution given below was passed. The Chairman of the V.S.S. and the Forest Range Officer, Social Forestry Range, Chittoor attended the meeting.",
+      heading: "Points for discussion:", scheme: "Scheme", para_end: "was discussed and resolved.", est: "Esti. No.",
+      res_line: "Resolution No. {no} dated {rdate} for Rs. {ramt}/-.", passed: "The resolution was PASSED.", not_passed: "The resolution was NOT PASSED.",
+      closing: "Funds of Rs. {total}/- (Rupees {words} only) may kindly be sanctioned and released for the works mentioned above.",
+      members: "Members present:", h_no: "No.", h_name: "Name", h_desig: "Designation", h_sign: "Signature", chairman: "CHAIRMAN",
+    },
+    te: {
+      title: "{vss} వన సంరక్షణ సమితి తీర్మానము",
+      intro: "ఈ దినము {date} తేదీ సాయంత్రం {vss} వన సంరక్షణ సమితి కమిటీ సమావేశము జరిపి క్రింది తెలిపిన తీర్మానములు చేయడమైనది. సదరు సమావేశమునకు V.S.S. ఛైర్మన్ మరియు అటవీ క్షేత్రాధికారి, సామాజిక వన విభాగము, చిత్తూరు రేంజి వారు హాజరయినారు.",
+      heading: "చర్చనీయాంశములు:", scheme: "పథకము", para_end: "గురించి చర్చించి తీర్మానించడమైనది.", est: "అంచనా సంఖ్య:",
+      res_line: "తీర్మానము సంఖ్య {no}, తేదీ {rdate}, మొత్తం రూ. {ramt}/-.", passed: "ఈ తీర్మానము ఆమోదించబడినది.", not_passed: "ఈ తీర్మానము ఆమోదించబడలేదు.",
+      closing: "పై తెలిపిన పనులకు నిధులు (మొత్తం రూ. {total}/-) మంజూరు చేయవలసినదిగా కోరడమైనది.",
+      members: "సభ్యులు:", h_no: "క్ర.సం.", h_name: "పేరు", h_desig: "హోదా", h_sign: "సంతకం", chairman: "ఛైర్మన్",
+    },
+  },
+
+  // Beneficiary report: values used when nothing is stored for a field (all editable on the manual screen)
+  ben_table: "withdrawal_accounts",   // bank accounts: wa_id, bank, branch, place, account_no, ifsc_code, name_of_account, ...
+  ben_defaults: { a2: "M. Pattabhi, Forest Range Officer (FAC), Social Forestry Range, Chittoor", a3: "-", email: "-", code: "-", state: "Andhra Pradesh" },
+  countersign_block: ["Divisional Forest Officer", "Social Forestry", "Chittoor."],
+};
+const PAGE_W = 612, PAGE_H = 792, INCH = 72;
+
+/* ============================ SUPABASE ============================ */
+let creds = null, token = null, DATA = null;
+// Inside the main app (a frame of it) this page reuses the app's signed-in connection; opened on its own it shows its own sign-in.
+const HOST = (window.parent !== window && window.parent.__MREPORTS__) ? window.parent.__MREPORTS__ : null;
+if (HOST) document.documentElement.classList.add("emb");
+
+async function login() {
+  const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: { apikey: SB_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify(creds),
+  });
+  const js = await r.json().catch(() => null);
+  if (!r.ok || !js || !js.access_token) { token = null; throw new Error("Login failed: the email address or password is incorrect."); }
+  token = js.access_token;
+}
+
+async function getRowsRest(table, order) {
+  const PAGE = 1000, rows = [];
+  let offset = 0, retried = false;
+  for (;;) {
+    if (!token) await login();
+    const q = new URLSearchParams({ select: "*", limit: PAGE, offset });
+    if (order.length) q.set("order", order.map(o => o + ".asc").join(","));
+    const r = await fetch(`${SB_URL}/rest/v1/${table}?${q}`, { headers: { apikey: SB_KEY, Authorization: "Bearer " + token } });
+    if (r.status === 401 && !retried) { token = null; retried = true; continue; }
+    if (r.status === 404) throw new Error(`Table '${table}' was not found in Supabase.`);
+    if (r.status === 401 || r.status === 403) throw new Error(`Not allowed to read '${table}' (check this user's permissions).`);
+    const js = await r.json().catch(() => null);
+    if (!r.ok || !Array.isArray(js)) throw new Error(`Reading '${table}' failed: ${(js && js.message) || r.status}`);
+    rows.push(...js);
+    if (js.length < PAGE) return rows;
+    offset += PAGE;
+  }
+}
+
+async function getRowsHost(table, order) {
+  const SB = HOST.sb(), rows = []; let from = 0;
+  for (;;) {
+    let q = SB.from(table).select("*");
+    (order || []).forEach(o => { q = q.order(o, { ascending: true }); });
+    const { data, error } = await q.range(from, from + 999);
+    if (error) {
+      const c = String(error.code || "");
+      if (c === "42P01" || /not find the table|does not exist/i.test(error.message || "")) throw new Error(`Table '${table}' was not found in Supabase.`);
+      if (c === "42501" || /permission|denied|not allowed/i.test(error.message || "")) throw new Error(`Not allowed to read '${table}' (check this user's permissions).`);
+      throw new Error(`Reading '${table}' failed: ${error.message}`);
+    }
+    rows.push(...data);
+    if (data.length < 1000) return rows;
+    from += 1000;
+  }
+}
+const getRows = (t, o) => HOST ? getRowsHost(t, o) : getRowsRest(t, o);
+// Bank particulars live in a Supabase table of their own. The database's table list (PostgREST schema) is searched for a table that has an
+// IFSC / account-number column; if the schema is not readable, a few likely names are tried. CONFIG.ben_table names the table outright.
+const APP_TABLES = new Set(["voucher_details", "estimate", "esti_task", "advance", "fund_application", "withdrawn_details", "voucher_settings", "expenditure"]);
+async function fetchTableColumns() {
+  try {
+    let url = SB_URL, key = SB_KEY, tok = token;
+    if (HOST) { const sb = HOST.sb(); url = sb.supabaseUrl || url; key = sb.supabaseKey || key; const { data } = await sb.auth.getSession(); tok = (data && data.session && data.session.access_token) || tok; }
+    else if (!tok) { await login(); tok = token; }
+    const r = await fetch(`${url}/rest/v1/`, { headers: { apikey: key, Authorization: "Bearer " + tok } });
+    if (!r.ok) return null;
+    const js = await r.json(), defs = js.definitions || (js.components && js.components.schemas) || {};
+    return Object.fromEntries(Object.entries(defs).map(([t, d]) => [t, Object.keys((d && d.properties) || {})]));
+  } catch (e) { return null; }
+}
+async function loadBeneficiaryRows(lenient) {
+  let names = CONFIG.ben_table ? [CONFIG.ben_table] : [];
+  if (!names.length) {
+    const schema = await fetchTableColumns();
+    if (schema) names = Object.entries(schema).filter(([t, cols]) => !APP_TABLES.has(t) && (cols.some(k => /ifsc/i.test(k)) || (cols.some(k => /acc(ou)?nt|^ac_?no/i.test(k)) && cols.some(k => /bank|name/i.test(k))))).map(([t]) => t);
+  }
+  if (!names.length) names = ["beneficiary", "beneficiaries", "payee", "payees", "bank_details", "bank_accounts", "vss_bank"];
+  const got = await Promise.all(names.map(async t => ({ t, rows: await lenient(t, []) })));
+  return [got.flatMap(g => g.rows), got.filter(g => g.rows.length).map(g => g.t)];
+}
+async function loadData() {
+  const lenient = (t, o) => getRows(t, o).catch(() => []);
+  const [vd, estimate, tasks, adv, faRows, wd, settings, expRows] = await Promise.all([
+    getRows("voucher_details", ["vch_id"]),
+    getRows("estimate", ["est_id"]),
+    getRows("esti_task", ["task_esti_no", "est_slno"]),
+    getRows("advance", ["tid"]),
+    getRows("fund_application", ["fa_id"]),
+    lenient("withdrawn_details", ["wd_id"]),
+    lenient("voucher_settings", ["id"]),
+    lenient("expenditure", ["eid"]),
+  ]);
+  // normalise types (same rules as supabase_source.py: id/n/p -> number, d -> date)
+  vd.forEach(r => {
+    ["vch_id", "task_no", "voucher_amount", "qnty", "page_from", "page_to"].forEach(k => r[k] = num(r[k]));
+    ["voucher_date", "work_from_date", "work_to_date", "measurement_date"].forEach(k => r[k] = pdate(r[k]));
+  });
+  estimate.forEach(r => { r.est_date = pdate(r.est_date); });
+  adv.forEach(r => { r.amount = num(r.amount); r.dt = pdate(r.dt); r.credited_date = pdate(r.credited_date); r.credited_amt = num(r.credited_amt); });
+  const est = {};
+  estimate.forEach(r => { est[r.esti_no] = r; });
+  const taskLookup = {};
+  tasks.forEach(r => (taskLookup[r.task_esti_no] = taskLookup[r.task_esti_no] || []).push(r));
+  assignBatches(vd, adv, est);
+  expRows.forEach(r => { r.dt = pdate(r.dt); });
+  const data = { vd, est, taskLookup, adv, exp: expRows };
+  // Bank particulars of beneficiaries, if the database has such a table (several likely names tried; missing ones are ignored)
+  [data.ben, data.ben_tables] = await loadBeneficiaryRows(lenient);
+  data.meet = [];
+  data.batchTokens = buildBatchTokens(adv);
+  data.faCases = buildFundCases(faRows, wd, settings, data);
+  data.vssOf = estiNo => lookupVss(wd, settings, estiNo);   // VSS name of an estimate (used by Form 61)
+  return data;
+}
+
+/* ============================ HELPERS ============================ */
+const num = v => (v === null || v === undefined || v === "" || isNaN(Number(v))) ? null : Number(v);
+const pdate = s => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s ?? "")); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : null; };
+const p2 = n => String(n).padStart(2, "0");
+const fmtDate = t => { if (t == null) return ""; const d = new Date(t); return `${p2(d.getUTCDate())}/${p2(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`; };
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const isBlank = v => v === null || v === undefined;
+
+const ONES = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+const TENS = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+const two = n => n < 20 ? ONES[n] : (TENS[Math.floor(n / 10)] + (n % 10 ? " " + ONES[n % 10] : "")).trim();
+const three = n => n >= 100 ? ONES[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " & " + two(n % 100) : "") : two(n);
+function wordsIndian(n) {
+  n = Math.round(n); if (n === 0) return "Zero";
+  const parts = [], crore = Math.floor(n / 1e7); n %= 1e7;
+  const lakh = Math.floor(n / 1e5); n %= 1e5;
+  const th = Math.floor(n / 1e3); n %= 1e3;
+  if (crore) parts.push(three(crore) + " Crore");
+  if (lakh) parts.push(three(lakh) + " Lakh");
+  if (th) parts.push(three(th) + " Thousand");
+  if (n) parts.push(three(n));
+  return parts.join(" ");
+}
+function indianComma(n) {
+  n = Math.trunc(n); const neg = n < 0; let s = String(Math.abs(n)), res;
+  if (s.length <= 3) res = s;
+  else { const last3 = s.slice(-3); let rest = s.slice(0, -3); const parts = [];
+    while (rest.length > 2) { parts.unshift(rest.slice(-2)); rest = rest.slice(0, -2); }
+    if (rest) parts.unshift(rest); res = parts.join(",") + "," + last3; }
+  return neg ? "-" + res : res;
+}
+const fmtAmount = n => (n == null || isNaN(n)) ? "" : `${indianComma(n)}-00`;
+function fmtRate(r) {
+  if (r == null) return ""; r = Math.round(r * 1000) / 1000;
+  if (Math.abs(r - Math.round(r)) < 1e-9) return String(Math.round(r));
+  return r.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+}
+function fmtQty(q, unit) {
+  if (unit && unit.trim().toLowerCase() === "ha") return `${q.toFixed(1)} ${unit}`;
+  if (Number.isInteger(q)) return `${q} ${unit}`.trim();
+  return `${q} ${unit}`.trim();
+}
+function parseEstiNo(e) {
+  const m = /^\s*(DSO|RSO)\s*(\d+)\s*\/\s*(\d{4})\s*-\s*(\d{4})/.exec(String(e));
+  if (!m) return ["So No.", String(e), ""];
+  return [m[1] === "DSO" ? "D.So No." : "R.So No.", m[2], `${m[3]}-${m[4].slice(2)}`];
+}
+const normText = s => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const schemeDisplay = s => CONFIG.scheme_display_map[s] ?? s;
+
+/* difflib.SequenceMatcher(None, a, b).ratio() — used to guess a task's unit */
+function seqRatio(a, b) {
+  const T = a.length + b.length; if (T === 0) return 1;
+  let M = 0; const stack = [[0, a.length, 0, b.length]];
+  while (stack.length) {
+    const [alo, ahi, blo, bhi] = stack.pop();
+    let bi = alo, bj = blo, bk = 0, prev = new Array(bhi - blo + 1).fill(0);
+    for (let i = alo; i < ahi; i++) {
+      const cur = new Array(bhi - blo + 1).fill(0);
+      for (let j = blo; j < bhi; j++) if (a[i] === b[j]) {
+        const k = prev[j - blo] + 1; cur[j - blo + 1] = k;
+        if (k > bk) { bk = k; bi = i - k + 1; bj = j - k + 1; }
+      }
+      prev = cur;
+    }
+    if (bk) { M += bk; stack.push([alo, bi, blo, bj], [bi + bk, ahi, bj + bk, bhi]); }
+  }
+  return 2 * M / T;
+}
+function findUnit(lookup, estiNo, text) {
+  const grp = lookup[estiNo]; if (!grp) return "";
+  const target = normText(text); let bestR = 0, bestU = "";
+  for (const row of grp) {
+    const t = normText(row.task); if (!t) continue;
+    let r = seqRatio(target, t);
+    if (target && (t.includes(target) || target.includes(t))) r = Math.max(r, 0.9);
+    if (r > bestR) { bestR = r; bestU = isBlank(row.unit) ? "" : String(row.unit); }
+  }
+  return bestR >= 0.55 ? bestU : "";
+}
+
+// Unit and "per" (rate basis) of a task: best-matching row of the estimate's task list (same matching as findUnit)
+function findTaskUnitPer(lookup, estiNo, text) {
+  const grp = (lookup || {})[estiNo]; if (!grp) return { unit: "", per: "" };
+  const target = normText(text); let bestR = 0, best = null;
+  for (const row of grp) {
+    const t = normText(row.task); if (!t) continue;
+    let r = seqRatio(target, t);
+    if (target && (t.includes(target) || target.includes(t))) r = Math.max(r, 0.9);
+    if (r > bestR) { bestR = r; best = row; }
+  }
+  if (!best || bestR < 0.55) return { unit: "", per: "" };
+  // Task-table values can be messy ("2 times", "1 time", "566.28" in the unit column): keep only the unit word, and a positive numeric per
+  let unit = isBlank(best.unit) ? "" : String(best.unit).trim().replace(/^[\d.,\s]+/, "").trim();
+  if (!unit) {   // unit missing / purely numeric: infer from the work description
+    const dsc = String(text ?? "").toLowerCase();
+    unit = /\bbeds?\b/.test(dsc) ? "Beds" : /\bdays?\b/.test(dsc) ? "Days" : "";
+  }
+  if (unit) unit = unit[0].toUpperCase() + unit.slice(1);
+  const pn = parseFloat(String(best.per ?? "").replace(/,/g, ""));
+  return { unit, per: pn > 0 ? String(Number(pn.toFixed(3))) : "" };
+}
+
+/* ============================ BATCH ASSIGNMENT ============================ */
+// A batch = one Advance Token (fund release) for an estimate; vouchers are walked in
+// date order and a batch closes when the running total reaches (or passes) the token amount.
+const cmpNull = (a, b) => (a == null) - (b == null) || (a < b ? -1 : a > b ? 1 : 0);
+function assignBatches(vd, adv, est) {
+  vd.forEach(r => {
+    r.scheme_disp = est[r.esti_no] ? schemeDisplay(String(est[r.esti_no].scheme ?? "").trim()) : "";
+    r.batch_no = null;
+  });
+  const byEsti = {}; vd.forEach(r => (byEsti[r.esti_no] = byEsti[r.esti_no] || []).push(r));
+  for (const [estiNo, grp] of Object.entries(byEsti)) {
+    const tokens = adv.filter(a => a.trans_id === estiNo).sort((a, b) => cmpNull(a.dt, b.dt));
+    const ordered = [...grp].sort((a, b) => cmpNull(a.voucher_date, b.voucher_date) || cmpNull(a.vch_id, b.vch_id));
+    let ti = 0, sum = 0, pending = [];
+    for (const r of ordered) {
+      pending.push(r); sum += r.voucher_amount || 0;
+      if (ti < tokens.length) {
+        const target = tokens[ti].amount;
+        if (Math.abs(sum - target) < 0.5 || sum > target) { pending.forEach(p => p.batch_no = ti + 1); pending = []; sum = 0; ti++; }
+      }
+    }
+    if (pending.length) pending.forEach(p => p.batch_no = ti + 1);
+  }
+}
+
+function buildBatchTokens(adv) {
+  const by = {}; adv.forEach(a => (by[a.trans_id] = by[a.trans_id] || []).push(a));
+  const out = [];
+  Object.keys(by).sort().forEach(esti => by[esti].slice().sort((a, b) => cmpNull(a.dt, b.dt))
+    .forEach((a, i) => out.push({ esti_no: esti, batch_no: i + 1, token_no: a.token_no, amount: a.amount, date: a.dt })));
+  return out;
+}
+
+/* ============================ PDF CANVAS SHIM ============================ */
+// Mimics the bits of reportlab's canvas the layout code uses (origin bottom-left, points).
+const FONTS = { "Helvetica": ["helvetica", "normal"], "Helvetica-Bold": ["helvetica", "bold"], "Helvetica-BoldOblique": ["helvetica", "bolditalic"], "Times-Roman": ["times", "normal"], "Helvetica-Oblique": ["helvetica", "italic"], "Times-Bold": ["times", "bold"] };
+class Canvas {
+  constructor(land) { const { jsPDF } = window.jspdf; this.land = !!land; this.H = land ? PAGE_W : PAGE_H; this.d = new jsPDF({ unit: "pt", format: "letter", orientation: land ? "landscape" : "portrait" }); this.page(); this.font = ["Helvetica", 10]; }
+  page() { this.d.setLineWidth(1); this.d.setDrawColor(0); this.d.setTextColor(0); }
+  newPage() { this.d.addPage("letter", this.land ? "landscape" : "portrait"); this.page(); }
+  setFont(f, s) { this.font = [f, s]; const [n, st] = FONTS[f]; this.d.setFont(n, st); this.d.setFontSize(s); }
+  stringWidth(t, f, s) { const [cf, cs] = this.font; const [n, st] = FONTS[f]; this.d.setFont(n, st); this.d.setFontSize(s); const w = this.d.getTextWidth(String(t)); this.setFont(cf, cs); return w; }
+  drawString(x, y, t) { this.d.text(String(t), x, this.H - y); }
+  drawRightString(x, y, t) { this.d.text(String(t), x, this.H - y, { align: "right" }); }
+  drawCentredString(x, y, t) { this.d.text(String(t), x, this.H - y, { align: "center" }); }
+  line(x1, y1, x2, y2) { this.d.line(x1, this.H - y1, x2, this.H - y2); }
+  rect(x, y, w, h) { this.d.rect(x, this.H - y - h, w, h); }
+  setLineWidth(w) { this.d.setLineWidth(w); }
+}
+const sw = (c, t, f, s) => c.stringWidth(t, f, s);
+function wrapText(c, text, font, size, maxW) {
+  const words = String(text).split(/\s+/).filter(Boolean), lines = []; let cur = "";
+  for (const w of words) {
+    const trial = (cur + " " + w).trim();
+    if (sw(c, trial, font, size) <= maxW) { cur = trial; continue; }
+    if (cur) { lines.push(cur); cur = ""; }
+    if (sw(c, w, font, size) <= maxW) { cur = w; continue; }
+    let chunk = "";                       // a single word wider than the column: break it by characters
+    for (const ch of w) { if (chunk && sw(c, chunk + ch, font, size) > maxW) { lines.push(chunk); chunk = ch; } else chunk += ch; }
+    cur = chunk;
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [""];
+}
+// wrap that may also break after "/" (e.g. rates like 12.5/nos)
+const wrapCell = (c, text, font, size, maxW) => wrapText(c, String(text).replace(/\//g, "/ "), font, size, maxW).map(l => l.replace(/\/ /g, "/"));
+function dotted(c, x1, y, x2) { c.d.setLineDashPattern([1, 2], 0); c.line(x1, y, x2, y); c.d.setLineDashPattern([], 0); }
+function drawField(c, label, value, x, y, lineTo) {
+  c.setFont("Helvetica", 10);
+  const txt = label + " :"; c.drawString(x, y, txt);
+  const vx = x + sw(c, txt, "Helvetica", 10) + 4, endX = lineTo ?? vx + 150;
+  dotted(c, vx, y - 2, endX); c.drawString(vx + 2, y, value);
+  return endX;
+}
+
+/* ============================ VOUCHER ============================ */
+function pageLabel(r) {
+  const f = r.page_from, t = r.page_to, hf = f != null && f !== 0, ht = t != null && t !== 0;
+  if (hf && ht) return f === t ? String(f) : `${f}-${t}`;
+  if (hf) return String(f); if (ht) return String(t); return "";
+}
+function prepareVoucher(r, est, lookup) {
+  const e = est[r.esti_no] || null;
+  const [soLabel, soNum, soYear] = parseEstiNo(r.esti_no);
+  const rawScheme = e ? String(e.scheme ?? "").trim() : "";
+  const unit = findUnit(lookup, r.esti_no, r.voucher_details);
+  const qty = r.qnty, amount = r.voucher_amount;
+  const rate = qty ? amount / qty : null;
+  let vno = "";
+  if (r.voucher_date != null) { const d = new Date(r.voucher_date); vno = `${p2(parseInt(r.voucher_no, 10) || 0)}/${MONTHS[d.getUTCMonth()]}-${d.getUTCFullYear()}`; }
+  const mb = r.mbook_no, mbook = (isBlank(mb) || ["0", ""].includes(String(mb).trim())) ? "" : String(mb);
+  return {
+    batch_no: "", voucher_bill: vno, date: fmtDate(r.voucher_date),
+    division: CONFIG.division, range: CONFIG.range, section: CONFIG.section, vss: CONFIG.vss_default,
+    scheme: schemeDisplay(rawScheme), so_label: soLabel, so_no: soNum, so_year: soYear,
+    so_date: e ? fmtDate(e.est_date) : "", mou_no: "", mou_date: "",
+    name_of_work: e ? String(e.esti_description ?? "").trim() : "",
+    desc: String(r.voucher_details ?? ""),
+    qty_str: qty ? fmtQty(qty, unit) : "",
+    rate_str: rate != null ? `${fmtRate(rate)}/${unit}`.trim().replace(/^\/|\/$/g, "") : "",
+    amount_str: fmtAmount(amount), total_str: fmtAmount(amount),
+    period_from: fmtDate(r.work_from_date), period_to: fmtDate(r.work_to_date),
+    measured_by: isBlank(r.measured_by) ? CONFIG.measured_by_default : String(r.measured_by),
+    measurement_date: fmtDate(r.measurement_date),
+    mbook_no: mbook, page_no: pageLabel(r),
+    amount_words: `Rupees (${wordsIndian(amount)}) only`,
+    payee: isBlank(r.payee_name) ? "" : String(r.payee_name),
+  };
+}
+
+function drawVoucherPage(c, v) {
+  const left = 0.75 * INCH, right = PAGE_W - 0.75 * INCH, top = PAGE_H - 0.7 * INCH, mid = PAGE_W / 2 + 0.15 * INCH;
+  c.setFont("Helvetica", 9);
+  c.drawRightString(right, top, "LOP No.");
+  const lw = sw(c, "LOP No.", "Helvetica", 9);
+  dotted(c, right - lw - 60, top - 2, right - lw - 4);
+  if (v.batch_no) { c.setFont("Helvetica-Bold", 9); c.drawString(left, top, `Batch No: ${v.batch_no}`); }
+
+  let y = top - 22;
+  c.setFont("Times-Bold", 18); c.drawCentredString(PAGE_W / 2, y, "VOUCHER / BILL FORMAT VA-6");
+  y -= 34; const rowH = 20;
+  drawField(c, "Voucher / Bill", v.voucher_bill, left, y, mid - 30);
+  drawField(c, "Date", v.date, mid, y, right);
+  y -= rowH; drawField(c, "Division", v.division, left, y, mid - 30); drawField(c, "Range", v.range, mid, y, right);
+  y -= rowH; drawField(c, "Section", v.section, left, y, mid - 30); drawField(c, "VSS", v.vss, mid, y, right);
+  y -= rowH; drawField(c, "Scheme", v.scheme, left, y, mid - 30);
+
+  y -= rowH; c.setFont("Helvetica", 10);
+  c.drawString(left, y, `${v.so_label}:`);
+  const x2 = left + sw(c, `${v.so_label}: `, "Helvetica", 10) + 6;
+  dotted(c, x2, y - 2, x2 + 55); c.drawString(x2 + 2, y, `${v.so_no}/${v.so_year},`);
+  const x3 = x2 + 90; c.drawString(x3, y, "Dt.");
+  const x4 = x3 + sw(c, "Dt. ", "Helvetica", 10) + 4;
+  dotted(c, x4, y - 2, x4 + 60); c.drawString(x4 + 2, y, v.so_date);
+  const x5 = x4 + 90; c.drawString(x5, y, "MOU No.");
+  const x6 = x5 + sw(c, "MOU No. ", "Helvetica", 10) + 4;
+  dotted(c, x6, y - 2, x6 + 40); c.drawString(x6 + 2, y, v.mou_no);
+  const x7 = x6 + 55; c.drawString(x7, y, "Dt.");
+  const x8 = x7 + sw(c, "Dt. ", "Helvetica", 10) + 4;
+  dotted(c, x8, y - 2, right); c.drawString(x8 + 2, y, v.mou_date);
+
+  y -= rowH; c.setFont("Helvetica", 10);
+  const label = "Name of the Work"; c.drawString(left, y, label);
+  const lx = left + sw(c, label + "   ", "Helvetica", 10) + 10; c.drawString(lx, y, ":-");
+  const wrapX = lx + 14, lines = wrapText(c, v.name_of_work, "Helvetica", 10, right - wrapX);
+  lines.forEach((ln, i) => c.drawString(wrapX, y - i * 13, ln));
+  y -= Math.max(1, lines.length) * 13 + 6;
+
+  // table
+  const tableTop = y - 4;
+  const colX = [left, left + 3.1 * INCH, left + 3.9 * INCH, left + 5.05 * INCH, right];
+  const headerH = 22, bodyH = 18, lineH = 11, descFS = 9.5;
+  const descLines = wrapText(c, v.desc, "Helvetica", descFS, colX[1] - colX[0] - 10);
+  const qtyLines = wrapCell(c, v.qty_str, "Helvetica", descFS, colX[2] - colX[1] - 8);
+  const rateLines = wrapCell(c, v.rate_str, "Helvetica", descFS, colX[3] - colX[2] - 8);
+  const row1H = Math.max(bodyH, Math.max(descLines.length, qtyLines.length, rateLines.length) * lineH + 8);
+  const nBlank = Math.max(4, 11 - Math.ceil((row1H - bodyH) / bodyH));
+  const tableBottom = tableTop - headerH - row1H - nBlank * bodyH;
+
+  c.setLineWidth(1);
+  c.rect(colX[0], tableBottom, colX[4] - colX[0], tableTop - tableBottom);
+  for (const x of colX.slice(1, -1)) c.line(x, tableBottom, x, tableTop);
+  c.line(colX[0], tableTop - headerH, colX[4], tableTop - headerH);
+
+  c.setFont("Helvetica-Bold", 10);
+  const centers = [0, 1, 2, 3].map(i => (colX[i] + colX[i + 1]) / 2);
+  ["Description of Work", "Qty.", "Rate / Per", "Amount"].forEach((h, i) => c.drawCentredString(centers[i], tableTop - 14, h));
+
+  const r1Top = tableTop - headerH;
+  c.setFont("Helvetica", descFS);
+  descLines.forEach((ln, i) => c.drawString(colX[0] + 5, r1Top - 13 - i * lineH, ln));
+  qtyLines.forEach((ln, i) => c.drawCentredString(centers[1], r1Top - 13 - i * lineH, ln));
+  rateLines.forEach((ln, i) => c.drawCentredString(centers[2], r1Top - 13 - i * lineH, ln));
+  c.drawCentredString(centers[3], r1Top - 13, v.amount_str);
+
+  const r1Bottom = r1Top - row1H;
+  c.line(colX[0], r1Bottom, colX[4], r1Bottom);
+  for (let i = 1; i <= nBlank; i++) c.line(colX[0], r1Bottom - i * bodyH, colX[4], r1Bottom - i * bodyH);
+  c.setFont("Helvetica-Bold", 10);
+  c.drawCentredString(centers[0], tableBottom + 6, "TOTAL");
+  c.drawCentredString(centers[3], tableBottom + 6, v.total_str);
+
+  y = tableBottom - 24;
+  drawField(c, "Period of execution : From", v.period_from, left, y, left + 2.7 * INCH);
+  c.setFont("Helvetica", 10); c.drawString(left + 2.85 * INCH, y, "to");
+  dotted(c, left + 3.05 * INCH, y - 2, right); c.drawString(left + 3.1 * INCH, y, v.period_to);
+
+  y -= rowH; drawField(c, "Measured by", v.measured_by, left, y, left + 2.6 * INCH);
+  c.setFont("Helvetica", 10); c.drawString(left + 2.75 * INCH, y, "Date of Measurement");
+  let dx = left + 2.75 * INCH + sw(c, "Date of Measurement ", "Helvetica", 10) + 4;
+  dotted(c, dx, y - 2, right); c.drawString(dx + 2, y, v.measurement_date);
+
+  y -= rowH; drawField(c, "M Book No", v.mbook_no, left, y, left + 1.8 * INCH);
+  c.setFont("Helvetica", 10); c.drawString(left + 2.0 * INCH, y, "Page No");
+  dx = left + 2.0 * INCH + sw(c, "Page No ", "Helvetica", 10) + 4;
+  dotted(c, dx, y - 2, left + 3.2 * INCH); c.drawString(dx + 2, y, v.page_no);
+
+  y -= rowH + 12; c.setFont("Helvetica-Bold", 10.5);
+  const lbl = "Passed and Paid by me Rs. :"; c.drawString(left, y, lbl);
+  const px = left + sw(c, lbl + " ", "Helvetica-Bold", 10.5);
+  c.setFont("Helvetica", 10.5); c.drawString(px, y, `${v.amount_str.split("-")[0]}/- ${v.amount_words}`);
+
+  y -= rowH + 6; drawField(c, "Name of Payee", v.payee, left, y, left + 2.6 * INCH);
+  c.setFont("Helvetica", 10); c.drawString(left, y - rowH, "Payee Signature");
+  dotted(c, left + 1.4 * INCH, y - rowH - 2, left + 3.2 * INCH);
+
+  const sigY = y - rowH - 4 - 4 * 11, froX = PAGE_W / 2 + 0.4 * INCH, chairX = right - 0.9 * INCH;
+  c.setFont("Helvetica-Bold", 9.5);
+  CONFIG.fro_block.forEach((ln, i) => c.drawCentredString(froX, sigY - i * 11, ln));
+  CONFIG.chairman_block.forEach((ln, i) => c.drawCentredString(chairX, sigY - i * 11, ln));
+
+  y -= rowH * 2 + 20 + 4 * 11;
+  c.setFont("Helvetica", 10); c.drawString(left, y, "Witness :");
+  c.drawString(left + 20, y - 16, "1."); c.drawString(left + 20, y - 32, "2.");
+}
+
+function generateVouchers(data, { scheme, batch, esti }) {
+  let rows = data.vd.slice();
+  if (scheme) rows = rows.filter(r => r.scheme_disp.toLowerCase() === scheme.toLowerCase());
+  if (batch) rows = rows.filter(r => r.batch_no === Number(batch));
+  if (esti) rows = rows.filter(r => r.esti_no === esti);
+  const vno = r => { const n = Number(r.voucher_no); return isNaN(n) ? Infinity : n; };
+  rows.sort((a, b) => cmpNull(a.esti_no, b.esti_no) || (vno(a) - vno(b) || 0) || cmpNull(a.vch_id, b.vch_id));
+  if (!rows.length) return null;
+  const c = new Canvas();
+  rows.forEach((r, i) => {
+    if (i) c.newPage();
+    const v = prepareVoucher(r, data.est, data.taskLookup);
+    if (r.batch_no != null) v.batch_no = p2(r.batch_no);
+    drawVoucherPage(c, v);
+  });
+  return { doc: c.d, count: rows.length };
+}
+
+/* ============================ CHEQUE ISSUE REGISTER ============================ */
+const CIR_TITLE = "CHEQUE ISSUE REGISTER", CIR_SUBTITLE = `${CONFIG.division} — Advance / Token Issues`;
+const CIR_COLS = [["Sl.\nNo.", 0.4], ["Date", 0.75], ["Token No.", 1.1], ["Esti_no", 1.4], ["Scheme", 1.3], ["Amount", 1.1]];
+const CIR_HEADER_H = 26, CIR_ROW_H = 16, CIR_SUB_H = 16, CIR_BOTTOM = 0.6 * INCH;
+const monthKey = t => { if (t == null) return null; const d = new Date(t); return `${d.getUTCFullYear()}-${p2(d.getUTCMonth() + 1)}`; };
+const monthLabel = k => k === null ? "Date not recorded" : `${MONTHS[+k.slice(5) - 1]}-${k.slice(0, 4)}`;
+function monthTotals(entries) {
+  const m = new Map();
+  entries.forEach(e => { const k = monthKey(e.date); m.set(k, (m.get(k) || 0) + e.amount); });
+  return [...m.entries()].sort((a, b) => (a[0] === null) - (b[0] === null) || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+}
+function cirGeometry(left, right) {
+  const tot = CIR_COLS.reduce((a, c) => a + c[1], 0), scale = (right - left) / (tot * INCH), xs = [left];
+  CIR_COLS.forEach(c => xs.push(xs[xs.length - 1] + c[1] * INCH * scale));
+  return xs;
+}
+const centersOf = xs => xs.slice(0, -1).map((x, i) => (x + xs[i + 1]) / 2);
+function cirPageHeader(c, pageNo, monthLbl) {
+  const left = 0.6 * INCH, right = PAGE_W - 0.6 * INCH, top = PAGE_H - 0.5 * INCH;
+  c.setFont("Helvetica-Bold", 8); c.drawRightString(right, top, `Page ${pageNo}`);
+  c.setFont("Helvetica-Bold", 16); c.drawCentredString(PAGE_W / 2, top - 4, CIR_TITLE);
+  c.setFont("Helvetica", 9); c.drawCentredString(PAGE_W / 2, top - 20, CIR_SUBTITLE);
+  let y = top - 40;
+  if (monthLbl) { c.setFont("Helvetica-BoldOblique", 9); c.drawString(left, y, `(continued — ${monthLbl})`); y -= 14; }
+  return [y, left, right];
+}
+function cirTableHeader(c, top, xs) {
+  c.setLineWidth(1); c.line(xs[0], top, xs[xs.length - 1], top);
+  c.setFont("Helvetica-Bold", 8.5);
+  centersOf(xs).forEach((cx, i) => CIR_COLS[i][0].split("\n").forEach((ln, j) => c.drawCentredString(cx, top - 11 - j * 9, ln)));
+  const hb = top - CIR_HEADER_H; c.line(xs[0], hb, xs[xs.length - 1], hb);
+  xs.forEach(x => c.line(x, hb, x, top));
+  return hb;
+}
+function cirRowBox(c, y, xs, h) { c.line(xs[0], y - h, xs[xs.length - 1], y - h); xs.forEach(x => c.line(x, y - h, x, y)); return y - h; }
+function cirRow(c, y, xs, sl, e) {
+  const cx = centersOf(xs); c.setFont("Helvetica", 8.5);
+  [String(sl), fmtDate(e.date), String(e.token_no ?? ""), String(e.esti_no ?? ""), String(e.scheme), fmtAmount(e.amount)]
+    .forEach((t, i) => c.drawCentredString(cx[i], y - 11, t));
+  return cirRowBox(c, y, xs, CIR_ROW_H);
+}
+function cirTotalRow(c, y, xs, label, amount, size) {
+  c.setFont("Helvetica-Bold", size); c.drawString(xs[1] + 3, y - 11, label);
+  c.drawCentredString(centersOf(xs)[5], y - 11, fmtAmount(amount));
+  return cirRowBox(c, y, xs, CIR_SUB_H);
+}
+function cirBody(c, entries, pg, subtitle) {
+  const newPage = monthLbl => {
+    pg.n++; const [y0, left, right] = cirPageHeader(c, pg.n, monthLbl), xs = cirGeometry(left, right);
+    if (subtitle && !monthLbl) { c.setFont("Helvetica-BoldOblique", 9.5); c.drawString(left, y0 + 2, subtitle); }
+    return [cirTableHeader(c, y0, xs), xs];
+  };
+  let [y, xs] = newPage();
+  const grand = entries.reduce((a, e) => a + e.amount, 0);
+  let sl = 1, cur, started = false, run = 0;
+  const flush = () => {
+    if (y - CIR_SUB_H < CIR_BOTTOM) { c.newPage(); [y, xs] = newPage(monthLabel(cur)); }
+    y = cirTotalRow(c, y, xs, `Total for ${monthLabel(cur)}`, run, 8.5);
+  };
+  for (const e of entries) {
+    const m = monthKey(e.date);
+    if (started && m !== cur) { flush(); run = 0; }
+    if (y - CIR_ROW_H < CIR_BOTTOM) { c.newPage(); [y, xs] = newPage(monthLabel(m)); }
+    y = cirRow(c, y, xs, sl++, e); run += e.amount; cur = m; started = true;
+  }
+  if (started) flush();
+  if (y - CIR_SUB_H < CIR_BOTTOM) { c.newPage(); [y, xs] = newPage(); }
+  cirTotalRow(c, y, xs, "GRAND TOTAL", grand, 9);
+}
+function cirSummary(c, pg, schemeTotals, months, grand, title) {
+  c.newPage(); pg.n++;
+  const left = 0.6 * INCH, right = PAGE_W - 0.6 * INCH, top = PAGE_H - 0.5 * INCH, rx = left + 3 * INCH;
+  c.setFont("Helvetica-Bold", 8); c.drawRightString(right, top, `Page ${pg.n}`);
+  c.setFont("Helvetica-Bold", 14); c.drawCentredString(PAGE_W / 2, top - 4, title);
+  let y = top - 40;
+  const table = (head, col, rows) => {
+    c.setFont("Helvetica-Bold", 11); c.drawString(left, y, head); y -= 18;
+    c.setFont("Helvetica-Bold", 9.5); c.drawString(left, y, col); c.drawRightString(rx, y, "Amount");
+    y -= 4; c.line(left, y, rx, y); y -= 14; c.setFont("Helvetica", 9.5);
+    rows.forEach(([k, v]) => { c.drawString(left, y, k); c.drawRightString(rx, y, fmtAmount(v)); y -= 14; });
+    c.setFont("Helvetica-Bold", 9.5); c.line(left, y + 4, rx, y + 4);
+    c.drawString(left, y, "TOTAL"); c.drawRightString(rx, y, fmtAmount(grand));
+  };
+  if (schemeTotals) { table("Scheme-wise Total", "Scheme", schemeTotals); y -= 40; }
+  table("Month-wise Total", "Month", months.map(([k, v]) => [monthLabel(k), v]));
+  y -= 50; c.setFont("Helvetica-Bold", 9.5);
+  CONFIG.fro_block.forEach((ln, i) => c.drawCentredString(right - 1.9 * INCH, y - i * 11, ln));
+}
+function generateCIR(data, { scheme }) {
+  let entries = data.adv.map(a => ({ date: a.dt, token_no: a.token_no, esti_no: a.trans_id,
+    scheme: schemeDisplay(String(a.scheme ?? "")), amount: a.amount || 0 }))
+    .sort((a, b) => cmpNull(a.date, b.date));
+  if (scheme) entries = entries.filter(e => e.scheme === scheme);
+  if (!entries.length) return null;
+  const c = new Canvas(), pg = { n: 0 }, grand = entries.reduce((a, e) => a + e.amount, 0);
+  cirBody(c, entries, pg, scheme ? `Scheme: ${scheme}` : undefined);
+  if (scheme) cirSummary(c, pg, null, monthTotals(entries), grand, `Summary — Month-wise Totals (${scheme})`);
+  else {
+    const st = {}; entries.forEach(e => st[e.scheme] = (st[e.scheme] || 0) + e.amount);
+    cirSummary(c, pg, Object.entries(st).sort((a, b) => a[0] < b[0] ? -1 : 1), monthTotals(entries), grand, "Summary — Scheme-wise & Month-wise Totals");
+  }
+  return { doc: c.d, count: entries.length };
+}
+
+/* ============================ S.O REGISTER ============================ */
+// One row per sanction order (estimate): SO No. & date, description, sanctioned amount, scheme, status.
+const SO_COLS = [["S.O. No. & Date", 1.25], ["Estimate Description", 3.30], ["Sanction Amount", 1.05], ["Scheme", 0.95], ["Status", 0.80]];
+const SO_ROW_PAD = 7, SO_LH = 9.6, SO_BOTTOM = 0.6 * INCH, SO_HEADER_H = 26;
+// Status comes from a status / closed / completed column of the estimate table when it has one; otherwise it is worked out from spending:
+// nothing left to spend = Closed, anything else = Progress.
+function soStatus(e, spent, sanctioned) {
+  const norm = v => {
+    if (v == null || v === "") return null;
+    const t = String(v).trim().toLowerCase();
+    return /clos/.test(t) ? "Closed" : /compl/.test(t) ? "Completed" : /prog|ongo|open|going|pending/.test(t) ? "Progress" : null;
+  };
+  for (const k of Object.keys(e)) {
+    if (!/status|clos|complet/i.test(k)) continue;
+    const v = e[k], n = norm(v);
+    if (n) return n;
+    if (v === true || v === 1 || /^(true|yes|y|1)$/i.test(String(v))) return /clos/i.test(k) ? "Closed" : /complet/i.test(k) ? "Completed" : null;
+  }
+  return sanctioned != null && sanctioned > 0 && spent >= sanctioned - 0.5 ? "Closed" : "Progress";
+}
+// "DSO 12/2026-27" -> { type: "DSO", no: "12", year: "2026-2027" }; the year falls back to the financial year of the S.O. date.
+function soParse(e) {
+  const m = /^\s*(DSO|RSO|CSO)\s*(\d+)\s*\/\s*(\d{4})\s*-\s*(\d{2,4})/i.exec(String(e.esti_no ?? ""));
+  if (m) return { type: m[1].toUpperCase(), no: m[2], year: `${m[3]}-${m[4].length === 2 ? m[3].slice(0, 2) + m[4] : m[4]}` };
+  const t = /^\s*(DSO|RSO|CSO)/i.exec(String(e.esti_no ?? "")), d = e.est_date != null ? new Date(e.est_date) : null;
+  const fy = d ? (d.getUTCMonth() >= 3 ? d.getUTCFullYear() : d.getUTCFullYear() - 1) : null;
+  return { type: t ? t[1].toUpperCase() : "", no: "", year: fy ? `${fy}-${fy + 1}` : "" };
+}
+const soYears = data => [...new Set(Object.values(data.est).map(e => soParse(e).year).filter(Boolean))].sort().reverse();
+function generateSORegister(data, { scheme, year, type }) {
+  const spent = {}; data.vd.forEach(r => { spent[r.esti_no] = (spent[r.esti_no] || 0) + (r.voucher_amount || 0); });
+  let rows = Object.values(data.est).map(e => {
+    const sanctioned = num(e.est_cost), pr = soParse(e), lab = { DSO: "D.So No.", RSO: "R.So No.", CSO: "C.So No." }[pr.type];
+    return { esti_no: e.esti_no, date: e.est_date, type: pr.type, year: pr.year, so: pr.no ? `${lab} ${pr.no}/${pr.year.slice(0, 4)}-${pr.year.slice(-2)}` : String(e.esti_no ?? ""), desc: String(e.esti_description ?? "").trim(),
+      sanctioned, scheme: schemeDisplay(String(e.scheme ?? "").trim()), status: soStatus(e, spent[e.esti_no] || 0, sanctioned) };
+  });
+  if (scheme) rows = rows.filter(r => r.scheme === scheme);
+  if (year) rows = rows.filter(r => r.year === year);
+  if (type) rows = rows.filter(r => r.type === type);
+  rows.sort((a, b) => cmpNull(a.date, b.date) || cmpNull(a.esti_no, b.esti_no));
+  if (!rows.length) return null;
+  const c = new Canvas(), left = 0.6 * INCH, right = PAGE_W - 0.6 * INCH;
+  const [xs, widths, cx] = faGeometry(SO_COLS, left, right);
+  let pg = 0, y;
+  const header = () => {
+    pg++; const top = PAGE_H - 0.5 * INCH;
+    c.setFont("Helvetica-Bold", 8); c.drawRightString(right, top, `Page ${pg}`);
+    c.setFont("Helvetica-Bold", 16); c.drawCentredString(PAGE_W / 2, top - 4, "S.O. REGISTER");
+    c.setFont("Helvetica", 9); c.drawCentredString(PAGE_W / 2, top - 20, `${CONFIG.division} — Sanction Orders`);
+    let t = top - 40;
+    c.setFont("Helvetica-BoldOblique", 9.5); c.drawString(left, t, [year && `Year: ${year}`, type && `Type: ${type}`, scheme ? `Scheme: ${scheme}` : "All schemes"].filter(Boolean).join("   |   ")); t -= 12;
+    c.setLineWidth(1); c.line(xs[0], t, xs[xs.length - 1], t);
+    c.setFont("Helvetica-Bold", 8.5);
+    SO_COLS.forEach(([lab], i) => lab.split(" ").length && c.drawCentredString(cx[i], t - 16, lab));
+    const hb = t - SO_HEADER_H; c.line(xs[0], hb, xs[xs.length - 1], hb); xs.forEach(x => c.line(x, hb, x, t));
+    y = hb;
+  };
+  header();
+  let total = 0;
+  const cellLines = (txt, w, font = "Helvetica") => wrapText(c, txt, font, 8, w - 8);
+  const block = (ls, align, x, mid, font = "Helvetica") => {
+    c.setFont(font, 8); const t = mid + (ls.length * SO_LH) / 2 - SO_LH * 0.78;
+    ls.forEach((ln, i) => align === "c" ? c.drawCentredString(x, t - i * SO_LH, ln) : c.drawString(x, t - i * SO_LH, ln));
+  };
+  for (const r of rows) {
+    const soL = [r.so, r.date != null ? fmtDate(r.date) : ""].filter(Boolean), dL = cellLines(r.desc, widths[1]);
+    const schL = cellLines(r.scheme, widths[3]), n = Math.max(soL.length, dL.length, schL.length, 1), h = n * SO_LH + SO_ROW_PAD;
+    if (y - h < SO_BOTTOM) { c.newPage(); header(); }
+    const mid = y - h / 2;
+    block(soL, "c", cx[0], mid); block(dL, "l", xs[1] + 4, mid);
+    block([r.sanctioned != null ? fmtAmount(r.sanctioned) : ""], "c", cx[2], mid); block(schL, "c", cx[3], mid);
+    block([r.status], "c", cx[4], mid, "Helvetica-Bold");
+    y -= h; c.line(xs[0], y, xs[xs.length - 1], y); xs.forEach(x => c.line(x, y, x, y + h));
+    total += r.sanctioned || 0;
+  }
+  if (y - 20 < SO_BOTTOM) { c.newPage(); header(); }
+  c.setFont("Helvetica-Bold", 9);
+  c.drawString(xs[0] + 4, y - 13, `TOTAL (${rows.length} S.O.)`); c.drawCentredString(cx[2], y - 13, fmtAmount(total));
+  const cnt = {}; rows.forEach(r => cnt[r.status] = (cnt[r.status] || 0) + 1);
+  c.setFont("Helvetica", 8.5); c.drawString(xs[0] + 4, y - 30, ["Progress", "Completed", "Closed"].map(k => `${k}: ${cnt[k] || 0}`).join("      "));
+  c.line(xs[0], y - 20, xs[xs.length - 1], y - 20); xs.forEach(x => c.line(x, y, x, y - 20));
+  return { doc: c.d, count: rows.length };
+}
+
+/* ============================ FUND APPLICATION SET ============================ */
+// Page 1 VA-2 resolution, page 2 VA-2A watch register, page 3 VA-6A hand receipt,
+// one set per (Esti_no, Batch_No) of the fund_application table.
+const FA = {
+  release_authority: "DFO, Social Forestry Division, Chittoor", received_from: "DFO, Social Forestry Division, Chittoor",
+  joint_account_no: "", joint_account_by_vss: {}, bank_name: "---------------------------", bank_branch: "Chittoor Branch",
+  scheme_display_map: { "AGRO": "Agroforestry", "SEED BALL": "Seed Ball" },
+};
+const FA_COLS = [["S.\nNo.", 0.42], ["Activity", 2.35], ["Total outlay\nfor the year", 0.80], ["Amount\nreleased till\nprevious\nquarter", 0.85],
+  ["Expenditure\ntill previous", 0.85], ["Balance\navailable", 0.78], ["Funds now\nrequired", 0.82], ["Remarks", 0.75]];
+const FA_WR_COLS = [["Name of the\nVSS", 1.00], ["SO\nNO", 0.60], ["Name of the work", 1.85], ["Total\nAmount\nSanctioned", 0.80],
+  ["Spent\namount by\nend of\nprevious\nmonth", 0.85], ["Amount\nnow\nrequired", 0.80], ["Amounted\nrecommended\nfor release", 0.95]];
+const WR_PG = 6.6;   // smallest readable Watch Register font; beyond this the register continues on another page
+const FA_MARGIN = 0.55 * INCH, FA_ROW_H = 15.5, WR_MAX = 7.6, WR_MIN = 5.8, WR_LEAD = 1.15, WR_ASC = 0.74, WR_DESC = 0.22;
+
+const faScheme = sc => { sc = String(sc ?? "").trim(); return FA.scheme_display_map[sc] ?? schemeDisplay(sc); };
+const faQuarter = t => {
+  if (t == null) return ""; const m = new Date(t).getUTCMonth() + 1, q = Math.floor((((m - 4) % 12 + 12) % 12) / 3) + 1;
+  return `Q${q} (${["April, May, June", "July, August, September", "October, November, December", "January, February, March"][q - 1]})`;
+};
+const pyTitle = s => s.replace(/[A-Za-z]+/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+// VSS short name: drops a leading "The Chairman" and a trailing "VSS" / "V.S.S."  ("The Chairman Thimmasamudram VSS" -> "Thimmasamudram")
+const stripVss = v => String(v).trim().replace(/^\s*(the\s+)?chairman[\s,.\-]*/i, "").replace(/\s*V\.?\s*S\.?\s*S\.?\s*$/i, "").trim();
+function lookupVss(wd, settings, estiNo) {
+  const sv = settings.length ? String(settings[0].vss ?? "").trim() : "";
+  const names = wd.filter(r => String(r.esti_no ?? "").trim() === String(estiNo).trim())
+    .map(r => String(r.name_of_vss ?? "").trim() || sv).filter(Boolean);
+  if (names.length) { const cnt = {}; names.forEach(n => cnt[n] = (cnt[n] || 0) + 1); return pyTitle(Object.keys(cnt).reduce((a, b) => cnt[b] > cnt[a] ? b : a)); }
+  return sv && sv !== "-" ? sv : CONFIG.vss_default;
+}
+function buildFundCases(faRows, wd, settings, data) {
+  let fa = faRows.map(r => ({ ...r, batch_no: num(r.batch_no), amount: num(r.amount) || 0, application_date: pdate(r.application_date),
+    fa_id: num(r.fa_id), task_no: num(r.task_no), qnty: num(r.qnty), rate: num(r.rate) })).filter(r => r.batch_no != null).map(r => ({ ...r, batch_no: Math.trunc(r.batch_no) }));
+  const groups = new Map();
+  fa.forEach(r => { const k = r.esti_no + "\u0000" + r.batch_no; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
+  const cases = [];
+  for (const grp of groups.values()) {
+    grp.sort((a, b) => cmpNull(a.fa_id, b.fa_id));
+    const estiNo = grp[0].esti_no, batchNo = grp[0].batch_no, total = grp.reduce((a, r) => a + r.amount, 0);
+    if (total <= 0) continue;
+    const ds = grp.map(r => r.application_date).filter(d => d != null), appDate = ds.length ? Math.min(...ds) : null;
+    const e = data.est[estiNo] || null;
+    const releasedPrev = fa.filter(r => r.esti_no === estiNo && r.batch_no < batchNo).reduce((a, r) => a + r.amount, 0);
+    const spentPrev = data.vd.filter(v => v.esti_no === estiNo && (appDate != null ? v.voucher_date != null && v.voucher_date < appDate : v.batch_no != null && v.batch_no < batchNo))
+      .reduce((a, v) => a + (v.voucher_amount || 0), 0);
+    const vss = lookupVss(wd, settings, estiNo), [soLabel, soNum, soYear] = parseEstiNo(estiNo);
+    const items = [];
+    grp.forEach(r => { if (r.amount > 0) { const d = String(r.task_description ?? "").trim(), up = findTaskUnitPer(data.taskLookup, estiNo, d); items.push({ sl_no: items.length + 1, description: d, amount: r.amount, qnty: r.qnty, rate: r.rate, unit: up.unit, per: up.per }); } });
+    cases.push({
+      esti_no: estiNo, batch_no: batchNo, application_date: appDate, scheme: e ? faScheme(e.scheme) : "",
+      name_of_work: e ? String(e.esti_description ?? "").trim() : "", sanctioned: e ? num(e.est_cost) : null,
+      released_prev: releasedPrev, spent_prev: spentPrev, balance_available: releasedPrev - spentPrev, items, total, total_words: wordsIndian(total),
+      vss, vss_short: stripVss(vss), so_label: soLabel, so_num: soNum, so_year: soYear,
+      year: soYear || (appDate != null ? fmtDate(appDate).slice(-4) : ""), quarter: faQuarter(appDate),
+      joint_account_no: FA.joint_account_by_vss[stripVss(vss).toUpperCase()] ?? FA.joint_account_no,
+    });
+  }
+  return cases.sort((a, b) => cmpNull(a.esti_no, b.esti_no) || a.batch_no - b.batch_no);
+}
+
+function faGeometry(cols, left, right) {
+  let w = cols.map(c => c[1] * INCH); const k = (right - left) / w.reduce((a, b) => a + b, 0); w = w.map(x => x * k);
+  const xs = [left]; w.forEach(x => xs.push(xs[xs.length - 1] + x));
+  return [xs, w, centersOf(xs)];
+}
+function faHeader(c, cols, xs, cx, top, hh, fsz = 7.4) {
+  c.setFont("Helvetica-Bold", fsz);
+  cols.forEach(([label], i) => { const ls = label.split("\n"); let ly = top - (hh - ls.length * 8.6) / 2 - 7; ls.forEach(l => { c.drawCentredString(cx[i], ly, l); ly -= 8.6; }); });
+  c.line(xs[0], top - hh, xs[xs.length - 1], top - hh);
+}
+function faGrid(c, xs, top, bottom, hh, nRows, rowH) {
+  c.setLineWidth(1); c.rect(xs[0], bottom, xs[xs.length - 1] - xs[0], top - bottom);
+  xs.slice(1, -1).forEach(x => c.line(x, bottom, x, top));
+  c.setLineWidth(0.5);
+  for (let i = 1; i <= nRows; i++) { const ry = top - hh - i * rowH; if (ry > bottom + 0.5) c.line(xs[0], ry, xs[xs.length - 1], ry); }
+  c.setLineWidth(1);
+}
+function faSignatures(c, y, left, right, cs) {
+  c.setFont("Helvetica", 8.5); c.drawString(left, y - 34, "Section Officer (Signature)");
+  const mid = (left + right) / 2; c.setFont("Helvetica-Bold", 8.5);
+  CONFIG.fro_block.forEach((ln, i) => c.drawCentredString(mid, y - 24 - i * 10, ln));
+  c.setFont("Helvetica", 8.5); c.drawCentredString(mid, y - 24 - CONFIG.fro_block.length * 10 - 2, "Range Officer (Signature)");
+  const cx = right - 1.25 * INCH;
+  c.setFont("Helvetica-Bold", 9.5); c.drawCentredString(cx, y, "CHAIRMAN");
+  c.setFont("Helvetica-Bold", 8.5); c.drawCentredString(cx, y - 11, `${cs.vss_short.toUpperCase()} V.S.S.`);
+  c.setFont("Helvetica", 8.5); c.drawCentredString(cx, y - 22, "Chairperson (Signature)");
+}
+const faMoney = v => v == null ? "" : Math.abs(v) < 1 ? "NIL" : fmtAmount(v);
+const truncFit = (c, t, f, s, w) => { t = String(t); if (sw(c, t, f, s) <= w) return t; while (t && sw(c, t + "...", f, s) > w) t = t.slice(0, -1); return t.trimEnd() + "..."; };
+
+function drawFA1(c, cs) {
+  const left = FA_MARGIN, right = PAGE_W - FA_MARGIN; let y = PAGE_H - 0.5 * INCH;
+  c.setFont("Helvetica", 9.5); c.drawRightString(right, y, `Scheme: ${cs.scheme}`);
+  y -= 18; c.setFont("Times-Bold", 13.5); c.drawCentredString(PAGE_W / 2, y, "RESOLUTION OF VSS FOR RELEASE OF FUNDS");
+  y -= 15; c.setFont("Times-Bold", 11); c.drawCentredString(PAGE_W / 2, y, "(FUND APPLICATION:: VA-2)");
+  y -= 26; const rcx = PAGE_W / 2 + 0.15 * INCH;
+  drawField(c, "Division", CONFIG.division, left, y, rcx - 20); drawField(c, "VSS Name", cs.vss_short, rcx, y, right);
+  y -= 18; drawField(c, "Range", CONFIG.range, left, y, rcx - 20); drawField(c, "Year", cs.year, rcx, y, right);
+  y -= 18; drawField(c, "Section", CONFIG.section, left, y, rcx - 20);
+  c.setFont("Helvetica", 9.5); c.drawString(rcx, y, "Quarter: (Indicate month included)");
+  y -= 13; c.drawString(rcx + 12, y, cs.quarter);
+
+  y -= 22; c.setFont("Helvetica", 9.5);
+  let seg = "The managing committee of the VSS"; c.drawString(left, y, seg);
+  let x = left + sw(c, seg + " ", "Helvetica", 9.5); const vw = Math.max(120, sw(c, cs.vss_short, "Helvetica", 9.5) + 12);
+  dotted(c, x, y - 2, x + vw); c.drawString(x + 3, y, cs.vss_short); x += vw + 4;
+  seg = "its meeting held on"; c.drawString(x, y, seg); x += sw(c, seg + " ", "Helvetica", 9.5);
+  dotted(c, x, y - 2, Math.min(x + 95, right)); c.drawString(x + 3, y, fmtDate(cs.application_date));
+  y -= 14; seg = "resolved to request the"; c.drawString(left, y, seg); x = left + sw(c, seg + " ", "Helvetica", 9.5);
+  const aw = sw(c, FA.release_authority, "Helvetica", 9.5) + 12;
+  dotted(c, x, y - 2, x + aw); c.drawString(x + 3, y, FA.release_authority); x += aw + 4;
+  c.drawString(x, y, "for release of funds as detailed below:");
+
+  const top = y - 14, bottom = 2.55 * INCH, hh = 46, [xs, widths, cx] = faGeometry(FA_COLS, left, right);
+  // Each record is ONE ruled row: its text wraps inside the cell, the row grows to fit, and every value is centred vertically in that row.
+  const bodyH = top - hh - bottom, totH = 20, soTxt = `${cs.so_label} ${cs.so_num}/${cs.so_year}`;
+  let fs = 8, lines, soFs, rowH;
+  for (;;) {
+    lines = wrapText(c, cs.name_of_work, "Helvetica", fs, widths[1] - 8);
+    soFs = fs; while (soFs > 5.5 && sw(c, soTxt, "Helvetica-Bold", soFs) > widths[1] - 8) soFs -= 0.2;   // S.O. No. stays on one line
+    rowH = (lines.length + 1) * fs * 1.25 + 8;
+    if (rowH <= bodyH - totH || fs <= 6) break; fs -= 0.2;
+  }
+  const bt = top - hh, ry = bt - rowH, tb = bottom + totH;
+  c.setLineWidth(1); c.rect(xs[0], bottom, xs[xs.length - 1] - xs[0], top - bottom);
+  xs.slice(1, -1).forEach(x => c.line(x, bottom, x, top));
+  c.line(xs[0], bt, xs[xs.length - 1], bt); faHeader(c, FA_COLS, xs, cx, top, hh);
+  c.line(xs[0], ry, xs[xs.length - 1], ry); c.line(xs[0], tb, xs[xs.length - 1], tb);
+  const mid = bt - rowH / 2, vy = mid - 3;                       // vertical centre of the data row
+  const LH = fs * 1.25, blockTop = mid + ((lines.length + 1) * LH) / 2 - LH * 0.78;
+  c.setFont("Helvetica", 8.5); c.drawCentredString(cx[0], vy, "1");
+  c.setFont("Helvetica", fs); lines.forEach((ln, i) => c.drawString(xs[1] + 4, blockTop - i * LH, ln));
+  c.setFont("Helvetica-Bold", soFs); c.drawString(xs[1] + 4, blockTop - lines.length * LH, soTxt);
+  c.setFont("Helvetica", 8.5);
+  c.drawCentredString(cx[2], vy, faMoney(cs.sanctioned)); c.drawCentredString(cx[3], vy, faMoney(cs.released_prev));
+  c.drawCentredString(cx[4], vy, faMoney(cs.spent_prev)); c.drawCentredString(cx[5], vy, faMoney(cs.balance_available));
+  c.drawCentredString(cx[6], vy, fmtAmount(cs.total));
+  const ty = bottom + totH / 2 - 3; c.setFont("Helvetica-Bold", 8.5);
+  c.drawString(xs[0] + 4, ty, "TOTAL :"); c.drawCentredString(cx[6], ty, fmtAmount(cs.total));
+
+  let fy = bottom - 20; c.setFont("Helvetica", 9.5);
+  seg = "        It is requested to release the above funds to Joint Account No."; c.drawString(left, fy, seg);
+  x = left + sw(c, seg + " ", "Helvetica", 9.5); const acct = String(cs.joint_account_no || ""), acw = Math.max(115, sw(c, acct, "Helvetica", 9.5) + 12);
+  dotted(c, x, fy - 2, Math.min(x + acw, right - 30)); c.drawString(x + 3, fy, acct); c.drawRightString(right, fy, "held");
+  fy -= 15; c.drawString(left, fy, "in"); x = left + sw(c, "in ", "Helvetica", 9.5);
+  const bw = sw(c, FA.bank_name, "Helvetica", 9.5) + 16; dotted(c, x, fy - 2, x + bw); c.drawString(x + 3, fy, FA.bank_name); x += bw + 4;
+  seg = "(Name of the Bank)"; c.drawString(x, fy, seg); x += sw(c, seg + " ", "Helvetica", 9.5);
+  dotted(c, x, fy - 2, Math.min(x + 120, right)); c.drawString(x + 3, fy, FA.bank_branch);
+  faSignatures(c, fy - 30, left, right, cs);
+}
+
+function drawFA2(c, cs) {
+  const left = FA_MARGIN, right = PAGE_W - FA_MARGIN; let y = PAGE_H - 0.5 * INCH;
+  c.setFont("Helvetica", 9.5); c.drawRightString(right, y, `Scheme: ${cs.scheme}`);
+  y -= 26; c.setFont("Times-Roman", 12); c.drawCentredString(PAGE_W / 2, y, "Watch Register for recommending advances to VSS (VA – 2A)");
+  y -= 24; let x = drawField(c, "Division", CONFIG.division, left, y, left + 1.55 * INCH);
+  x = drawField(c, "Range", CONFIG.range, x + 22, y, x + 22 + 1.5 * INCH); drawField(c, "Section", CONFIG.section, x + 22, y, right);
+
+  const top = y - 16, bottom = 2.55 * INCH, hh = 52, [xs, widths, cx] = faGeometry(FA_WR_COLS, left, right);
+  const workW = widths[2] - 8, bodyH = top - hh - bottom, totH = 20;
+  // Each record (the work, then every item) is ONE ruled row; text wraps inside its cell, the row grows to fit,
+  // and all values in the row are centred vertically so the data lines up.
+  let fs = WR_MAX, rows, total;
+  for (;;) {
+    const LH = fs * 1.25, mk = (cells, amt) => { const n = Math.max(1, ...cells.map(x => x.length)); return { cells, amt, n, h: n * LH + 7 }; };
+    rows = [];
+    const soL = wrapText(c, `${cs.so_label.replace(".So No.", "SO ")}${cs.so_num}`, "Helvetica", fs, widths[1] - 4); if (cs.so_year) soL.push(cs.so_year);
+    rows.push({ ...mk([wrapText(c, cs.vss_short, "Helvetica", fs, widths[0] - 6), soL, wrapText(c, cs.name_of_work, "Helvetica", fs, workW)]), main: true });
+    cs.items.forEach(it => {   // task description, then its quantity, rate and amount on the next line
+      const nstr = n => String(Number(Number(n).toFixed(3))), hasQ = it.qnty != null && it.qnty !== 0, unit = hasQ ? (it.unit || "") : "", perTxt = (it.rate > 0 && it.unit) ? ` per ${it.per || "1"} ${it.unit}` : "",
+        segs = [it.qnty != null ? `Qty: ${nstr(it.qnty)}${unit ? " " + unit : ""}` : "", it.rate != null ? `Rate: Rs. ${nstr(it.rate)}${perTxt}` : "", `Amount: Rs. ${fmtAmount(it.amount)}`].filter(Boolean);
+      const detL = []; segs.forEach(sg => { const last = detL[detL.length - 1]; if (last !== undefined && sw(c, last + "  |  " + sg, "Helvetica", fs) <= workW) detL[detL.length - 1] = last + "  |  " + sg; else detL.push(sg); });   // Qty | Rate | Amount, never split mid-item
+      rows.push(mk([[], [], [...wrapText(c, `(${it.sl_no}) ${it.description}`, "Helvetica", fs, workW), ...detL]], it.amount));
+    });
+    total = rows.reduce((a, r) => a + r.h, 0);
+    if (total <= bodyH - totH || fs <= WR_PG) break;
+    fs = Math.max(WR_PG, Math.round((fs - 0.2) * 10) / 10);
+  }
+  const LH = fs * 1.25, bt = top - hh, tb = bottom + totH;
+  // Split the rows over as many pages as needed (a work with many items does not fit on one page at a readable size).
+  // Every page repeats the heading and column titles; the Total and signatures go on the last page only.
+  const pages = [[]]; let used = 0;
+  rows.forEach(r => { if (used + r.h > bodyH && pages[pages.length - 1].length) { pages.push([]); used = 0; } pages[pages.length - 1].push(r); used += r.h; });
+  const lastH = pages[pages.length - 1].reduce((a, r) => a + r.h, 0);
+  if (lastH > bodyH - totH && pages[pages.length - 1].length > 1) { const mv = pages[pages.length - 1].pop(); pages.push([mv]); }
+  const block = (ls, align, x, mid) => { const t = mid + (ls.length * LH) / 2 - LH * 0.78; ls.forEach((ln, i) => align === "c" ? c.drawCentredString(x, t - i * LH, ln) : c.drawString(x, t - i * LH, ln)); };
+  pages.forEach((pr, pi) => {
+    const isLast = pi === pages.length - 1;
+    if (pi) {   // continuation page: repeat the heading
+      c.newPage(); c.setFont("Helvetica", 9.5); c.drawRightString(right, PAGE_H - 0.5 * INCH, `Scheme: ${cs.scheme}`);
+      let yy = PAGE_H - 0.5 * INCH - 26; c.setFont("Times-Roman", 12); c.drawCentredString(PAGE_W / 2, yy, "Watch Register for recommending advances to VSS (VA – 2A) - Contd.");
+      yy -= 24; let xx = drawField(c, "Division", CONFIG.division, left, yy, left + 1.55 * INCH);
+      xx = drawField(c, "Range", CONFIG.range, xx + 22, yy, xx + 22 + 1.5 * INCH); drawField(c, "Section", CONFIG.section, xx + 22, yy, right);
+    }
+    c.setLineWidth(1); c.rect(xs[0], bottom, xs[xs.length - 1] - xs[0], top - bottom);
+    xs.slice(1, -1).forEach(x => c.line(x, bottom, x, top));
+    c.line(xs[0], bt, xs[xs.length - 1], bt); faHeader(c, FA_WR_COLS, xs, cx, top, hh);
+    if (isLast) c.line(xs[0], tb, xs[xs.length - 1], tb);
+    let ry = bt;
+    pr.forEach((r, i) => {
+      const mid = ry - r.h / 2, vy = mid - fs * 0.35; ry -= r.h;
+      c.setFont("Helvetica", fs);
+      if (r.main) { block(r.cells[0], "c", cx[0], mid); block(r.cells[1], "c", cx[1], mid); }
+      block(r.cells[2], "l", xs[2] + 4, mid);
+      if (r.main) { c.drawCentredString(cx[3], vy, faMoney(cs.sanctioned)); c.drawCentredString(cx[4], vy, faMoney(cs.spent_prev)); }
+      else c.drawCentredString(cx[5], vy, fmtAmount(r.amt));
+      if (ry > (isLast ? tb : bottom) + 0.5 && i < pr.length - 1) c.line(xs[0], ry, xs[xs.length - 1], ry);
+    });
+    if (isLast) {
+      const ty = bottom + totH / 2 - 3; c.setFont("Helvetica-Bold", Math.max(fs + 0.2, WR_PG));
+      c.drawCentredString(cx[4], ty, "Total"); c.drawCentredString(cx[5], ty, fmtAmount(cs.total));
+      faSignatures(c, bottom - 26, left, right, cs);
+    } else { c.setFont("Helvetica-Oblique", 8); c.drawRightString(right - 4, bottom - 12, "Contd. on next page"); }
+  });
+}
+
+function drawFA3(c, cs) {
+  const left = FA_MARGIN + 0.15 * INCH, right = PAGE_W - FA_MARGIN; let y = PAGE_H - 1.4 * INCH;
+  c.setFont("Helvetica", 10); c.drawString(PAGE_W / 2 + 0.1 * INCH, y, "LOP No.");
+  dotted(c, PAGE_W / 2 + 0.75 * INCH, y - 2, PAGE_W / 2 + 1.75 * INCH); c.drawRightString(right, y, "-200");
+  y -= 26; c.setFont("Times-Bold", 17); c.drawCentredString(PAGE_W / 2, y, "HAND RECEIPT");
+  let w = sw(c, "HAND RECEIPT", "Times-Bold", 17); c.setLineWidth(1); c.line(PAGE_W / 2 - w / 2, y - 3, PAGE_W / 2 + w / 2, y - 3);
+  y -= 22; c.drawCentredString(PAGE_W / 2, y, "VA 6 A"); w = sw(c, "VA 6 A", "Times-Bold", 17); c.line(PAGE_W / 2 - w / 2, y - 3, PAGE_W / 2 + w / 2, y - 3);
+  const lx = left, rx = PAGE_W / 2 + 0.2 * INCH, vx = rx + 1.1 * INCH;
+  y -= 30; c.setFont("Helvetica", 10); c.drawString(lx, y, "Passed by me"); c.drawString(lx + 1.55 * INCH, y, ":");
+  c.drawString(rx, y, "Name of payee"); c.drawString(vx - 10, y, ":");
+  c.setFont("Helvetica", 9.5); c.drawString(vx, y, `CHAIRMAN, ${cs.vss_short.toUpperCase()} V.S.S.`);
+  [["1. Pay by Cash", "Scheme", cs.scheme], ["2. Pay by Cheque", "Vor. No.", "-"], ["3. Paid by Me", "S.O. No.", `${cs.so_num}/${cs.so_year}`]].forEach(([l, rl, rv]) => {
+    y -= 18; c.setFont("Helvetica", 10); c.drawString(lx, y, l); c.drawString(lx + 1.55 * INCH, y, ":"); c.drawString(rx, y, rl); c.drawString(vx - 10, y, ":");
+    c.setFont("Helvetica", 9.5); c.drawString(vx, y, String(rv));
+  });
+  y -= 18; c.setFont("Helvetica", 10); c.drawString(rx, y, "M.B. No."); c.drawString(vx - 10, y, ":"); c.drawString(vx, y, "-");
+  c.drawString(vx + 0.9 * INCH, y, "Page No."); c.drawString(vx + 1.7 * INCH, y, "-");
+
+  y -= 34; c.setFont("Helvetica", 10); let seg = "RECEIVED From"; c.drawString(left, y, seg);
+  let x = left + sw(c, seg + " ", "Helvetica", 10); dotted(c, x, y - 2, right); c.setFont("Helvetica", 9.5); c.drawString(x + 3, y, FA.received_from);
+  y -= 24; c.setFont("Helvetica", 10); seg = "The sum of (Rs."; c.drawString(left, y, seg); x = left + sw(c, seg + " ", "Helvetica", 10);
+  const amt = `${indianComma(cs.total)}/-`; c.setFont("Helvetica", 9.5); c.drawString(x + 3, y, amt);
+  x += Math.max(1.05 * INCH, sw(c, amt, "Helvetica", 9.5) + 12); c.setFont("Helvetica", 10);
+  seg = ") Rupees"; c.drawString(x, y, seg); x += sw(c, seg + " ", "Helvetica", 10);
+  const wl = wrapText(c, `${cs.total_words} only`, "Helvetica", 9.5, right - x);
+  dotted(c, x, y - 2, right); c.setFont("Helvetica", 9.5); c.drawString(x + 3, y, wl[0]);
+  wl.slice(1).forEach(ex => { y -= 16; dotted(c, left, y - 2, right); c.drawString(left + 3, y, ex); });
+
+  y -= 26; c.setFont("Helvetica", 10); seg = "Name of the works or purpose for which payment is made."; c.drawString(left, y, seg);
+  x = left + sw(c, seg + " ", "Helvetica", 10); c.setFont("Helvetica", 9.5);
+  const pl = wrapText(c, `for ${cs.name_of_work}`, "Helvetica", 9.5, right - x); c.drawString(x + 3, y, pl[0]);
+  const rest = pl.slice(1).join(" ");
+  if (rest) wrapText(c, rest, "Helvetica", 9.5, right - left).forEach(ln => { y -= 16; c.drawString(left, y, ln); });
+  y -= 70; c.setFont("Helvetica", 10); c.drawString(left, y, "Date"); c.drawString(left + 0.75 * INCH, y, ":"); c.drawString(left, y - 20, "Witness:");
+  c.setFont("Helvetica", 9); c.drawCentredString(right - 1.3 * INCH, y - 11, "Signature of Payee");
+}
+
+function generateFA(data, { esti, batch, date }) {
+  let cases = data.faCases;
+  if (esti) cases = cases.filter(k => String(k.esti_no).trim() === esti.trim());
+  if (batch) cases = cases.filter(k => k.batch_no === Number(batch));
+  if (date) cases = cases.filter(k => k.application_date === Number(date));
+  if (!cases.length) return null;
+  const c = new Canvas();
+  cases.forEach((cs, i) => { if (i) c.newPage(); drawFA1(c, cs); c.newPage(); drawFA2(c, cs); c.newPage(); drawFA3(c, cs); });
+  return { doc: c.d, count: cases.length };
+}
+
+/* ============================ VSS MEETINGS (register) + VSS RESOLUTION ============================ */
+const meetKey = m => m.meeting_id;
+function faLinks(v) {   // linked fund applications: [{esti_no, batch_no}]
+  if (typeof v === "string") { try { v = JSON.parse(v); } catch { v = []; } }
+  return Array.isArray(v) ? v.filter(x => x && x.esti_no != null && x.batch_no != null).map(x => ({ esti_no: String(x.esti_no).trim(), batch_no: Number(x.batch_no) })) : [];
+}
+const faKey = k => `${String(k.esti_no).trim()}|${Number(k.batch_no)}`;
+function meetNormalise(r) {
+  let mem = r.members; if (typeof mem === "string") { try { mem = JSON.parse(mem); } catch { mem = []; } }
+  return { ...r, meeting_dt: pdate(r.meeting_dt), resolution_dt: pdate(r.resolution_dt), resolution_amt: num(r.resolution_amt), resolution_passed: r.resolution_passed === true || r.resolution_passed === "true",
+    members: Array.isArray(mem) ? mem.filter(x => x && (x.name || x.designation)) : [], fund_applications: faLinks(r.fund_applications) };
+}
+async function loadMeetings() {
+  try { DATA.meet = (await getRows("vss_meetings", ["meeting_dt"])).map(meetNormalise); DATA.meetErr = ""; }
+  catch (e) { DATA.meet = []; DATA.meetErr = e.message; }
+  fillMeetSelect();
+}
+const meetLabel = m => `${fmtDate(m.meeting_dt)} — ${m.vss_id}${m.scheme ? " — " + m.scheme : ""}${m.resolution_no ? " — Res. " + m.resolution_no : ""}${m.fund_applications.length ? " — " + m.fund_applications.length + " application" + (m.fund_applications.length > 1 ? "s" : "") : ""}`;
+function fillMeetSelect(keep) {
+  const sel = $("fMeet"), old = keep ?? sel.value, list = (DATA && DATA.meet ? DATA.meet : []).slice().sort((a, b) => (b.meeting_dt || 0) - (a.meeting_dt || 0));
+  sel.innerHTML = `<option value="">${list.length ? "Select a meeting…" : "No meetings yet — use Manage"}</option>` + list.map(m => `<option value="${m.meeting_id}">${meetLabel(m).replace(/</g, "&lt;")}</option>`).join("");
+  if (old && list.some(m => String(m.meeting_id) === String(old))) sel.value = String(old);
+}
+// insert / update / delete on the vss_meetings table (works with the app's own connection or a direct sign-in)
+async function sbWrite(method, table, { body, id } = {}) {
+  if (HOST) {
+    const SB = HOST.sb(); let q = SB.from(table), r;
+    if (method === "POST") r = await q.insert(body).select();
+    else if (method === "PATCH") r = await q.update(body).eq("meeting_id", id).select();
+    else r = await q.delete().eq("meeting_id", id).select();
+    if (r.error) throw new Error(r.error.message);
+    return r.data;
+  }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (!token) await login();
+    const r = await fetch(`${SB_URL}/rest/v1/${table}${id != null ? "?meeting_id=eq." + encodeURIComponent(id) : ""}`, {
+      method, headers: { apikey: SB_KEY, Authorization: "Bearer " + token, "Content-Type": "application/json", Prefer: "return=representation" }, body: body ? JSON.stringify(body) : undefined });
+    if (r.status === 401 && !attempt) { token = null; continue; }
+    const js = await r.json().catch(() => null);
+    if (!r.ok) throw new Error((js && js.message) || `Request failed (${r.status})`);
+    return js;
+  }
+}
+const isoDate = ms => ms == null ? "" : new Date(ms).toISOString().slice(0, 10);
+
+function openMeetings() {
+  const esc = v => String(v ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  const vssNames = () => [...new Set([...DATA.faCases.map(k => k.vss_short), ...DATA.meet.map(m => m.vss_id)].filter(Boolean))].sort();
+  const schemes = () => [...new Set([...DATA.faCases.map(k => k.scheme), ...DATA.meet.map(m => m.scheme)].filter(Boolean))].sort();
+  let editing = null, links = new Set(), showAll = false, members = [{ name: "", designation: "" }, { name: "", designation: "" }], note = DATA.meetErr ? `Table 'vss_meetings' is not available: ${DATA.meetErr} — run vss_meetings.sql in the Supabase SQL editor.` : "";
+  const render = () => {
+    const m = editing != null ? DATA.meet.find(x => String(x.meeting_id) === String(editing)) : null;
+    const list = DATA.meet.slice().sort((a, b) => (b.meeting_dt || 0) - (a.meeting_dt || 0));
+    $("meetBox").innerHTML = `<h1 style="font-size:17px">VSS meetings</h1>
+      <div style="max-height:190px;overflow:auto;margin-bottom:10px"><table class="tbl"><tr><th>Date</th><th>VSS</th><th>Scheme</th><th>Res. no</th><th>Passed</th><th>Appl.</th><th></th></tr>${list.map(x =>
+        `<tr><td>${fmtDate(x.meeting_dt)}</td><td>${esc(x.vss_id)}</td><td>${esc(x.scheme)}</td><td>${esc(x.resolution_no)}</td><td>${x.resolution_passed ? "Yes" : "No"}</td><td>${x.fund_applications.length}</td>
+        <td><button class="sec" data-edit="${x.meeting_id}">Edit</button><button class="sec" data-del="${x.meeting_id}">Delete</button></td></tr>`).join("") || `<tr><td colspan="7" class="note">No meetings yet.</td></tr>`}</table></div>
+      <fieldset><legend>${m ? "Edit meeting" : "New meeting"}</legend>
+        <label>VSS *</label><input id="mVss" list="mVssL" value="${esc(m ? m.vss_id : "")}"><datalist id="mVssL">${vssNames().map(n => `<option value="${esc(n)}">`).join("")}</datalist>
+        <div class="row"><div><label>Meeting date *</label><input id="mDt" type="date" value="${m ? isoDate(m.meeting_dt) : ""}"></div>
+          <div><label>Scheme</label><input id="mSch" list="mSchL" value="${esc(m ? m.scheme : "")}"><datalist id="mSchL">${schemes().map(n => `<option value="${esc(n)}">`).join("")}</datalist></div></div>
+        <div class="row"><div><label>Resolution no</label><input id="mNo" value="${esc(m ? m.resolution_no : "")}"></div>
+          <div><label>Resolution date</label><input id="mRDt" type="date" value="${m ? isoDate(m.resolution_dt) : ""}"></div></div>
+        <div class="row"><div><label>Resolution amount (Rs.)</label><input id="mAmt" type="number" step="0.01" value="${m && m.resolution_amt != null ? m.resolution_amt : ""}"></div>
+          <div><label>Resolution passed?</label><select id="mPass"><option value="1"${!m || m.resolution_passed ? " selected" : ""}>Passed</option><option value="0"${m && !m.resolution_passed ? " selected" : ""}>Not passed</option></select></div></div>
+        <label>Linked fund applications <span class="note">(estimate · batch · date · amount)</span></label>
+        <div style="max-height:150px;overflow:auto;border:1px solid var(--bd);border-radius:7px;padding:4px 8px">${(() => {
+          const vk = normText(($("mVss") || {}).value ?? (m ? m.vss_id : "")).replace(/ /g, ""), sk = normText(($("mSch") || {}).value ?? (m ? m.scheme : ""));
+          const rows = DATA.faCases.filter(k => links.has(faKey(k)) || showAll || ((!vk || (n => n && (n.includes(vk) || vk.includes(n)))(normText(k.vss_short).replace(/ /g, ""))) && (!sk || normText(k.scheme) === sk)));
+          return rows.map(k => `<label style="display:flex;gap:8px;align-items:center;margin:3px 0;color:var(--fg)"><input type="checkbox" style="width:auto" data-lk="${esc(faKey(k))}" data-amt="${k.total}"${links.has(faKey(k)) ? " checked" : ""}> ${esc(k.esti_no)} · Batch ${k.batch_no} · ${fmtDate(k.application_date)} · Rs. ${indianComma(k.total)}</label>`).join("") || `<span class="note">No fund applications for this VSS / scheme.</span>`;
+        })()}</div>
+        <label class="chk"><input type="checkbox" id="mAll"${showAll ? " checked" : ""}> Show all fund applications</label>
+        <label>Members (name and designation)</label>
+        ${members.map((x, i) => `<div class="row" style="margin-bottom:6px"><input data-mn="${i}" placeholder="Name" value="${esc(x.name)}"><input data-md="${i}" placeholder="Designation" value="${esc(x.designation)}"><button class="sec" style="flex:0 0 38px;margin:0" data-rm="${i}" title="Remove">✕</button></div>`).join("")}
+        <button class="sec" id="mAdd" type="button" style="margin-top:2px">+ Add member</button>
+      </fieldset>
+      <div class="err" id="mErr">${esc(note)}</div>
+      <div class="row"><button class="sec" id="mClose">Close</button>${m ? '<button class="sec" id="mNew">New</button>' : ""}<button id="mSave">${m ? "Update meeting" : "Save meeting"}</button></div>`;
+    const grab = () => { members = [...document.querySelectorAll("#meetBox [data-mn]")].map((el, i) => ({ name: el.value, designation: document.querySelector(`#meetBox [data-md="${i}"]`).value })); };
+    document.querySelectorAll("#meetBox [data-edit]").forEach(b => b.onclick = () => { const x = DATA.meet.find(y => String(y.meeting_id) === b.dataset.edit); editing = x.meeting_id; links = new Set(x.fund_applications.map(faKey)); members = x.members.length ? x.members.map(z => ({ ...z })) : [{ name: "", designation: "" }]; note = ""; render(); });
+    document.querySelectorAll("#meetBox [data-del]").forEach(b => b.onclick = async () => {
+      if (!confirm("Delete this meeting?")) return;
+      try { await sbWrite("DELETE", "vss_meetings", { id: b.dataset.del }); await loadMeetings(); if (String(editing) === b.dataset.del) editing = null; note = "Deleted."; } catch (e) { note = e.message; }
+      render();
+    });
+    document.querySelectorAll("#meetBox [data-rm]").forEach(b => b.onclick = () => { grab(); members.splice(+b.dataset.rm, 1); if (!members.length) members.push({ name: "", designation: "" }); keepForm(); });
+    $("mAdd").onclick = () => { grab(); members.push({ name: "", designation: "" }); keepForm(); };
+    $("mAll").onchange = () => { showAll = $("mAll").checked; keepForm(); };
+    $("mVss").onchange = $("mSch").onchange = () => keepForm();      // the application list follows the VSS / scheme typed
+    document.querySelectorAll("#meetBox [data-lk]").forEach(cb => cb.onchange = () => {
+      cb.checked ? links.add(cb.dataset.lk) : links.delete(cb.dataset.lk);
+      if ($("mAmt").value === "") { const sum = DATA.faCases.filter(k => links.has(faKey(k))).reduce((a, k) => a + k.total, 0); if (sum) $("mAmt").value = sum; }   // suggest the total when the amount is empty
+    });
+    $("mClose").onclick = () => { $("meetModal").classList.add("hide"); fillMeetSelect(); };
+    if ($("mNew")) $("mNew").onclick = () => { editing = null; links = new Set(); members = [{ name: "", designation: "" }, { name: "", designation: "" }]; note = ""; render(); };
+    $("mSave").onclick = async () => {
+      grab();
+      const row = { vss_id: $("mVss").value.trim(), meeting_dt: $("mDt").value, scheme: $("mSch").value.trim() || null, resolution_no: $("mNo").value.trim() || null,
+        resolution_dt: $("mRDt").value || null, resolution_amt: $("mAmt").value === "" ? null : Number($("mAmt").value), resolution_passed: $("mPass").value === "1",
+        members: members.map(x => ({ name: x.name.trim(), designation: x.designation.trim() })).filter(x => x.name || x.designation),
+        fund_applications: [...links].map(k => { const [e, b] = k.split("|"); return { esti_no: e, batch_no: Number(b) }; }) };
+      if (!row.vss_id || !row.meeting_dt) { note = "VSS and meeting date are required."; return keepForm(row); }
+      try {
+        const saved = editing != null ? await sbWrite("PATCH", "vss_meetings", { body: row, id: editing }) : await sbWrite("POST", "vss_meetings", { body: row });
+        await loadMeetings(); const sid = saved && saved[0] ? saved[0].meeting_id : editing; fillMeetSelect(sid);
+        editing = null; links = new Set(); members = [{ name: "", designation: "" }, { name: "", designation: "" }]; note = "Saved."; render();
+      } catch (e) { note = e.message + (/not find|does not exist|relation|schema cache/i.test(e.message) ? " — run vss_meetings.sql in the Supabase SQL editor." : ""); keepForm(row); }
+    };
+  };
+  // re-render but keep what is typed in the form
+  const keepForm = row => {
+    const cur = row || { vss_id: ($("mVss") || {}).value, meeting_dt: ($("mDt") || {}).value, scheme: ($("mSch") || {}).value, resolution_no: ($("mNo") || {}).value, resolution_dt: ($("mRDt") || {}).value, resolution_amt: ($("mAmt") || {}).value, pass: ($("mPass") || {}).value };
+    render();
+    const set = (id, v) => { if ($(id) && v != null && v !== "") $(id).value = v; };
+    set("mVss", cur.vss_id); set("mDt", cur.meeting_dt); set("mSch", cur.scheme); set("mNo", cur.resolution_no); set("mRDt", cur.resolution_dt); set("mAmt", cur.resolution_amt);
+    if ($("mPass")) $("mPass").value = row ? (row.resolution_passed ? "1" : "0") : (cur.pass || "1");
+  };
+  $("meetModal").classList.remove("hide"); render();
+}
+
+// ---- layout shared by the English (vector) and Telugu (browser-drawn image) pages
+// k = scale (1 = normal); every size, gap and margin is multiplied by it so the whole resolution can be shrunk to fit one page.
+function layoutResolution(r, T, X, k = 1) {
+  const mg = 0.9 * INCH * Math.max(k, 0.8), left = mg, right = PAGE_W - mg, W = right - left, bottom = 0.7 * INCH * Math.max(k, 0.8), top = PAGE_H - 0.8 * INCH * Math.max(k, 0.8), LH = r.lh * k, FS = 11 * k;
+  let y = top;
+  const fill_ = (t, v) => t.replace(/\{(\w+)\}/g, (m, kk) => v[kk] ?? m);
+  const wrap = (text, w) => {
+    const words = String(text).split(/\s+/).filter(Boolean), lines = []; let cur = "";
+    for (const wd of words) { const t = cur ? cur + " " + wd : wd; if (!cur || r.w(t) <= w) cur = t; else { lines.push(cur); cur = wd; } }
+    if (cur) lines.push(cur); return lines.length ? lines : [""];
+  };
+  const ensure = h => { if (y - h < bottom) { r.newPage(); y = top; } };
+  const para = (text, x, w, label) => { r.font(false, FS); wrap(text, w).forEach((ln, i) => { ensure(LH); r.font(false, FS); if (!i && label) r.text(left, y, label); r.text(x, y, ln); y -= LH; }); };
+  const v = { vss: X.vss.toUpperCase(), date: X.meetDate, scheme: X.scheme, total: indianComma(X.total), words: wordsIndian(X.total), no: X.meeting.resolution_no || "—",
+    rdate: X.meeting.resolution_dt != null ? fmtDate(X.meeting.resolution_dt) : "—", ramt: indianComma(X.total) };
+  r.font(true, 12 * k); r.text(left, y, X.year || ""); y -= 26 * k;
+  const title = fill_(T.title, X.te ? { ...v, vss: X.vss } : v); r.font(true, 13 * k); r.centre(PAGE_W / 2, y, title);
+  const tw = r.w(title); r.line(PAGE_W / 2 - tw / 2, y - 3 * k, PAGE_W / 2 + tw / 2, y - 3 * k); y -= 26 * k;
+  para(fill_(T.intro, X.te ? { ...v, vss: X.vss } : v), left, W); y -= 8 * k;
+  ensure(40 * k); r.font(true, FS); r.text(left, y, T.heading); r.line(left, y - 2 * k, left + r.w(T.heading), y - 2 * k); y -= 18 * k;
+  r.font(true, FS); r.text(left + 0.35 * INCH * k, y, `${T.scheme} : ${X.scheme}`); y -= 20 * k;
+  X.items.forEach((it, i) => para(`${it.description.replace(/\s+/g, " ").replace(/[.\s]+$/, "")} (Rs. ${fmtAmount(it.amount)}) ${T.para_end}${it.esti_no ? ` (${T.est} ${String(it.esti_no).trim()})` : ""}`, left + 0.35 * INCH * k, W - 0.35 * INCH * k, `${i + 1})`));
+  y -= 4 * k;
+  const hasRes = X.meeting.resolution_no || X.meeting.resolution_dt != null;
+  if (hasRes) para(fill_(T.res_line, v), left, W);
+  ensure(LH); r.font(true, FS); r.text(left, y, X.meeting.resolution_passed ? T.passed : T.not_passed); y -= LH + 4 * k;
+  para(fill_(T.closing, v), left, W); y -= 22 * k;
+  // signatures
+  ensure(130 * k + 2 * LH); y -= 2 * LH;   // two blank lines above the signature blocks
+  const lx = left + 1.0 * INCH * k, rx = right - 1.2 * INCH * k, SF = 10.5 * k; r.font(true, SF);
+  CONFIG.fro_block.forEach((ln, i) => r.centre(lx, y - i * 12 * k, i === 0 ? ln + " (FAC)" : ln));
+  r.centre(rx, y, T.chairman); r.centre(rx, y - 12 * k, `${v.vss} V.S.S.`);
+  const cy = y - 46 * k, cxm = PAGE_W / 2; r.font(true, 12 * k); r.centre(cxm, cy, "COUNTER SIGNED"); r.font(true, SF);   // centred on the page
+  CONFIG.countersign_block.forEach((ln, i) => r.centre(cxm, cy - 34 * k - i * 12 * k, ln));
+}
+// Picks the largest scale at which the resolution still fits on one page (a dry run that only counts pages), then draws it for real.
+function layoutOnePage(r, T, X) {
+  const dry = { lh: r.lh, rh: r.rh, font: r.font, w: r.w, text() {}, centre() {}, line() {}, newPage() { this.n++; }, n: 1 };
+  let k = 1;
+  for (; k > 0.6; k = Math.round((k - 0.04) * 100) / 100) { dry.n = 1; layoutResolution(dry, T, X, k); if (dry.n === 1) break; }
+  layoutResolution(r, T, X, Math.max(k, 0.6));
+}
+function pdfRenderer(c) {
+  let f = [false, 11]; const nm = () => f[0] ? "Helvetica-Bold" : "Helvetica";
+  return { lh: 15, rh: 22, font: (b, sz) => { f = [b, sz]; c.setFont(nm(), sz); }, w: t => sw(c, t, nm(), f[1]), text: (x, y, t) => c.drawString(x, y, t),
+    centre: (x, y, t) => c.drawCentredString(x, y, t), line: (a, b, d, e) => c.line(a, b, d, e), newPage: () => { c.newPage(); c.setFont(nm(), f[1]); } };
+}
+function rasterRenderer(S = 2.5) {
+  const pages = [], FF = '"Noto Sans Telugu","Nirmala UI","Gautami","Vani","Mangal","Segoe UI","Noto Sans",sans-serif'; let cv, g, f = [false, 11];
+  const apply = () => { g.font = `${f[0] ? "bold " : ""}${f[1] * S}px ${FF}`; g.textBaseline = "alphabetic"; };
+  const fresh = () => { cv = document.createElement("canvas"); cv.width = Math.round(PAGE_W * S); cv.height = Math.round(PAGE_H * S); g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.fillStyle = "#000"; g.strokeStyle = "#000"; pages.push(cv); apply(); };
+  fresh();
+  return { pages, lh: 19, rh: 26, font: (b, sz) => { f = [b, sz]; apply(); }, w: t => g.measureText(t).width / S,
+    text: (x, y, t) => { g.textAlign = "left"; g.fillText(t, x * S, (PAGE_H - y) * S); }, centre: (x, y, t) => { g.textAlign = "center"; g.fillText(t, x * S, (PAGE_H - y) * S); },
+    line: (x1, y1, x2, y2) => { g.lineWidth = S * 0.8; g.beginPath(); g.moveTo(x1 * S, (PAGE_H - y1) * S); g.lineTo(x2 * S, (PAGE_H - y2) * S); g.stroke(); }, newPage: fresh };
+}
+async function runVssResolution() {
+  const meeting = (DATA.meet || []).find(m => String(m.meeting_id) === $("fMeet").value);
+  if (!meeting) { busy(false, "genBtn"); return msg("Select a VSS meeting first (or add one with “Manage VSS meetings”).", true); }
+  const lang = $("fLang").value;
+  // tasks come from the fund applications linked to the meeting; if none are linked, from the applications of its VSS and scheme
+  let cases = DATA.faCases;
+  if (meeting.fund_applications.length) { const want = new Set(meeting.fund_applications.map(faKey)); cases = cases.filter(k => want.has(faKey(k))); }
+  else {
+    const vk = normText(meeting.vss_id).replace(/ /g, ""), sk = normText(meeting.scheme);
+    cases = cases.filter(k => { const n = normText(k.vss_short).replace(/ /g, ""); return n && vk && (n.includes(vk) || vk.includes(n)); }).filter(k => !sk || normText(k.scheme) === sk);
+  }
+  if (!cases.length) { busy(false, "genBtn"); return msg("No fund-application tasks found for that meeting — link its fund applications in “Manage VSS meetings”.", true); }
+  const items = cases.flatMap(k => k.items.map(it => ({ ...it, esti_no: k.esti_no }))), total = items.reduce((a, i) => a + i.amount, 0);
+  const X = { vss: meeting.vss_id, meetDate: fmtDate(meeting.meeting_dt), scheme: meeting.scheme || cases[0].scheme, year: cases[0].year, items, total, meeting };   // total = sum of all the resolution's tasks, used wherever an amount is quoted
+  try {
+    const c = new Canvas(); let first = true;
+    if (lang === "en" || lang === "both") { layoutOnePage(pdfRenderer(c), CONFIG.vss_res.en, X); first = false; }
+    if (lang === "te" || lang === "both") {
+      try { await Promise.all([document.fonts.load('16px "Noto Sans Telugu"', "తెలుగు"), document.fonts.load('bold 16px "Noto Sans Telugu"', "తెలుగు")]); } catch (e) { /* use system fonts */ }
+      const rr = rasterRenderer(); layoutOnePage(rr, CONFIG.vss_res.te, { ...X, te: true });
+      rr.pages.forEach((cv, i) => { if (!first || i) c.newPage(); c.d.addImage(cv.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, PAGE_W, PAGE_H); });
+    }
+    c.d.save(`vss_resolution_${String(meeting.vss_id).replace(/\W+/g, "_")}_${isoDate(meeting.meeting_dt)}.pdf`);
+    msg(`Done — resolution for ${meeting.vss_id} (${lang === "both" ? "English + Telugu" : lang === "en" ? "English" : "Telugu"}).`);
+  } catch (e) { console.error(e); msg("Could not generate the PDF: " + e.message, true); }
+  busy(false, "genBtn");
+}
+
+/* ============================ LOP & FORM FA.IX (built from Supabase data) ============================ */
+const LAND_W = 792, LAND_H = 612;
+const DOCKET = {
+  submission_note: "Copy submitted to the Conservator of Forest, Ananthapuram Circle, Ananthapuram for favor of kind information.",
+  signature_lines: ["Divisional Forest Officer(FAC),", "Social Forestry Division,", "Chittoor"],
+};
+const LOP_COLS = [["Sl.\nNo", 0.40], ["Component &\nSub Component", 1.55], ["LOP\nNo.", 0.42], ["Name of the Work\n& S.O. No.", 2.15],
+  ["Particulars of Payment", 4.00], ["Amount of\nthe Voucher", 0.85], ["Remarks", 0.85]];
+const LOP_HEADER_H = 38, LOP_NUM_H = 12, LOP_LINE_H = 9.2, LOP_ROW_PAD = 5.5, TOT_H = 15, DK_BOTTOM = 0.55 * INCH, TRAILER = 70;
+const FAIX_COLS = [["Sl.\nNo.", 0.35], ["Particulars of work", 2.85], ["D.S.O.\nNo.", 0.85], ["Amount", 0.70], ["Upto end of\nlast Month", 0.72], ["LOP\nNos", 0.50],
+  ["Vr.\nNo.", 0.48], ["Amount", 0.65], ["Progressive total\nof expenditure", 0.80], ["Balance", 0.75], ["Component &\nSub Component", 1.05]];
+const FX_BAND = 15, FX_HEADER_H = FX_BAND * 3, FX_NUM_H = 10, FX_LINE_H = 9.0;
+
+// Buckets of (scheme, month) -> tokens with their batch's vouchers, as in _build_docket_token_buckets.
+function docketBuckets(data) {
+  const tokMonth = {}; data.exp.forEach(r => { const m = monthKey(r.dt); if (m != null) tokMonth[r.adv_token_no] = m; });
+  const running = {}, buckets = new Map();
+  for (const tok of data.batchTokens) {
+    const v = data.vd.filter(r => r.esti_no === tok.esti_no && r.batch_no === tok.batch_no)
+      .sort((a, b) => (Number(a.voucher_no) || 0) - (Number(b.voucher_no) || 0));
+    const hasExp = tok.token_no in tokMonth;
+    if (!v.length && !hasExp) continue;
+    let month = tokMonth[tok.token_no] ?? null;
+    if (month == null && v.length) { const ds = v.map(r => r.voucher_date).filter(d => d != null); month = ds.length ? monthKey(Math.max(...ds)) : null; }
+    if (month == null) month = monthKey(tok.date);
+    if (month == null) continue;
+    const prev = running[tok.esti_no] || 0, thisTotal = v.reduce((a, r) => a + (r.voucher_amount || 0), 0);
+    running[tok.esti_no] = prev + thisTotal;
+    const e = data.est[tok.esti_no] || null, scheme = e ? schemeDisplay(String(e.scheme ?? "").trim()) : "";
+    const k = scheme + "\u0000" + month;
+    if (!buckets.has(k)) buckets.set(k, { scheme, month, infos: [] });
+    buckets.get(k).infos.push({ esti_no: tok.esti_no, sanctioned: e ? num(e.est_cost) : null, prev_spent: prev,
+      name_of_work: e ? String(e.esti_description ?? "").trim() : "", vouchers: v });
+  }
+  return [...buckets.values()].sort((a, b) => cmpNull(a.month, b.month) || cmpNull(a.scheme, b.scheme));
+}
+function particulars(r) {
+  const d = isBlank(r.voucher_details) ? "" : String(r.voucher_details).trim(), p = isBlank(r.payee_name) ? "" : String(r.payee_name).trim();
+  return p && d ? `Paid to ${p} for ${d}` : d || p;
+}
+const docketHeading = b => `SCHEDULE DOCKET OF WORK VOUCHERS FOR THE MONTH OF ${monthLabel(b.month).toUpperCase()} UNDER ${b.scheme.toUpperCase()} SCHEME OF SOCIAL FORESTRY DIVISION,${CONFIG.division.toUpperCase().replace("S.F ", "")}`;
+const docketName = b => `${b.scheme} ${b.month}`;
+function dsoRef(info) { const [, no, yr] = parseEstiNo(info.esti_no); return [no ? `D.S.O. No. ${no}/${yr}` : info.esti_no, no, yr]; }
+
+// "DSO 02/2026-27" / "RSO 05/2026-27" from an estimate number; tolerates forms like "D.S.O. No. 2/2026-2027" or "DSO-02/2026-27"
+function faixSoRef(e) {
+  const t = String(e ?? "").trim();
+  const m = /(D\s*\.?\s*S\s*\.?\s*O|R\s*\.?\s*S\s*\.?\s*O)\s*\.?\s*(?:No\.?)?\s*[-:]?\s*(\d+)\s*\/\s*(\d{4})\s*-\s*(\d{2,4})/i.exec(t);
+  return m ? `${/^r/i.test(m[1]) ? "RSO" : "DSO"} ${m[2]}/${m[3]}-${m[4].slice(-2)}` : t;
+}
+function lopCases(buckets) {
+  const cases = [];
+  buckets.forEach(b => {
+    const groups = [];
+    b.infos.forEach((info, i) => {
+      const ref = dsoRef(info)[0], entries = info.vouchers.map((r, j) => ({ lop_no: String(j + 1), particulars: particulars(r), amount: r.voucher_amount || 0, remarks: "" }));
+      if (entries.length) groups.push({ sl_no: i + 1, component: b.scheme, name_of_work: info.name_of_work, so_ref: ref, entries });
+    });
+    if (groups.length) cases.push({ name: docketName(b), heading: docketHeading(b), groups });
+  });
+  return cases;
+}
+function faixCases(buckets) {
+  const cases = [];
+  buckets.forEach(b => {
+    const groups = [];
+    b.infos.forEach((info, i) => {
+      const [ref, dno, dyr] = dsoRef(info);
+      const entries = info.vouchers.map((r, j) => ({ particulars: particulars(r), lop_no: String(j + 1),
+        vr_no: isBlank(r.voucher_no) || isNaN(parseInt(r.voucher_no, 10)) ? "" : String(parseInt(r.voucher_no, 10)), amount: r.voucher_amount || 0 }));
+      if (entries.length) groups.push({ sl_no: i + 1, dso_work: info.name_of_work, dso_ref: faixSoRef(info.esti_no),
+        sanctioned: info.sanctioned, upto_last_month: info.prev_spent, component: b.scheme, entries });
+    });
+    if (groups.length) cases.push({ name: docketName(b), heading: docketHeading(b), groups });
+  });
+  return cases;
+}
+
+function docketPageHeader(c, pageNo, title, heading, continued, left, right) {
+  const top = LAND_H - 0.35 * INCH;
+  c.setFont("Helvetica-Bold", 8); c.drawRightString(right, top, `Page ${pageNo}`);
+  let y = top - 2; c.setFont("Times-Bold", 15); c.drawCentredString(LAND_W / 2, y, title);
+  y -= 15; c.setFont("Helvetica-Oblique", 8.5); c.drawCentredString(LAND_W / 2, y, "(See local Ruling 3 under Act, 282-297 in Chapter VII of Account Code)");
+  y -= 13; c.setFont("Helvetica-Bold", 9.3);
+  wrapText(c, heading, "Helvetica-Bold", 9.3, right - left).forEach(ln => { c.drawCentredString(LAND_W / 2, y, ln); y -= 11; });
+  if (continued) { y -= 2; c.setFont("Helvetica-BoldOblique", 8.5); c.drawString(left, y, "(continued)"); y -= 12; }
+  return y - 5;
+}
+function ruled(c, xs, y, h) { c.setLineWidth(1); return cirRowBox(c, y, xs, h); }
+function docketTrailer(c, y, xs) {
+  y -= 20; c.setFont("Helvetica", 8.5);
+  wrapText(c, DOCKET.submission_note, "Helvetica", 8.5, xs[xs.length - 1] - xs[0]).forEach(ln => { c.drawString(xs[0], y, ln); y -= 11; });
+  y -= 16; c.setFont("Helvetica-Bold", 9);
+  DOCKET.signature_lines.forEach(ln => { c.drawRightString(xs[xs.length - 1], y, ln); y -= 11; });
+}
+const widthsOf = xs => xs.slice(0, -1).map((x, i) => xs[i + 1] - x);
+
+function drawLopBody(c, cs, pg) {
+  const left = 0.4 * INCH, right = LAND_W - 0.4 * INCH; let xs, cx, cw;
+  const newPage = cont => {
+    pg.n++; const y0 = docketPageHeader(c, pg.n, "LOP", cs.heading, cont, left, right);
+    [xs, , cx] = faGeometry(LOP_COLS, left, right); cw = widthsOf(xs);
+    const hb = y0 - LOP_HEADER_H - LOP_NUM_H;               // bottom of the whole header box (labels + column-number row)
+    c.setLineWidth(1);
+    c.rect(xs[0], hb, xs[xs.length - 1] - xs[0], LOP_HEADER_H + LOP_NUM_H);   // closed outer box
+    xs.slice(1, -1).forEach(x => c.line(x, hb, x, y0));                       // column dividers through the header
+    faHeader(c, LOP_COLS, xs, cx, y0, LOP_HEADER_H, 8);                       // labels + line under labels
+    c.setFont("Helvetica", 7); cx.forEach((x, i) => c.drawCentredString(x, hb + 3.5, String(i + 1)));
+    return hb;
+  };
+  let y = newPage(false), grand = 0;
+  const rowH = (g, e, first) => {
+    let n = Math.max(1, wrapText(c, e.particulars, "Helvetica", 7.6, cw[4] - 6).length, e.remarks ? wrapText(c, e.remarks, "Helvetica", 7.4, cw[6] - 4).length : 0);
+    if (first) n = Math.max(n, wrapText(c, g.component, "Helvetica", 7.4, cw[1] - 6).length, wrapText(c, g.name_of_work || "", "Helvetica", 7.4, cw[3] - 6).length + 1);
+    return n * LOP_LINE_H + LOP_ROW_PAD;
+  };
+  const totalRow = (label, amt, size) => {
+    c.setFont("Helvetica-Bold", size); c.drawString(xs[3] + 3, y - 10, label); c.drawCentredString(cx[5], y - 10, fmtAmount(amt));
+    y = ruled(c, xs, y, TOT_H);
+  };
+  for (const g of cs.groups) {
+    let gt = 0;
+    g.entries.forEach((e, idx) => {
+      const h = rowH(g, e, idx === 0);
+      if (y - h < DK_BOTTOM) { c.newPage(); y = newPage(true); }
+      if (idx === 0) {
+        c.setFont("Helvetica", 7.8); c.drawCentredString(cx[0], y - 10, String(g.sl_no)); c.setFont("Helvetica", 7.4);
+        wrapText(c, g.component, "Helvetica", 7.4, xs[2] - xs[1] - 6).forEach((ln, j) => c.drawCentredString(cx[1], y - 10 - j * LOP_LINE_H, ln));
+        const wl = g.name_of_work ? wrapText(c, g.name_of_work, "Helvetica", 7.4, xs[4] - xs[3] - 6) : [];
+        wl.forEach((ln, j) => c.drawCentredString(cx[3], y - 10 - j * LOP_LINE_H, ln));
+        c.setFont("Helvetica-Bold", 7.4); c.drawCentredString(cx[3], y - 10 - wl.length * LOP_LINE_H, g.so_ref);   // S.O. No. always on its own single line
+        c.setFont("Helvetica", 7.4);
+      }
+      c.setFont("Helvetica", 7.8); c.drawCentredString(cx[2], y - 10, String(e.lop_no)); c.setFont("Helvetica", 7.6);
+      wrapText(c, e.particulars, "Helvetica", 7.6, xs[5] - xs[4] - 6).forEach((ln, j) => c.drawString(xs[4] + 3, y - 10 - j * LOP_LINE_H, ln));
+      c.setFont("Helvetica", 7.8); c.drawCentredString(cx[5], y - 10, e.amount ? fmtAmount(e.amount) : "");
+      y = ruled(c, xs, y, h); gt += e.amount;
+    });
+    if (y - TOT_H < DK_BOTTOM) { c.newPage(); y = newPage(true); }
+    totalRow("Sub-Total", gt, 8.5); grand += gt;
+  }
+  if (y - TOT_H - TRAILER < DK_BOTTOM) { c.newPage(); y = newPage(true); }
+  totalRow("Grand Total:-", grand, 9);
+  docketTrailer(c, y, xs);
+}
+
+function faixHeader(c, xs, cx, top) {
+  const bh = FX_BAND, b1 = top - bh, b2 = top - 2 * bh, b3 = top - 3 * bh;
+  const block = (x, yt, label, size = 7.4) => { c.setFont("Helvetica-Bold", size); let ly = yt; label.split("\n").forEach(ln => { c.drawCentredString(x, ly, ln); ly -= size + 1.3; }); };
+  const span = (idx, from, h, size) => { const n = FAIX_COLS[idx][0].split("\n").length; block(cx[idx], from - (h - n * 8.7) / 2 - 7, FAIX_COLS[idx][0], size); };
+  [0, 1, 4, 10].forEach(i => span(i, top, FX_HEADER_H));
+  c.setFont("Helvetica-Bold", 7.6); c.drawCentredString((cx[2] + cx[3]) / 2, top - 10, "Sanction");
+  [2, 3].forEach(i => span(i, b1, 2 * bh));
+  c.drawCentredString((cx[5] + cx[9]) / 2, top - 10, "Expenditure");
+  c.setFont("Helvetica-Bold", 7.0); c.drawCentredString((cx[5] + cx[7]) / 2, b1 - 10, "During the month");
+  [5, 6, 7].forEach(i => span(i, b2, bh, 7.0));
+  [8, 9].forEach(i => span(i, b1, 2 * bh, 7.0));
+  c.setLineWidth(1); c.rect(xs[0], b3, xs[xs.length - 1] - xs[0], top - b3);
+  // inner dividers start below the band that spans them: Sanction (xs[3]), During the month (xs[6], xs[7]), Expenditure (xs[8], xs[9])
+  const vTop = i => (i === 3 || i === 8 || i === 9) ? b1 : (i === 6 || i === 7) ? b2 : top;
+  xs.slice(1, -1).forEach((x, k) => c.line(x, b3, x, vTop(k + 1)));
+  c.line(xs[2], b1, xs[4], b1); c.line(xs[5], b1, xs[10], b1); c.line(xs[5], b2, xs[8], b2);
+  c.setFont("Helvetica", 7); cx.forEach((x, i) => c.drawCentredString(x, b3 - 8, String(i + 1)));
+  const nb = b3 - FX_NUM_H; c.line(xs[0], nb, xs[xs.length - 1], nb); xs.forEach(x => c.line(x, nb, x, b3));
+  return nb;
+}
+// work name (wrapped), then DSO/RSO (as per the estimate) with its number, e.g. "DSO 02/2026-27"
+function drawFaixBody(c, cs, pg) {
+  const dsoLines = (g, w) => (g.dso_work ? wrapText(c, g.dso_work, "Helvetica", 7.0, w) : []).concat([g.dso_ref].filter(Boolean));
+  const left = 0.35 * INCH, right = LAND_W - 0.35 * INCH; let xs, cx, cw;
+  const newPage = cont => {
+    pg.n++; const y0 = docketPageHeader(c, pg.n, "FORM - FA.IX", cs.heading, cont, left, right);
+    [xs, , cx] = faGeometry(FAIX_COLS, left, right); cw = widthsOf(xs);
+    return faixHeader(c, xs, cx, y0);
+  };
+  let y = newPage(false); const G = { s: 0, u: 0, m: 0, p: 0, b: 0 };
+  const totalRow = (label, s, u, m, p, b, size) => {
+    c.setFont("Helvetica-Bold", size); c.drawString(xs[1] + 3, y - 10, label);
+    if (s != null) c.drawCentredString(cx[3], y - 10, fmtAmount(s)); if (u != null) c.drawCentredString(cx[4], y - 10, fmtAmount(u));
+    c.drawCentredString(cx[7], y - 10, fmtAmount(m)); c.drawCentredString(cx[8], y - 10, fmtAmount(p)); c.drawCentredString(cx[9], y - 10, fmtAmount(b));
+    y = ruled(c, xs, y, TOT_H);
+  };
+  for (const g of cs.groups) {
+    g.entries.forEach((e, idx) => {
+      let n = Math.max(1, wrapText(c, e.particulars, "Helvetica", 7.4, cw[1] - 6).length);
+      if (idx === 0) n = Math.max(n, dsoLines(g, cw[2] - 4).length, g.component ? wrapText(c, g.component, "Helvetica", 7.0, cw[10] - 4).length : 0);
+      const h = n * FX_LINE_H + 5.5;
+      if (y - h < DK_BOTTOM) { c.newPage(); y = newPage(true); }
+      if (idx === 0) {
+        c.setFont("Helvetica", 7.6); c.drawCentredString(cx[0], y - 10, String(g.sl_no)); c.setFont("Helvetica", 7.0);
+        dsoLines(g, xs[3] - xs[2] - 4).forEach((ln, j) => c.drawCentredString(cx[2], y - 10 - j * FX_LINE_H, ln));
+        c.setFont("Helvetica", 7.4); if (g.sanctioned != null) c.drawCentredString(cx[3], y - 10, fmtAmount(g.sanctioned));
+        c.drawCentredString(cx[4], y - 10, fmtAmount(g.upto_last_month));
+        if (g.component) { c.setFont("Helvetica", 7.0); wrapText(c, g.component, "Helvetica", 7.0, xs[11] - xs[10] - 4).forEach((ln, j) => c.drawCentredString(cx[10], y - 10 - j * FX_LINE_H, ln)); }
+      }
+      c.setFont("Helvetica", 7.4);
+      wrapText(c, e.particulars, "Helvetica", 7.4, xs[2] - xs[1] - 6).forEach((ln, j) => c.drawString(xs[1] + 3, y - 10 - j * FX_LINE_H, ln));
+      c.drawCentredString(cx[5], y - 10, String(e.lop_no)); c.drawCentredString(cx[6], y - 10, String(e.vr_no));
+      c.drawCentredString(cx[7], y - 10, e.amount ? fmtAmount(e.amount) : "");
+      y = ruled(c, xs, y, h);
+    });
+    const month = g.entries.reduce((a, e) => a + e.amount, 0), s = g.sanctioned ?? 0, u = g.upto_last_month ?? 0, p = u + month, b = s - p;
+    if (y - TOT_H < DK_BOTTOM) { c.newPage(); y = newPage(true); }
+    totalRow("Sub-Total", s, u, month, p, b, 8);
+    G.s += s; G.u += u; G.m += month; G.p += p; G.b += b;
+  }
+  if (y - TOT_H - TRAILER < DK_BOTTOM) { c.newPage(); y = newPage(true); }
+  totalRow("Grand Total:-", G.s, G.u, G.m, G.p, G.b, 8.6);
+  docketTrailer(c, y, xs);
+}
+function generateDocket(data, kind, { docket }) {
+  let cases = (kind === "lop" ? lopCases : faixCases)(docketBuckets(data));
+  if (docket) cases = cases.filter(k => k.name === docket);
+  if (!cases.length) return null;
+  const c = new Canvas(true), pg = { n: 0 };
+  cases.forEach((cs, i) => { if (i) c.newPage(); (kind === "lop" ? drawLopBody : drawFaixBody)(c, cs, pg); });
+  return { doc: c.d, count: cases.length };
+}
+
+/* ============================ FORM 61 ============================ */
+const F61 = { division_title: "Andhra Pradesh Forest Department Social Forestry Division, CHITTOOR.", fro_designation: "Social Forestry Range Chittoor",
+  vss_default: "", submitted_to: "Submitted to DFO, Social Forestry Division, Chittoor",
+  counter_signed_block: ["COUNTER SIGNED", "Divisional Forest Officer", "Social Forestry", "Chittoor"] };
+const F61_COLS = [["Sl.\nNo.", 0.35], ["Name and Particulars of Works", 2.15], ["So\nNo.", 0.8], ["Amount\nSanctioned", 0.75], ["Amt. Spent upto\nend of prev. month", 0.85],
+  ["Range\nVr. No.", 0.55], ["Lop\nNo.", 0.5], ["Amount", 0.75], ["Total", 0.75], ["Progressive\nTotal", 0.8], ["Balance\navailable", 0.8], ["Remarks", 0.8]];
+
+function form61Cases(data) {
+  const tokMonth = {}; data.exp.forEach(r => { const m = monthKey(r.dt); if (m != null) tokMonth[r.adv_token_no] = m; });
+  const running = {}, cases = [];
+  for (const tok of data.batchTokens) {
+    const v = data.vd.filter(r => r.esti_no === tok.esti_no && r.batch_no === tok.batch_no)
+      .sort((a, b) => (Number(a.voucher_no) || 0) - (Number(b.voucher_no) || 0));
+    if (!v.length && !(tok.token_no in tokMonth)) continue;
+    let month = tokMonth[tok.token_no] ?? null;
+    if (month == null && v.length) { const ds = v.map(r => r.voucher_date).filter(d => d != null); month = ds.length ? monthKey(Math.max(...ds)) : null; }
+    if (month == null) month = monthKey(tok.date);
+    if (month == null) continue;
+    const prev = running[tok.esti_no] || 0, thisTotal = v.reduce((a, r) => a + (r.voucher_amount || 0), 0), progressive = prev + thisTotal;
+    running[tok.esti_no] = progressive;
+    const e = data.est[tok.esti_no] || null, sanctioned = e ? num(e.est_cost) : null;
+    cases.push({ esti_no: tok.esti_no, token_no: tok.token_no, token_amount: tok.amount, month, vouchers: v, prev_spent: prev, this_total: thisTotal,
+      progressive, sanctioned, balance: sanctioned != null ? sanctioned - progressive : null,
+      scheme: e ? schemeDisplay(String(e.scheme ?? "").trim()) : "", name_of_work: e ? String(e.esti_description ?? "").trim() : "",
+      vss: data.vssOf ? data.vssOf(tok.esti_no) : "" });
+  }
+  return cases;
+}
+
+function drawForm61(c, cs) {
+  const left = 0.4 * INCH, right = LAND_W - 0.4 * INCH, hh = 40, rowH = 15.5, LH = 9.6, margin = 0.4 * INCH, FOOT = 112;   // FOOT = room for "Submitted to…" and the signature blocks
+  const [xs, widths, cx] = faGeometry(F61_COLS, left, right), v = cs.vouchers;
+  const nameLines = wrapText(c, cs.name_of_work, "Helvetica", 7.8, widths[1] - 8), nameRows = Math.ceil((nameLines.length * LH + 6) / rowH);
+  const vssTxt = stripVss(cs.vss || F61.vss_default || "");
+  // header block; returns the y of the table's top edge
+  const head = (cont) => {
+    let y = LAND_H - 0.35 * INCH;
+    c.setFont("Helvetica", 9); c.drawRightString(right, y, vssTxt ? `VSS: ${vssTxt} V.S.S.` : "VSS:"); if (cont) c.drawString(left, y, "(Continued)");
+    y -= 4; c.setFont("Times-Bold", 15); c.drawCentredString(LAND_W / 2, y, "FORM - 61");
+    y -= 18; c.setFont("Times-Bold", 13); c.drawCentredString(LAND_W / 2, y, F61.division_title);
+    y -= 22; c.setFont("Helvetica", 10);
+    const line1 = "Schedule Docket of work Voucher of Forest Range officer"; c.drawString(left, y, line1);
+    const x2 = left + sw(c, line1 + " ", "Helvetica", 10); dotted(c, x2, y - 2, x2 + 190); c.drawString(x2 + 2, y, F61.fro_designation);
+    const x3 = x2 + 200; c.drawString(x3, y, "under");
+    const x4 = x3 + sw(c, "under ", "Helvetica", 10) + 4; dotted(c, x4, y - 2, x4 + 100); c.drawString(x4 + 2, y, cs.scheme);
+    c.drawString(x4 + 115, y, "Scheme");
+    y -= 16; const lbl = "For the month of"; c.drawString(left, y, lbl);
+    const x6 = left + sw(c, lbl + " ", "Helvetica", 10) + 4; dotted(c, x6, y - 2, x6 + 130); c.drawString(x6 + 2, y, monthLabel(cs.month));
+    y -= 18; c.setFont("Helvetica-Bold", 9.5);
+    c.drawString(left, y, `Token No: ${cs.token_no ?? ""}    Amount: Rs. ${cs.token_amount != null ? indianComma(cs.token_amount) + "/-" : ""}`);
+    return y - 14;
+  };
+  const top0 = head(false), bt0 = top0 - hh, rowsAvail = Math.floor((bt0 - margin) / rowH), lastCap = Math.floor((bt0 - margin - FOOT) / rowH) - 1;
+  // split the voucher rows over as many pages as needed: full pages first, the last page keeps room for TOTAL + signatures
+  const pages = []; let i = 0;
+  while (true) {
+    const rem = v.length - i, first = !pages.length, need = first ? Math.max(1, nameRows) : 1;
+    if (rem <= Math.max(lastCap, need) || rem <= 0) { pages.push([i, v.length]); break; }
+    const take = Math.max(1, Math.min(rowsAvail, rem - 1)); pages.push([i, i + take]); i += take;
+  }
+  pages.forEach(([i0, i1], pi) => {
+    const first = pi === 0, last = pi === pages.length - 1;
+    if (!first) c.newPage();
+    const top = first ? top0 : head(true), bt = top - hh, nData = Math.max(i1 - i0, first ? nameRows : 1, 1), nRows = nData + (last ? 1 : 0), bottom = bt - nRows * rowH;
+    c.setLineWidth(1); c.rect(xs[0], bottom, xs[xs.length - 1] - xs[0], top - bottom);
+    xs.slice(1, -1).forEach(x => c.line(x, bottom, x, top));
+    c.line(xs[0], bt, xs[xs.length - 1], bt);
+    for (let r = 1; r < nData; r++) c.line(xs[5], bt - r * rowH, xs[xs.length - 1], bt - r * rowH);   // voucher rows only
+    if (last) c.line(xs[0], bt - nData * rowH, xs[xs.length - 1], bt - nData * rowH);                  // above TOTAL row
+    c.setFont("Helvetica-Bold", 7.6);
+    F61_COLS.forEach(([label], k) => { let ly = top - 11; label.split("\n").forEach(ln => { c.drawCentredString(cx[k], ly, ln); ly -= 8.5; }); });
+    c.setFont("Helvetica", 7); cx.forEach((x, k) => c.drawCentredString(x, top - hh + 6, String(k + 1)));
+    const r1 = bt - 11, cell = n => n == null || isNaN(n) ? "" : fmtAmount(n), [, so, yr] = parseEstiNo(cs.esti_no);
+    if (first) {   // the work block (Sl., name, S.O. No., sanctioned, spent) sits beside the first rows only
+      c.setFont("Helvetica-Bold", 8.5); c.drawCentredString(cx[0], r1, "1");
+      const soTxt = `${so}/${yr}`; let soFs = 7.8; while (soFs > 5.5 && sw(c, soTxt, "Helvetica", soFs) > widths[2] - 4) soFs -= 0.2;   // S.O. No. stays on one line
+      c.setFont("Helvetica", soFs); c.drawCentredString(cx[2], r1, soTxt);
+      c.setFont("Helvetica", 7.8); nameLines.forEach((ln, k) => c.drawString(xs[1] + 4, r1 - k * LH, ln));
+      c.drawCentredString(cx[3], r1, cell(cs.sanctioned)); c.drawCentredString(cx[4], r1, cell(cs.prev_spent));
+    } else { c.setFont("Helvetica-Oblique", 7.6); c.drawString(xs[1] + 4, r1, "(contd.)"); }
+    c.setFont("Helvetica", 8);
+    v.slice(i0, i1).forEach((r, k) => { const ry = r1 - k * rowH; c.drawCentredString(cx[5], ry, String(parseInt(r.voucher_no, 10) || 0)); c.drawCentredString(cx[7], ry, cell(r.voucher_amount)); });
+    if (!v.length) c.drawCentredString(cx[5], r1, "-");
+    if (last) {
+      const sy = r1 - nData * rowH; c.setFont("Helvetica-Bold", 8);
+      c.drawCentredString(cx[1], sy, "TOTAL"); c.drawCentredString(cx[8], sy, cell(cs.this_total)); c.drawCentredString(cx[9], sy, cell(cs.progressive));
+      c.drawCentredString(cx[10], sy, cs.balance != null && Math.abs(cs.balance) < 1 ? "NIL" : cell(cs.balance));
+      const fy = bottom - 22; c.setFont("Helvetica", 9.5); c.drawString(left, fy, F61.submitted_to);
+      const sigY = fy - 10; c.setFont("Helvetica-Bold", 9);
+      CONFIG.fro_block.forEach((ln, k) => c.drawCentredString(LAND_W / 2 + 1.6 * INCH, sigY - k * 11, ln));
+      F61.counter_signed_block.forEach((ln, k) => c.drawCentredString(right - 1.6 * INCH, sigY - (k ? k + 2 : 0) * 11, ln));   // two blank lines under COUNTER SIGNED for the stamp / signature
+    }
+  });
+}
+function generateForm61(data, { scheme, esti }) {
+  let cases = form61Cases(data);
+  if (scheme) cases = cases.filter(k => k.scheme.toLowerCase() === scheme.toLowerCase());
+  if (esti) cases = cases.filter(k => k.esti_no === esti);
+  if (!cases.length) return null;
+  const c = new Canvas(true); cases.forEach((cs, i) => { if (i) c.newPage(); drawForm61(c, cs); });
+  return { doc: c.d, count: cases.length };
+}
+
+/* ============================ CASH BOOK ============================ */
+const CB_COLS = [["Date", 0.55], ["Item No.", 0.42], ["Voucher No.", 0.5], ["Particulars of Receipts and Payments", 2.5], ["Cash", 0.55],
+  ["Bank or Treasury", 0.75], ["Cash", 0.75], ["Bank or Treasury", 0.75], ["Head of Account", 1.15]];
+const CB_LINE_H = 10, CB_ROW_PAD = 6, CB_HEADER_H = 44, CB_FOOTER_H = 190, CB_FONT = ["Helvetica", 7.6];
+const CB_SIG1 = [["SECTION OFFICER", "SOCIAL FORESTRY SECTION", "CHITTOOR"], ["CHAIRMAN", ""]];
+const CB_SIG2 = [["FOREST RANGE OFFICER", "SOCIAL FORESTRY RANGE", "CHITTOOR"], ["COUNTER SIGNED", "Divisional Forest Officer", "Social Forestry", "Chittoor"]];
+let _meas = null; const measure = () => _meas || (_meas = new Canvas());
+const startPage = c => { if (c._started) c.newPage(); c._started = true; };
+const cbGeom = (l, r) => faGeometry(CB_COLS, l, r)[0];
+const cbPartW = () => { const xs = cbGeom(0.42 * INCH, PAGE_W - 0.35 * INCH); return xs[4] - xs[3] - 6; };
+const cbHeadW = () => { const xs = cbGeom(0.42 * INCH, PAGE_W - 0.35 * INCH); return xs[9] - xs[8] - 6; };
+const cbWrapHead = t => wrapCell(measure(), t, CB_FONT[0], CB_FONT[1], cbHeadW());
+const cbWrap = raw => raw.flatMap(t => wrapText(measure(), t, CB_FONT[0], CB_FONT[1], cbPartW()));
+
+function cbPayParticulars(r, so) {
+  const raw = [`Paid to ${isBlank(r.payee_name) ? "the payee" : r.payee_name} towards ${isBlank(r.voucher_details) ? "" : String(r.voucher_details).trim()}`];
+  if (r.qnty) raw.push(`Qty: ${Number.isInteger(r.qnty) ? r.qnty.toFixed(1) : r.qnty}`);
+  const mb = r.mbook_no, mbOk = !isBlank(mb) && !["", "0"].includes(String(mb).trim()), pl = pageLabel(r), bits = [];
+  if (mbOk) bits.push(`M.B. No: ${mb}`); if (pl) bits.push(`Page No: ${pl}`);
+  if (bits.length) raw.push(bits.join(", "));
+  raw.push(`(${so[0]} ${so[1]}/${so[2]})`);
+  return cbWrap(raw);
+}
+const cbVssName = (data, esti) => stripVss((data.vssOf && data.vssOf(esti)) || "");   // VSS of an estimate ("" if unknown)
+const cbVssKey = (data, esti) => normText(cbVssName(data, esti));
+function cbEntries(data, scheme, month, f = {}) {
+  const receipts = data.adv.filter(a => a.credited === "Yes" && monthKey(a.credited_date) === month &&
+      (f.token != null ? a.token_no === f.token : schemeDisplay(String(a.scheme ?? "").trim()) === scheme) && (f.vss == null || cbVssKey(data, a.trans_id) === f.vss))
+    .map(a => ({ date: a.credited_date, kind: "receipt", item_no: null, voucher_no: "",
+      particulars_lines: cbWrap(["Received from DFO, Social Forestry Division through", `online payment towards Token No ${a.token_no}`, `(${a.trans_id})`]),
+      receipt_cash: 0, receipt_bank: a.credited_amt || 0, payment_cash: 0, payment_bank: 0, head_of_account: "Received", head_lines: ["Received"] }))
+    .sort((a, b) => a.date - b.date);
+  let vs = data.vd.filter(r => r.scheme_disp === scheme && monthKey(r.voucher_date) === month &&
+    (f.esti == null || r.esti_no === f.esti) && (f.batch == null || r.batch_no === f.batch) && (f.vss == null || cbVssKey(data, r.esti_no) === f.vss));
+  const vn = r => { const n = Number(r.voucher_no); return isNaN(n) || isBlank(r.voucher_no) ? Infinity : n; };
+  vs = vs.map((r, i) => [r, i]).sort((a, b) => (vn(a[0]) === vn(b[0]) ? 0 : vn(a[0]) < vn(b[0]) ? -1 : 1) || a[1] - b[1]).map(x => x[0]);
+  const payments = vs.map(r => {
+    const so = parseEstiNo(r.esti_no), n = parseInt(r.voucher_no, 10);
+    return { date: r.voucher_date, kind: "payment", item_no: "", voucher_no: isNaN(n) ? String(r.voucher_no) : n,
+      particulars_lines: cbPayParticulars(r, so), receipt_cash: 0, receipt_bank: 0, payment_cash: r.voucher_amount || 0, payment_bank: 0,
+      head_of_account: `${so[0]} ${so[1]}/${so[2]}` + (r.batch_no != null ? ` (Batch ${r.batch_no})` : "") };
+  });
+  payments.forEach(e => { e.head_lines = cbWrapHead(e.head_of_account); });
+  const out = []; let i = 0, j = 0;
+  while (i < payments.length && j < receipts.length) out.push(receipts[j].date <= payments[i].date ? receipts[j++] : payments[i++]);
+  out.push(...payments.slice(i), ...receipts.slice(j));
+  let seq = 1; out.forEach(e => { if (e.kind === "receipt") e.item_no = seq++; });
+  return out;
+}
+function cbDocuments(data, scheme, vssSel, monthSel) {
+  const combos = new Map(), add = (vk, sc, m) => combos.set(vk + "\u0000" + sc + "\u0000" + m, [vk, sc, m]);
+  data.vd.forEach(r => { if (data.est[r.esti_no]) { const m = monthKey(r.voucher_date); if (m != null) add(cbVssKey(data, r.esti_no), r.scheme_disp, m); } });
+  data.adv.filter(a => a.credited === "Yes").forEach(a => { const m = monthKey(a.credited_date), sc = schemeDisplay(String(a.scheme ?? "").trim()); if (m != null) add(cbVssKey(data, a.trans_id), sc, m); });
+  const docs = [], names = {};
+  data.vd.forEach(r => { names[cbVssKey(data, r.esti_no)] = cbVssName(data, r.esti_no); }); data.adv.forEach(a => { names[cbVssKey(data, a.trans_id)] = cbVssName(data, a.trans_id); });
+  [...combos.values()].sort((a, b) => cmpNull(a[0], b[0]) || cmpNull(a[1], b[1]) || cmpNull(a[2], b[2])).forEach(([vk, sc, m]) => {
+    if (scheme && sc !== scheme) return;
+    if (vssSel && normText(vssSel) !== vk) return;
+    if (monthSel && monthSel !== m) return;
+    const entries = cbEntries(data, sc, m, { vss: vk }); if (entries.length) docs.push({ scheme: sc, month: m, vss: names[vk] || "", entries });
+  });
+  return docs;
+}
+function cbBatchDocuments(data, esti, batch) {
+  const tok = data.batchTokens.find(t => t.esti_no === esti && t.batch_no === batch); if (!tok) return [];
+  const e = data.est[esti], scheme = e ? schemeDisplay(String(e.scheme ?? "").trim()) : "", months = new Set();
+  data.vd.filter(r => r.esti_no === esti && r.batch_no === batch).forEach(r => { const m = monthKey(r.voucher_date); if (m != null) months.add(m); });
+  const ar = data.adv.find(a => a.token_no === tok.token_no);
+  if (ar && ar.credited === "Yes") { const m = monthKey(ar.credited_date); if (m != null) months.add(m); }
+  const vk = cbVssKey(data, esti), vn = cbVssName(data, esti);
+  return [...months].sort().map(m => ({ scheme, month: m, vss: vn, entries: cbEntries(data, scheme, m, { esti, batch, token: tok.token_no, vss: vk }) })).filter(d => d.entries.length);
+}
+
+function cbHeader(c, pageNo, month, scheme, vss) {
+  const left = 0.42 * INCH, right = PAGE_W - 0.35 * INCH, top = PAGE_H - 0.3 * INCH, bw = 62, bh = 15;
+  c.setLineWidth(1); c.rect(right - bw, top - bh, bw, bh);
+  c.setFont("Helvetica-Bold", 8.5); c.drawCentredString(right - bw / 2, top - bh + 4.5, "ORIGINAL");
+  c.setFont("Helvetica-Bold", 11); c.drawCentredString(right - bw / 2, top - bh - 15, String(pageNo));
+  let y = top - 4; c.setFont("Helvetica-Bold", 16); c.drawCentredString(PAGE_W / 2 - 20, y, "CASH BOOK FOR SUBORDINATES");
+  y -= 12; c.setFont("Helvetica-Oblique", 8); c.drawCentredString(PAGE_W / 2 - 20, y, "(See Local Ruling Under Article 2/56 Andhra Pradesh Account Code Vol. III)");
+  y -= 14; c.setFont("Helvetica", 10); const l1 = "FORM F.A.I. CASH BOOK FOR THE MONTH OF"; c.drawString(left, y, l1);
+  let x = left + sw(c, l1 + " ", "Helvetica", 10) + 4; dotted(c, x, y - 2, x + 130); const mt = MONTHS[+month.slice(5) - 1]; c.drawString(x + 2, y, mt); c.drawString(x + 2 + sw(c, mt, "Helvetica", 10), y, ", 20" + month.slice(2, 4));
+  y -= 16;
+  const fld = (lab, val, x0, w) => { c.drawString(x0, y, lab); const xv = x0 + sw(c, lab, "Helvetica", 10) + 3; dotted(c, xv, y - 2, w == null ? right : xv + w); c.drawString(xv + 2, y, val); return xv + (w ?? 0); };
+  let e = fld("DIVISION", CONFIG.division, left, 78); e = fld("RANGE", CONFIG.range, e + 8, 74); e = fld("VSS", vss ? `${vss} V.S.S.` : CONFIG.vss_default, e + 8, 112); fld("SCHEME", scheme, e + 10, null);
+  return [y - 16, left, right];
+}
+function cbTableHeader(c, top, xs) {
+  const cx = centersOf(xs); c.setLineWidth(1); c.line(xs[0], top, xs[8 + 1], top);
+  c.setFont("Helvetica-Bold", 8.5); c.drawCentredString((xs[4] + xs[6]) / 2, top - 10, "Receipts"); c.drawCentredString((xs[6] + xs[8]) / 2, top - 10, "Payments");
+  c.line(xs[4], top - 13, xs[6], top - 13); c.line(xs[6], top - 13, xs[8], top - 13);
+  c.setFont("Helvetica-Bold", 7.3);
+  CB_COLS.forEach(([label], i) => wrapText(c, label, "Helvetica-Bold", 7.3, xs[i + 1] - xs[i] - 4).slice(0, 2)
+    .forEach((ln, j) => c.drawCentredString(cx[i], (i >= 4 && i <= 7 ? top - 22 : top - 10) - j * 8, ln)));
+  c.setFont("Helvetica", 7); cx.forEach((x, i) => c.drawCentredString(x, top - 40, String(i + 1)));
+  const hb = top - CB_HEADER_H; c.line(xs[0], hb, xs[xs.length - 1], hb);
+  xs.slice(1, -1).forEach((x, k) => c.line(x, hb, x, (k + 1 === 5 || k + 1 === 7) ? top - 13 : top));
+  c.line(xs[0], top, xs[0], hb); c.line(xs[xs.length - 1], top, xs[xs.length - 1], hb);
+  return hb;
+}
+const cbRule = (c, xs, y, h) => { c.line(xs[0], y - h, xs[xs.length - 1], y - h); xs.slice(1, -1).forEach(x => c.line(x, y - h, x, y)); return y - h; };
+const cbH = e => Math.max(1, e.particulars_lines.length, (e.head_lines || []).length) * CB_LINE_H + CB_ROW_PAD;
+function cbBfRow(c, y, xs, bf) {
+  const cx = centersOf(xs); c.setFont("Helvetica-Bold", 8); c.drawCentredString(cx[3], y - 11, "B/F");
+  [["receipt_cash", 4], ["receipt_bank", 5], ["payment_cash", 6], ["payment_bank", 7]].forEach(([k, i]) => c.drawCentredString(cx[i], y - 11, bf[k] ? fmtAmount(bf[k]) : "-"));
+  return cbRule(c, xs, y, CB_LINE_H + CB_ROW_PAD);
+}
+function cbRow(c, y, xs, e) {
+  const cx = centersOf(xs), h = cbH(e); c.setFont("Helvetica", 8);
+  c.drawCentredString(cx[0], y - 10, fmtDate(e.date)); if (e.item_no) c.drawCentredString(cx[1], y - 10, `(${e.item_no})`);
+  if (e.voucher_no !== "") c.drawCentredString(cx[2], y - 10, String(e.voucher_no));
+  c.setFont("Helvetica", 7.6); e.particulars_lines.forEach((ln, i) => c.drawString(xs[3] + 3, y - 10 - i * CB_LINE_H, ln));
+  c.setFont("Helvetica", 8);
+  [["receipt_cash", 4], ["receipt_bank", 5], ["payment_cash", 6], ["payment_bank", 7]].forEach(([k, i]) => { if (e[k]) c.drawCentredString(cx[i], y - 10, fmtAmount(e[k])); });
+  c.setFont("Helvetica", 7.6); (e.head_lines || [e.head_of_account]).forEach((ln, i) => c.drawString(xs[8] + 3, y - 10 - i * CB_LINE_H, ln));
+  return cbRule(c, xs, y, h);
+}
+function cbFooter(c, y, left, right, xs, t) {
+  const cx = centersOf(xs), rh = CB_LINE_H + CB_ROW_PAD; c.setFont("Helvetica-Bold", 8); c.drawCentredString(cx[3], y - 11, "Total");
+  [["receipt_cash", 4], ["receipt_bank", 5], ["payment_cash", 6], ["payment_bank", 7]].forEach(([k, i]) => c.drawCentredString(cx[i], y - 11, fmtAmount(t[k])));
+  y = cbRule(c, xs, y, rh);
+  c.setFont("Helvetica-Bold", 8); c.drawCentredString(cx[3], y - 11, "C-B in joint account");
+  const cl = t.receipt_bank - t.payment_bank; c.drawCentredString(cx[5], y - 11, Math.abs(cl) < 1 ? "NIL" : fmtAmount(cl));
+  y = cbRule(c, xs, y, rh) - 20;
+  c.setFont("Helvetica-BoldOblique", 8.5);
+  const bal = t.receipt_cash + t.receipt_bank - t.payment_cash - t.payment_bank;
+  wrapText(c, `CERTIFICATE. I certify that I have verified the cash balance of Rs. ${fmtAmount(bal)} (Receipts - Payments) in VSS joint account and the entries in the cash book found correct.`,
+    "Helvetica-BoldOblique", 8.5, right - left).forEach(ln => { c.drawString(left, y, ln); y -= 11; });
+  y -= 26; const fx = left + (right - left) * 0.25, hx = left + (right - left) * 0.75; c.setFont("Helvetica-Bold", 8.5);
+  CB_SIG1[0].forEach((ln, i) => c.drawCentredString(fx, y - i * 10, ln)); CB_SIG1[1].forEach((ln, i) => { if (ln) c.drawCentredString(hx, y - i * 10, ln); });
+  y -= 46; CB_SIG2[0].forEach((ln, i) => c.drawCentredString(fx, y - i * 10, ln)); CB_SIG2[1].forEach((ln, i) => c.drawCentredString(hx, y - i * 10, ln));
+}
+function cbDocument(c, doc, pg) {
+  const bottom = 0.3 * INCH, top0 = PAGE_H - 0.3 * INCH - 4 - 12 - 14 - 16 - 16, avail = top0 - CB_HEADER_H - bottom;
+  const pages = []; let cur = [], used = 0;
+  doc.entries.forEach(e => { const h = cbH(e); if (cur.length && used + h > avail) { pages.push(cur); cur = []; used = 0; } cur.push(e); used += h; });
+  if (cur.length) pages.push(cur);
+  const cum = { receipt_cash: 0, receipt_bank: 0, payment_cash: 0, payment_bank: 0 };
+  const begin = () => { startPage(c); pg.n++; const [t, l, r] = cbHeader(c, pg.n, doc.month, doc.scheme, doc.vss); const xs = cbGeom(l, r); return [cbTableHeader(c, t, xs), l, r, xs]; };
+  pages.forEach((pe, pi) => {
+    let [y, l, r, xs] = begin(); if (pi > 0) y = cbBfRow(c, y, xs, cum);
+    pe.forEach(e => { y = cbRow(c, y, xs, e); Object.keys(cum).forEach(k => cum[k] += e[k]); });
+    if (pi === pages.length - 1) {
+      if (y - bottom >= CB_FOOTER_H) cbFooter(c, y, l, r, xs, cum);
+      else { [y, l, r, xs] = begin(); y = cbBfRow(c, y, xs, cum); cbFooter(c, y, l, r, xs, cum); }
+    }
+  });
+}
+function generateCashbook(data, { scheme, esti, batch, vss, month }) {
+  let docs;
+  if (batch) { if (!esti) return { error: "Pick an Estimate as well as a Batch for a batch-wise cash book." }; docs = cbBatchDocuments(data, esti, Number(batch)); }
+  else docs = cbDocuments(data, scheme, vss, month);
+  if (batch && month) docs = docs.filter(d => d.month === month);
+  if (!docs.length) return null;
+  const c = new Canvas(), pg = { n: 0 }; docs.forEach(d => cbDocument(c, d, pg));
+  return { doc: c.d, count: docs.length };
+}
+
+/* ============================ WORK REGISTER ============================ */
+const WR_FIXED = [["Date", 0.55], ["Vr.\nNo.", 0.4], ["Item of Work", 2.1]], WR_TOTAL = [["Qty.", 0.5], ["Amount", 0.75]];
+const WR_MIN_W = 0.95, WR_LH = 10, WR_PAD = 6, WR_FOOT = 140;
+const wrAmt = n => n == null || isNaN(n) ? "" : `${Math.trunc(n)}-00`;
+const wrQty = q => { if (q == null || isNaN(q)) return ""; q = Math.round(q * 1000) / 1000; return Number.isInteger(q) ? String(q) : q.toFixed(1); };
+
+// Distinctive words of an item description (generic words, numbers and "batch" removed) – a voucher may post to a task column
+// only if it shares at least one of them, so e.g. "Cost of fertilizers" can no longer land in "Cost of tall plants" just because both start "Cost of".
+const WR_STOP = new Set("cost of the for and to in from with at by per no nos batch including etc rs as on is up upto a an or all each size".split(" "));
+const wrKeys = t => new Set(normText(t).split(" ").filter(w => w.length > 2 && !/^\d/.test(w) && !WR_STOP.has(w)).map(w => w.slice(0, 5)));
+const wrShare = (a, b) => { const A = wrKeys(a), B = wrKeys(b); if (!A.size || !B.size) return true; for (const k of A) if (B.has(k)) return true; return false; };
+
+// "… 2000 no’s @ Rs 82.014/1 Nos." -> { qty: 2000, unit: "Nos", rate: 82.014 };  "… 3 Ha @ Rs 9085.79 (1 ha)" -> { qty: 3, unit: "Ha", rate: 9085.79 }
+function wrQtyRate(t) {
+  t = String(t ?? "").replace(/\(\s*batch[^)]*\)/ig, " ");
+  const UN = "no[’'`]?s|nos?|ha|kms?|days?|months?", unitName = u => { u = u.toLowerCase(); return /^no/.test(u) ? "Nos" : u === "ha" ? "Ha" : /^km/.test(u) ? "Kms" : /^day/.test(u) ? "Days" : "Month"; };
+  const q = new RegExp("(\\d[\\d,]*\\.?\\d*)\\s*(" + UN + ")\\b", "i").exec(t.split("@")[0]);
+  const r = /@\s*(?:Rs\.?\s*)?(\d[\d,]*\.?\d*)/i.exec(t);
+  const ru = r ? new RegExp("\\/\\s*\\d*\\s*(" + UN + ")\\b|\\(\\s*\\d*\\s*(" + UN + ")\\s*\\)", "i").exec(t.slice(r.index)) : null;
+  const unit = q ? unitName(q[2]) : ru ? unitName(ru[1] || ru[2]) : "";
+  return { qty: q ? Number(q[1].replace(/,/g, "")) : null, rate: r ? Number(r[1].replace(/,/g, "")) : null, unit };
+}
+function wrData(data, esti) {
+  const cols = [];
+  (data.taskLookup[esti] || []).forEach(r => {
+    const label = String(r.task ?? "").trim();
+    if (!label || label.toLowerCase() === "nan") return;
+    cols.push({ label, unit: isBlank(r.unit) ? "" : String(r.unit), rate: num(r.rate), per: r.per, qty: num(r.qty), amount: num(r.amount) });
+  });
+  const vn = r => { const n = Number(r.voucher_no); return isBlank(r.voucher_no) || isNaN(n) ? Infinity : n; };
+  const rows = data.vd.filter(r => r.esti_no === esti).map((r, i) => [r, i])
+    .sort((a, b) => ((a[0].voucher_date || 0) - (b[0].voucher_date || 0)) || (vn(a[0]) === vn(b[0]) ? 0 : vn(a[0]) < vn(b[0]) ? -1 : 1) || a[1] - b[1]).map(x => x[0]);
+  const used = [], entries = [], cats = new Map();   // cats: category key -> column for vouchers that match no estimate task
+  // Category name for an unmatched voucher: its description without "(Batch n)", rates ("@ ...") and quantities ("2000 nos", "3 Ha").
+  const catLabel = t => String(t ?? "").replace(/\(\s*batch[^)]*\)/ig, " ").split("@")[0]
+    .replace(/\s+(for\s+)?\d[\d.,]*\s*(no[’'`]?s|nos?|ha|kms?|days?|months?)\b.*$/i, "").replace(/\s+/g, " ").replace(/[\s,.\-–]+$/, "").trim();
+  rows.forEach(r => {
+    const target = normText(r.voucher_details); let br = 0, bi = null;
+    cols.forEach((col, i) => {
+      const t = normText(col.label); if (!t) return;
+      if (!wrShare(r.voucher_details, col.label)) return;
+      let ratio = seqRatio(target, t); if (target && (target.includes(t) || t.includes(target))) ratio = Math.max(ratio, 0.9);
+      if (ratio > br) { br = ratio; bi = i; }
+    });
+    const idx = br >= 0.5 ? bi : null;
+    if (idx != null && !used.includes(idx)) used.push(idx);
+    const n = parseInt(r.voucher_no, 10);
+    entries.push({ date: r.voucher_date, vr_no: isNaN(n) ? String(r.voucher_no) : n, item: isBlank(r.voucher_details) ? "" : String(r.voucher_details),
+      task_idx: idx, qty: r.qnty, amount: r.voucher_amount || 0 });
+    if (idx == null) {
+      const lab = catLabel(r.voucher_details) || "Other items", key = normText(lab);
+      if (!cats.has(key)) cats.set(key, { label: lab, unit: "", rate: null, per: null, tqty: null });
+      const cc = cats.get(key), qr = wrQtyRate(r.voucher_details);   // quantity and rate quoted in the voucher text
+      if (cc.tqty == null && qr.qty != null) cc.tqty = qr.qty;
+      if (cc.rate == null && qr.rate != null) cc.rate = qr.rate;
+      if (!cc.unit && qr.unit) cc.unit = qr.unit;
+      entries[entries.length - 1].cat_key = key;
+    }
+  });
+  const usedCols = used.map(i => cols[i]), catPos = {};
+  cats.forEach((col, key) => { usedCols.push(col); catPos[key] = usedCols.length - 1; });   // each category becomes its own column header
+  const colTotals = usedCols.map(() => 0), colQty = usedCols.map(() => 0); let grand = 0;
+  entries.forEach(e => {
+    const pos = e.task_idx != null ? used.indexOf(e.task_idx) : catPos[e.cat_key], q = e.qty || 0; e.col_pos = pos;
+    if (pos != null) { colTotals[pos] += e.amount; colQty[pos] += q; }
+    grand += e.amount;
+  });
+  const er = data.est[esti] || null, sanctioned = er ? num(er.est_cost) : null, [so_label, so_no, so_year] = parseEstiNo(esti);
+  const scheme_raw = er ? String(er.scheme ?? "").trim() : "";
+  return { esti_no: esti, name_of_work: er ? String(er.esti_description ?? "").trim() : "", so_label, so_no, so_year, sanctioned, scheme_raw,
+    scheme_disp: schemeDisplay(scheme_raw), used_cols: usedCols, entries, col_totals: colTotals, col_qty_totals: colQty, grand_total: grand,
+    savings: sanctioned != null ? sanctioned - grand : null };
+}
+function wrGeom(left, right, n) {
+  const fixed = WR_FIXED.reduce((a, c) => a + c[1], 0), tot = WR_TOTAL.reduce((a, c) => a + c[1], 0);
+  const tw = Math.max(WR_MIN_W, ((right - left) / INCH - fixed - tot) / Math.max(1, n));
+  let w = WR_FIXED.map(c => c[1]); for (let i = 0; i < n; i++) w.push(tw * 0.4, tw * 0.6); w.push(...WR_TOTAL.map(c => c[1]));
+  const k = ((right - left) / INCH) / w.reduce((a, b) => a + b, 0), xs = [left]; w.forEach(x => xs.push(xs[xs.length - 1] + x * INCH * k));
+  return xs;
+}
+function wrPageHeader(c, d, part, parts, pageNo) {
+  const left = 0.35 * INCH, right = LAND_W - 0.35 * INCH, top = LAND_H - 0.3 * INCH;
+  c.setFont("Helvetica-Bold", 8); c.drawRightString(right, top, `Page ${pageNo}`);
+  let y = top - 14; c.setFont("Helvetica-Bold", 8.5); const lab = "NAME OF THE WORK :"; c.drawString(left, y, lab);
+  const x2 = left + sw(c, lab + " ", "Helvetica-Bold", 8.5); c.setFont("Helvetica", 8.5);
+  wrapText(c, d.name_of_work, "Helvetica", 8.5, right - x2 - 190).slice(0, 2).forEach((ln, i) => c.drawString(x2, y - i * 10, ln));
+  c.setFont("Helvetica", 8); let ry = top - 14;
+  c.drawRightString(right, ry, `Sanction Order No: ${d.so_no}/${d.so_year}`); ry -= 10;
+  c.drawRightString(right, ry, `Amount Sanctioned: Rs. ${d.sanctioned != null ? fmtAmount(d.sanctioned) : ""}`); ry -= 10;
+  c.drawRightString(right, ry, `Head of Account: ${d.scheme_raw === d.scheme_disp ? d.scheme_raw : `${d.scheme_raw} of ${d.scheme_disp}`}`);
+  y -= 24;
+  if (parts > 1) { c.setFont("Helvetica-BoldOblique", 8); c.drawString(left, y, `(Part ${part} of ${parts} \u2014 additional work-item columns continued below)`); y -= 12; }
+  return y;
+}
+function wrHeaderH(c, cols, xs) {
+  let mx = 1;
+  cols.forEach((col, t) => { const gw = xs[3 + t * 2 + 2] - xs[3 + t * 2];
+    let n = wrapText(c, col.label, "Helvetica-Bold", 6.3, gw - 3).slice(0, 4).length; if (col.unit || col.rate != null) n++; if (col.qty != null || col.amount != null) n++; if (col.tqty != null) n++; mx = Math.max(mx, n); });
+  return Math.max(36, 9 + mx * 7 + 4 + 19);
+}
+function wrTableHeader(c, top, xs, cols, hh, d, start) {
+  const n = cols.length, cx = centersOf(xs), qy = top - hh + 9, dv = top - hh + 19;
+  c.setLineWidth(1); c.line(xs[0], top, xs[xs.length - 1], top);
+  c.setFont("Helvetica-Bold", 7.5); WR_FIXED.forEach(([l], i) => l.split("\n").forEach((ln, j) => c.drawCentredString(cx[i], top - 10 - j * 8, ln)));
+  for (let t = 0; t < n; t++) {
+    const qi = 3 + t * 2, gc = (xs[qi] + xs[qi + 2]) / 2, gw = xs[qi + 2] - xs[qi], col = cols[t];
+    c.setFont("Helvetica-Bold", 6.3); const lines = wrapText(c, col.label, "Helvetica-Bold", 6.3, gw - 3).slice(0, 4);
+    lines.forEach((ln, j) => c.drawCentredString(gc, top - 9 - j * 7, ln)); let off = lines.length;
+    if (col.unit || col.rate != null) { c.setFont("Helvetica-Oblique", 5.8); c.drawCentredString(gc, top - 9 - off * 7, (col.rate != null ? `${col.unit} @ ${col.rate}` : col.unit).slice(0, 28)); off++; }
+    if (col.qty != null || col.amount != null) {
+      c.setFont("Helvetica", 5.8); c.drawCentredString(gc, top - 9 - off * 7, `Est: ${col.qty != null ? wrQty(col.qty) : "-"} / ${col.amount != null ? wrAmt(col.amount) : "-"}`); off++;
+    }
+    if (col.tqty != null) { c.setFont("Helvetica", 5.8); c.drawCentredString(gc, top - 9 - off * 7, `Qty: ${wrQty(col.tqty)}`); off++; }
+    c.line(xs[qi], dv, xs[qi + 2], dv); c.setFont("Helvetica-Bold", 6.5); c.drawCentredString(cx[qi], qy, "Qty"); c.drawCentredString(cx[qi + 1], qy, "Amount");
+  }
+  const ti = 3 + n * 2; c.setFont("Helvetica-Bold", 7.5); c.drawCentredString((xs[ti] + xs[ti + 2]) / 2, top - 9, "TOTAL");
+  c.line(xs[ti], dv, xs[ti + 2], dv); c.setFont("Helvetica-Bold", 6.5); c.drawCentredString(cx[ti], qy, "Qty"); c.drawCentredString(cx[ti + 1], qy, "Amount");
+  const hb = top - hh; c.line(xs[0], hb, xs[xs.length - 1], hb);
+  const inner = new Set([ti + 1]); for (let t = 0; t < n; t++) inner.add(3 + t * 2 + 1);
+  xs.forEach((x, i) => c.line(x, hb, x, inner.has(i) ? dv : top));
+  return hb;
+}
+const wrRule = (c, xs, y, h) => { c.line(xs[0], y - h, xs[xs.length - 1], y - h); xs.forEach(x => c.line(x, y - h, x, y)); return y - h; };
+const wrItem = e => e.item;
+function wrRow(c, y, xs, e, start, n, itemW) {
+  const cx = centersOf(xs), lines = wrapText(c, wrItem(e), "Helvetica", 7.3, itemW), h = Math.max(1, lines.length) * WR_LH + WR_PAD, qy = y - 9 - (lines.length - 1) * WR_LH;
+  c.setFont("Helvetica", 7.3); c.drawCentredString(cx[0], y - 9, fmtDate(e.date)); c.drawCentredString(cx[1], y - 9, String(e.vr_no));
+  lines.forEach((ln, i) => c.drawString(xs[2] + 2, y - 9 - i * WR_LH, ln));
+  const q = wrQty(e.qty), pos = e.col_pos;
+  if (pos != null && pos >= start && pos < start + n) { const qi = 3 + (pos - start) * 2; c.drawCentredString(cx[qi], qy, q); c.drawCentredString(cx[qi + 1], qy, wrAmt(e.amount)); }
+  const ti = 3 + n * 2; c.drawCentredString(cx[ti], qy, q); c.drawCentredString(cx[ti + 1], qy, wrAmt(e.amount));
+  return wrRule(c, xs, y, h);
+}
+function wrTotals(c, y, xs, d, start, n, pAmt, pQty) {
+  const cx = centersOf(xs); c.setFont("Helvetica-Bold", 7.6); c.drawString(xs[2] + 2, y - 9, "TOTAL");
+  for (let t = 0; t < n; t++) { const pos = start + t; if (pos >= d.col_totals.length) continue; const qi = 3 + t * 2;
+    c.drawCentredString(cx[qi], y - 9, wrQty(d.col_qty_totals[pos])); c.drawCentredString(cx[qi + 1], y - 9, wrAmt(d.col_totals[pos])); }
+  const ti = 3 + n * 2; c.drawCentredString(cx[ti], y - 9, wrQty(pQty)); c.drawCentredString(cx[ti + 1], y - 9, wrAmt(pAmt));
+  return wrRule(c, xs, y, WR_LH + WR_PAD);
+}
+function wrAbstract(c, y, left, right, d) {
+  c.setFont("Helvetica-Bold", 9); c.drawString(left, y, "ABSTRACT"); y -= 16; c.setFont("Helvetica", 9);
+  const sStr = d.sanctioned != null ? fmtAmount(d.sanctioned) : "N/A";
+  c.drawString(left, y, `Amount Sanctioned : Rs. ${sStr}`); y -= 13; c.drawString(left, y, `Amount Spent          : Rs. ${fmtAmount(d.grand_total)}`); y -= 13;
+  const sv = d.savings, svStr = sv != null ? fmtAmount(sv) : "N/A", label = sv == null || sv >= 0 ? "Savings" : "Excess";
+  c.drawString(left, y, `${label.padEnd(22)}: Rs. ${svStr}`); y -= 20;
+  if (d.sanctioned != null) {
+    const cert = `CERTIFICATE. Certified that the estimate sanctioned for Rs. ${sStr}/- vide ${d.so_label} ${d.so_no}/${d.so_year} under ${d.scheme_disp} Scheme has been verified against the vouchers recorded above. Amount spent to date is Rs. ${fmtAmount(d.grand_total)}/-` + (sv != null ? `, leaving a ${label.toLowerCase()} of Rs. ${svStr}/-.` : ".");
+    c.setFont("Helvetica-Oblique", 8.5); wrapText(c, cert, "Helvetica-Oblique", 8.5, right - left).forEach(ln => { c.drawString(left, y, ln); y -= 11; });
+  }
+  y -= 30; c.setFont("Helvetica-Bold", 9); CONFIG.fro_block.forEach((ln, i) => c.drawCentredString(right - 1.9 * INCH, y - i * 11, ln));
+}
+function wrEstimate(c, d, pg) {
+  const left = 0.35 * INCH, right = LAND_W - 0.35 * INCH, bottom = 0.3 * INCH, nTask = d.used_cols.length;
+  const avail = (right - left) / INCH - WR_FIXED.reduce((a, c2) => a + c2[1], 0) - WR_TOTAL.reduce((a, c2) => a + c2[1], 0);
+  const per = nTask ? Math.max(1, Math.floor(avail / WR_MIN_W)) : 1, parts = nTask ? Math.max(1, Math.ceil(nTask / per)) : 1, itemW = WR_FIXED[2][1] * INCH - 6;
+  for (let part = 1; part <= parts; part++) {
+    const start = (part - 1) * per, n = Math.min(per, Math.max(0, nTask - start)), cols = nTask ? d.used_cols.slice(start, start + n) : [];
+    const pe = d.entries.filter(e => { const p = e.col_pos || 0; return p >= start && p < start + n; });
+    const pAmt = pe.reduce((a, e) => a + e.amount, 0), pQty = pe.reduce((a, e) => a + (e.qty || 0), 0);
+    const xs = wrGeom(left, right, n), hh = wrHeaderH(c, cols, xs);
+    const begin = () => { startPage(c); pg.n++; const y0 = wrPageHeader(c, d, part, parts, pg.n); return wrTableHeader(c, y0 - 4, xs, cols, hh, d, start); };
+    let y = begin();
+    for (const e of pe) {
+      const h = Math.max(1, wrapText(c, wrItem(e), "Helvetica", 7.3, itemW).length) * WR_LH + WR_PAD;
+      if (part === parts ? y - h < bottom + WR_FOOT : y - h < bottom) y = begin();
+      y = wrRow(c, y, xs, e, start, n, itemW);
+    }
+    y = wrTotals(c, y, xs, d, start, n, pAmt, pQty);
+    if (part === parts) { if (y - WR_FOOT < bottom) { startPage(c); pg.n++; y = LAND_H - 0.5 * INCH; } wrAbstract(c, y - 20, left, right, d); }
+  }
+}
+function generateWorkRegister(data, { esti }) {
+  const list = esti ? [esti] : [...new Set(data.vd.map(r => r.esti_no).filter(e => !isBlank(e)))].sort();
+  const c = new Canvas(true), pg = { n: 0 }; let count = 0;
+  list.forEach(e => { const d = wrData(data, e); if (d.entries.length) { wrEstimate(c, d, pg); count++; } });
+  return count ? { doc: c.d, count } : null;
+}
+
+/* ============================ UI ============================ */
+const $ = id => document.getElementById(id);
+const msg = (t, err) => { $("msg").textContent = t; $("msg").className = err ? "err" : ""; };
+const busy = (b, ...ids) => ids.forEach(i => $(i).disabled = b);
+const fill = (sel, items, all) => { sel.innerHTML = `<option value="">${all}</option>` + items.map(x => `<option>${String(x).replace(/</g, "&lt;")}</option>`).join(""); };
+
+/* ============================ BENEFICIARY REPORT ============================ */
+// "Particulars of bank accounts of the agencies" form, one page per beneficiary. Bank details come from the database where it has them,
+// otherwise (or when you tick "Review / edit") from a manual screen; what you type is remembered in this browser for next time.
+const BEN_FIELDS = [
+  { k: "name", label: "Beneficiary Name*", req: true }, { k: "acc", label: "Beneficiary Account Number*", req: true },
+  { k: "a1", label: "Beneficiary Address 1*", req: true }, { k: "a2", label: "Beneficiary Address 2*", req: true }, { k: "a3", label: "Beneficiary Address 3*" },
+  { k: "mobile", label: "Beneficiary Mobile No." }, { k: "email", label: "Beneficiary E mail ID" }, { k: "code", label: "Party / Employee Code" },
+  { k: "ifsc", label: "IFSC Code*", req: true }, { k: "loc", label: "Location of the Beneficiary Branch" }, { k: "bank", label: "Bank*", req: true },
+  { k: "state", label: "State*", req: true }, { k: "branch", label: "Branch*", req: true },
+];
+const BEN_KEYS = {   // column-name patterns used to find each field in the beneficiary table / voucher rows
+  acc: [/^(\w*_)?(bank_?)?acc(ou)?nt_?(no|num|number)?$/, /^(\w*_)?a(cc?|\/c)_?(no|num|number)$/, /acc(ou)?nt.*(no|num)/], ifsc: [/ifsc/], bank: [/^(\w*_)?bank(_?name)?$/], branch: [/^(\w*_)?branch(_?name)?$/],
+  loc: [/^(\w*_)?(branch_?)?loc(ation)?$/, /^place$/], a1: [/^(\w*_)?addr(ess)?_?(1|one)$/, /^(\w*_)?address$/], a2: [/addr(ess)?_?2$/], a3: [/addr(ess)?_?3$/],
+  mobile: [/mobile|phone|contact_?no/], email: [/e_?mail/], code: [/(party|emp(loyee)?)_?code/], state: [/^state$/],
+};
+const BEN_STORE = "mreports_beneficiary";
+const benLoad = () => { try { return JSON.parse(localStorage.getItem(BEN_STORE) || "{}"); } catch { return {}; } };
+const benSave = o => { try { localStorage.setItem(BEN_STORE, JSON.stringify(o)); } catch { /* storage unavailable */ } };
+const benPick = (row, k) => {
+  for (const re of BEN_KEYS[k] || []) for (const key of Object.keys(row)) {
+    if (re.test(key.toLowerCase()) && !isBlank(row[key]) && String(row[key]).trim() !== "") return String(row[key]).trim();
+  }
+  return "";
+};
+const benTitle = t => String(t ?? "").toLowerCase().replace(/\b[a-z]/g, m => m.toUpperCase()).replace(/\bV\.?s\.?s\b/g, "V.S.S").replace(/\bFro\b/g, "FRO").replace(/\s+/g, " ").trim();
+// One entry per bank account in the withdrawal_accounts table (nothing else is listed), oldest wa_id first.
+function benAccounts(data) {
+  return (data.ben || []).filter(r => benPick(r, "acc")).slice().sort((a, b) => (Number(a.wa_id) || 0) - (Number(b.wa_id) || 0));
+}
+// Form values for one account: bank particulars from the table; address / mobile / etc. from what was typed before (or the defaults).
+function benDetails(row) {
+  const nk = Object.keys(row).find(k => /^name_of_account$/i.test(k)) || Object.keys(row).find(k => /name/i.test(k) && !/bank|branch/i.test(k));
+  const acc = benPick(row, "acc"), d = { ...CONFIG.ben_defaults, key: acc, name: benTitle(nk ? row[nk] : ""), auth: row.drawing_authorities || "" };
+  const saved = benLoad()[normText(acc)] || {};
+  Object.entries(saved).forEach(([k, v]) => { if (v) d[k] = v; });
+  ["acc", "ifsc", "bank", "branch", "loc"].forEach(k => { const v = benPick(row, k); if (v) d[k] = v; });
+  return d;
+}
+const benMissing = d => BEN_FIELDS.filter(f => f.req && !String(d[f.k] ?? "").trim());
+
+function startBeneficiary(scheme) {
+  const rows = benAccounts(DATA);   // every bank account in withdrawal_accounts
+  if (!rows.length) { busy(false, "genBtn"); return msg(`No bank accounts found in table '${CONFIG.ben_table}'.`, true); }
+  const one = $("fBen").value, recs = rows.map(benDetails).filter(d => !one || d.acc === one), review = $("fBenReview").checked;
+  const show = recs.map(d => review || benMissing(d).length > 0);
+  if (!show.some(Boolean)) return finishBeneficiary(recs);
+  openBenModal(recs, show);
+}
+function openBenModal(recs, show) {
+  const esc = v => String(v ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  const body = recs.map((d, i) => !show[i] ? "" : `<fieldset data-i="${i}"><legend>${esc(d.name)} — ${esc(d.bank)} ${esc(d.acc)}</legend>` + BEN_FIELDS.map(f =>
+    `<label>${esc(f.label)}</label><input data-k="${f.k}" value="${esc(d[f.k])}" class="${f.req && !String(d[f.k] ?? "").trim() ? "miss" : ""}">`).join("") + `</fieldset>`).join("");
+  $("benBox").innerHTML = `<h1 style="font-size:17px">Beneficiary details</h1><p class="note">Fields with * are mandatory. Red = not found — please enter. Optional blanks print as “-”. What you enter is remembered on this device. Bank particulars come from the withdrawal_accounts table; address and mobile are entered here.</p>${body}<div id="benErr" class="err"></div><div class="row"><button class="sec" id="benCancel">Cancel</button><button id="benOk">Generate report</button></div>`;
+  $("benModal").classList.remove("hide");
+  $("benCancel").onclick = () => { $("benModal").classList.add("hide"); msg(""); busy(false, "genBtn"); };
+  $("benOk").onclick = () => {
+    const err = [];
+    document.querySelectorAll("#benBox fieldset").forEach(fs => {
+      const d = recs[+fs.dataset.i];
+      fs.querySelectorAll("input").forEach(inp => { d[inp.dataset.k] = inp.value.trim(); inp.classList.remove("miss"); });
+      d.acc = (d.acc || "").replace(/\s+/g, ""); d.ifsc = (d.ifsc || "").replace(/\s+/g, "").toUpperCase();
+      benMissing(d).forEach(f => { err.push(`${d.name}: ${f.label.replace("*", "")} is required`); fs.querySelector(`[data-k="${f.k}"]`).classList.add("miss"); });
+      if (d.acc && !/^\d{6,20}$/.test(d.acc)) { err.push(`${d.name}: account number should be digits only`); fs.querySelector('[data-k="acc"]').classList.add("miss"); }
+      if (d.ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(d.ifsc)) { err.push(`${d.name}: IFSC should look like CNRB0000852`); fs.querySelector('[data-k="ifsc"]').classList.add("miss"); }
+    });
+    if (err.length) { $("benErr").textContent = err[0] + (err.length > 1 ? ` (+${err.length - 1} more)` : ""); return; }
+    $("benModal").classList.add("hide"); finishBeneficiary(recs);
+  };
+}
+function finishBeneficiary(recs) {
+  const store = benLoad();
+  recs.forEach(d => { const o = {}; BEN_FIELDS.forEach(f => { if (f.k !== "name" && d[f.k]) o[f.k] = d[f.k]; }); store[normText(d.key || d.name)] = o; });
+  benSave(store);
+  try {
+    const out = generateBeneficiary(recs);
+    out.doc.save(`beneficiary_report_${new Date().toISOString().slice(0, 10)}.pdf`);
+    msg(`Done — ${out.count} beneficiary form${out.count === 1 ? "" : "s"}.`);
+  } catch (e) { console.error(e); msg("Could not generate the PDF: " + e.message, true); }
+  busy(false, "genBtn");
+}
+function generateBeneficiary(recs) {
+  const c = new Canvas(), left = 0.75 * INCH, right = PAGE_W - 0.75 * INCH, W = right - left;
+  const x1 = left + W * 0.40, x2 = left + W * 0.46, LH = 12.5;
+  recs.forEach((d, pi) => {
+    if (pi) c.newPage();
+    let y = PAGE_H - 0.9 * INCH;
+    c.setFont("Helvetica-Bold", 11.5);
+    wrapText(c, "PARTICULARS OF BANK ACCOUNTS IN RESPECT OF THE AGENCIES TO BE OBTAINED FROM DDO'S IN THE FOLLOWING FORMAT FOR MAKING PAYMENTS THROUGH ONLINE E-CHEQUE.", "Helvetica-Bold", 11.5, W)
+      .forEach((ln, i) => c.drawCentredString(PAGE_W / 2, y - i * 14, ln));
+    y -= 3 * 14 + 8;
+    const rows = BEN_FIELDS.map(f => ({ label: f.label, lines: wrapText(c, String(d[f.k] ?? "").trim() || "-", "Helvetica", 11, right - x2 - 14) }));
+    const hs = rows.map(r => Math.max(34, r.lines.length * LH + 14)), top = y;
+    // "Confirm account number" repeats the account number, so it is inserted after row 2 here
+    const all = []; rows.forEach((r, i) => { all.push({ ...r, h: hs[i] }); if (BEN_FIELDS[i].k === "acc") all.push({ label: "Confirm Beneficiary Account Number*", lines: r.lines, h: hs[i] }); });
+    const total = all.reduce((a, r) => a + r.h, 0), tb = top - total;
+    c.setLineWidth(1); c.rect(left, tb, W, total); c.line(x1, tb, x1, top); c.line(x2, tb, x2, top);
+    let ry = top;
+    all.forEach((r, i) => {
+      if (i) c.line(left, ry, right, ry);
+      c.setFont("Helvetica", 11); c.drawString(left + 8, ry - 14, r.label); c.drawCentredString((x1 + x2) / 2, ry - 14, "::");
+      c.setFont("Helvetica-Bold", 11); r.lines.forEach((ln, j) => c.drawString(x2 + 8, ry - 14 - j * LH, ln));
+      ry -= r.h;
+    });
+    let fy = tb - 22; c.setFont("Helvetica", 10.5); c.drawString(left, fy, "*The fields are mandatory.");
+    fy -= 46; const mid = left + W * 0.25, rx = right - W * 0.2;
+    c.setFont("Helvetica-Bold", 10.5); CONFIG.fro_block.forEach((ln, i) => c.drawCentredString(mid, fy - i * 12, i === 0 ? ln + " (FAC)" : ln));
+    const nm = String(d.name).replace(/^the\s+/i, ""), m = /chairman[\s,.\-]*(.*)$/i.exec(nm);
+    const rl = m ? ["CHAIRMAN", ...(m[1] ? [m[1].toUpperCase()] : [])] : wrapText(c, nm.toUpperCase(), "Helvetica-Bold", 10.5, W * 0.4);
+    rl.forEach((ln, i) => c.drawCentredString(rx, fy - i * 12, ln));
+    fy -= 70; c.setFont("Helvetica-Bold", 12); c.drawCentredString(rx, fy, "COUNTER SIGNED");
+    c.setFont("Helvetica-Bold", 10.5); CONFIG.countersign_block.forEach((ln, i) => c.drawCentredString(rx, fy - 46 - i * 12, ln));
+  });
+  return { doc: c.d, count: recs.length };
+}
+
+function refillBen() {   // one entry per bank account in withdrawal_accounts
+  const rows = DATA ? benAccounts(DATA) : [], d = rows.map(benDetails);
+  $("fBen").innerHTML = `<option value="">All accounts</option>` + d.map(x => `<option value="${String(x.acc).replace(/"/g, "&quot;")}">${[x.name, x.bank, x.acc].filter(Boolean).join(" — ").replace(/</g, "&lt;")}</option>`).join("");
+}
+function refillCb() {   // VSS and Month choices for the cash book
+  if (!DATA) return;
+  const names = new Set(), months = new Set();
+  DATA.vd.forEach(r => { if (DATA.est[r.esti_no]) { names.add(cbVssName(DATA, r.esti_no)); const m = monthKey(r.voucher_date); if (m != null) months.add(m); } });
+  DATA.adv.filter(a => a.credited === "Yes").forEach(a => { names.add(cbVssName(DATA, a.trans_id)); const m = monthKey(a.credited_date); if (m != null) months.add(m); });
+  const keepV = $("fCbVss").value, keepM = $("fCbMonth").value;
+  $("fCbVss").innerHTML = `<option value="">All VSS</option>` + [...names].filter(Boolean).sort().map(n => `<option>${n.replace(/</g, "&lt;")}</option>`).join("");
+  $("fCbMonth").innerHTML = `<option value="">All months</option>` + [...months].sort().reverse().map(m => `<option value="${m}">${monthLabel(m)}</option>`).join("");
+  $("fCbVss").value = keepV; $("fCbMonth").value = keepM;
+}
+function refillFilters() {
+  refillCb();
+  refillBen();
+  const fa = $("fDoc").value === "fa", src = fa ? DATA.faCases : DATA.vd;
+  fill($("fBatch"), [...new Set(src.map(r => r.batch_no).filter(b => b != null))].sort((a, b) => a - b), "All");
+  fill($("fEsti"), [...new Set(src.map(r => r.esti_no))].sort(), "All");
+  const dates = [...new Set(DATA.faCases.map(k => k.application_date).filter(d => d != null))].sort((a, b) => a - b);
+  $("fFaDate").innerHTML = `<option value="">All</option>` + dates.map(d => `<option value="${d}">${fmtDate(d)}</option>`).join("");
+  const dk = docketBuckets(DATA);
+  $("fDocket").innerHTML = `<option value="">All</option>` + dk.map(b => `<option value="${docketName(b).replace(/"/g, "&quot;")}">${docketName(b).replace(/</g, "&lt;")}</option>`).join("");
+  $("fDocket").selectedIndex = 0;
+}
+async function load() {
+  busy(true, "loginBtn", "reloadBtn", "genBtn"); msg("Loading data…");
+  try {
+    DATA = await loadData();
+    fill($("fScheme"), [...new Set([...DATA.vd.map(r => r.scheme_disp), ...DATA.adv.map(a => schemeDisplay(String(a.scheme ?? "")))].filter(Boolean))].sort(), "All");
+    $("fSoYear").innerHTML = `<option value="">All</option>` + soYears(DATA).map(y => `<option>${y}</option>`).join("");
+    await loadMeetings();
+    refillFilters();
+    $("loginCard").classList.add("hide"); $("genCard").classList.remove("hide");
+    msg(`Loaded ${DATA.vd.length} vouchers.`);
+  } catch (e) { msg(e.message, true); }
+  busy(false, "loginBtn", "reloadBtn", "genBtn");
+}
+
+$("loginBtn").onclick = () => {
+  const email = $("email").value.trim().toLowerCase(), password = $("pw").value;
+  if (!email || !password) return msg("Enter your email and password.", true);
+  creds = { email, password }; token = null; load();
+};
+$("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("loginBtn").click(); });
+$("reloadBtn").onclick = load;
+$("meetBtn").onclick = () => { if (DATA) openMeetings(); };
+$("fDoc").onchange = () => {
+  const k = $("fDoc").value, dk = k === "lop" || k === "faix";
+  $("dBatch").classList.toggle("hide", !(k === "vch" || k === "fa" || k === "cb")); $("dEsti").classList.toggle("hide", !(k === "vch" || k === "fa" || k === "f61" || k === "cb" || k === "wr"));
+  $("dFaDate").classList.toggle("hide", k !== "fa"); $("dSo").classList.toggle("hide", k !== "so"); $("dBen").classList.toggle("hide", k !== "ben"); $("dVssRes").classList.toggle("hide", k !== "vssres"); $("dCb").classList.toggle("hide", k !== "cb");
+  $("dScheme").classList.toggle("hide", !(k === "vch" || k === "cir" || k === "f61" || k === "cb" || k === "so")); $("dDocket").classList.toggle("hide", !dk);
+  if (DATA) refillFilters();
+};
+$("outBtn").onclick = () => { creds = token = DATA = null; $("pw").value = ""; $("genCard").classList.add("hide"); $("loginCard").classList.remove("hide"); msg(""); };
+$("fDoc").onchange();
+if (HOST) {
+  if (HOST.can()) { $("loginCard").classList.add("hide"); $("genCard").classList.remove("hide"); load(); }
+  else msg("You do not have access to Reports.", true);
+}
+$("genBtn").onclick = () => {
+  if ($("fDoc").value === "vssres") { busy(true, "genBtn"); msg("Generating…"); return runVssResolution(); }
+  if ($("fDoc").value === "ben") { busy(true, "genBtn"); msg("Preparing…"); return startBeneficiary(""); }
+  busy(true, "genBtn"); msg("Generating…");
+  setTimeout(() => {   // let the status paint before the heavy work
+    try {
+      const kind = $("fDoc").value, scheme = $("fScheme").value;
+      const out = kind === "cir" ? generateCIR(DATA, { scheme })
+        : kind === "wr" ? generateWorkRegister(DATA, { esti: $("fEsti").value })
+        : kind === "so" ? generateSORegister(DATA, { scheme, year: $("fSoYear").value, type: $("fSoType").value })
+        : kind === "cb" ? generateCashbook(DATA, { scheme, esti: $("fEsti").value, batch: $("fBatch").value, vss: $("fCbVss").value, month: $("fCbMonth").value })
+        : kind === "f61" ? generateForm61(DATA, { scheme, esti: $("fEsti").value })
+        : kind === "lop" || kind === "faix" ? generateDocket(DATA, kind, { docket: $("fDocket").value })
+        : kind === "fa" ? generateFA(DATA, { esti: $("fEsti").value, batch: $("fBatch").value, date: $("fFaDate").value })
+        : generateVouchers(DATA, { scheme, batch: $("fBatch").value, esti: $("fEsti").value });
+      if (out && out.error) msg(out.error, true);
+      else if (!out) msg("Nothing matches those filters.", true);
+      else {
+        const nm = kind === "cir" ? "cheque_register" + (scheme ? "_" + scheme.replace(/\W+/g, "_") : "") : kind === "fa" ? "fund_application" : kind === "vssres" ? "vss_resolution" : kind === "lop" ? "lop" : kind === "f61" ? "form61" : kind === "cb" ? "cash_book" : kind === "so" ? "so_register" : kind === "wr" ? "work_register" : kind === "faix" ? "form_faix" : "vouchers";
+        out.doc.save(`${nm}_${new Date().toISOString().slice(0, 10)}.pdf`);
+        msg(`Done — ${out.count} ${kind === "cir" || kind === "so" ? "entr" + (out.count === 1 ? "y" : "ies") : kind === "fa" ? "application set(s) (3 pages each)" : kind === "vssres" ? "resolution(s)" : kind === "lop" || kind === "faix" ? "docket(s)" : kind === "f61" ? "Form 61 page(s)" : kind === "cb" ? "monthly cash book(s)" : kind === "wr" ? "estimate(s)" : "voucher page(s)"}.`);
+      }
+    } catch (e) { console.error(e); msg("Could not generate the PDF: " + e.message, true); }
+    busy(false, "genBtn");
+  }, 30);
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seedling Portal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%!important;min-height:100vh;overflow-x:hidden;}
+body{font-family:sans-serif;background:#f0f7f0;color:#1a2e1a;min-height:100vh}
+#app-screen,#login-screen{width:100%!important;max-width:100%!important;}
+.container{width:100%!important;max-width:100%!important;padding:14px;}
+.table-wrap{width:100%!important;overflow-x:auto;}
+#login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#1b4d1b 0%,#2d6a2d 60%,#4caf50 100%);padding:20px}
+.login-card{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.login-logo{text-align:center;margin-bottom:20px}
+.login-logo .icon{font-size:48px;display:block;margin-bottom:6px}
+.login-logo h2{font-size:20px;color:#2d6a2d;font-weight:700}
+.login-logo p{font-size:12px;color:#666;margin-top:3px}
+.login-step{display:none}.login-step.active{display:block}
+.login-step h3{font-size:15px;font-weight:600;color:#1a2e1a;margin-bottom:16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:#555;margin-bottom:5px;font-weight:500}
+.field input{width:100%;padding:10px 12px;border:1.5px solid #b5d4b5;border-radius:8px;font-size:14px;color:#1a2e1a}
+.field input:focus{outline:none;border-color:#2d6a2d}
+.show-pw{position:relative}.show-pw input{padding-right:40px}
+.show-pw span{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:13px;color:#888}
+.btn-login{width:100%;padding:11px;background:#2d6a2d;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px}
+.btn-login:hover{background:#245424}
+.btn-link{background:none;border:none;color:#2d6a2d;font-size:13px;cursor:pointer;text-decoration:underline;padding:0}
+.err-msg{background:#ffebee;border:1px solid #f5c6cb;border-radius:6px;padding:8px 12px;color:#c62828;font-size:13px;margin-bottom:12px;display:none}
+.otp-boxes{display:flex;gap:10px;justify-content:center;margin:16px 0}
+.otp-boxes input{width:46px;height:52px;text-align:center;font-size:22px;font-weight:700;border:2px solid #b5d4b5;border-radius:8px;color:#2d6a2d}
+.otp-boxes input:focus{outline:none;border-color:#2d6a2d}
+.otp-info{font-size:12px;color:#888;text-align:center;margin-bottom:8px}
+.otp-timer{font-size:13px;color:#e65100;text-align:center;margin-top:6px;font-weight:600}
+.resend-row{text-align:center;margin-top:8px}
+.demo-hint{background:#e8f5e9;border-radius:8px;padding:10px 14px;font-size:12px;color:#2d6a2d;margin-top:16px;line-height:1.7}
+.demo-hint strong{display:block;margin-bottom:4px}
+.role-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:#e8f5e9;color:#2d6a2d;border:1px solid #a5d6a7;margin-left:4px}
+#app-screen{display:none}
+.header{background:#2d6a2d;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.header h1{font-size:16px;font-weight:600}
+.header .sub{font-size:11px;opacity:.85}
+.dept-tag{font-size:11px;opacity:.7}
+.header-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hbtn{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);color:#fff;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px}
+.user-chip{background:rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px}
+.banner{background:#e8f5e9;border-bottom:1px solid #a5d6a7;padding:8px 20px;font-size:13px;color:#2d6a2d;display:none;align-items:center;gap:10px;flex-wrap:wrap}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #2d6a2d;overflow-x:auto}
+.tab{padding:10px 15px;cursor:pointer;font-size:13px;border:none;background:none;color:#555;border-bottom:2px solid transparent;margin-bottom:-2px;font-weight:500;white-space:nowrap}
+.tab.active{color:#2d6a2d;border-bottom-color:#2d6a2d;font-weight:600}
+.tab:hover:not(.active){background:#f5faf5}
+.tab.admin-only{display:none}
+.container{padding:14px;max-width:1200px;margin:0 auto}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filters select,.filters input{padding:7px 10px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px;background:#fff;color:#1a2e1a;flex:1;min-width:120px}
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat-card{background:#fff;border-radius:10px;padding:12px;border:1px solid #d4e8d4;text-align:center}
+.stat-card .val{font-size:24px;font-weight:700;color:#2d6a2d}
+.stat-card .lbl{font-size:11px;color:#666;margin-top:3px}
+.stat-card.dist .val{color:#e67e22}
+.stat-card.bal .val{color:#1565c0}
+.table-wrap{background:#fff;border-radius:10px;border:1px solid #d4e8d4;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#2d6a2d;color:#fff;padding:9px 10px;text-align:left;font-weight:600;white-space:nowrap}
+tr:nth-child(even){background:#f5faf5}
+td{padding:8px 10px;border-bottom:1px solid #e8f2e8;vertical-align:middle}
+td.num{text-align:right;font-weight:600}
+td.avail{color:#2d6a2d}td.dist{color:#e67e22}td.bal{color:#1565c0}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.badge-ok{background:#e8f5e9;color:#2d6a2d}
+.badge-low{background:#fff3e0;color:#e65100}
+.badge-out{background:#ffebee;color:#c62828}
+.section{background:#fff;border-radius:10px;border:1px solid #d4e8d4;padding:16px;margin-bottom:14px}
+.section h3{font-size:15px;color:#2d6a2d;margin-bottom:12px;font-weight:600}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.fg label{display:block;font-size:12px;color:#555;margin-bottom:4px}
+.fg input,.fg select,.fg textarea{width:100%;padding:7px 9px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px;color:#1a2e1a;background:#fff}
+.fg textarea{resize:vertical;min-height:70px}
+.abtn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600}
+.ag{background:#2d6a2d;color:#fff}.ag:hover{background:#245424}
+.ar{background:#ffebee;color:#c62828;border:1px solid #f5c6cb}
+.ao{background:#f5faf5;border:1px solid #b5d4b5;color:#2d6a2d}
+.ab{background:#1565c0;color:#fff}
+.agr{background:#555;color:#fff}
+.btn-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.note{font-size:11px;color:#888;margin-top:6px}
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.chart-box{background:#f5faf5;border-radius:8px;padding:12px;border:1px solid #d4e8d4}
+.chart-box h4{font-size:13px;color:#2d6a2d;margin-bottom:10px;font-weight:600}
+.empty{text-align:center;padding:30px;color:#888;font-size:14px}
+.succ{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:12px 16px;color:#2d6a2d;font-size:13px;margin-top:10px;display:none}
+.eq-item{background:#f5faf5;border-radius:8px;padding:10px 14px;border:1px solid #d4e8d4;margin-bottom:8px;font-size:13px}
+.eq-name{font-weight:600;color:#2d6a2d}
+.eq-meta{color:#666;font-size:12px;margin-top:2px}
+.eqb{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;margin-left:8px}
+.eqp{background:#fff3e0;color:#e65100}
+.eqd{background:#e8f5e9;color:#2d6a2d}
+.toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+@media print{.tabs,.filters,.btn-row,.toolbar,.hbtn{display:none!important}.header{background:#2d6a2d!important;-webkit-print-color-adjust:exact}th{background:#2d6a2d!important;-webkit-print-color-adjust:exact}body{background:#fff}}
+.ckdd{position:relative}.ckdd summary{cursor:pointer;padding:7px 9px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px;background:#fff;color:#1a2e1a}
+.ckdd>div{position:absolute;z-index:20;background:#fff;border:1px solid #b5d4b5;border-radius:6px;padding:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);min-width:170px}
+.ckdd label{display:block;font-size:13px;color:#1a2e1a;margin:0;padding:2px 0}.ckdd input{width:auto;margin-right:6px}
+.rpt-meta{font-size:12px;color:#555;margin-bottom:8px}tfoot td{font-weight:700;background:#e8f5e9}
+@media print{#rpt-controls{display:none!important}
+.table-wrap{overflow:visible!important}thead{display:table-header-group}tfoot{display:table-row-group}tr{page-break-inside:avoid}
+body.printing-report .header,body.printing-report .tabs{display:none!important}
+body.printing-report .section{box-shadow:none!important;border:none!important;padding:0!important}}
+.rpt-hdr th{background:#fff!important;color:#111!important;font-weight:400!important;text-transform:none!important;border-bottom:2px solid #2d6a2d;padding:10px 6px!important;white-space:normal!important}
+.av-card{border:1px solid #d4e8d4;border-radius:10px;padding:12px 14px;margin-bottom:14px;background:#fff}.av-card h4{color:#2d6a2d;margin:0 0 10px;font-size:14px}
+.av-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr)) auto;gap:8px;align-items:end;padding:8px;background:#f6fbf6;border-radius:8px;margin-bottom:8px}
+.av-cell label{display:block;font-size:11px;color:#2d6a2d;font-weight:600;margin-bottom:2px}.av-cell input,.av-cell select{width:100%;padding:6px 8px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px}
+.av-tbl td{padding:4px 5px;vertical-align:middle}.av-tbl input,.av-tbl select{width:100%;min-width:110px;padding:5px 7px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px}.av-tbl input[type=date]{min-width:135px}
+.av-photos{display:flex;flex-wrap:wrap;gap:10px}.av-ph{width:150px;font-size:11px}.av-ph img{width:150px;height:110px;object-fit:cover;border-radius:6px;border:1px solid #d4e8d4}.av-ph input{width:100%;padding:4px 6px;border:1px solid #b5d4b5;border-radius:4px;font-size:11px;margin-top:3px}
+body.restricted{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body.restricted input,body.restricted textarea,body.restricted select{-webkit-user-select:text;user-select:text}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="icon">🌱</span>
+      <h2>Seedling Portal</h2>
+      <p>Department of Forests, Govt. of Andhra Pradesh</p>
+    </div>
+    <div class="login-step active" id="step-credentials">
+      <h3>Staff sign in</h3>
+      <div class="err-msg" id="cred-err">Invalid email or password.</div>
+      <div class="field"><label>Email</label><input id="inp-user" type="email" placeholder="Enter email" autocomplete="username"></div>
+      <div class="field"><label>Password</label>
+        <div class="show-pw"><input id="inp-pass" type="password" placeholder="Enter password" autocomplete="current-password"><span onclick="togglePw()">👁</span></div>
+      </div>
+      <button class="btn-login" id="btn-signin" onclick="submitCredentials()">Sign in →</button>
+      <div style="text-align:center;margin:14px 0 4px;color:#888;font-size:12px">— or —</div>
+      <button class="btn-login" style="background:#fff;color:#2d6a2d;border:1.5px solid #2d6a2d" onclick="continuePublic()">Continue as public</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:flex-start;justify-content:center;overflow:auto;padding:20px" onclick="if(event.target===this)closeModal()"><div id="modal-body" style="background:#fff;border-radius:10px;max-width:760px;width:100%;padding:18px"></div></div>
+<div id="app-screen">
+  <div class="header">
+    <div>
+      <div class="dept-tag">Department of Forests, Government of Andhra Pradesh</div>
+      <h1 id="app-title">🌱 Seedling Availability & Distribution Portal</h1>
+      <div class="sub">Real-time seedling stock across Divisions, Ranges & Nurseries</div>
+    </div>
+    <div class="header-right">
+      <div class="user-chip">👤 <span id="user-label">—</span></div>
+      <button class="hbtn" onclick="toggleLang()" id="lang-btn">తెలుగు</button>
+      <label class="hbtn" id="rs-toggle-wrap" style="display:none;align-items:center;gap:6px;cursor:pointer" title="Turn copy / select / right-click protection on or off for non-admin users"><input type="checkbox" id="rs-toggle" onchange="toggleRestrict(this.checked)" style="width:auto;margin:0">🔒 Copy protection</label>
+      <button class="hbtn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+  <div class="banner" id="sheet-banner"></div>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('public',this)">📊 Public View</button>
+    <button class="tab" onclick="showTab('charts',this)">📈 Charts</button>
+    <button class="tab" onclick="showTab('report',this)">📑 Reports</button>
+    <button class="tab" onclick="showTab('enquiry',this)">📝 Farmer Enquiry</button>
+    <button class="tab admin-only" onclick="showTab('admin',this)">🔧 Admin</button>
+    <button class="tab admin-only" onclick="showTab('eq-admin',this)">📬 Enquiries</button>
+    <button class="tab admin-only" onclick="showTab('dist-entry',this)">📋 Distribution Entry</button>
+    <button class="tab" onclick="showTab('contact',this)">📞 Contacts</button>
+    <button class="tab admin-only" onclick="showTab('avenue',this)">🌳 Avenue Plantation</button>
+  </div>
+  <div class="container">
+    <div id="public-view">
+      <div class="toolbar">
+        <div class="filters" style="margin:0;flex:1">
+          <select id="f-district" onchange="updateMandalFilter();applyFilters()"></select>
+          <select id="f-mandal" onchange="updateDivisionFilter();applyFilters()"></select>
+          <select id="f-division" onchange="updateRangeFilter();applyFilters()"></select>
+          <select id="f-range" onchange="updateNurseryFilter();applyFilters()"></select>
+          <select id="f-nursery" onchange="applyFilters()"></select>
+          <select id="f-scheme" onchange="applyFilters()"></select>
+          <input type="text" id="f-species" placeholder="Search species..." oninput="applyFilters()">
+          <input type="date" id="f-date-from" onchange="applyFilters()" title="From date">
+          <input type="date" id="f-date-to" onchange="applyFilters()" title="To date">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <button class="abtn agr" onclick="window.print()">🖨️ Print</button>
+          <button class="abtn ab" onclick="exportCSV()">📥 CSV</button>
+          <button class="abtn ao" onclick="loadSheetData()">🔄 Refresh</button>
+        </div>
+      </div>
+      <div class="stat-cards">
+        <div class="stat-card"><div class="val" id="s-total">0</div><div class="lbl" id="lbl-total">Total Available</div></div>
+        <div class="stat-card dist"><div class="val" id="s-dist">0</div><div class="lbl" id="lbl-dist">Distributed</div></div>
+        <div class="stat-card bal"><div class="val" id="s-bal">0</div><div class="lbl" id="lbl-bal">Balance Stock</div></div>
+        <div class="stat-card"><div class="val" id="s-species">0</div><div class="lbl" id="lbl-species">Species</div></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>District</th><th>Mandal</th><th>Division</th><th>Range</th><th>Nursery</th><th>Scheme</th><th>Species</th><th>Bag Size</th><th>Dist. Date</th><th>Available</th><th>Distributed</th><th>Balance</th><th>Status</th></tr></thead>
+          <tbody id="public-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="charts-view" style="display:none">
+      <div class="section"><h3>📊 Division-wise Summary</h3>
+        <div class="chart-grid">
+          <div class="chart-box"><h4>Stock by Division</h4><canvas id="chart-div-bar" height="200"></canvas></div>
+          <div class="chart-box"><h4>Balance Distribution</h4><canvas id="chart-div-pie" height="200"></canvas></div>
+        </div>
+      </div>
+      <div class="section"><h3>🌿 Species-wise Stock</h3>
+        <div class="chart-box"><h4>Top Species — Available vs Distributed vs Balance</h4><canvas id="chart-species" height="180"></canvas></div>
+      </div>
+      <div class="section"><h3>🏕️ Nursery-wise Balance</h3>
+        <div class="chart-box"><h4>Balance Stock per Nursery</h4><canvas id="chart-nursery" height="180"></canvas></div>
+      </div>
+    </div>
+    <div id="contact-view" style="display:none">
+      <div class="section admin-only" id="ct-form-wrap" style="display:none">
+        <h3 id="ct-form-title">➕ Add Contact</h3>
+        <div class="form-grid">
+          <div class="fg"><label>Name of the Officer *</label><input id="ct-name" maxlength="150"></div>
+          <div class="fg"><label>Designation</label><input id="ct-desig" maxlength="150"></div>
+          <div class="fg"><label>Name of Office</label><input id="ct-office" maxlength="200"></div>
+          <div class="fg"><label>Mobile No(s).</label><div id="ct-mobile-list"></div></div>
+          <div class="fg"><label>Landline No(s).</label><div id="ct-landline-list"></div></div>
+          <div class="fg"><label>Email Address(es)</label><div id="ct-email-list"></div></div>
+          <div class="fg"><label>In-charge of Nurseries (one or more)</label><details class="ckdd"><summary id="ct-n-sum">Select nurseries ▾</summary><div id="ct-nurseries" style="max-height:220px;overflow:auto"></div></details></div>
+          <div class="fg" style="grid-column:1/-1"><label>Office Address</label><textarea id="ct-address" rows="2" maxlength="500" style="width:100%;padding:7px 9px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px;font-family:inherit"></textarea></div>
+        </div>
+        <div class="btn-row">
+          <button class="abtn ag" id="ct-save-btn" onclick="saveContact()">Add Contact</button>
+          <button class="abtn ao" onclick="clearContactForm()">Clear</button>
+          <button class="abtn agr" id="ct-cancel-btn" style="display:none" onclick="clearContactForm()">Cancel Edit</button>
+        </div>
+      </div>
+      <div class="section">
+        <h3>📞 Contact Details</h3>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:space-between">
+          <input id="ct-search" placeholder="Search name, office, nursery..." oninput="renderContacts()" style="max-width:300px;padding:7px 10px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px">
+          <button class="abtn ao" onclick="loadContacts()">🔄 Refresh</button>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>Officer</th><th>Designation</th><th>Office</th><th>Mobile</th><th>Landline</th><th>Email</th><th>Office Address</th><th>In-charge Nurseries</th><th class="ct-act">Action</th></tr></thead>
+          <tbody id="ct-tbody"></tbody></table></div>
+      </div>
+    </div>
+    <div id="avenue-view" style="display:none">
+      <div class="section" id="av-list-sec">
+        <h3>🌳 Avenue Plantations</h3>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:space-between">
+          <input id="av-search" placeholder="Search plantation, species, officer..." oninput="renderAvenue()" style="max-width:300px;padding:7px 10px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px">
+          <span><button class="abtn ag" onclick="avNew()">➕ New Plantation</button> <button class="abtn ao" onclick="loadAvenue()">🔄 Refresh</button></span>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>Name of Plantation</th><th>Kms</th><th>Plants Planted</th><th>Species</th><th>Estimate (₹)</th><th>Expenditure (₹)</th><th>Balance (₹)</th><th>Latest Survival %</th><th>Hand-over</th><th>Action</th></tr></thead>
+          <tbody id="av-tbody"></tbody></table></div>
+      </div>
+      <div class="section" id="av-form" style="display:none">
+        <h3 id="av-form-title">➕ New Avenue Plantation</h3>
+        <div class="av-card"><h4>1️⃣ Basic Details</h4>
+          <div class="form-grid">
+            <div class="fg" style="grid-column:1/-1"><label>Name of the Plantation *</label><input id="av-name" maxlength="200"></div>
+            <div class="fg"><label>Length (No. of Kms)</label><input id="av-kms" type="number" step="any" min="0"></div>
+            <div class="fg"><label>Total No. of Plants Planted</label><input id="av-plants" type="number" step="1" min="0" oninput="avTotals()"></div>
+          </div></div>
+        <div class="av-card"><h4>2️⃣ Location – Stretch Details</h4><div id="av-g-stretches"></div></div>
+        <div class="av-card"><h4>3️⃣ Planting Details – Species</h4><div id="av-g-species"></div><div id="av-sp-total" class="rpt-meta" style="margin-top:6px"></div></div>
+        <div class="av-card"><h4>4️⃣ Replacement of Species (History)</h4>
+          <p class="note" style="margin-bottom:8px">Record each replacement: the <strong>New Species</strong> planted and its number, and the existing species it replaced (<strong>Replaced With</strong>) and how many plants. Click <strong>Apply</strong> (or Save) and Planting Details – Species is updated automatically: the new species is added and the replaced number is deducted. Saved rows are kept as locked history.</p>
+          <div id="av-g-replacements"></div></div>
+        <div class="av-card"><h4>5️⃣ Sanction &amp; Expenditure (Year-wise)</h4>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:8px;font-size:12px;color:#555">
+            <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="av-est-only" checked onchange="avRender('activities')" style="width:auto">Show only avenue plantation estimates</label>
+            <span id="av-est-status"></span>
+          </div>
+          <div id="av-g-activities"></div><div id="av-est-info" style="margin-top:8px;font-size:12px;color:#444"></div><div id="av-act-total" style="margin-top:6px;font-size:13px;font-weight:600;color:#2d6a2d"></div></div>
+        <div class="av-card"><h4>6️⃣ Inspection Details</h4><div id="av-g-inspections"></div></div>
+        <div class="av-card"><h4>7️⃣ Hand-over Details</h4>
+          <div class="form-grid">
+            <div class="fg"><label>Handed Over To (Department / Body)</label><input id="av-hto" maxlength="200"></div>
+            <div class="fg"><label>Handed Over To Whom (Name / Designation)</label><input id="av-htw" maxlength="200"></div>
+            <div class="fg"><label>Date of Hand-over</label><input id="av-hdt" type="date"></div>
+          </div></div>
+        <div class="av-card"><h4>8️⃣ Photographs &amp; Remarks</h4>
+          <div id="av-photos" class="av-photos" style="margin-bottom:8px"></div>
+          <input type="file" id="av-photo-input" accept="image/jpeg,image/png,image/webp" multiple onchange="avAddFiles(this.files)">
+          <p class="note">JPG / PNG / WebP, up to 5 MB each.</p>
+          <div class="fg" style="margin-top:8px"><label>Remarks</label><textarea id="av-remarks" rows="3" maxlength="2000" style="width:100%;padding:7px 9px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px;font-family:inherit"></textarea></div>
+        </div>
+        <div class="btn-row">
+          <button class="abtn ag" id="av-save-btn" onclick="saveAvenue()">💾 Save Plantation</button>
+          <button class="abtn ao" onclick="avCancel()">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div id="report-view" style="display:none">
+      <div class="section" id="rpt-controls">
+        <h3>📑 Reports</h3>
+        <div class="form-grid">
+          <div class="fg"><label>Report Type</label><select id="rpt-type"><option value="abstract">Abstract (grouped totals)</option><option value="detailed">Detailed (record-wise)</option></select></div>
+          <div class="fg"><label>Fields (Group By / Columns)</label><details class="ckdd"><summary>Select fields ▾</summary><div id="rpt-dims"></div></details></div>
+          <div class="fg"><label>Measures</label><details class="ckdd"><summary>Select measures ▾</summary><div id="rpt-meas"></div></details></div>
+          <div class="fg"><label>Date From</label><input type="date" id="rf-from"></div>
+          <div class="fg"><label>Date To</label><input type="date" id="rf-to"></div>
+        </div>
+        <div class="form-grid" id="rpt-filters" style="margin-top:10px"></div>
+        <details style="margin-top:12px;border:1px solid #d4e8d4;border-radius:8px;padding:8px 12px">
+          <summary style="cursor:pointer;font-weight:600;color:#2d6a2d">🖋 Customize Print Header (repeats on every printed page)</summary>
+          <div class="form-grid" style="margin-top:10px">
+            <div class="fg"><label>Line 1 (Organization)</label><input id="rh-l1" maxlength="120" oninput="rhSave()" placeholder="e.g. Forest Department"></div>
+            <div class="fg"><label>Line 2 (Office / Division)</label><input id="rh-l2" maxlength="120" oninput="rhSave()"></div>
+            <div class="fg"><label>Line 3 (Address / Other)</label><input id="rh-l3" maxlength="160" oninput="rhSave()"></div>
+            <div class="fg"><label>Report Title (blank = automatic)</label><input id="rh-title" maxlength="120" oninput="rhSave()"></div>
+            <div class="fg"><label>Alignment</label><select id="rh-align" onchange="rhSave()"><option value="center">Centre</option><option value="left">Left</option><option value="right">Right</option></select></div>
+            <div class="fg"><label>Logo (optional, up to 300 KB)</label><input type="file" id="rh-logo" accept="image/*" onchange="rhLogo(this)"><button class="abtn ao" style="margin-top:6px;padding:3px 10px;font-size:12px" onclick="rhLogoClear()">Remove logo</button></div>
+            <div class="fg"><label><input type="checkbox" id="rh-meta" checked onchange="rhSave()" style="width:auto;margin-right:6px">Show date, filters and record count</label></div>
+          </div>
+          <button class="abtn ao" style="margin-top:8px;padding:4px 12px;font-size:12px" onclick="rhReset()">Reset header</button>
+        </details>
+        <div class="btn-row">
+          <button class="abtn ag" onclick="generateReport()">📊 Generate Report</button>
+          <button class="abtn ab" onclick="rptCSV()">📥 Export CSV</button>
+          <button class="abtn ao" onclick="printReport()">🖨 Print</button>
+          <button class="abtn ao" onclick="resetReport()">Reset</button>
+        </div>
+        <p class="note">Abstract groups the selected fields and sums the measures. Detailed lists every record with the selected fields.</p>
+      </div>
+      <div class="section" id="rpt-out"><p class="empty">Choose options and click Generate Report.</p></div>
+    </div>
+    <div id="enquiry-view" style="display:none">
+      <div class="section">
+        <h3>📝 Farmer Seedling Enquiry Form</h3>
+        <div class="form-grid">
+          <div class="fg"><label>Farmer Name *</label><input id="eq-name" placeholder="Your full name" oninput="updateEqSummary()"></div>
+          <div class="fg"><label>Mobile Number *</label><input id="eq-mobile" placeholder="10-digit mobile" maxlength="10" oninput="updateEqSummary()"></div>
+          <div class="fg"><label>Village / Mandal</label><input id="eq-village" placeholder="Village or Mandal"></div>
+          <div class="fg"><label>District</label><input id="eq-district" placeholder="e.g. Chittoor"></div>
+          <div class="fg" style="grid-column:1/-1"><label>Purpose / Remarks</label><textarea id="eq-remarks" placeholder="e.g. Farm boundary plantation..."></textarea></div>
+        </div>
+        <h3 style="margin-top:16px">🌱 Select Seedlings from Available Stock *</h3>
+        <p class="note" style="margin-bottom:8px">Tick one or more species and enter the quantity you need for each.</p>
+        <div class="filters">
+          <select id="eq-f-district" onchange="renderEqTable()"></select>
+          <select id="eq-f-mandal" onchange="renderEqTable()"></select>
+          <select id="eq-f-nursery" onchange="renderEqTable()"></select>
+          <select id="eq-f-species" onchange="renderEqTable()"></select>
+        </div>
+        <div class="table-wrap" style="max-height:340px;overflow:auto"><table>
+          <thead><tr><th></th><th>District</th><th>Mandal</th><th>Nursery</th><th>Scheme</th><th>Species</th><th>Bag Size</th><th>Balance</th><th>Qty Required</th></tr></thead>
+          <tbody id="eq-tbody"></tbody></table></div>
+        <div id="eq-summary" style="display:none;margin:10px 0;padding:10px 14px;background:#e8f5e9;border-radius:8px;font-size:13px;color:#2d6a2d"></div>
+        <div class="btn-row">
+          <button class="abtn ag" onclick="submitEnquiry()">Submit Enquiry</button>
+          <button class="abtn ao" onclick="clearEnquiry()">Clear</button>
+        </div>
+        <div class="succ" id="eq-success">✅ Enquiry submitted! The nursery will contact you soon.</div>
+      </div>
+    </div>
+    <div id="admin-view" style="display:none">
+      <div class="section">
+        <h3 id="stock-form-title">➕ Add Seedling Record</h3>
+        <div class="form-grid">
+          <div class="fg"><label>District</label><select id="a-district" onchange="comboChange('a-district')"></select><input id="a-district-new" placeholder="Type new district" style="display:none;margin-top:6px"></div>
+          <div class="fg"><label>Mandal</label><select id="a-mandal" onchange="comboChange('a-mandal')"></select><input id="a-mandal-new" placeholder="Type new mandal" style="display:none;margin-top:6px"></div>
+          <div class="fg"><label>Division</label><select id="a-division" onchange="comboChange('a-division')"></select><input id="a-division-new" placeholder="Type new division" style="display:none;margin-top:6px"></div>
+          <div class="fg"><label>Range</label><select id="a-range" onchange="comboChange('a-range')"></select><input id="a-range-new" placeholder="Type new range" style="display:none;margin-top:6px"></div>
+          <div class="fg"><label>Nursery</label><select id="a-nursery" onchange="comboChange('a-nursery')"></select><input id="a-nursery-new" placeholder="Type new nursery" style="display:none;margin-top:6px"></div>
+          <div class="fg"><label>Scheme</label><select id="a-scheme" onchange="comboChange('a-scheme')"></select><input id="a-scheme-new" placeholder="Type new scheme" style="display:none;margin-top:6px"></div>
+          <div class="fg"><label>Species Name</label><select id="a-species" onchange="comboChange('a-species')"></select><input id="a-species-new" placeholder="Type new species name" style="display:none;margin-top:6px"></div>
+          <div class="fg"><label>Bag Size</label><select id="a-bagsize" onchange="comboChange('a-bagsize')"></select><input id="a-bagsize-new" placeholder="Type new bag size" style="display:none;margin-top:6px"></div>
+          <div class="fg"><label>Date of Distribution</label><input id="a-date" type="date"></div>
+          <div class="fg"><label>Available Seedlings</label><input id="a-avail" type="number" min="0" placeholder="0"></div>
+          <div class="fg"><label>Distributed</label><input id="a-dist" type="number" min="0" placeholder="0"></div>
+        </div>
+        <div class="btn-row">
+          <button class="abtn ag" id="stock-save-btn" onclick="addRecord()">Add Record</button>
+          <button class="abtn ao" onclick="clearForm()">Clear</button>
+          <button class="abtn agr" id="stock-cancel-btn" style="display:none" onclick="clearForm()">Cancel Edit</button>
+        </div>
+        <p class="note">Balance = Available − Distributed (auto-calculated)</p>
+      </div>
+      <div class="section">
+        <h3>📋 All Records</h3>
+        <div style="display:flex;gap:8px;margin-bottom:10px;justify-content:space-between;align-items:center;flex-wrap:wrap">
+          <input type="text" id="admin-search" placeholder="Search records..." oninput="renderAdmin()" style="max-width:260px;padding:7px 10px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px">
+          <button class="abtn ab" onclick="exportCSV()">📥 Export CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>District</th><th>Mandal</th><th>Division</th><th>Range</th><th>Nursery</th><th>Scheme</th><th>Species</th><th>Bag Size</th><th>Date</th><th>Available</th><th>Distributed</th><th>Balance</th><th>Action</th></tr></thead>
+            <tbody id="admin-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="eq-admin-view" style="display:none">
+      <div class="section"><h3>📬 Farmer Enquiries Received</h3><div id="eq-admin-list"><p class="empty">No enquiries yet.</p></div></div>
+    </div>
+
+    <!-- DISTRIBUTION ENTRY -->
+    <div id="dist-entry-view" style="display:none">
+      <div id="de-edit-banner" style="display:none;margin-bottom:12px;padding:10px 14px;background:#fff8e1;border:1px solid #ffe08a;border-radius:8px;font-size:13px;color:#8a5a00"></div>
+
+      <!-- SECTION A: Sanction Details -->
+      <div class="section">
+        <h3>📄 Sanction Details</h3>
+        <div class="form-grid">
+          <div class="fg"><label>Sanction ID *</label><input id="de-sanction_id" placeholder="Sanction ID"></div>
+          <div class="fg"><label>Sanction Scheme</label><input id="de-sanction_Scheme" placeholder="e.g. CAMPA"></div>
+          <div class="fg"><label>Sanction Date</label><input id="de-sanction_dt" type="date"></div>
+          <div class="fg"><label>Sanctioned By</label><input id="de-sanction_by" placeholder="Officer name"></div>
+          <div class="fg"><label>Sanction Quantity</label><input id="de-sanction_qnty" type="number" min="0" placeholder="0" oninput="updateSelectionSummary()"></div>
+          <div class="fg"><label>Free No.</label><input id="de-sanction_free_no" type="number" min="0" placeholder="0"></div>
+          <div class="fg"><label>Cost No.</label><input id="de-sanction_cost_no" type="number" min="0" placeholder="0"></div>
+          <div class="fg"><label>Rate (₹)</label><input id="de-sanction_rate" type="number" min="0" placeholder="0"></div>
+        </div>
+      </div>
+
+      <!-- SECTION B: Beneficiary Details -->
+      <div class="section">
+        <h3>👤 Beneficiary Details</h3>
+        <div class="form-grid">
+          <div class="fg" style="grid-column:1/-1"><label>Select Resolved Enquiry <span style="color:#888">(auto-fills beneficiary details and seedlings)</span></label><select id="de-enquiry" onchange="applyEnquiry(this.value)"><option value="">-- Select resolved enquiry --</option></select></div>
+          <div class="fg"><label>Beneficiary Name *</label><input id="de-ben_name" placeholder="Full name"></div>
+          <div class="fg"><label>Mobile No. *</label><input id="de-ben_Mobile_no" placeholder="10-digit mobile" maxlength="10"></div>
+          <div class="fg"><label>Email ID</label><input id="de-ben_email_id" type="email" placeholder="email@example.com"></div>
+          <div class="fg"><label>No. of Seedlings to Distribute *</label><input id="de-ben_Distributed_no" type="number" min="1" placeholder="0"></div>
+          <div class="fg"><label>Distribution Date *</label><input id="de-ben_Dist_Dt" type="date"></div>
+          <div class="fg"><label>Mandal</label><input id="de-Mandal" placeholder="Mandal name"></div>
+          <div class="fg"><label>Gramapanchayat</label><input id="de-Gramapanchayat" placeholder="Gramapanchayat name"></div>
+          <div class="fg"><label>Village / Habitation</label><input id="de-Village_hab" placeholder="Village or habitation"></div>
+        </div>
+      </div>
+
+      <!-- SECTION C: Planting Details -->
+      <div class="section">
+        <h3>🌿 Planting Details</h3>
+        <div class="form-grid">
+          <div class="fg"><label>Planted Date</label><input id="de-Planted_dt" type="date"></div>
+          <div class="fg" style="grid-column:span 2">
+            <label>Geo Location</label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input id="de-geo_lat" type="number" step="any" placeholder="Latitude" style="flex:1;min-width:100px">
+              <input id="de-geo_long" type="number" step="any" placeholder="Longitude" style="flex:1;min-width:100px">
+              <button class="abtn ao" onclick="getGeoLocation()" style="white-space:nowrap">📍 Get Location</button>
+            </div>
+          </div>
+          <div class="fg">
+            <label>Pre Photo</label>
+            <input id="de-Pre_photo" type="file" accept="image/*" onchange="previewPhoto(this,'pre-thumb')">
+            <img id="pre-thumb" style="display:none;margin-top:6px;max-width:100%;max-height:120px;border-radius:6px;border:1px solid #d4e8d4">
+          </div>
+          <div class="fg">
+            <label>Post Photo</label>
+            <input id="de-Post_photo" type="file" accept="image/*" onchange="previewPhoto(this,'post-thumb')">
+            <img id="post-thumb" style="display:none;margin-top:6px;max-width:100%;max-height:120px;border-radius:6px;border:1px solid #d4e8d4">
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Seedling Selection Table -->
+      <div class="section">
+        <h3>🌱 Select Seedlings from Available Stock</h3>
+        <p style="font-size:13px;color:#555;margin-bottom:10px">Fill the <strong>No. of Seedlings to Distribute</strong> above, then select seedling rows below. Selected rows will be saved as distribution transactions.</p>
+        <div class="filters" style="margin-bottom:10px">
+          <select id="de-f-district" onchange="filterDistTable()"><option value="">-- All Districts --</option></select>
+          <select id="de-f-mandal" onchange="filterDistTable()"><option value="">-- All Mandals --</option></select>
+          <select id="de-f-nursery" onchange="filterDistTable()"><option value="">-- All Nurseries --</option></select>
+          <input type="text" id="de-f-species" placeholder="Search species..." oninput="filterDistTable()" style="flex:1;min-width:120px">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Select</th><th>ID</th><th>District</th><th>Mandal</th><th>Nursery</th><th>Scheme</th><th>Species</th><th>Bag Size</th><th>Balance</th><th>Qty to Give</th></tr></thead>
+            <tbody id="dist-select-tbody"></tbody>
+          </table>
+        </div>
+        <div id="de-selection-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#e8f5e9;border-radius:8px;border:1px solid #a5d6a7;font-size:13px;color:#2d6a2d"></div>
+      </div>
+
+      <!-- Submit -->
+      <div class="section">
+        <div class="btn-row">
+          <button class="abtn ag" onclick="submitDistribution()">✅ Submit Distribution</button>
+          <button class="abtn ao" onclick="clearDistForm()">Clear All</button>
+        </div>
+        <div id="de-success" class="succ">✅ Distribution record submitted successfully to DIST_DETAILS & NTRANSCATION!</div>
+        <div id="de-error" style="display:none;margin-top:10px;padding:10px 14px;background:#ffebee;border-radius:8px;border:1px solid #f5c6cb;color:#c62828;font-size:13px"></div>
+        <p class="note" style="margin-top:8px">* Required fields: Sanction ID, Beneficiary Name, Mobile No., No. of Seedlings, Distribution Date. At least one seedling row must be selected.</p>
+      </div>
+      <div class="section" id="dist-records-section">
+        <h3>📚 Distribution Records</h3>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:space-between">
+          <input id="dr-search" placeholder="Search sanction, name, mobile..." oninput="renderDistRecs()" style="max-width:280px;padding:7px 10px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px">
+          <button class="abtn ao" onclick="loadDistRecords()">🔄 Refresh</button>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Sanction ID</th><th>Beneficiary</th><th>Mobile</th><th>Dist. Date</th><th>Mandal</th><th>Seedlings</th><th>Total Qty</th><th>Action</th></tr></thead>
+          <tbody id="dr-tbody"></tbody></table></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── SUPABASE CONFIG (publishable key is safe to expose; security is enforced by Row Level Security) ── */
+const SUPABASE_URL='https://ewnrcnfyiulrjritaeam.supabase.co';
+const SUPABASE_KEY='sb_publishable_6CzxBj7D2i4HrMikFq7yuA_cDRSuCgq';
+// Fall back to in-memory session if the browser blocks storage (e.g. embedded iframe)
+const memStore={};
+let authStorage;
+try{localStorage.setItem('_t','1');localStorage.removeItem('_t');authStorage=window.localStorage;}
+catch(e){authStorage={getItem:k=>memStore[k]||null,setItem:(k,v)=>{memStore[k]=v;},removeItem:k=>{delete memStore[k];}};}
+// Some hosts (sandboxed iframes / preview frames) proxy fetch via postMessage, which cannot clone Headers/AbortSignal objects.
+// Convert them to plain data before calling fetch.
+const baseFetch=window.fetch.bind(window);
+function safeFetch(input,init){
+  const opts=Object.assign({},init||{});
+  if(opts.headers&&!Array.isArray(opts.headers)&&typeof opts.headers.forEach==='function'&&!(opts.headers.constructor===Object)){
+    const h={};opts.headers.forEach((v,k)=>{h[k]=v;});opts.headers=h;
+  }
+  delete opts.signal;
+  const url=(typeof input==='string')?input:(input&&input.url)?input.url:String(input);
+  return baseFetch(url,opts);
+}
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:safeFetch},auth:{storage:authStorage,persistSession:true,autoRefreshToken:true}});
+
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let currentUser=null,currentRole='public',refreshTimer=null;
+
+async function submitCredentials(){
+  const email=document.getElementById('inp-user').value.trim();
+  const pass=document.getElementById('inp-pass').value;
+  const err=document.getElementById('cred-err');const btn=document.getElementById('btn-signin');
+  err.style.display='none';
+  if(!email||!pass){err.textContent='Enter email and password.';err.style.display='block';return;}
+  btn.disabled=true;btn.textContent='Signing in…';
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  btn.disabled=false;btn.textContent='Sign in →';
+  if(error){err.textContent='Invalid email or password.';err.style.display='block';return;}
+  const ok=await enterAsStaff(data.user);
+  if(!ok){await sb.auth.signOut();err.textContent='This account does not have portal access. Contact the administrator.';err.style.display='block';}
+}
+async function enterAsStaff(user){
+  const {data,error}=await sb.from('nursery_roles').select('role').eq('user_id',user.id).maybeSingle();
+  if(error||!data)return false;
+  currentUser=user;currentRole=data.role;
+  showApp((user.email||'')+' ('+data.role+')');
+  return true;
+}
+function continuePublic(){currentUser=null;currentRole='public';showApp('Public User (public)');}
+function showApp(label){
+  applyRestrictions();loadRestrictSetting();
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  document.getElementById('user-label').textContent=label;
+  const staff=(currentRole==='admin'||currentRole==='staff');
+  document.querySelectorAll('.admin-only').forEach(el=>el.style.display=staff?'block':'none');
+  showTab('public',document.querySelector('.tab'));
+  loadSheetData();
+}
+let loggingOut=false;
+function sessionExpired(){
+  if(!currentUser)return;
+  currentUser=null;currentRole='public';clearTimeout(refreshTimer);applyRestrictions();records=[];enquiries=[];
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  const err=document.getElementById('cred-err');err.textContent='Your session has expired. Please sign in again.';err.style.display='block';
+}
+async function hasSession(){
+  const {data}=await sb.auth.getSession();
+  if(!data||!data.session){sessionExpired();return false;}
+  return true;
+}
+sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_OUT'&&!loggingOut)sessionExpired();});
+async function logout(){
+  loggingOut=true;
+  await sb.auth.signOut({scope:'local'});
+  loggingOut=false;
+  currentUser=null;currentRole='public';clearTimeout(refreshTimer);applyRestrictions();
+  records=[];enquiries=[];
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('inp-user').value='';
+  document.getElementById('inp-pass').value='';
+  document.getElementById('cred-err').style.display='none';
+}
+function togglePw(){const inp=document.getElementById('inp-pass');inp.type=inp.type==='password'?'text':'password';}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none'&&(document.activeElement.id==='inp-user'||document.activeElement.id==='inp-pass'))submitCredentials();});
+// Restore an existing staff session on page load
+(async()=>{
+  const {data}=await sb.auth.getSession();
+  if(data&&data.session)await enterAsStaff(data.session.user);
+})();
+
+let lang='en';
+function toggleLang(){
+  lang=lang==='en'?'te':'en';const te=lang==='te';
+  document.getElementById('lbl-total').textContent=te?'మొత్తం లభ్యత':'Total Available';
+  document.getElementById('lbl-dist').textContent=te?'పంపిణీ అయినవి':'Distributed';
+  document.getElementById('lbl-bal').textContent=te?'నిల్వ మొలకలు':'Balance Stock';
+  document.getElementById('lbl-species').textContent=te?'జాతులు':'Species';
+  document.getElementById('lang-btn').textContent=te?'English':'తెలుగు';
+  document.getElementById('f-species').placeholder=te?'జాతిని వెతకండి...':'Search species...';
+  applyFilters();
+}
+
+let records=[],nextId=1,enquiries=[],eqId=1,charts={};
+function fmt(n){return Number(n).toLocaleString('en-IN');}
+function statusBadge(bal,avail){
+  const te=lang==='te';
+  if(bal<=0)return'<span class="badge badge-out">'+(te?'స్టాక్ లేదు':'Out of Stock')+'</span>';
+  if(bal<avail*0.2)return'<span class="badge badge-low">'+(te?'తక్కువ స్టాక్':'Low Stock')+'</span>';
+  return'<span class="badge badge-ok">'+(te?'మంచి స్టాక్':'Good Stock')+'</span>';
+}
+
+function showBanner(msg){const el=document.getElementById('sheet-banner');el.innerHTML=msg;el.style.display='flex';}
+function hideBanner(){document.getElementById('sheet-banner').style.display='none';}
+
+function parseAppsScript(data){
+  return data.map((row,i)=>{
+    const g=k=>{
+      const keys=Object.keys(row);
+      const match=keys.find(key=>key.toString().trim().toLowerCase()===k.toLowerCase());
+      return match?String(row[match]).trim():'';
+    };
+    const avail=parseInt(g('available'))||0;
+    const dist=parseInt(g('distributed'))||0;
+    if(!g('species')&&!g('nursery'))return null;
+    return{
+      id:g('id')||String(i+1),
+      district:g('district'),mandal:g('mandal'),division:g('division'),
+      range:g('range'),nursery:g('nursery'),scheme:g('scheme'),species:g('species'),
+      bagSize:g('bag size')||g('bagsize')||g('bag_size')||'',
+      distDate:g('date of distribution')||g('distdate')||g('dist date')||'',
+      available:avail,distributed:dist
+    };
+  }).filter(Boolean);
+}
+
+async function loadSheetData(){
+  clearTimeout(refreshTimer);
+  showBanner('⏳ Loading data from database...');
+  const retry='<button onclick="loadSheetData()" style="margin-left:8px;padding:3px 10px;background:#2d6a2d;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px">🔄 Retry</button>';
+  try{
+    let all=[],from=0;const step=1000;
+    while(true){
+      const {data,error}=await sb.from('nursery_stock').select('id,district,mandal,division,range_name,nursery,scheme,species,bag_size,dist_date,available,distributed').order('id').range(from,from+step-1);
+      if(error)throw error;
+      all=all.concat(data);
+      if(data.length<step)break;
+      from+=step;
+    }
+    records=all.map(r=>({id:r.id,district:r.district,mandal:r.mandal,division:r.division,range:r.range_name,nursery:r.nursery,scheme:r.scheme,species:r.species,bagSize:r.bag_size,distDate:r.dist_date||'',available:r.available,distributed:r.distributed}));
+    if(!records.length){showBanner('⚠️ No stock records found.');return;}
+    hideBanner();
+    populateFilters();applyFilters();populateSpeciesDropdown();populateAdminCombos();
+    if(document.getElementById('dist-entry-view').style.display==='block'){populateDistFilters();renderDistTable();}
+    if(document.getElementById('admin-view').style.display==='block')renderAdmin();
+    refreshTimer=setTimeout(loadSheetData,5*60*1000);
+  }catch(e){showBanner('⚠️ Could not load data: '+esc(e.message||e)+' '+retry);}
+}
+
+function populateFilters(){
+  const dd=v=>v&&v!=='undefined'&&v!=='null';
+  const districts=[...new Set(records.map(r=>r.district).filter(dd))].sort();
+  const fd=document.getElementById('f-district');const sd=fd.value;
+  fd.innerHTML='<option value="">-- All Districts --</option>'+districts.map(d=>`<option${d===sd?' selected':''}>${d}</option>`).join('');
+  updateMandalFilter();updateSchemeFilter();
+}
+function updateMandalFilter(){
+  const dv=document.getElementById('f-district').value;
+  const fm=document.getElementById('f-mandal');const sm=fm.value;
+  const ms=[...new Set(records.filter(r=>!dv||r.district===dv).map(r=>r.mandal).filter(Boolean))].sort();
+  fm.innerHTML='<option value="">-- All Mandals --</option>'+ms.map(m=>`<option${m===sm?' selected':''}>${m}</option>`).join('');
+  updateDivisionFilter();
+}
+function updateDivisionFilter(){
+  const dv=document.getElementById('f-district').value;const mv=document.getElementById('f-mandal').value;
+  const fdiv=document.getElementById('f-division');const sdiv=fdiv.value;
+  const divs=[...new Set(records.filter(r=>(!dv||r.district===dv)&&(!mv||r.mandal===mv)).map(r=>r.division).filter(Boolean))].sort();
+  fdiv.innerHTML='<option value="">-- All Divisions --</option>'+divs.map(d=>`<option${d===sdiv?' selected':''}>${d}</option>`).join('');
+  updateRangeFilter();
+}
+function updateRangeFilter(){
+  const dv=document.getElementById('f-district').value;const mv=document.getElementById('f-mandal').value;const divv=document.getElementById('f-division').value;
+  const fr=document.getElementById('f-range');const sr=fr.value;
+  const rs=[...new Set(records.filter(r=>(!dv||r.district===dv)&&(!mv||r.mandal===mv)&&(!divv||r.division===divv)).map(r=>r.range).filter(Boolean))].sort();
+  fr.innerHTML='<option value="">-- All Ranges --</option>'+rs.map(r=>`<option${r===sr?' selected':''}>${r}</option>`).join('');
+  updateNurseryFilter();
+}
+function updateNurseryFilter(){
+  const dv=document.getElementById('f-district').value;const mv=document.getElementById('f-mandal').value;const divv=document.getElementById('f-division').value;const rv=document.getElementById('f-range').value;
+  const fn=document.getElementById('f-nursery');const sn=fn.value;
+  const ns=[...new Set(records.filter(r=>(!dv||r.district===dv)&&(!mv||r.mandal===mv)&&(!divv||r.division===divv)&&(!rv||r.range===rv)).map(r=>r.nursery).filter(Boolean))].sort();
+  fn.innerHTML='<option value="">-- All Nurseries --</option>'+ns.map(n=>`<option${n===sn?' selected':''}>${n}</option>`).join('');
+}
+function updateSchemeFilter(){
+  const fs=document.getElementById('f-scheme');const ss=fs.value;
+  const schemes=[...new Set(records.map(r=>r.scheme).filter(Boolean))].sort();
+  fs.innerHTML='<option value="">-- All Schemes --</option>'+schemes.map(s=>`<option${s===ss?' selected':''}>${s}</option>`).join('');
+}
+function getFiltered(){
+  const dv=document.getElementById('f-district').value,mv=document.getElementById('f-mandal').value,divv=document.getElementById('f-division').value,rv=document.getElementById('f-range').value,nv=document.getElementById('f-nursery').value,sv=document.getElementById('f-scheme').value;
+  const sp=(document.getElementById('f-species').value||'').toLowerCase(),df=document.getElementById('f-date-from').value,dt=document.getElementById('f-date-to').value;
+  return records.filter(r=>(!dv||r.district===dv)&&(!mv||r.mandal===mv)&&(!divv||r.division===divv)&&(!rv||r.range===rv)&&(!nv||r.nursery===nv)&&(!sv||r.scheme===sv)&&(!sp||r.species.toLowerCase().includes(sp))&&(!df||r.distDate>=df)&&(!dt||r.distDate<=dt));
+}
+function applyFilters(){
+  const data=getFiltered();
+  const tA=data.reduce((a,r)=>a+r.available,0),tD=data.reduce((a,r)=>a+r.distributed,0);
+  document.getElementById('s-total').textContent=fmt(tA);
+  document.getElementById('s-dist').textContent=fmt(tD);
+  document.getElementById('s-bal').textContent=fmt(tA-tD);
+  document.getElementById('s-species').textContent=new Set(data.map(r=>r.species)).size;
+  const tb=document.getElementById('public-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="14" class="empty">No records found.</td></tr>';return;}
+  tb.innerHTML=data.map(r=>{const b=r.available-r.distributed;return`<tr><td>${r.id}</td><td>${r.district}</td><td>${r.mandal}</td><td>${r.division}</td><td>${r.range}</td><td>${r.nursery}</td><td>${r.scheme}</td><td>${r.species}</td><td>${r.bagSize||'—'}</td><td>${r.distDate||'—'}</td><td class="num avail">${fmt(r.available)}</td><td class="num dist">${fmt(r.distributed)}</td><td class="num bal">${fmt(b)}</td><td>${statusBadge(b,r.available)}</td></tr>`;}).join('');
+}
+function renderAdmin(){
+  const q=(document.getElementById('admin-search').value||'').toLowerCase();
+  const data=records.filter(r=>!q||[r.id,r.district,r.mandal,r.division,r.range,r.nursery,r.scheme,r.species].some(v=>String(v).toLowerCase().includes(q)));
+  const tb=document.getElementById('admin-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="14" class="empty">No records.</td></tr>';return;}
+  tb.innerHTML=data.map(r=>{const b=r.available-r.distributed;return`<tr><td>${r.id}</td><td>${r.district}</td><td>${r.mandal}</td><td>${r.division}</td><td>${r.range}</td><td>${r.nursery}</td><td>${r.scheme}</td><td>${r.species}</td><td>${r.bagSize||'—'}</td><td>${r.distDate||'—'}</td><td class="num avail">${fmt(r.available)}</td><td class="num dist">${fmt(r.distributed)}</td><td class="num bal">${fmt(b)}</td><td><button class="abtn ab" style="padding:3px 10px;font-size:12px" onclick="editStock('${r.id}')">Edit</button> ${currentRole==='admin'?`<button class="abtn ar" style="padding:3px 10px;font-size:12px" onclick="deleteRecord('${r.id}')">Delete</button>`:''}</td></tr>`;}).join('');
+}
+const byId=id=>document.getElementById(id);
+let editingStockId=null,eqSel={};
+async function addRecord(){
+  const f=id=>comboVal(id);
+  const avail=parseInt(byId('a-avail').value)||0,dist=parseInt(byId('a-dist').value)||0;
+  if(!f('a-nursery')||!f('a-species')){alert('Please fill at least Nursery and Species.');return;}
+  if(dist>avail){alert('Distributed cannot exceed Available.');return;}
+  const row={district:f('a-district'),mandal:f('a-mandal'),division:f('a-division'),range_name:f('a-range'),nursery:f('a-nursery'),scheme:f('a-scheme'),species:f('a-species'),bag_size:f('a-bagsize'),dist_date:byId('a-date').value||null,available:avail,distributed:dist};
+  const q=editingStockId?sb.from('nursery_stock').update({...row,updated_at:new Date().toISOString()}).eq('id',editingStockId):sb.from('nursery_stock').insert(row);
+  const {data:saved,error}=await q.select('id');
+  if(error){alert('Could not save: '+error.message);return;}
+  if(!saved||!saved.length){alert('Not saved: you are not signed in as staff. Please sign out and sign in again.');return;}
+  clearForm();await loadSheetData();
+}
+function editStock(id){
+  const r=records.find(x=>String(x.id)===String(id));if(!r)return;
+  const m={'a-district':r.district,'a-mandal':r.mandal,'a-division':r.division,'a-range':r.range,'a-nursery':r.nursery,'a-scheme':r.scheme,'a-species':r.species,'a-bagsize':r.bagSize,'a-date':r.distDate,'a-avail':r.available,'a-dist':r.distributed};
+  Object.entries(m).forEach(([k,v])=>setCombo(k,v));
+  editingStockId=r.id;
+  byId('stock-form-title').textContent='✏️ Edit Seedling Record #'+r.id;
+  byId('stock-save-btn').textContent='Update Record';
+  byId('stock-cancel-btn').style.display='inline-block';
+  byId('stock-form-title').scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function deleteRecord(id){
+  if(!confirm('Delete record #'+id+'?'))return;
+  const {data:del,error}=await sb.from('nursery_stock').delete().eq('id',id).select('id');
+  if(!error&&(!del||!del.length)){alert('Nothing deleted: only a signed-in admin can delete records.');return;}
+  if(error){alert(error.code==='23503'?'Cannot delete: this stock has distribution or enquiry records.':'Could not delete: '+error.message);return;}
+  await loadSheetData();
+}
+function clearForm(){
+  ['a-district','a-mandal','a-division','a-range','a-nursery','a-scheme','a-species','a-bagsize','a-date','a-avail','a-dist'].forEach(id=>byId(id).value='');
+  comboReset();
+  editingStockId=null;
+  byId('stock-form-title').textContent='➕ Add Seedling Record';
+  byId('stock-save-btn').textContent='Add Record';
+  byId('stock-cancel-btn').style.display='none';
+}
+function populateEqFilters(){
+  const fill=(id,key,label)=>{const el=byId(id),cur=el.value;const vals=[...new Set(records.map(r=>r[key]).filter(Boolean))].sort();el.innerHTML='<option value="">-- All '+label+' --</option>'+vals.map(v=>`<option${v===cur?' selected':''}>${esc(v)}</option>`).join('');};
+  fill('eq-f-district','district','Districts');fill('eq-f-mandal','mandal','Mandals');fill('eq-f-nursery','nursery','Nurseries');fill('eq-f-species','species','Species');
+}
+function populateSpeciesDropdown(){populateEqFilters();renderEqTable();}
+function renderEqTable(){
+  const v=id=>byId(id).value;
+  const data=records.filter(r=>r.available-r.distributed>0&&(!v('eq-f-district')||r.district===v('eq-f-district'))&&(!v('eq-f-mandal')||r.mandal===v('eq-f-mandal'))&&(!v('eq-f-nursery')||r.nursery===v('eq-f-nursery'))&&(!v('eq-f-species')||r.species===v('eq-f-species')));
+  const tb=byId('eq-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="9" class="empty">No seedlings in stock for this selection.</td></tr>';updateEqSummary();return;}
+  tb.innerHTML=data.map(r=>{const b=r.available-r.distributed,sel=eqSel[r.id];
+    return `<tr style="${sel?'background:#e8f5e9':''}"><td><input type="checkbox" ${sel?'checked':''} onchange="toggleEq(${r.id},this)"></td><td>${esc(r.district)}</td><td>${esc(r.mandal)}</td><td>${esc(r.nursery)}</td><td>${esc(r.scheme)}</td><td>${esc(r.species)}</td><td>${esc(r.bagSize)||'—'}</td><td class="num" style="color:#1565c0">${fmt(b)}</td><td><input type="number" min="1" max="${b}" value="${sel?sel.qty:''}" placeholder="0" style="width:90px;padding:4px 6px;border:1px solid #b5d4b5;border-radius:4px;font-size:13px" onchange="setEqQty(${r.id},this.value)"></td></tr>`;}).join('');
+  updateEqSummary();
+}
+function toggleEq(id,cb){const r=records.find(x=>x.id===id);if(!r)return;if(cb.checked)eqSel[id]={record:r,qty:1};else delete eqSel[id];renderEqTable();}
+function setEqQty(id,val){
+  const r=records.find(x=>x.id===id);if(!r)return;const b=r.available-r.distributed;
+  let q=parseInt(val)||0;if(q>b){alert('Quantity cannot exceed available balance: '+b);q=b;}
+  if(q<1){delete eqSel[id];}else eqSel[id]={record:r,qty:q};
+  renderEqTable();
+}
+function updateEqSummary(){
+  const el=byId('eq-summary'),keys=Object.keys(eqSel);
+  if(!keys.length){el.style.display='none';return;}
+  const tot=keys.reduce((a,k)=>a+eqSel[k].qty,0),name=byId('eq-name').value.trim(),mob=byId('eq-mobile').value.trim();
+  el.innerHTML='👤 Farmer: <strong>'+esc(name||'—')+'</strong>'+(mob?' ('+esc(mob)+')':'')+'<br>✅ '+keys.length+' seedling type(s) | Total Qty: <strong>'+fmt(tot)+'</strong><br><span style="font-size:12px">'+keys.map(k=>esc(eqSel[k].record.species)+' ('+esc(eqSel[k].record.nursery)+', '+esc(eqSel[k].record.bagSize)+'): <strong>'+eqSel[k].qty+'</strong>').join(' &nbsp;|&nbsp; ')+'</span>';
+  el.style.display='block';
+}
+async function submitEnquiry(){
+  const name=byId('eq-name').value.trim(),mobile=byId('eq-mobile').value.trim(),keys=Object.keys(eqSel);
+  if(!name||!mobile){alert('Please fill Farmer Name and Mobile.');return;}
+  if(!/^\d{10}$/.test(mobile)){alert('Enter a valid 10-digit mobile number.');return;}
+  if(!keys.length){alert('Please select at least one seedling from the stock table.');return;}
+  const {error}=await sb.rpc('nursery_submit_enquiry',{p:{name,mobile,village:byId('eq-village').value.trim(),district:byId('eq-district').value.trim(),remarks:byId('eq-remarks').value.trim(),items:keys.map(k=>({stock_id:eqSel[k].record.id,qty:eqSel[k].qty}))}});
+  if(error){alert('Could not submit enquiry: '+error.message);return;}
+  clearEnquiry();const msg=byId('eq-success');msg.style.display='block';setTimeout(()=>msg.style.display='none',4000);
+}
+function clearEnquiry(){['eq-name','eq-mobile','eq-village','eq-district','eq-remarks'].forEach(id=>byId(id).value='');eqSel={};renderEqTable();}
+async function renderEnquiryAdmin(){
+  const el=document.getElementById('eq-admin-list');
+  if(!(await hasSession()))return;
+  const {data,error}=await sb.from('nursery_enquiries').select('*, nursery_enquiry_items(qty, nursery_stock(species,nursery,mandal,scheme,bag_size))').order('created_at',{ascending:false});
+  if(error){el.innerHTML='<p class="empty">Could not load enquiries: '+esc(error.message)+'</p>';return;}
+  enquiries=data;
+  if(!enquiries.length){el.innerHTML='<p class="empty">No enquiries yet.</p>';return;}
+  el.innerHTML=enquiries.map(e=>`<div class="eq-item"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px"><span class="eq-name">${esc(e.name)}</span><span><span class="eqb ${e.status==='Pending'?'eqp':'eqd'}">${esc(e.status)}</span>${e.status==='Pending'?`<button class="abtn ag" style="padding:3px 10px;font-size:12px;margin-left:8px" onclick="markDone(${e.id})">Mark Done</button>`:''}</span></div><div class="eq-meta">📱 ${esc(e.mobile)} | 📍 ${esc(e.village)||'—'}, ${esc(e.district)||'—'} | 🗓 ${new Date(e.created_at).toLocaleDateString('en-IN')}</div>${eqItemsHtml(e)}${e.remarks?`<div class="eq-meta">💬 ${esc(e.remarks)}</div>`:''}</div>`).join('');
+}
+function eqItemsHtml(e){
+  const it=e.nursery_enquiry_items||[];
+  if(!it.length)return e.species?`<div class="eq-meta" style="margin-top:4px">🌱 <strong>${esc(e.species)}</strong> — Qty: ${esc(e.qty)}</div>`:'';
+  const tot=it.reduce((a,x)=>a+x.qty,0);
+  return '<div class="eq-meta" style="margin-top:4px">'+it.map(x=>{const st=x.nursery_stock||{};return '🌱 <strong>'+esc(st.species)+'</strong> ('+esc(st.nursery)+', '+esc(st.mandal)+', '+esc(st.scheme)+', '+esc(st.bag_size)+') — Qty: '+x.qty;}).join('<br>')+'<br><strong>Total: '+tot+'</strong></div>';
+}
+async function markDone(id){
+  const {data:up,error}=await sb.from('nursery_enquiries').update({status:'Resolved'}).eq('id',id).select('id');
+  if(error){alert('Could not update: '+error.message);return;}
+  if(!up||!up.length){alert('Not updated: please sign out and sign in again.');return;}
+  renderEnquiryAdmin();
+}
+function exportCSV(){
+  const data=getFiltered();
+  const rows=[['ID','District','Mandal','Division','Range','Nursery','Scheme','Species','Bag Size','Dist. Date','Available','Distributed','Balance','Status']];
+  data.forEach(r=>{const b=r.available-r.distributed;rows.push([r.id,r.district,r.mandal,r.division,r.range,r.nursery,r.scheme,r.species,r.bagSize,r.distDate,r.available,r.distributed,b,b<=0?'Out of Stock':b<r.available*0.2?'Low Stock':'Good Stock']);});
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n'));a.download='seedling_stock_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+function destroyChart(k){if(charts[k]){charts[k].destroy();delete charts[k];}}
+function buildCharts(){
+  const divMap={};records.forEach(r=>{if(!divMap[r.division])divMap[r.division]={avail:0,dist:0};divMap[r.division].avail+=r.available;divMap[r.division].dist+=r.distributed;});
+  const dL=Object.keys(divMap),dA=dL.map(d=>divMap[d].avail),dD=dL.map(d=>divMap[d].dist),dB=dL.map((d,i)=>dA[i]-dD[i]);
+  const clrs=['#2d6a2d','#e67e22','#1565c0','#8e24aa','#00838f','#c62828'];
+  destroyChart('divBar');charts.divBar=new Chart(document.getElementById('chart-div-bar'),{type:'bar',data:{labels:dL,datasets:[{label:'Available',data:dA,backgroundColor:'#2d6a2d'},{label:'Distributed',data:dD,backgroundColor:'#e67e22'},{label:'Balance',data:dB,backgroundColor:'#1565c0'}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}}}}}});
+  destroyChart('divPie');charts.divPie=new Chart(document.getElementById('chart-div-pie'),{type:'doughnut',data:{labels:dL,datasets:[{data:dB,backgroundColor:clrs}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}});
+  const spMap={};records.forEach(r=>{if(!spMap[r.species])spMap[r.species]={avail:0,dist:0};spMap[r.species].avail+=r.available;spMap[r.species].dist+=r.distributed;});
+  const spL=Object.keys(spMap).sort((a,b)=>spMap[b].avail-spMap[a].avail).slice(0,8);
+  destroyChart('species');charts.species=new Chart(document.getElementById('chart-species'),{type:'bar',data:{labels:spL,datasets:[{label:'Available',data:spL.map(s=>spMap[s].avail),backgroundColor:'#2d6a2d'},{label:'Distributed',data:spL.map(s=>spMap[s].dist),backgroundColor:'#e67e22'},{label:'Balance',data:spL.map(s=>spMap[s].avail-spMap[s].dist),backgroundColor:'#1565c0'}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+  const nMap={};records.forEach(r=>{if(!nMap[r.nursery])nMap[r.nursery]=0;nMap[r.nursery]+=(r.available-r.distributed);});
+  const nL=Object.keys(nMap);
+  destroyChart('nursery');charts.nursery=new Chart(document.getElementById('chart-nursery'),{type:'bar',data:{labels:nL,datasets:[{label:'Balance',data:nL.map(n=>nMap[n]),backgroundColor:clrs}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+}
+function showTab(tab,btn){
+  ['public-view','charts-view','report-view','contact-view','avenue-view','enquiry-view','admin-view','eq-admin-view','dist-entry-view'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById(tab+'-view').style.display='block';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  if(['admin','eq-admin','dist-entry'].includes(tab)&&currentUser){hasSession().then(ok=>{if(!ok)return;});}
+  if(tab==='admin')renderAdmin();
+  if(tab==='charts')setTimeout(buildCharts,50);
+  if(tab==='eq-admin')renderEnquiryAdmin();
+  if(tab==='dist-entry'){populateDistFilters();renderDistTable();loadDistRecords();loadResolvedEnquiries();}
+  document.body.classList.remove('printing-report');
+  if(tab==='report')initReport();
+  if(tab==='contact')initContacts();
+  if(tab==='avenue')initAvenue();
+}
+</script>
+
+<script>
+/* ── DISTRIBUTION ENTRY ── */
+let selectedSeedlings={};// {id: {record, qty}}
+let prePhotoB64='',postPhotoB64='';
+
+function populateDistFilters(){
+  const dd=v=>v&&v!=='undefined'&&v!=='null';
+  const districts=[...new Set(records.map(r=>r.district).filter(dd))].sort();
+  const fd=document.getElementById('de-f-district');
+  fd.innerHTML='<option value="">-- All Districts --</option>'+districts.map(d=>`<option>${d}</option>`).join('');
+  const mandals=[...new Set(records.map(r=>r.mandal).filter(dd))].sort();
+  const fm=document.getElementById('de-f-mandal');
+  fm.innerHTML='<option value="">-- All Mandals --</option>'+mandals.map(m=>`<option>${m}</option>`).join('');
+  const nurseries=[...new Set(records.map(r=>r.nursery).filter(dd))].sort();
+  const fn=document.getElementById('de-f-nursery');
+  fn.innerHTML='<option value="">-- All Nurseries --</option>'+nurseries.map(n=>`<option>${n}</option>`).join('');
+}
+
+function filterDistTable(){
+  const dv=document.getElementById('de-f-district').value;
+  const mv=document.getElementById('de-f-mandal').value;
+  const nv=document.getElementById('de-f-nursery').value;
+  const sp=(document.getElementById('de-f-species').value||'').toLowerCase();
+  const data=records.filter(r=>
+    (!dv||r.district===dv)&&(!mv||r.mandal===mv)&&
+    (!nv||r.nursery===nv)&&(!sp||r.species.toLowerCase().includes(sp))
+  );
+  renderDistTable(data);
+}
+
+function renderDistTable(data){
+  if(!data)data=records;
+  const tb=document.getElementById('dist-select-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="10" class="empty">No seedlings found.</td></tr>';return;}
+  tb.innerHTML=data.map(r=>{
+    const b=effBal(r);
+    const disabled=b<=0;
+    const checked=selectedSeedlings[r.id]?'checked':'';
+    const qty=selectedSeedlings[r.id]?selectedSeedlings[r.id].qty:'';
+    return`<tr id="drow-${r.id}" style="${checked?'background:#e8f5e9':''}">
+      <td><input type="checkbox" ${checked} ${disabled?'disabled':''} onchange="toggleSeedlingRow('${r.id}',this)"></td>
+      <td>${r.id}</td><td>${r.district}</td><td>${r.mandal}</td><td>${r.nursery}</td>
+      <td>${r.scheme}</td><td>${r.species}</td><td>${r.bagSize||'—'}</td>
+      <td class="num" style="color:${disabled?'#c62828':'#1565c0'}">${fmt(b)}</td>
+      <td><input type="number" id="dqty-${r.id}" min="1" max="${b}" value="${qty}" placeholder="0"
+        style="width:80px;padding:4px 6px;border:1px solid #b5d4b5;border-radius:4px;font-size:13px"
+        ${disabled?'disabled':''}
+        onchange="updateSeedlingQty('${r.id}',this.value,${b})"></td>
+    </tr>`;
+  }).join('');
+  updateSelectionSummary();
+}
+
+function toggleSeedlingRow(id,cb){
+  const r=records.find(x=>String(x.id)===String(id));
+  if(!r)return;
+  const row=document.getElementById('drow-'+id);
+  const qtyInput=document.getElementById('dqty-'+id);
+  if(cb.checked){
+    // Auto-fill qty from ben_Distributed_no if only one row selected
+    const suggestedQty=parseInt(document.getElementById('de-ben_Distributed_no').value)||1;
+    const bal=effBal(r);
+    const qty=Math.min(suggestedQty,bal);
+    selectedSeedlings[id]={record:r,qty:qty};
+    qtyInput.value=qty;
+    row.style.background='#e8f5e9';
+    // Auto-fill scheme and mandal from first selection
+    if(Object.keys(selectedSeedlings).length===1){
+      document.getElementById('de-sanction_Scheme').value=r.scheme||'';
+      document.getElementById('de-Mandal').value=r.mandal||'';
+    }
+  }else{
+    delete selectedSeedlings[id];
+    qtyInput.value='';
+    row.style.background='';
+  }
+  updateSelectionSummary();
+}
+
+function updateSeedlingQty(id,val,maxBal){
+  const qty=parseInt(val)||0;
+  if(qty>maxBal){
+    alert('Quantity cannot exceed balance: '+maxBal);
+    document.getElementById('dqty-'+id).value=maxBal;
+    if(selectedSeedlings[id])selectedSeedlings[id].qty=maxBal;
+  }else if(selectedSeedlings[id]){
+    selectedSeedlings[id].qty=qty;
+  }
+  updateSelectionSummary();
+}
+
+function updateSelectionSummary(){
+  const keys=Object.keys(selectedSeedlings);
+  const el=document.getElementById('de-selection-summary');
+  if(!keys.length){el.style.display='none';return;}
+  const totalQty=keys.reduce((a,k)=>a+(selectedSeedlings[k].qty||0),0);
+  const rows=keys.map(k=>`${selectedSeedlings[k].record.species} (${selectedSeedlings[k].record.nursery}): <strong>${selectedSeedlings[k].qty}</strong>`).join(' &nbsp;|&nbsp; ');
+  const sq=parseInt(document.getElementById('de-sanction_qnty').value)||0;
+  const warn=sq>0&&totalQty>sq?`<br><span style="color:#c62828;font-weight:600">⚠️ Exceeds Sanction Quantity (${sq}) by ${totalQty-sq}</span>`:'';
+  el.innerHTML=`✅ Selected ${keys.length} seedling type(s) | Total Qty: <strong>${totalQty}</strong><br><span style="font-size:12px">${rows}</span>${warn}`;
+  el.style.display='block';
+}
+
+function getGeoLocation(){
+  if(!navigator.geolocation){alert('Geolocation not supported.');return;}
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      document.getElementById('de-geo_lat').value=pos.coords.latitude.toFixed(6);
+      document.getElementById('de-geo_long').value=pos.coords.longitude.toFixed(6);
+    },
+    err=>alert('Could not get location: '+err.message),
+    {enableHighAccuracy:true,timeout:10000}
+  );
+}
+
+function previewPhoto(input,thumbId){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const thumb=document.getElementById(thumbId);
+    thumb.src=e.target.result;thumb.style.display='block';
+    if(thumbId==='pre-thumb')prePhotoB64=e.target.result;
+    else postPhotoB64=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function submitDistribution(){
+  // Validate
+  const req={'de-sanction_id':'Sanction ID','de-ben_name':'Beneficiary Name','de-ben_Mobile_no':'Mobile No.','de-ben_Distributed_no':'No. of Seedlings','de-ben_Dist_Dt':'Distribution Date'};
+  for(const [id,label] of Object.entries(req)){
+    if(!document.getElementById(id).value.trim()){showDistError('Please fill: '+label);return;}
+  }
+  const mobile=document.getElementById('de-ben_Mobile_no').value.trim();
+  if(!/^\d{10}$/.test(mobile)){showDistError('Enter a valid 10-digit mobile number.');return;}
+  const selKeys=Object.keys(selectedSeedlings);
+  if(!selKeys.length){showDistError('Please select at least one seedling row from the table.');return;}
+  if(!currentUser){showDistError('Please sign in as staff to submit.');return;}
+  const sanQty=parseInt(document.getElementById('de-sanction_qnty').value)||0;
+  if(sanQty>0){
+    const benNo=parseInt(document.getElementById('de-ben_Distributed_no').value)||0;
+    const lineTot=selKeys.reduce((a,k)=>a+(selectedSeedlings[k].qty||0),0);
+    if(benNo>sanQty){showDistError('No. of Seedlings to Distribute ('+benNo+') cannot exceed the Sanction Quantity ('+sanQty+').');return;}
+    if(lineTot>sanQty){showDistError('Total selected seedlings ('+lineTot+') cannot exceed the Sanction Quantity ('+sanQty+').');return;}
+  }
+
+  const v=id=>document.getElementById(id).value.trim();
+  const sanctionId=v('de-sanction_id');
+  document.getElementById('de-error').style.display='none';
+  const btn=document.querySelector('#dist-entry-view .ag');
+  btn.textContent='⏳ Submitting...';btn.disabled=true;
+  const uploaded=[];
+  try{
+    const upload=async(inputId,tag)=>{
+      const f=document.getElementById(inputId).files[0];if(!f)return '';
+      const ext=(f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+      const path=sanctionId.replace(/[^A-Za-z0-9_-]/g,'_')+'/'+Date.now()+'-'+tag+'.'+ext;
+      const {error}=await sb.storage.from('nursery-photos').upload(path,f,{contentType:f.type});
+      if(error)throw new Error('Photo upload failed: '+error.message);
+      uploaded.push(path);return path;
+    };
+    const prePath=await upload('de-Pre_photo','pre');
+    const postPath=await upload('de-Post_photo','post');
+    const {error}=await sb.rpc(editingDist?'nursery_update_distribution':'nursery_submit_distribution',{p:{
+      sanction_id:sanctionId,sanction_scheme:v('de-sanction_Scheme'),sanction_dt:v('de-sanction_dt'),sanction_by:v('de-sanction_by'),
+      sanction_qnty:v('de-sanction_qnty'),sanction_free_no:v('de-sanction_free_no'),sanction_cost_no:v('de-sanction_cost_no'),sanction_rate:v('de-sanction_rate'),
+      ben_name:v('de-ben_name'),ben_mobile_no:mobile,ben_email_id:v('de-ben_email_id'),ben_distributed_no:v('de-ben_Distributed_no'),ben_dist_dt:v('de-ben_Dist_Dt'),
+      planted_dt:v('de-Planted_dt'),mandal:v('de-Mandal'),gramapanchayat:v('de-Gramapanchayat'),village_hab:v('de-Village_hab'),
+      geo_lat:v('de-geo_lat'),geo_long:v('de-geo_long'),pre_photo_path:prePath,post_photo_path:postPath,
+      items:selKeys.map(k=>({master_id:selectedSeedlings[k].record.id,qty:selectedSeedlings[k].qty}))
+    }});
+    if(error)throw error;
+    document.getElementById('de-success').style.display='block';
+    setTimeout(()=>document.getElementById('de-success').style.display='none',5000);
+    clearDistForm();
+    loadSheetData();loadDistRecords();
+  }catch(e){
+    if(uploaded.length)await sb.storage.from('nursery-photos').remove(uploaded);
+    const msg=e&&e.code==='23514'&&/sanction/i.test(e.message||'')?e.message:e&&e.code==='23505'?'Sanction ID "'+sanctionId+'" already exists.':(e&&e.message)||'Unknown error';
+    showDistError('Error: '+msg);
+  }finally{
+    btn.textContent=editingDist?'💾 Update Distribution':'✅ Submit Distribution';btn.disabled=false;
+  }
+}
+
+function showDistError(msg){
+  const el=document.getElementById('de-error');el.textContent=msg;el.style.display='block';
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function clearDistForm(){
+  resetDistEdit();
+  ['de-sanction_id','de-sanction_Scheme','de-sanction_dt','de-sanction_by','de-sanction_qnty',
+   'de-sanction_free_no','de-sanction_cost_no','de-sanction_rate','de-ben_name','de-ben_Mobile_no',
+   'de-ben_email_id','de-ben_Distributed_no','de-ben_Dist_Dt','de-Planted_dt','de-Mandal',
+   'de-Gramapanchayat','de-Village_hab','de-geo_lat','de-geo_long','de-Pre_photo','de-Post_photo'
+  ].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['pre-thumb','post-thumb'].forEach(id=>{const el=document.getElementById(id);if(el){el.src='';el.style.display='none';}});
+  prePhotoB64='';postPhotoB64='';
+  selectedSeedlings={};
+  document.getElementById('de-selection-summary').style.display='none';
+  document.getElementById('de-error').style.display='none';
+  renderDistTable();
+}
+
+
+/* ── DISTRIBUTION RECORDS CRUD ── */
+let distRecs=[],editingDist=null;
+function effBal(r){return r.available-r.distributed+(editingDist?(editingDist.orig[r.id]||0):0);}
+function resetDistEdit(){
+  editingDist=null;
+  const qe=byId('de-enquiry');if(qe)qe.value='';
+  const sid=byId('de-sanction_id');if(sid)sid.readOnly=false;
+  const b=document.querySelector('#dist-entry-view .ag');if(b)b.textContent='✅ Submit Distribution';
+  const bn=byId('de-edit-banner');if(bn)bn.style.display='none';
+}
+async function loadDistRecords(){
+  const {data,error}=await sb.from('nursery_dist_details').select('*, nursery_ntransaction(master_id,distributed)').order('created_at',{ascending:false});
+  if(error){byId('dr-tbody').innerHTML='<tr><td colspan="8" class="empty">Could not load: '+esc(error.message)+'</td></tr>';return;}
+  distRecs=data;renderDistRecs();
+}
+const lineTxt=l=>{const r=records.find(x=>x.id===l.master_id);return (r?esc(r.species)+' ('+esc(r.nursery)+', '+esc(r.bagSize)+')':'#'+l.master_id)+': '+l.distributed;};
+function renderDistRecs(){
+  const q=(byId('dr-search').value||'').toLowerCase();
+  const data=distRecs.filter(d=>!q||[d.sanction_id,d.ben_name,d.ben_mobile_no].some(v=>String(v||'').toLowerCase().includes(q)));
+  const tb=byId('dr-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="8" class="empty">No distribution records.</td></tr>';return;}
+  tb.innerHTML=data.map(d=>{const ls=d.nursery_ntransaction||[],tot=ls.reduce((a,l)=>a+l.distributed,0),sid=esc(d.sanction_id).replace(/'/g,'&#39;');
+    return `<tr><td>${esc(d.sanction_id)}</td><td>${esc(d.ben_name)}</td><td>${esc(d.ben_mobile_no)}</td><td>${esc(d.ben_dist_dt)}</td><td>${esc(d.mandal)||'—'}</td><td style="font-size:12px">${ls.map(lineTxt).join('<br>')}</td><td class="num">${fmt(tot)}</td><td style="white-space:nowrap"><button class="abtn ao" style="padding:3px 10px;font-size:12px" onclick="viewDist('${sid}')">View</button> <button class="abtn ab" style="padding:3px 10px;font-size:12px" onclick="editDist('${sid}')">Edit</button>${currentRole==='admin'?` <button class="abtn ar" style="padding:3px 10px;font-size:12px" onclick="delDist('${sid}')">Delete</button>`:''}</td></tr>`;}).join('');
+}
+function closeModal(){byId('modal').style.display='none';byId('modal-body').style.maxWidth='760px';}
+async function viewDist(sid){
+  const d=distRecs.find(x=>x.sanction_id===sid);if(!d)return;
+  const F=[['Sanction ID','sanction_id'],['Scheme','sanction_scheme'],['Sanction Date','sanction_dt'],['Sanctioned By','sanction_by'],['Sanction Qty','sanction_qnty'],['Free No.','sanction_free_no'],['Cost No.','sanction_cost_no'],['Rate (₹)','sanction_rate'],['Beneficiary','ben_name'],['Mobile','ben_mobile_no'],['Email','ben_email_id'],['Seedlings','ben_distributed_no'],['Distribution Date','ben_dist_dt'],['Planted Date','planted_dt'],['Mandal','mandal'],['Gramapanchayat','gramapanchayat'],['Village/Habitation','village_hab'],['Latitude','geo_lat'],['Longitude','geo_long']];
+  let h='<h3 style="color:#2d6a2d;margin-bottom:10px">Distribution '+esc(d.sanction_id)+'</h3><div class="form-grid">'+F.map(([l,k])=>'<div class="fg"><label>'+l+'</label><div style="font-size:13px">'+(d[k]==null||d[k]===''?'—':esc(d[k]))+'</div></div>').join('')+'</div><p style="margin:12px 0 4px;font-weight:600;font-size:13px">Seedlings</p><div style="font-size:13px">'+(d.nursery_ntransaction||[]).map(lineTxt).join('<br>')+'</div><div id="vd-photos" style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap"></div><div style="text-align:right;margin-top:12px"><button class="abtn ao" onclick="closeModal()">Close</button></div>';
+  byId('modal-body').innerHTML=h;byId('modal').style.display='flex';
+  for(const [k,lab] of [['pre_photo_path','Pre photo'],['post_photo_path','Post photo']]){
+    if(!d[k])continue;
+    const {data}=await sb.storage.from('nursery-photos').createSignedUrl(d[k],300);
+    if(data)byId('vd-photos').insertAdjacentHTML('beforeend','<div style="font-size:12px">'+lab+'<br><img src="'+data.signedUrl+'" style="max-width:240px;max-height:180px;border-radius:6px;border:1px solid #d4e8d4"></div>');
+  }
+}
+function editDist(sid){
+  const d=distRecs.find(x=>x.sanction_id===sid);if(!d)return;
+  clearDistForm();
+  const map={'de-sanction_id':'sanction_id','de-sanction_Scheme':'sanction_scheme','de-sanction_dt':'sanction_dt','de-sanction_by':'sanction_by','de-sanction_qnty':'sanction_qnty','de-sanction_free_no':'sanction_free_no','de-sanction_cost_no':'sanction_cost_no','de-sanction_rate':'sanction_rate','de-ben_name':'ben_name','de-ben_Mobile_no':'ben_mobile_no','de-ben_email_id':'ben_email_id','de-ben_Distributed_no':'ben_distributed_no','de-ben_Dist_Dt':'ben_dist_dt','de-Planted_dt':'planted_dt','de-Mandal':'mandal','de-Gramapanchayat':'gramapanchayat','de-Village_hab':'village_hab','de-geo_lat':'geo_lat','de-geo_long':'geo_long'};
+  Object.entries(map).forEach(([id,k])=>byId(id).value=d[k]==null?'':d[k]);
+  const orig={};selectedSeedlings={};
+  (d.nursery_ntransaction||[]).forEach(l=>{const r=records.find(x=>x.id===l.master_id);if(r){orig[r.id]=l.distributed;selectedSeedlings[r.id]={record:r,qty:l.distributed};}});
+  editingDist={sid,orig};
+  byId('de-sanction_id').readOnly=true;
+  document.querySelector('#dist-entry-view .ag').textContent='💾 Update Distribution';
+  const bn=byId('de-edit-banner');bn.innerHTML='✏️ Editing distribution <strong>'+esc(sid)+'</strong>. Re-select seedlings if needed (new photos replace the old ones). <button class="abtn ao" style="margin-left:8px;padding:3px 10px;font-size:12px" onclick="clearDistForm()">Cancel Edit</button>';bn.style.display='block';
+  renderDistTable();updateSelectionSummary();
+  bn.scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function delDist(sid){
+  if(!confirm('Delete distribution '+sid+'? The seedlings will be returned to stock.'))return;
+  const d=distRecs.find(x=>x.sanction_id===sid);
+  const {error}=await sb.rpc('nursery_delete_distribution',{p_sanction_id:sid});
+  if(error){alert('Could not delete: '+error.message);return;}
+  const paths=[d&&d.pre_photo_path,d&&d.post_photo_path].filter(Boolean);
+  if(paths.length)await sb.storage.from('nursery-photos').remove(paths);
+  loadSheetData();loadDistRecords();
+}
+
+/* ── REPORTS ── */
+const RPT_DIMS=[['district','District'],['mandal','Mandal'],['division','Division'],['range','Range'],['nursery','Nursery'],['scheme','Scheme'],['species','Species'],['bagSize','Bag Size'],['distDate','Date']];
+const RPT_MEAS=[['available','Available'],['distributed','Distributed'],['balance','Balance']];
+let rptHead=[],rptRows=[],rptTitle='report';
+const rv=(r,k)=>k==='balance'?r.available-r.distributed:r[k];
+function initReport(){
+  rhFill();
+  if(!byId('rpt-dims').innerHTML){
+    byId('rpt-dims').innerHTML=RPT_DIMS.map(d=>`<label><input type="checkbox" id="rd-${d[0]}" checked>${d[1]}</label>`).join('');
+    byId('rpt-meas').innerHTML=RPT_MEAS.map(m=>`<label><input type="checkbox" id="rm-${m[0]}" checked>${m[1]}</label>`).join('');
+  }
+  byId('rpt-filters').innerHTML=RPT_DIMS.filter(d=>d[0]!=='distDate').map(d=>{
+    const old=byId('rf-'+d[0])?byId('rf-'+d[0]).value:'';
+    const vals=[...new Set(records.map(r=>r[d[0]]).filter(Boolean))].sort();
+    return `<div class="fg"><label>${d[1]}</label><select id="rf-${d[0]}"><option value="">-- All --</option>${vals.map(v=>`<option${v===old?' selected':''}>${esc(v)}</option>`).join('')}</select></div>`;}).join('');
+}
+function resetReport(){
+  RPT_DIMS.forEach(d=>{const c=byId('rd-'+d[0]);if(c)c.checked=true;});RPT_MEAS.forEach(m=>byId('rm-'+m[0]).checked=true);
+  byId('rpt-type').value='abstract';byId('rf-from').value='';byId('rf-to').value='';
+  initReport();RPT_DIMS.filter(d=>d[0]!=='distDate').forEach(d=>byId('rf-'+d[0]).value='');
+  byId('rpt-out').innerHTML='<p class="empty">Choose options and click Generate Report.</p>';rptRows=[];rptHead=[];
+}
+function generateReport(){
+  const type=byId('rpt-type').value;
+  const dims=RPT_DIMS.filter(d=>byId('rd-'+d[0]).checked),meas=RPT_MEAS.filter(m=>byId('rm-'+m[0]).checked);
+  if(type==='detailed'&&!dims.length&&!meas.length){alert('Select at least one field or measure.');return;}
+  const from=byId('rf-from').value,to=byId('rf-to').value;
+  const flt=RPT_DIMS.filter(d=>d[0]!=='distDate'&&byId('rf-'+d[0]).value).map(d=>[d,byId('rf-'+d[0]).value]);
+  const data=records.filter(r=>flt.every(([d,v])=>String(r[d[0]])===v)&&(!from||r.distDate>=from)&&(!to||r.distDate<=to));
+  const dv=(r,d)=>r[d[0]]===''||r[d[0]]==null?'—':r[d[0]];
+  let head,rows;
+  if(type==='detailed'){
+    head=['S.No',...dims.map(d=>d[1]),...meas.map(m=>m[1])];
+    rows=data.map((r,i)=>[i+1,...dims.map(d=>dv(r,d)),...meas.map(m=>rv(r,m[0]))]);
+  }else{
+    const g={};
+    data.forEach(r=>{const k=dims.map(d=>dv(r,d)).join('\u0001');const o=g[k]||(g[k]={keys:dims.map(d=>dv(r,d)),n:0,m:meas.map(()=>0)});o.n++;meas.forEach((m,i)=>o.m[i]+=rv(r,m[0]));});
+    head=[...dims.map(d=>d[1]),'Records',...meas.map(m=>m[1])];
+    rows=Object.keys(g).sort().map(k=>[...g[k].keys,g[k].n,...g[k].m]);
+  }
+  const nd=type==='detailed'?1+dims.length:dims.length;
+  const tot=head.map((h,i)=>i<nd?'':rows.reduce((a,r)=>a+(Number(r[i])||0),0));
+  if(type==='abstract'&&nd>0)tot[0]='Grand Total'; else if(nd>0)tot[0]='Total';
+  rptHead=head;rptRows=rows.concat(rows.length?[tot]:[]);rptTitle=(type==='detailed'?'Detailed':'Abstract')+'_Report';
+  const fmtc=(v,i)=>i>=nd&&typeof v==='number'?fmt(v):esc(v);
+  const metaTxt=['Generated: '+new Date().toLocaleString('en-IN'),...flt.map(([d,v])=>d[1]+': '+v),from?'From: '+from:'',to?'To: '+to:'',data.length+' stock record(s)'].filter(Boolean).join(' | ');
+  const hdrHtml=rptHeaderHtml(type,metaTxt);byId('rpt-out').innerHTML=(rows.length?'<div class="table-wrap"><table><thead><tr class="rpt-hdr"><th colspan="'+head.length+'">'+hdrHtml+'</th></tr><tr>'+head.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((v,i)=>'<td'+(i>=nd?' class="num"':'')+'>'+fmtc(v,i)+'</td>').join('')+'</tr>').join('')+'</tbody><tfoot><tr>'+tot.map((v,i)=>'<td'+(i>=nd?' class="num"':'')+'>'+fmtc(v,i)+'</td>').join('')+'</tr></tfoot></table></div>':hdrHtml+'<p class="empty">No records match the selection.</p>');
+}
+function rptCSV(){
+  if(!rptRows.length){alert('Generate a report first.');return;}
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const csv=[rptHead,...rptRows].map(r=>r.map(q).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download=rptTitle+'_'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();
+}
+
+
+/* ── RESOLVED ENQUIRIES → DISTRIBUTION ENTRY ── */
+let resolvedEnq=[];
+async function loadResolvedEnquiries(){
+  const sel=byId('de-enquiry');if(!sel)return;
+  const {data,error}=await sb.from('nursery_enquiries').select('id,name,mobile,village,district,created_at,nursery_enquiry_items(stock_id,qty)').eq('status','Resolved').order('created_at',{ascending:false});
+  if(error)return;
+  resolvedEnq=data;const cur=sel.value;
+  sel.innerHTML='<option value="">-- Select resolved enquiry --</option>';
+  data.forEach(e=>{const tot=(e.nursery_enquiry_items||[]).reduce((a,x)=>a+x.qty,0);const o=document.createElement('option');o.value=e.id;o.textContent=e.name+' — '+e.mobile+(e.village?' — '+e.village:'')+(tot?' ('+tot+' seedlings)':'');if(String(e.id)===cur)o.selected=true;sel.appendChild(o);});
+}
+function applyEnquiry(id){
+  if(!id)return;
+  if(editingDist){alert('Finish or cancel the edit before choosing an enquiry.');byId('de-enquiry').value='';return;}
+  const e=resolvedEnq.find(x=>String(x.id)===String(id));if(!e)return;
+  byId('de-ben_name').value=e.name||'';
+  byId('de-ben_Mobile_no').value=e.mobile||'';
+  byId('de-Village_hab').value=e.village||'';
+  selectedSeedlings={};let tot=0,skipped=0;
+  (e.nursery_enquiry_items||[]).forEach(it=>{
+    const r=records.find(x=>x.id===it.stock_id);if(!r){skipped++;return;}
+    const q=Math.min(it.qty,effBal(r));
+    if(q<1){skipped++;return;}
+    if(q<it.qty)skipped++;
+    selectedSeedlings[r.id]={record:r,qty:q};tot+=q;
+  });
+  if(tot)byId('de-ben_Distributed_no').value=tot;
+  const first=Object.values(selectedSeedlings)[0];
+  if(first){if(!byId('de-sanction_Scheme').value)byId('de-sanction_Scheme').value=first.record.scheme||'';if(!byId('de-Mandal').value)byId('de-Mandal').value=first.record.mandal||'';}
+  renderDistTable();updateSelectionSummary();
+  if(skipped)showDistError('Note: some requested seedlings are out of stock or reduced to the available balance. Please review the selection.');
+  else byId('de-error').style.display='none';
+}
+
+/* ── CONTACTS (CRUD) ── */
+let contacts=[],editingContactId=null;
+const isStaff=()=>currentRole==='admin'||currentRole==='staff';
+function buildNurseryChecks(){
+  const box=byId('ct-nurseries');const checked=new Set([...box.querySelectorAll('input:checked')].map(i=>i.value));
+  const names=[...new Set(records.map(r=>r.nursery).filter(Boolean))].sort();
+  box.innerHTML=names.map(n=>`<label><input type="checkbox" value="${esc(n)}" onchange="updateNurserySum()"${checked.has(n)?' checked':''}>${esc(n)}</label>`).join('')||'<span style="font-size:12px;color:#888">No nurseries loaded</span>';
+  updateNurserySum();
+}
+function selectedNurseries(){return [...byId('ct-nurseries').querySelectorAll('input:checked')].map(i=>i.value);}
+function updateNurserySum(){const n=selectedNurseries().length;byId('ct-n-sum').textContent=n?n+' selected ▾':'Select nurseries ▾';}
+const CT_KINDS={mobile:{ph:'10-digit mobile',type:'tel',max:10},landline:{ph:'Landline (with STD code)',type:'tel',max:25},email:{ph:'name@example.com',type:'email',max:150}};
+let ctMulti={mobile:[''],landline:[''],email:['']};
+function renderMulti(kind){
+  const k=CT_KINDS[kind];
+  byId('ct-'+kind+'-list').innerHTML=ctMulti[kind].map((v,i)=>`<div style="display:flex;gap:6px;margin-bottom:5px"><input type="${k.type}" maxlength="${k.max}" placeholder="${k.ph}" value="${esc(v)}" oninput="ctMulti['${kind}'][${i}]=this.value" style="flex:1;min-width:0">${ctMulti[kind].length>1?`<button type="button" class="abtn ar" style="padding:2px 9px" title="Remove" onclick="removeMulti('${kind}',${i})">✕</button>`:''}</div>`).join('')+(ctMulti[kind].length<10?`<button type="button" class="abtn ao" style="padding:3px 10px;font-size:12px" onclick="addMulti('${kind}')">➕ Add another</button>`:'');
+}
+function addMulti(kind){ctMulti[kind].push('');renderMulti(kind);}
+function removeMulti(kind,i){ctMulti[kind].splice(i,1);if(!ctMulti[kind].length)ctMulti[kind]=[''];renderMulti(kind);}
+function getMulti(kind){return [...new Set(ctMulti[kind].map(v=>v.trim()).filter(Boolean))];}
+function setMulti(kind,arr){ctMulti[kind]=(arr&&arr.length)?[...arr]:[''];renderMulti(kind);}
+function initContacts(){buildNurseryChecks();Object.keys(CT_KINDS).forEach(renderMulti);loadContacts();}
+async function loadContacts(){
+  const {data,error}=await sb.from('nursery_contacts').select('*').order('officer_name');
+  if(error){byId('ct-tbody').innerHTML='<tr><td colspan="10" class="empty">Could not load: '+esc(error.message)+'</td></tr>';return;}
+  contacts=data;renderContacts();
+}
+function renderContacts(){
+  const q=(byId('ct-search').value||'').toLowerCase(),staff=isStaff();
+  document.querySelectorAll('.ct-act').forEach(e=>e.style.display=staff?'':'none');
+  const data=contacts.filter(c=>!q||[c.officer_name,c.designation,c.office_name,(c.mobile_nos||[]).join(' '),(c.landline_nos||[]).join(' '),(c.email_addresses||[]).join(' '),(c.incharge_nurseries||[]).join(' ')].some(v=>String(v||'').toLowerCase().includes(q)));
+  const tb=byId('ct-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="10" class="empty">No contacts found.</td></tr>';return;}
+  const lines=(arr,mk)=>(arr&&arr.length)?arr.map(mk).join('<br>'):'—';
+  tb.innerHTML=data.map((c,i)=>`<tr><td>${i+1}</td><td><strong>${esc(c.officer_name)}</strong></td><td>${esc(c.designation)||'—'}</td><td>${esc(c.office_name)||'—'}</td><td>${lines(c.mobile_nos,m=>`<a href="tel:${esc(m)}">${esc(m)}</a>`)}</td><td>${lines(c.landline_nos,m=>esc(m))}</td><td>${lines(c.email_addresses,m=>`<a href="mailto:${esc(m)}">${esc(m)}</a>`)}</td><td style="min-width:160px">${esc(c.office_address)||'—'}</td><td style="min-width:160px;font-size:12px">${(c.incharge_nurseries||[]).map(esc).join('<br>')||'—'}</td>${staff?`<td style="white-space:nowrap"><button class="abtn ab" style="padding:3px 10px;font-size:12px" onclick="editContact(${c.id})">Edit</button>${currentRole==='admin'?` <button class="abtn ar" style="padding:3px 10px;font-size:12px" onclick="deleteContact(${c.id})">Delete</button>`:''}</td>`:''}</tr>`).join('');
+}
+async function saveContact(){
+  if(!(await hasSession()))return;
+  const v=id=>byId(id).value.trim();
+  const mobiles=getMulti('mobile'),landlines=getMulti('landline'),emails=getMulti('email');
+  if(!v('ct-name')){alert('Name of the Officer is required.');return;}
+  const badM=mobiles.find(m=>!/^\d{10}$/.test(m));if(badM){alert('Invalid mobile number: '+badM+' (must be 10 digits).');return;}
+  const badE=emails.find(e=>!/^[^@\s,]+@[^@\s,]+\.[^@\s,]+$/.test(e));if(badE){alert('Invalid email address: '+badE);return;}
+  const row={officer_name:v('ct-name'),designation:v('ct-desig')||null,office_name:v('ct-office')||null,mobile_nos:mobiles,landline_nos:landlines,email_addresses:emails,office_address:v('ct-address')||null,incharge_nurseries:selectedNurseries()};
+  const q=editingContactId?sb.from('nursery_contacts').update({...row,updated_at:new Date().toISOString()}).eq('id',editingContactId):sb.from('nursery_contacts').insert(row);
+  const {data,error}=await q.select('id');
+  if(error){alert('Could not save: '+error.message);return;}
+  if(!data||!data.length){alert('Not saved: you are not signed in as staff.');return;}
+  clearContactForm();loadContacts();
+}
+function editContact(id){
+  const c=contacts.find(x=>x.id===id);if(!c)return;
+  const m={'ct-name':c.officer_name,'ct-desig':c.designation,'ct-office':c.office_name,'ct-address':c.office_address};
+  Object.entries(m).forEach(([k,v])=>byId(k).value=v==null?'':v);
+  setMulti('mobile',c.mobile_nos);setMulti('landline',c.landline_nos);setMulti('email',c.email_addresses);
+  buildNurseryChecks();
+  const set=new Set(c.incharge_nurseries||[]);
+  byId('ct-nurseries').querySelectorAll('input').forEach(i=>i.checked=set.has(i.value));
+  set.forEach(n=>{if(![...byId('ct-nurseries').querySelectorAll('input')].some(i=>i.value===n))byId('ct-nurseries').insertAdjacentHTML('beforeend',`<label><input type="checkbox" value="${esc(n)}" checked onchange="updateNurserySum()">${esc(n)}</label>`);});
+  updateNurserySum();
+  editingContactId=id;
+  byId('ct-form-title').textContent='✏️ Edit Contact';byId('ct-save-btn').textContent='Update Contact';byId('ct-cancel-btn').style.display='inline-block';
+  byId('ct-form-title').scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function deleteContact(id){
+  const c=contacts.find(x=>x.id===id);
+  if(!confirm('Delete contact '+(c?c.officer_name:id)+'?'))return;
+  const {data,error}=await sb.from('nursery_contacts').delete().eq('id',id).select('id');
+  if(error){alert('Could not delete: '+error.message);return;}
+  if(!data||!data.length){alert('Nothing deleted: only a signed-in admin can delete contacts.');return;}
+  loadContacts();
+}
+function clearContactForm(){
+  ['ct-name','ct-desig','ct-office','ct-address'].forEach(id=>byId(id).value='');
+  setMulti('mobile',[]);setMulti('landline',[]);setMulti('email',[]);
+  byId('ct-nurseries').querySelectorAll('input').forEach(i=>i.checked=false);updateNurserySum();
+  editingContactId=null;
+  byId('ct-form-title').textContent='➕ Add Contact';byId('ct-save-btn').textContent='Add Contact';byId('ct-cancel-btn').style.display='none';
+}
+
+/* ── ADMIN ADD-RECORD DROPDOWNS ── */
+const ADMIN_COMBOS=[['a-district','district'],['a-mandal','mandal'],['a-division','division'],['a-range','range'],['a-nursery','nursery'],['a-scheme','scheme'],['a-species','species'],['a-bagsize','bagSize']];
+function populateAdminCombos(){
+  ADMIN_COMBOS.forEach(([id,key])=>{
+    const el=byId(id);if(!el)return;
+    const cur=comboVal(id),sel=el.value;
+    const vals=[...new Set(records.map(r=>r[key]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+    el.innerHTML='<option value="">-- Select --</option>'+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')+'<option value="__new__">➕ Add new…</option>';
+    if(sel==='__new__'){el.value='__new__';}else if(cur)setCombo(id,cur);
+  });
+}
+function comboChange(id){const nw=byId(id+'-new');nw.style.display=byId(id).value==='__new__'?'block':'none';if(nw.style.display==='block')nw.focus();}
+function comboVal(id){
+  const el=byId(id);
+  if(el.tagName==='SELECT')return (el.value==='__new__'?byId(id+'-new').value:el.value).trim();
+  return el.value.trim();
+}
+function setCombo(id,val){
+  const el=byId(id);val=val==null?'':String(val);
+  if(el.tagName!=='SELECT'){el.value=val;return;}
+  if(val&&![...el.options].some(o=>o.value===val)){const o=document.createElement('option');o.value=val;o.textContent=val;el.insertBefore(o,el.options[el.options.length-1]);}
+  el.value=val;byId(id+'-new').style.display='none';byId(id+'-new').value='';
+}
+function comboReset(){ADMIN_COMBOS.forEach(([id])=>{const el=byId(id);if(!el)return;el.value='';byId(id+'-new').value='';byId(id+'-new').style.display='none';});}
+
+/* ── CUSTOM REPORT HEADER (repeats on every printed page via <thead>) ── */
+const RH_KEY='nursery_rpt_header';let rhMem=null,rptLogo='';
+function rhLoad(){let o=null;try{o=JSON.parse(localStorage.getItem(RH_KEY)||'null');}catch(e){}return Object.assign({l1:'',l2:'',l3:'',title:'',align:'center',meta:true,logo:''},o||rhMem||{});}
+function rhRead(){return {l1:byId('rh-l1').value.trim(),l2:byId('rh-l2').value.trim(),l3:byId('rh-l3').value.trim(),title:byId('rh-title').value.trim(),align:byId('rh-align').value,meta:byId('rh-meta').checked,logo:rptLogo};}
+function rhFill(){
+  const h=rhLoad();if(!byId('rh-l1'))return;
+  byId('rh-l1').value=h.l1;byId('rh-l2').value=h.l2;byId('rh-l3').value=h.l3;byId('rh-title').value=h.title;byId('rh-align').value=h.align;byId('rh-meta').checked=!!h.meta;rptLogo=h.logo||'';
+}
+function rhSave(){const o=rhRead();rhMem=o;try{localStorage.setItem(RH_KEY,JSON.stringify(o));}catch(e){}}
+function rhLogo(inp){
+  const f=inp.files[0];if(!f)return;
+  if(!/^image\//.test(f.type)){alert('Please choose an image file.');inp.value='';return;}
+  if(f.size>300*1024){alert('Logo is too large. Please use an image under 300 KB.');inp.value='';return;}
+  const r=new FileReader();r.onload=()=>{rptLogo=r.result;rhSave();};r.readAsDataURL(f);
+}
+function rhLogoClear(){rptLogo='';byId('rh-logo').value='';rhSave();}
+function rhReset(){rptLogo='';byId('rh-logo').value='';['rh-l1','rh-l2','rh-l3','rh-title'].forEach(i=>byId(i).value='');byId('rh-align').value='center';byId('rh-meta').checked=true;rhSave();}
+function rptHeaderHtml(type,metaTxt){
+  const h=rhRead(),al=['left','center','right'].includes(h.align)?h.align:'center';
+  const title=h.title||((type==='detailed'?'Detailed':'Abstract')+' Report');
+  return '<div style="text-align:'+al+';color:#111">'
+    +(h.logo?'<img src="'+esc(h.logo)+'" alt="" style="height:56px;max-width:160px;object-fit:contain;margin-bottom:4px">':'')
+    +(h.l1?'<div style="font-size:18px;font-weight:700">'+esc(h.l1)+'</div>':'')
+    +(h.l2?'<div style="font-size:14px;font-weight:600">'+esc(h.l2)+'</div>':'')
+    +(h.l3?'<div style="font-size:12px">'+esc(h.l3)+'</div>':'')
+    +'<div style="font-size:15px;font-weight:700;margin-top:4px;color:#2d6a2d">'+esc(title)+'</div>'
+    +(h.meta?'<div style="font-size:11px;color:#555;margin-top:2px">'+esc(metaTxt)+'</div>':'')
+    +'</div>';
+}
+function printReport(){
+  generateReport();
+  if(!rptRows.length){return;}
+  document.body.classList.add('printing-report');
+  window.onafterprint=()=>document.body.classList.remove('printing-report');
+  window.print();
+}
+
+/* ── AVENUE PLANTATION ── */
+const AV_YEARS=(()=>{const a=[];for(let y=2008;y<=2032;y++)a.push(y+'-'+String((y+1)%100).padStart(2,'0'));return a;})();
+const AV_GROUPS={
+  stretches:{add:'➕ Add stretch',fields:[['stretch_no','Stretch No.','text'],['stretch_from','Stretch From (km)','text'],['stretch_to','Stretch To (km)','text'],['latitude','Latitude','geo'],['longitude','Longitude','geo']]},
+  species:{add:'➕ Add species',fields:[['species','Species','species'],['no_of_plants','No. of Plants','num'],['height_m','Height (m)','num'],['girth_cm','Girth (cm)','num']]},
+  replacements:{add:'➕ Add replacement',fields:[]},
+  activities:{add:'➕ Add year',fields:[['year','Year','year'],['activity','Activity','select',['Raising','Maintenance']],['planting_from','Planting Period From','date'],['planting_to','Planting Period To','date'],['esti_no','Estimate No.','estimate'],['esti_amount','Estimate Amount (₹)','num'],['expenditure','Expenditure (₹)','num'],['balance','Balance (₹)','calc']]},
+  inspections:{add:'➕ Add inspection',fields:[['inspection_date','Inspection Date','date'],['officers','Inspecting Officer(s) – comma separated','text'],['survival_pct','Survival %','num'],['remarks','Remarks of Officer','text']]}
+};
+let av={id:null,species:[],replacements:[],stretches:[],activities:[],inspections:[],photos:[],files:[]},avList=[],avOrigPhotos=[];
+const inr=v=>'₹'+(Number(v)||0).toLocaleString('en-IN');
+const nn=v=>(v===''||v==null)?null:Number(v);
+const sv=v=>(v==null||String(v).trim()==='')?null:String(v).trim();
+function avStockSpecies(){return [...new Set(records.map(r=>r.species).filter(Boolean))].sort();}
+function avCell(g,i,f,r,bare){
+  const [k,label,type,opt]=f;let inp;
+  const set=`avSet('${g}',${i},'${k}',this.value)`;
+  if(type==='calc')inp=`<div id="av-bal-${i}" style="padding:6px 0;font-weight:700">${inr((+r.esti_amount||0)-(+r.expenditure||0))}</div>`;
+  else if(type==='select'||type==='year'){
+    const list=type==='year'?AV_YEARS:opt;const l=(r[k]&&!list.includes(r[k]))?[r[k],...list]:list;
+    inp=`<select onchange="${set}"><option value="">-- Select --</option>${l.map(o=>`<option${r[k]===o?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  }else if(type==='plspecies'){
+    const names=[...new Set(av.species.map(x=>(x.species||'').trim()).filter(Boolean))];
+    const l=(r[k]&&!names.includes(r[k]))?[r[k],...names]:names;
+    inp=`<select onchange="${set}"><option value="">-- Select --</option>${l.map(o=>`<option${r[k]===o?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  }else if(type==='stocksp'){
+    if(r._man)inp=`<div style="display:flex;gap:4px"><input placeholder="New species" value="${esc(r[k]||'')}" oninput="${set}"><button type="button" class="abtn ao" style="padding:2px 8px" title="Back to list" onclick="avRsList(${i})">↩</button></div>`;
+    else{const l=avStockSpecies();const all=(r[k]&&!l.includes(r[k]))?[r[k],...l]:l;
+      inp=`<select onchange="avRsChange(${i},this.value)"><option value="">-- Select --</option>${all.map(o=>`<option${r[k]===o?' selected':''}>${esc(o)}</option>`).join('')}<option value="__new__">➕ Add new…</option></select>`;}
+  }else if(type==='estimate'){
+    if(r._manual)inp=`<div style="display:flex;gap:4px"><input placeholder="Estimate No." value="${esc(r.esti_no||'')}" oninput="${set}"><button type="button" class="abtn ao" style="padding:2px 8px" title="Back to list" onclick="avEstList(${i})">↩</button></div>`;
+    else{const l=avEstOptions();const cur=r.esti_no&&!l.some(e=>e.esti_no===r.esti_no)?[{esti_no:r.esti_no}]:[];
+      inp=`<select onchange="avEstPick(${i},this.value)"><option value="">-- Select estimate --</option>${[...cur,...l].map(e=>`<option value="${esc(e.esti_no)}" title="${esc(e.esti_description||'')}"${r.esti_no===e.esti_no?' selected':''}>${esc(e.esti_no)}${e.scheme?' — '+esc(e.scheme):''}${e.est_cost!=null?' — '+inr(e.est_cost):''}</option>`).join('')}<option value="__manual__">✍️ Enter manually…</option></select>`;}
+  }else if(type==='species'){
+    if(r._new)inp=`<div style="display:flex;gap:4px"><input placeholder="New species" value="${esc(r.species||'')}" oninput="${set}"><button type="button" class="abtn ao" style="padding:2px 8px" title="Back to list" onclick="avSpList(${i})">↩</button></div>`;
+    else{const l=avStockSpecies();const all=(r.species&&!l.includes(r.species))?[r.species,...l]:l;
+      inp=`<select onchange="avSpChange(${i},this.value)"><option value="">-- Select --</option>${all.map(o=>`<option${r.species===o?' selected':''}>${esc(o)}</option>`).join('')}<option value="__new__">➕ Add new…</option></select>`;}
+  }else inp=`<input type="${type==='num'||type==='geo'?'number':type}" ${type==='num'?'step="any" min="0"':type==='geo'?'step="any"':''} value="${esc(r[k]==null?'':r[k])}" oninput="${set}">`;
+  return bare?inp:`<div class="av-cell"><label>${label}</label>${inp}</div>`;
+}
+function avRenderAct(){
+  const G=AV_GROUPS.activities;
+  byId('av-g-activities').innerHTML='<div class="table-wrap"><table class="av-tbl"><thead><tr><th>#</th>'+G.fields.map(f=>'<th>'+f[1]+'</th>').join('')+'<th></th></tr></thead><tbody>'
+    +av.activities.map((r,i)=>'<tr><td>'+(i+1)+'</td>'+G.fields.map(f=>'<td>'+avCell('activities',i,f,r,true)+'</td>').join('')+'<td><button type="button" class="abtn ar" style="padding:3px 9px" title="Remove row" onclick="avDel(\'activities\','+i+')">✕</button></td></tr>').join('')
+    +'</tbody><tfoot><tr><td></td><td colspan="5">Total</td><td class="num" id="av-t-est"></td><td class="num" id="av-t-exp"></td><td class="num" id="av-t-bal"></td><td></td></tr></tfoot></table></div>'
+    +'<button type="button" class="abtn ao" style="padding:4px 12px;font-size:12px;margin-top:8px" onclick="avAdd(\'activities\')">'+G.add+'</button>';
+  avTotals();avEstInfo();
+}
+function avRender(g){
+  if(g==='activities'){avRenderAct();return;}
+  if(g==='replacements'){avRenderRepl();return;}
+  const G=AV_GROUPS[g];
+  byId('av-g-'+g).innerHTML=av[g].map((r,i)=>`<div class="av-row">${G.fields.map(f=>avCell(g,i,f,r)).join('')}<button type="button" class="abtn ar" style="padding:4px 10px" title="Remove row" onclick="avDel('${g}',${i})">✕</button></div>`).join('')+`<button type="button" class="abtn ao" style="padding:4px 12px;font-size:12px" onclick="avAdd('${g}')">${G.add}</button>`;
+  avTotals();
+  if(g==='species'&&byId('av-g-replacements'))avRender('replacements');
+}
+function avAdd(g){av[g].push({});avRender(g);}
+function avDel(g,i){av[g].splice(i,1);avRender(g);}
+function avSpChange(i,v){if(v==='__new__'){av.species[i]._new=true;av.species[i].species='';avRender('species');}else avSet('species',i,'species',v);}
+const RS_FIELDS=[['replaced_on','Date of Replacement','date'],['new_species','New Species','stocksp'],['new_species_no','New Species No.','num'],['replaced_species','Replaced With (from Planting Details)','plspecies'],['replace_no','Replace No. (plants replaced)','num'],['remarks','Remarks','text']];
+function avRsBlank(r){return !(r.new_species||r.replaced_species||(r.new_species_no!==undefined&&r.new_species_no!=='')||(r.replace_no!==undefined&&r.replace_no!=='')||r.replaced_on||r.remarks);}
+function avRsChange(i,v){if(v==='__new__'){av.replacements[i]._man=true;av.replacements[i].new_species='';avRender('replacements');}else avSet('replacements',i,'new_species',v);}
+function avRsList(i){av.replacements[i]._man=false;av.replacements[i].new_species='';avRender('replacements');}
+function avRenderRepl(){
+  byId('av-g-replacements').innerHTML=av.replacements.map((r,i)=>{
+    const locked=!!r._applied;
+    const cells=RS_FIELDS.map(f=>locked?`<div class="av-cell"><label>${f[1]}</label><input disabled value="${esc(r[f[0]]==null?'':r[f[0]])}"></div>`:avCell('replacements',i,f,r)).join('');
+    const act=locked?(r._fresh?`<span style="font-size:11px;color:#2d6a2d">✔ Applied</span><button type="button" class="abtn ao" style="padding:3px 9px;font-size:11px" onclick="avRsUndo(${i})">Undo</button>`:'<span style="font-size:11px;color:#2d6a2d" title="Saved history is locked">🔒 Saved</span>')
+      :`<button type="button" class="abtn ag" style="padding:3px 9px;font-size:12px" onclick="avRsApply(${i})">Apply</button><button type="button" class="abtn ar" style="padding:3px 9px" title="Remove row" onclick="avDel('replacements',${i})">✕</button>`;
+    return `<div class="av-row">${cells}<div style="display:flex;flex-direction:column;gap:4px">${act}</div></div>`;}).join('')
+   +'<button type="button" class="abtn ao" style="padding:4px 12px;font-size:12px" onclick="avAdd(\'replacements\')">➕ Add replacement</button>';
+}
+function avRsApply(i){
+  const r=av.replacements[i];if(!r||r._applied)return true;
+  const ns=(r.new_species||'').trim(),os=(r.replaced_species||'').trim(),nno=Number(r.new_species_no),rno=Number(r.replace_no),n='Replacement row '+(i+1)+': ';
+  if(!r.replaced_on){alert(n+'enter the Date of Replacement.');return false;}
+  if(!ns){alert(n+'select the New Species.');return false;}
+  if(!Number.isInteger(nno)||nno<=0){alert(n+'New Species No. must be a whole number greater than 0.');return false;}
+  if(!os){alert(n+'select the species being replaced (Replaced With).');return false;}
+  if(ns===os){alert(n+'the New Species must be different from the species it replaces.');return false;}
+  if(!Number.isInteger(rno)||rno<=0){alert(n+'Replace No. must be a whole number greater than 0.');return false;}
+  const old=av.species.find(x=>(x.species||'').trim()===os);
+  if(!old){alert(n+'"'+os+'" is not in Planting Details – Species.');return false;}
+  const cur=Number(old.no_of_plants)||0;
+  if(rno>cur){alert(n+'cannot replace '+rno+' plants of '+os+' – only '+cur+' recorded in Planting Details.');return false;}
+  old.no_of_plants=cur-rno;
+  const nw=av.species.find(x=>(x.species||'').trim()===ns);
+  if(nw){nw.no_of_plants=(Number(nw.no_of_plants)||0)+nno;r._created=false;}
+  else{
+    const blank=av.species.find(x=>!(x.species||'').trim()&&(x.no_of_plants===undefined||x.no_of_plants==='')&&!x.height_m&&!x.girth_cm);
+    if(blank){blank.species=ns;blank.no_of_plants=nno;blank._new=false;}else av.species.push({species:ns,no_of_plants:nno,height_m:'',girth_cm:''});
+    r._created=true;
+  }
+  r._applied=true;r._fresh=true;
+  avRender('species');return true;
+}
+function avRsUndo(i){
+  const r=av.replacements[i];if(!r||!r._fresh)return;
+  const old=av.species.find(x=>(x.species||'').trim()===r.replaced_species);
+  const nw=av.species.find(x=>(x.species||'').trim()===r.new_species);
+  if(old)old.no_of_plants=(Number(old.no_of_plants)||0)+Number(r.replace_no);
+  if(nw){nw.no_of_plants=Math.max(0,(Number(nw.no_of_plants)||0)-Number(r.new_species_no));
+    if(r._created&&nw.no_of_plants<=0){av.species.splice(av.species.indexOf(nw),1);if(!av.species.length)av.species.push({});}}
+  r._applied=false;r._fresh=false;r._created=false;
+  avRender('species');
+}
+function avSpList(i){av.species[i]._new=false;av.species[i].species='';avRender('species');}
+function avSet(g,i,k,v){
+  av[g][i][k]=v;
+  if(g==='activities'&&(k==='esti_amount'||k==='expenditure')){const b=byId('av-bal-'+i);if(b)b.textContent=inr((+av.activities[i].esti_amount||0)-(+av.activities[i].expenditure||0));}
+  if(g==='activities'||g==='species')avTotals();
+  if(g==='species'&&k==='species')avRender('replacements');
+}
+function avTotals(){
+  const sp=av.species.reduce((a,r)=>a+(+r.no_of_plants||0),0),pl=+byId('av-plants').value||0;
+  byId('av-sp-total').textContent='Species total: '+sp.toLocaleString('en-IN')+(pl?' of '+pl.toLocaleString('en-IN')+' planted'+(sp>pl?' ⚠️ exceeds total planted':''):'');
+  const e=av.activities.reduce((a,r)=>a+(+r.esti_amount||0),0),x=av.activities.reduce((a,r)=>a+(+r.expenditure||0),0);
+  const put=(id,v)=>{const el=byId(id);if(el)el.textContent=v;};
+  put('av-t-est',inr(e));put('av-t-exp',inr(x));put('av-t-bal',inr(e-x));
+  byId('av-act-total').textContent='';
+}
+function avPhotosRender(){
+  byId('av-photos').innerHTML=av.photos.map((p,i)=>`<div class="av-ph">${p.url?`<img src="${esc(p.url)}" alt="">`:'<div style="height:110px;background:#eee;border-radius:6px"></div>'}<input placeholder="Caption" value="${esc(p.caption||'')}" oninput="av.photos[${i}].caption=this.value"><button type="button" class="abtn ar" style="padding:2px 8px;font-size:11px;margin-top:3px" onclick="av.photos.splice(${i},1);avPhotosRender()">Remove</button></div>`).join('')
+   +av.files.map((p,i)=>`<div class="av-ph"><img src="${esc(p.url)}" alt=""><input placeholder="Caption" value="${esc(p.caption||'')}" oninput="av.files[${i}].caption=this.value"><button type="button" class="abtn ar" style="padding:2px 8px;font-size:11px;margin-top:3px" onclick="URL.revokeObjectURL(av.files[${i}].url);av.files.splice(${i},1);avPhotosRender()">Remove</button> <span style="color:#2d6a2d">new</span></div>`).join('');
+}
+function avAddFiles(list){
+  [...list].forEach(f=>{
+    if(!/^image\/(jpeg|png|webp)$/.test(f.type)){alert(f.name+': only JPG, PNG or WebP images are allowed.');return;}
+    if(f.size>5*1024*1024){alert(f.name+' is larger than 5 MB.');return;}
+    av.files.push({file:f,caption:'',url:URL.createObjectURL(f)});
+  });
+  byId('av-photo-input').value='';avPhotosRender();
+}
+function avFill(p){
+  byId('av-name').value=p?p.name:'';byId('av-kms').value=p&&p.length_kms!=null?p.length_kms:'';byId('av-plants').value=p&&p.plants_planted!=null?p.plants_planted:'';
+  byId('av-hto').value=p&&p.hand_over_to||'';byId('av-htw').value=p&&p.hand_over_to_whom||'';byId('av-hdt').value=p&&p.dt_handover||'';byId('av-remarks').value=p&&p.remarks||'';
+  const by=(a,f)=>(a||[]).slice().sort(f||((x,y)=>x.id-y.id));
+  const b=v=>v==null?'':v;
+  av.species=by(p&&p.avenue_plantation_species).map(r=>({species:r.species,no_of_plants:b(r.no_of_plants),height_m:b(r.height_m),girth_cm:b(r.girth_cm)}));
+  av.replacements=by(p&&p.avenue_plantation_replacements).map(r=>({new_species:b(r.new_species),new_species_no:b(r.new_species_no),replaced_species:b(r.replaced_species),replace_no:b(r.replace_no),replaced_on:b(r.replaced_on),remarks:b(r.remarks),_applied:true}));
+  av.stretches=by(p&&p.avenue_plantation_stretches).map(r=>({stretch_no:b(r.stretch_no),stretch_from:b(r.stretch_from),stretch_to:b(r.stretch_to),latitude:b(r.latitude),longitude:b(r.longitude)}));
+  av.activities=by(p&&p.avenue_plantation_activities).map(r=>({year:b(r.year),activity:b(r.activity),planting_from:b(r.planting_from),planting_to:b(r.planting_to),esti_no:b(r.esti_no),esti_amount:b(r.esti_amount),expenditure:b(r.expenditure)}));
+  av.inspections=by(p&&p.avenue_plantation_inspections,(x,y)=>String(x.inspection_date||'').localeCompare(String(y.inspection_date||''))).map(r=>({inspection_date:b(r.inspection_date),officers:(r.officers||[]).join(', '),survival_pct:b(r.survival_pct),remarks:b(r.remarks)}));
+  av.photos=by(p&&p.avenue_plantation_photos).map(r=>({path:r.path,caption:r.caption||'',url:''}));
+  av.files.forEach(f=>URL.revokeObjectURL(f.url));av.files=[];
+  Object.keys(AV_GROUPS).forEach(g=>{if(!av[g].length)av[g].push({});avRender(g);});
+  avPhotosRender();
+  if(av.photos.length)sb.storage.from('avenue-photos').createSignedUrls(av.photos.map(x=>x.path),900).then(({data})=>{if(data)data.forEach(d=>{const ph=av.photos.find(x=>x.path===d.path);if(ph)ph.url=d.signedUrl||'';});avPhotosRender();});
+}
+function avNew(){av.id=null;avOrigPhotos=[];avFill(null);byId('av-form-title').textContent='➕ New Avenue Plantation';byId('av-form').style.display='block';byId('av-form').scrollIntoView({behavior:'smooth',block:'start'});}
+function avCancel(){byId('av-form').style.display='none';av.id=null;}
+function avEdit(id){
+  const p=avList.find(x=>x.id===id);if(!p)return;
+  av.id=id;avOrigPhotos=(p.avenue_plantation_photos||[]).map(x=>x.path);avFill(p);
+  byId('av-form-title').textContent='✏️ Edit Avenue Plantation';byId('av-form').style.display='block';byId('av-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function initAvenue(){loadAvenue();loadAvenueEstimates();}
+async function loadAvenue(){
+  const {data,error}=await sb.from('avenue_plantations').select('*, avenue_plantation_species(*), avenue_plantation_replacements(*), avenue_plantation_stretches(*), avenue_plantation_activities(*), avenue_plantation_inspections(*), avenue_plantation_photos(*)').order('name');
+  if(error){byId('av-tbody').innerHTML='<tr><td colspan="11" class="empty">Could not load: '+esc(error.message)+'</td></tr>';return;}
+  avList=data;renderAvenue();
+}
+function renderAvenue(){
+  const q=(byId('av-search').value||'').toLowerCase();
+  const data=avList.filter(p=>!q||[p.name,p.hand_over_to,p.hand_over_to_whom,...(p.avenue_plantation_species||[]).map(x=>x.species),...(p.avenue_plantation_inspections||[]).flatMap(x=>x.officers||[])].some(v=>String(v||'').toLowerCase().includes(q)));
+  const tb=byId('av-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="11" class="empty">No avenue plantations yet. Click “New Plantation”.</td></tr>';return;}
+  tb.innerHTML=data.map((p,i)=>{
+    const acts=p.avenue_plantation_activities||[],e=acts.reduce((a,r)=>a+Number(r.esti_amount||0),0),x=acts.reduce((a,r)=>a+Number(r.expenditure||0),0);
+    const insp=(p.avenue_plantation_inspections||[]).filter(r=>r.survival_pct!=null).sort((a,b)=>String(b.inspection_date||'').localeCompare(String(a.inspection_date||'')))[0];
+    const sp=[...new Set((p.avenue_plantation_species||[]).map(r=>r.species))];
+    return `<tr><td>${i+1}</td><td><strong>${esc(p.name)}</strong></td><td class="num">${p.length_kms==null?'—':esc(p.length_kms)}</td><td class="num">${p.plants_planted==null?'—':fmt(p.plants_planted)}</td><td style="font-size:12px">${sp.map(esc).join(', ')||'—'}</td><td class="num">${fmt(e)}</td><td class="num">${fmt(x)}</td><td class="num">${fmt(e-x)}</td><td class="num">${insp?esc(insp.survival_pct)+'%':'—'}</td><td style="font-size:12px">${p.dt_handover?esc(p.dt_handover)+'<br>'+esc(p.hand_over_to||''):'Not handed over'}</td><td style="white-space:nowrap"><button class="abtn ao" style="padding:3px 10px;font-size:12px" onclick="avView(${p.id})">View</button> <button class="abtn ab" style="padding:3px 10px;font-size:12px" onclick="avEdit(${p.id})">Edit</button>${currentRole==='admin'?` <button class="abtn ar" style="padding:3px 10px;font-size:12px" onclick="avDelete(${p.id})">Delete</button>`:''}</td></tr>`;}).join('');
+}
+function avValidate(){
+  if(!byId('av-name').value.trim())return 'Name of the Plantation is required.';
+  const int=(v,l)=>v!==''&&v!=null&&(!Number.isInteger(Number(v))||Number(v)<0)?l+' must be a whole number (0 or more).':'';
+  let m=int(byId('av-plants').value,'Total plants planted');if(m)return m;
+  if(byId('av-kms').value!==''&&Number(byId('av-kms').value)<0)return 'No. of Kms cannot be negative.';
+  for(const [i,r] of av.species.entries()){m=int(r.no_of_plants,'No. of plants (species row '+(i+1)+')');if(m)return m;}
+  for(const [i,r] of av.stretches.entries()){
+    if(r.latitude!==''&&r.latitude!=null&&Math.abs(Number(r.latitude))>90)return 'Latitude in stretch row '+(i+1)+' must be between -90 and 90.';
+    if(r.longitude!==''&&r.longitude!=null&&Math.abs(Number(r.longitude))>180)return 'Longitude in stretch row '+(i+1)+' must be between -180 and 180.';}
+  for(const [i,r] of av.activities.entries()){
+    if(r.planting_from&&r.planting_to&&r.planting_to<r.planting_from)return 'Planting period "To" is before "From" in year row '+(i+1)+'.';
+    if(Number(r.esti_amount)<0||Number(r.expenditure)<0)return 'Amounts cannot be negative (year row '+(i+1)+').';}
+  for(const [i,r] of av.inspections.entries()){const s=r.survival_pct;if(s!==''&&s!=null&&(Number(s)<0||Number(s)>100))return 'Survival % must be between 0 and 100 (inspection row '+(i+1)+').';}
+  return '';
+}
+async function saveAvenue(){
+  if(!(await hasSession()))return;
+  for(let i=0;i<av.replacements.length;i++){const r=av.replacements[i];if(!r._applied&&!avRsBlank(r)&&!avRsApply(i))return;}
+  const err=avValidate();if(err){alert(err);return;}
+  const btn=byId('av-save-btn');btn.disabled=true;btn.textContent='Saving…';
+  const uploaded=[];
+  try{
+    const newPhotos=[];
+    for(const f of av.files){
+      const ext=(f.file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+      const path=Date.now()+'-'+Math.random().toString(36).slice(2,8)+'/'+Math.random().toString(36).slice(2,10)+'.'+ext;
+      const {error}=await sb.storage.from('avenue-photos').upload(path,f.file,{contentType:f.file.type});
+      if(error)throw new Error('Photo upload failed: '+error.message);
+      uploaded.push(path);newPhotos.push({path,caption:sv(f.caption)});
+    }
+    const p={id:av.id,name:byId('av-name').value.trim(),length_kms:nn(byId('av-kms').value),plants_planted:nn(byId('av-plants').value),
+      hand_over_to:sv(byId('av-hto').value),hand_over_to_whom:sv(byId('av-htw').value),dt_handover:sv(byId('av-hdt').value),remarks:sv(byId('av-remarks').value),
+      species:av.species.map(r=>({species:sv(r.species),no_of_plants:nn(r.no_of_plants),height_m:nn(r.height_m),girth_cm:nn(r.girth_cm)})),
+      replacements:av.replacements.map(r=>({new_species:sv(r.new_species),new_species_no:nn(r.new_species_no),replaced_species:sv(r.replaced_species),replace_no:nn(r.replace_no),replaced_on:sv(r.replaced_on),remarks:sv(r.remarks)})),
+      stretches:av.stretches.map(r=>({stretch_no:sv(r.stretch_no),stretch_from:sv(r.stretch_from),stretch_to:sv(r.stretch_to),latitude:nn(r.latitude),longitude:nn(r.longitude)})),
+      activities:av.activities.map(r=>({year:sv(r.year),activity:sv(r.activity),planting_from:sv(r.planting_from),planting_to:sv(r.planting_to),esti_no:sv(r.esti_no),esti_amount:nn(r.esti_amount),expenditure:nn(r.expenditure)})),
+      inspections:av.inspections.map(r=>({inspection_date:sv(r.inspection_date),officers:String(r.officers||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean),survival_pct:nn(r.survival_pct),remarks:sv(r.remarks)})),
+      photos:[...av.photos.map(x=>({path:x.path,caption:sv(x.caption)})),...newPhotos]};
+    const {error}=await sb.rpc('avenue_save_plantation',{p});
+    if(error)throw error;
+    const keep=new Set(p.photos.map(x=>x.path)),orphan=avOrigPhotos.filter(x=>!keep.has(x));
+    if(orphan.length)await sb.storage.from('avenue-photos').remove(orphan);
+    avCancel();loadAvenue();
+  }catch(e){
+    if(uploaded.length)await sb.storage.from('avenue-photos').remove(uploaded);
+    alert('Could not save: '+(e.message||e));
+  }finally{btn.disabled=false;btn.textContent='💾 Save Plantation';}
+}
+async function avDelete(id){
+  const p=avList.find(x=>x.id===id);if(!p)return;
+  if(!confirm('Delete plantation "'+p.name+'" and all its details?'))return;
+  const {error}=await sb.rpc('avenue_delete_plantation',{p_id:id});
+  if(error){alert('Could not delete: '+error.message);return;}
+  const paths=(p.avenue_plantation_photos||[]).map(x=>x.path);
+  if(paths.length)await sb.storage.from('avenue-photos').remove(paths);
+  loadAvenue();
+}
+async function avView(id){
+  const p=avList.find(x=>x.id===id);if(!p)return;
+  const tbl=(head,rows)=>rows.length?'<div class="table-wrap"><table><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+(c===''||c==null?'—':esc(c))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p class="note">None recorded.</p>';
+  const by=(a,f)=>(a||[]).slice().sort(f||((x,y)=>x.id-y.id));
+  const acts=by(p.avenue_plantation_activities),te=acts.reduce((a,r)=>a+Number(r.esti_amount||0),0),tx=acts.reduce((a,r)=>a+Number(r.expenditure||0),0);
+  const H=t=>'<h4 style="color:#2d6a2d;margin:14px 0 6px">'+t+'</h4>';
+  byId('modal-body').style.maxWidth='980px';
+  byId('modal-body').innerHTML='<h3 style="color:#2d6a2d">'+esc(p.name)+'</h3>'
+   +'<p style="font-size:13px;margin:6px 0">Length: <strong>'+(p.length_kms==null?'—':esc(p.length_kms))+' km</strong> &nbsp;|&nbsp; Plants planted: <strong>'+(p.plants_planted==null?'—':fmt(p.plants_planted))+'</strong></p>'
+   +H('Location – Stretches')+tbl(['Stretch No.','From','To','Latitude','Longitude'],by(p.avenue_plantation_stretches).map(r=>[r.stretch_no,r.stretch_from,r.stretch_to,r.latitude,r.longitude]))
+   +H('Species')+tbl(['Species','No. of Plants','Height (m)','Girth (cm)'],by(p.avenue_plantation_species).map(r=>[r.species,r.no_of_plants,r.height_m,r.girth_cm]))
+   +H('Replacement History')+tbl(['Date','New Species','New Species No.','Replaced With','Replace No.','Remarks'],by(p.avenue_plantation_replacements,(a,b)=>String(a.replaced_on||'').localeCompare(String(b.replaced_on||''))).map(r=>[r.replaced_on,r.new_species,r.new_species_no,r.replaced_species,r.replace_no,r.remarks]))
+   +H('Sanction & Expenditure')+tbl(['Year','Activity','Period From','Period To','Estimate No.','Estimate (₹)','Expenditure (₹)','Balance (₹)'],acts.map(r=>[r.year,r.activity,r.planting_from,r.planting_to,r.esti_no,fmt(r.esti_amount),fmt(r.expenditure),fmt(r.balance)]))
+   +(acts.length?'<p style="font-size:13px;font-weight:600;color:#2d6a2d;margin-top:4px">Total Estimate '+inr(te)+' | Expenditure '+inr(tx)+' | Balance '+inr(te-tx)+'</p>':'')
+   +H('Inspections')+tbl(['Date','Officer(s)','Survival %','Remarks'],by(p.avenue_plantation_inspections,(a,b)=>String(a.inspection_date||'').localeCompare(String(b.inspection_date||''))).map(r=>[r.inspection_date,(r.officers||[]).join(', '),r.survival_pct==null?'':r.survival_pct+'%',r.remarks]))
+   +H('Hand-over')+'<p style="font-size:13px">'+(p.dt_handover||p.hand_over_to||p.hand_over_to_whom?esc(p.hand_over_to||'—')+' — '+esc(p.hand_over_to_whom||'—')+' on '+esc(p.dt_handover||'—'):'Not handed over')+'</p>'
+   +(p.remarks?H('Remarks')+'<p style="font-size:13px;white-space:pre-wrap">'+esc(p.remarks)+'</p>':'')
+   +'<div id="av-v-photos" class="av-photos" style="margin-top:12px"></div><div style="text-align:right;margin-top:12px"><button class="abtn ao" onclick="closeModal()">Close</button></div>';
+  byId('modal').style.display='flex';
+  const ph=by(p.avenue_plantation_photos);
+  if(ph.length){const {data}=await sb.storage.from('avenue-photos').createSignedUrls(ph.map(x=>x.path),900);
+    if(data)byId('av-v-photos').innerHTML=data.map((d,i)=>d.signedUrl?`<div class="av-ph"><img src="${esc(d.signedUrl)}" alt=""><div>${esc(ph[i].caption||'')}</div></div>`:'').join('');}
+}
+
+/* ── ESTIMATES FROM SUPABASE `estimate` TABLE ── */
+let avEstimates=[];
+async function loadAvenueEstimates(){
+  const st=byId('av-est-status');
+  const {data,error}=await sb.from('estimate').select('est_id,esti_no,scheme,esti_description,est_cost,est_exp,est_date,status').order('est_date',{ascending:false});
+  if(error){avEstimates=[];if(st)st.textContent='⚠️ Could not load estimates: '+error.message;return;}
+  avEstimates=data||[];
+  if(st)st.textContent=avEstimates.length?'📥 '+avEstimates.length+' estimates loaded from the Estimate table':'⚠️ No estimates available (you may not have access to the Estimate data). You can still enter them manually.';
+  if(byId('av-form').style.display==='block')avRender('activities');
+}
+function avEstOptions(){
+  const only=byId('av-est-only')&&byId('av-est-only').checked;
+  return avEstimates.filter(e=>!only||/avenue/i.test((e.esti_description||'')+' '+(e.scheme||'')));
+}
+function avEstPick(i,v){
+  if(v==='__manual__'){av.activities[i]._manual=true;av.activities[i].esti_no='';avRender('activities');return;}
+  const r=av.activities[i];
+  if(!v){r.esti_no='';avRender('activities');return;}
+  const dup=av.activities.findIndex((x,j)=>j!==i&&x.esti_no===v);
+  if(dup>=0){alert('Estimate '+v+' is already added in row '+(dup+1)+'.');avRender('activities');return;}
+  const e=avEstimates.find(x=>x.esti_no===v);if(!e)return;
+  r.esti_no=e.esti_no;r.esti_amount=e.est_cost==null?'':Number(e.est_cost);r.expenditure=e.est_exp==null?'':Number(e.est_exp);
+  const y=/(\d{4})\s*-\s*(\d{2,4})/.exec(e.esti_no||'');if(y)r.year=y[1]+'-'+y[2].slice(-2);
+  const d=e.esti_description||'';if(/maint/i.test(d))r.activity='Maintenance';else if(/rais/i.test(d))r.activity='Raising';
+  avRender('activities');
+}
+function avEstList(i){av.activities[i]._manual=false;av.activities[i].esti_no='';avRender('activities');}
+function avEstInfo(){
+  const el=byId('av-est-info');if(!el)return;
+  el.innerHTML=av.activities.map(r=>{const e=avEstimates.find(x=>x.esti_no===r.esti_no);return e?'• <strong>'+esc(e.esti_no)+'</strong> ('+esc(e.scheme||'')+'): '+esc(e.esti_description||'')+(e.status?' — <em>'+esc(e.status)+'</em>':''):'';}).filter(Boolean).join('<br>');
+}
+
+/* ── COPY / SELECT / RIGHT-CLICK RESTRICTIONS (admins are exempt) ── */
+let restrictOn=true; // global switch, stored in Supabase (nursery_app_settings.copy_protection)
+const isAdminUser=()=>currentRole==='admin'||!restrictOn; // exempt: admins, or when protection is switched off
+const isFieldEl=el=>!!(el&&el.closest&&el.closest('input,textarea,select,[contenteditable="true"]'));
+function applyRestrictions(){document.body.classList.toggle('restricted',!isAdminUser());syncRestrictUI();}
+document.addEventListener('contextmenu',e=>{if(!isAdminUser())e.preventDefault();});
+document.addEventListener('copy',e=>{if(!isAdminUser()){e.preventDefault();if(e.clipboardData)e.clipboardData.setData('text/plain','');}});
+document.addEventListener('dragstart',e=>{if(!isAdminUser())e.preventDefault();});
+document.addEventListener('selectstart',e=>{if(!isAdminUser()&&!isFieldEl(e.target))e.preventDefault();});
+document.addEventListener('keydown',e=>{
+  if(isAdminUser())return;
+  const k=(e.key||'').toLowerCase(),ctrl=e.ctrlKey||e.metaKey,field=isFieldEl(e.target);
+  // Copy: Ctrl/Cmd+C, Ctrl+Insert
+  if((ctrl&&k==='c')||(ctrl&&k==='insert')){e.preventDefault();return;}
+  // Keyboard selection outside form fields: Ctrl+A, Shift+arrows/Home/End/PageUp/PageDown
+  if(!field){
+    if(ctrl&&k==='a'){e.preventDefault();return;}
+    if(e.shiftKey&&['arrowleft','arrowright','arrowup','arrowdown','home','end','pageup','pagedown'].includes(k)){e.preventDefault();return;}
+  }
+},true);
+applyRestrictions();
+
+
+/* ── COPY-PROTECTION TOGGLE (admin switch in the header; setting is stored in Supabase) ── */
+function syncRestrictUI(){
+  const w=byId('rs-toggle-wrap');if(!w)return;
+  w.style.display=currentRole==='admin'?'inline-flex':'none';
+  const cb=byId('rs-toggle');if(cb)cb.checked=restrictOn;
+}
+async function loadRestrictSetting(){
+  try{
+    const {data}=await sb.from('nursery_app_settings').select('value').eq('key','copy_protection').maybeSingle();
+    if(data&&data.value&&typeof data.value.enabled==='boolean')restrictOn=data.value.enabled;
+  }catch(e){}
+  applyRestrictions();
+}
+async function toggleRestrict(on){
+  const cb=byId('rs-toggle');
+  if(currentRole!=='admin'){if(cb)cb.checked=restrictOn;return;}
+  if(!(await hasSession())){if(cb)cb.checked=restrictOn;return;}
+  const {data,error}=await sb.from('nursery_app_settings').upsert({key:'copy_protection',value:{enabled:!!on},updated_at:new Date().toISOString()}).select('key');
+  if(error||!data||!data.length){alert('Could not change the setting'+(error?': '+error.message:'.'));if(cb)cb.checked=restrictOn;return;}
+  restrictOn=!!on;applyRestrictions();
+}
+loadRestrictSetting();
+// Auto-resize for Google Sites iframe embedding
+function sendHeight(){
+  const h=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight,800);
+  window.parent.postMessage({type:'setHeight',height:h},'*');
+  // Also try Google Sites specific message format
+  window.parent.postMessage(JSON.stringify({sentinel:'amp',type:'embed-size',height:h}),'*');
+}
+// Send on load, tab switch, and periodically
+window.addEventListener('load',sendHeight);
+setInterval(sendHeight,600);
+// Re-send when DOM changes (tab clicks, data load, etc.)
+if(window.MutationObserver){
+  new MutationObserver(sendHeight).observe(document.body,{childList:true,subtree:true,attributes:true});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Proceedings Builder — SF Division, Chittoor</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='4' y='4' width='40' height='40' rx='6' fill='%231F4436'/%3E%3Crect x='14' y='14' width='20' height='2.6' fill='%23F7F7F5'/%3E%3Crect x='14' y='21' width='20' height='2.6' fill='%23F7F7F5'/%3E%3Crect x='14' y='28' width='12' height='2.6' fill='%2396773A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    --ink:#17212b; --muted:#5d6b78; --forest:#1d4a3a; --forest-dark:#12332a;
+    --brass:#8f6f2f; --brass-light:#c9ad6e;
+    --bg:#f2f4f3; --card:#ffffff; --paper:#f7f8f7; --paper-2:#ffffff; --line:#e0e5e2;
+    --danger:#b3382a; --ok:#23704a;
+    --shadow:0 1px 2px rgba(16,32,24,.06), 0 4px 14px rgba(16,32,24,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#e6e9e6; --muted:#97a39c; --forest:#4f9a79; --forest-dark:#173a2d; --brass:#d1b172; --brass-light:#dfc184;
+      --bg:#0e1210; --card:#161b18; --paper:#0f1311; --paper-2:#161b18; --line:#27302b; --danger:#ef8a76; --ok:#7fc497;
+      --shadow:0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#e6e9e6; --muted:#97a39c; --forest:#4f9a79; --forest-dark:#173a2d; --brass:#d1b172; --brass-light:#dfc184;
+    --bg:#0e1210; --card:#161b18; --paper:#0f1311; --paper-2:#161b18; --line:#27302b; --danger:#ef8a76; --ok:#7fc497;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+  html,body{ background:var(--bg); color:var(--ink); }
+  body{ font-family:'Public Sans',system-ui,sans-serif; font-size:15px; -webkit-font-smoothing:antialiased;
+        padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+  .serif{ font-family:'Source Serif 4',Georgia,serif; }
+  .mono{ font-family:'IBM Plex Mono',monospace; font-size:.92em; }
+  .opacity-55,.opacity-60,.opacity-70,.opacity-75{ opacity:1 !important; color:var(--muted); }
+
+  .app-header{ background:linear-gradient(135deg,var(--forest-dark),var(--forest)); color:#fff; }
+  .app-header p{ color:rgba(255,255,255,.78); }
+
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:14px !important; box-shadow:var(--shadow); padding:1.5rem 1.75rem !important; }
+  .step-head{ display:flex; align-items:center; gap:.85rem; margin-bottom:1.1rem; }
+  .step-head h2{ font-size:1.1rem !important; letter-spacing:-.005em; }
+  .step-num{
+    font-family:'Public Sans',sans-serif; font-weight:700; font-size:.82rem;
+    width:1.9rem; height:1.9rem; border-radius:.55rem;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--forest); color:#fff; flex-shrink:0;
+  }
+  .help{ font-size:.82rem; color:var(--muted); line-height:1.5; }
+  .subpanel{ border:1px solid var(--line); border-radius:10px; background:var(--paper); }
+
+  input[type=text], input[type=search], input[type=password], input[type=date], textarea, select{
+    background:var(--card); border:1px solid var(--line); color:var(--ink);
+    border-radius:.5rem; padding:.55rem .75rem; font-size:.875rem; width:100%; min-height:2.5rem;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  textarea{ font-family:'IBM Plex Mono',monospace; font-size:.8rem; line-height:1.5; }
+  input:focus, textarea:focus, select:focus{ outline:none; border-color:var(--forest); box-shadow:0 0 0 3px rgba(29,74,58,.16); }
+  label.field-label{ font-size:.74rem; color:var(--muted); font-weight:600; display:block; margin-bottom:.35rem; text-transform:uppercase; letter-spacing:.04em; }
+  input[type=checkbox]{ width:1rem; height:1rem; min-height:0; accent-color:var(--forest); cursor:pointer; }
+
+  .btn-primary{ background:var(--forest); color:#fff; border-radius:.55rem; font-weight:600; transition:background .15s, box-shadow .15s; box-shadow:0 1px 2px rgba(0,0,0,.15); }
+  .btn-primary:hover:not(:disabled){ background:var(--forest-dark); }
+  .btn-primary:disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; }
+  .btn-ghost{ border:1px solid var(--line); border-radius:.55rem; color:var(--ink); background:var(--card); font-weight:500; transition:border-color .15s, background .15s; }
+  .btn-ghost:hover:not(:disabled){ border-color:var(--forest); background:var(--paper); }
+  .btn-ghost:disabled{ opacity:.45; cursor:not-allowed; }
+
+  details > summary{ cursor:pointer; list-style:none; }
+  details > summary::-webkit-details-marker{ display:none; }
+  .chev{ width:1rem; height:1rem; flex-shrink:0; transition:transform .15s; }
+  details[open] > summary .chev{ transform:rotate(90deg); }
+
+  table.items{ border-collapse:separate; border-spacing:0; }
+  table.items th{ font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; text-align:left; padding:.65rem .75rem; border-bottom:1px solid var(--line); white-space:nowrap; background:var(--paper) !important; }
+  table.items td{ padding:.6rem .75rem; border-bottom:1px solid var(--line); font-size:.84rem; vertical-align:middle; }
+  table.items tbody tr:hover{ background:var(--paper); }
+  table.items tbody tr:last-child td{ border-bottom:none; }
+
+  .badge{ font-size:.68rem; padding:.18rem .55rem; border-radius:9999px; font-weight:600; white-space:nowrap; }
+  .badge-campa{ background:#f4e6d3; color:#6b3f17; }
+  .badge-agro{ background:#dcefe5; color:#14573a; }
+  .badge-other{ background:#e8ecea; color:#3f4b45; }
+  @media (prefers-color-scheme: dark){
+    .badge-campa{ background:#4a3320; color:#f2dcc0; } .badge-agro{ background:#1e4a38; color:#c8ecd9; } .badge-other{ background:#2a322d; color:#cdd6d0; }
+  }
+  ::selection{ background:var(--brass-light); color:#12332a; }
+  .scrollbox{ max-height:22rem; overflow:auto; border-radius:10px; }
+
+  .dropzone{ border:2px dashed #c3cdc8; border-radius:12px; background:var(--paper); transition:border-color .15s, background .15s; }
+  .dropzone:hover,.dropzone.drag{ border-color:var(--forest); background:rgba(29,74,58,.05); }
+  .warn-box{ background:#fff6e0; color:#6b4a0b; border:1px solid #f0dca3; }
+  @media (prefers-color-scheme: dark){ .warn-box{ background:#3a2e12; color:#f5e3c2; border-color:#5a4720; } }
+  .divider{ border-top:1px solid var(--line); }
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="app-header">
+  <div class="max-w-6xl mx-auto px-5 py-5 flex items-center gap-3">
+    <svg width="30" height="30" viewBox="0 0 48 48" style="flex-shrink:0;">
+      <rect x="4" y="4" width="40" height="40" rx="8" fill="#c9ad6e"/>
+      <rect x="14" y="14" width="20" height="2.6" fill="#12332a"/>
+      <rect x="14" y="21" width="20" height="2.6" fill="#12332a"/>
+      <rect x="14" y="28" width="12" height="2.6" fill="#fff"/>
+    </svg>
+    <div>
+      <h1 class="serif text-2xl leading-tight" style="font-weight:600;">Proceedings Builder</h1>
+      <p class="text-sm mt-0.5">Social Forestry Division, Chittoor &middot; Advance-release proceedings from the token-dashboard workbook. Runs in your browser.</p>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-5 py-8 space-y-6">
+
+  <!-- STEP 1: UPLOAD -->
+  <section class="card rounded-lg p-5">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <h2 class="serif font-semibold">Load your data</h2>
+    </div>
+    <label id="dropzone" for="fileInput" class="dropzone block px-6 py-9 text-center cursor-pointer">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--forest)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto .5rem;"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+      <p class="text-sm font-semibold" id="dropText">Drop the exported <span class="mono">.xlsx</span> workbook here, or click to browse</p>
+      <p class="help mt-1">Needs the Estimate, Advance and Withdrawal_Accounts sheets (Fund_Application and Voucher Settings optional). Not needed if you load live data below.</p>
+      <input id="fileInput" type="file" accept=".xlsx,.xls" class="hidden">
+    </label>
+    <div id="uploadStatus" class="mt-3 text-sm"></div>
+    <div id="warningsBox" class="warn-box mt-3 hidden rounded-lg p-3 text-xs"></div>
+    <details id="cloudSyncDetails" class="subpanel mt-4">
+      <summary class="flex items-center gap-2 px-4 py-3 text-sm font-semibold" style="color:var(--ink);">
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+        <span class="flex-1">Live data — sign in to Supabase</span>
+        <span id="cloudSyncBadge" class="badge badge-other">Not connected</span>
+      </summary>
+      <div class="px-4 pb-4 pt-1 space-y-3">
+        <p class="help">Sign in with your department account to load Fund Application, Estimate, Advance and Withdrawal_Accounts live. Anything not loaded live can still come from an uploaded workbook. Manual entries are saved to your account.</p>
+        <div id="supaStatusRow" class="flex items-center gap-3">
+          <span id="supaStatus" class="text-xs"></span>
+        </div>
+
+        <div id="supaLoginFields" class="hidden pt-2 space-y-2" style="border-top:1px solid var(--line);">
+          <div class="grid md:grid-cols-2 gap-3">
+            <div><label class="field-label">Email</label><input type="text" id="supaEmail" placeholder="you@department.gov.in" autocomplete="username"></div>
+            <div><label class="field-label">Password</label><input type="password" id="supaPassword" placeholder="••••••••" autocomplete="current-password"></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button id="supaSignInBtn" type="button" class="btn-primary px-3 py-1.5 text-xs">Sign in</button>
+            <span id="supaSignInStatus" class="text-xs"></span>
+          </div>
+        </div>
+
+        <div id="supaSignedInInfo" class="hidden flex items-center gap-3 pt-2" style="border-top:1px solid var(--line);">
+          <span class="text-xs">Signed in as <strong id="supaUserEmail" class="mono"></strong></span>
+          <button id="supaSignOutBtn" type="button" class="btn-ghost px-3 py-1.5 text-xs">Sign out</button>
+        </div>
+
+        <details class="text-xs">
+          <summary class="cursor-pointer opacity-70">One-time setup: run this in your Supabase SQL editor</summary>
+          <pre id="supaSql" class="mono mt-2 p-2 rounded" style="background:var(--paper); border:1px solid var(--line); white-space:pre-wrap; font-size:.72rem;">-- Live, always-in-sync aggregate of your existing fund_application table,
+-- grouped the same way the Proceedings Builder groups rows. A VIEW needs no
+-- trigger and can't fall out of sync — it recomputes on every query.
+create or replace view fund_application_summary as
+select
+  batch_no,
+  esti_no,
+  token_no,
+  sum(amount)            as amount,
+  min(application_date)  as application_date,
+  count(*)               as task_count
+from fund_application
+group by batch_no, esti_no, token_no;
+
+-- Your fund_application table already restricts SELECT to the authenticated
+-- role via has_perm('Fund Application','V') — this app signs the viewer in
+-- with their own Supabase account instead of using the public anon key, so
+-- those existing policies apply exactly as they do everywhere else. Just
+-- let authenticated users read the view (the policies underneath still gate
+-- the real rows per user):
+grant select on fund_application_summary to authenticated;
+
+-- Each person who'll use this app needs a Supabase Auth user (Authentication
+-- -> Users -> Add user) with 'Fund Application' view permission in your
+-- has_perm system, same as for any other tool that reads this table.
+
+-- estimate / advance / withdrawal_accounts are read directly (no view needed
+-- -- they're already one row per Esti No / Token No / Account No). FIRST
+-- check whether each already has an authenticated-read policy of its own
+-- (the same way fund_application does), e.g.:
+--   select * from pg_policies where tablename in ('estimate','advance','withdrawal_accounts');
+-- Only run the matching create policy below for a table that has NONE yet --
+-- adding an unconditional "authenticated can read everything" policy on a
+-- table that already has permission-gated policies (like fund_application's
+-- has_perm ones) would bypass that gating for anyone merely signed in, not
+-- just users with the right view permission.
+create policy "authenticated read" on estimate
+  for select to authenticated using (true);
+create policy "authenticated read" on advance
+  for select to authenticated using (true);
+create policy "authenticated read" on withdrawal_accounts
+  for select to authenticated using (true);
+
+-- Separate table, only for entries typed into "Add missing Fund Application
+-- entries" below, for esti/tokens that haven't landed in fund_application
+-- yet. Never touched automatically — once the real rows appear in
+-- fund_application, fund_application_summary picks them up on its own and
+-- this app stops counting the matching manual row to avoid double-counting.
+create table if not exists manual_fa_rows (
+  id uuid primary key default gen_random_uuid(),
+  batch_no text,
+  esti_no text not null,
+  token_no text,
+  amount numeric not null,
+  application_date date,
+  manual_account_no text,
+  manual_vss_name text,
+  created_at timestamptz default now()
+);
+
+alter table manual_fa_rows enable row level security;
+
+-- Restricted to signed-in users too, so an anon key alone can't write
+-- manual entries — consistent with fund_application's own policies.
+create policy "authenticated read" on manual_fa_rows
+  for select to authenticated using (true);
+create policy "authenticated insert" on manual_fa_rows
+  for insert to authenticated with check (true);
+create policy "authenticated update" on manual_fa_rows
+  for update to authenticated using (true) with check (true);
+create policy "authenticated delete" on manual_fa_rows
+  for delete to authenticated using (true);</pre>
+          <button id="supaCopySqlBtn" type="button" class="btn-ghost px-2 py-1 text-xs mt-2">Copy SQL</button>
+        </details>
+      </div>
+    </details>
+  </section>
+
+  <!-- STEP 2: MANUAL FUND APPLICATION ENTRIES (OPTIONAL) -->
+  <section class="card rounded-lg p-5" id="stepManual">
+    <div class="step-head" style="margin-bottom:.5rem;">
+      <div class="step-num">2</div>
+      <h2 class="serif font-semibold">Add missing Fund Application entries <span class="text-xs font-normal" style="color:var(--muted)">· optional</span></h2>
+    </div>
+    <p class="help mb-4">Use this for applications not yet in <span class="mono">fund_application</span>. The Esti No must exist in the Estimate data for a proceeding to be produced.</p>
+
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
+      <div><label class="field-label">Batch No</label><input type="text" id="mBatch" placeholder="1"></div>
+      <div class="md:col-span-2">
+        <label class="field-label">Esti No</label>
+        <input type="text" id="mEsti" list="estiNoOptions" placeholder="DSO 08/2026-27">
+        <datalist id="estiNoOptions"></datalist>
+      </div>
+      <div>
+        <label class="field-label">Token No <span class="font-normal normal-case opacity-60">(optional)</span></label>
+        <div class="flex gap-1.5">
+          <input type="text" id="mToken" placeholder="leave blank if none yet">
+          <button type="button" id="mTokenNewBtn" class="btn-ghost px-2 text-xs whitespace-nowrap" title="Generate a temporary token number">+ New</button>
+        </div>
+      </div>
+      <div><label class="field-label">Amount</label><input type="text" inputmode="decimal" id="mAmount" placeholder="150000"></div>
+      <div><label class="field-label">App. Date</label><input type="date" id="mDate"></div>
+    </div>
+    <p id="mEstiHint" class="text-xs mt-1.5 h-4"></p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end mt-1">
+      <div>
+        <label class="field-label">Account No <span class="font-normal normal-case opacity-60">(from Withdrawal_Accounts)</span></label>
+        <select id="mAccount"><option value="">\u2014 none \u2014</option></select>
+      </div>
+      <div>
+        <label class="field-label">VSS <span class="font-normal normal-case opacity-60">(from Withdrawal_Accounts)</span></label>
+        <select id="mVss"><option value="">\u2014 none \u2014</option></select>
+      </div>
+    </div>
+    <p class="help mt-2">Token No is optional (use “+ New” for a temporary one). Account/VSS are only needed when the token is not in Advance; picking one fills the other.</p>
+
+    <button id="addManualRowBtn" class="btn-primary px-4 py-2 text-sm mt-4">+ Add row</button>
+
+    <div class="scrollbox subpanel mt-4" style="max-height:14rem;">
+      <table class="items w-full">
+        <thead style="position:sticky;top:0;z-index:1;">
+          <tr><th>Batch</th><th>Esti No</th><th>Token</th><th>Amount</th><th>App. Date</th><th>Account</th><th>VSS</th><th></th></tr>
+        </thead>
+        <tbody id="manualRowsBody"></tbody>
+      </table>
+    </div>
+    <p id="manualRowsEmpty" class="help mt-3">No manual entries added.</p>
+
+    <div class="flex items-center gap-3 mt-5 pt-4 divider">
+      <button id="downloadWorkbookBtn" class="btn-ghost px-4 py-2 text-sm" disabled>
+        \u2193 Download updated workbook (.xlsx)
+      </button>
+      <span id="workbookDownloadStatus" class="text-xs"></span>
+    </div>
+    <p class="help mt-2">Appends the manual rows to Fund_Application in a new copy; your original file is never modified.</p>
+  </section>
+
+  <!-- STEP 3: REVIEW & SELECT -->
+  <section class="card rounded-lg p-5 hidden" id="step2">
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <h2 class="serif font-semibold">Review &amp; select proceedings</h2>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div><label class="field-label">Batch</label><input type="text" id="fBatch" placeholder="e.g. 1"></div>
+      <div><label class="field-label">Esti. No contains</label><input type="text" id="fEsti" placeholder="e.g. DSO 08"></div>
+      <div><label class="field-label">Scheme</label><select id="fScheme"><option value="">All schemes</option></select></div>
+      <div><label class="field-label">Token No</label><input type="text" id="fToken" placeholder="e.g. T1"></div>
+    </div>
+
+    <div class="flex items-center justify-between mb-3 text-sm">
+      <div>
+        <button id="selectAllBtn" class="btn-ghost px-3 py-1.5 text-xs">Select all shown</button>
+        <button id="selectNoneBtn" class="btn-ghost px-3 py-1.5 text-xs ml-2">Clear selection</button>
+      </div>
+      <div id="selectionSummary" class="text-sm font-semibold" style="color:var(--forest);"></div>
+    </div>
+
+    <div class="scrollbox subpanel" style="max-height:26rem;">
+      <table class="items w-full">
+        <thead style="position:sticky;top:0;z-index:1;">
+          <tr>
+            <th></th><th>Batch</th><th>Esti No</th><th>Token</th><th>Scheme</th><th>VSS</th><th>Amount</th><th>FA Date</th><th>Paras &amp; \u2018To\u2019 list</th>
+          </tr>
+        </thead>
+        <tbody id="itemsBody"></tbody>
+      </table>
+    </div>
+    <p class="text-xs opacity-55 mt-2">
+      \u201cParas &amp; \u2018To\u2019 list\u201d picks which body paragraphs and distribution list print for a proceeding.
+      Left on <span class="mono">Auto</span>, it's decided by whether the scheme contains \u201cCAMPA\u201d; pick
+      either style yourself to override that for an individual row.
+    </p>
+    <p id="noItemsMsg" class="text-sm opacity-60 mt-3 hidden">No proceedings match these filters.</p>
+  </section>
+
+  <!-- STEP 3: CONFIGURE FIXED TEXT -->
+  <section class="card rounded-lg p-5 hidden" id="step3">
+    <details id="cfgDetails">
+      <summary class="step-head" style="margin-bottom:0;">
+        <div class="step-num">4</div>
+        <h2 class="serif font-semibold flex-1">Configure the fixed text <span class="text-xs font-normal" style="color:var(--muted)">· letterhead, references, paragraphs</span></h2>
+        <svg class="chev w-4 h-4 opacity-60" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </summary>
+      <div class="mt-5 space-y-6" id="cfgForm"></div>
+    </details>
+  </section>
+
+  <!-- STEP 5: GENERATE -->
+  <section class="card rounded-lg p-5" id="step4Section">
+    <div class="step-head">
+      <div class="step-num">5</div>
+      <h2 class="serif font-semibold">Generate &amp; download</h2>
+    </div>
+    <p class="help mb-4">Each selected proceeding becomes one page in a single <span class="mono">.docx</span>. CAMPA NPV cases use the CAMPA paragraphs and distribution list; all others use the standard ones.</p>
+    <div class="flex items-center gap-3">
+      <button id="generateBtn" class="btn-primary px-6 py-3 text-sm" disabled>↓ Generate Proceedings.docx</button>
+      <span id="genStatus" class="text-sm"></span>
+    </div>
+  </section>
+
+  <footer class="text-center help pb-8">
+    Runs client-side — your workbook and the generated document stay in this browser tab.
+  </footer>
+</main>
+
+<!-- Third-party libraries (pinned versions). Loaded with automatic fallback across CDN
+     hosts: some office/government networks block one CDN but allow another, which looks
+     to the page like "docx is not defined" with no clue why. window.__libsReady resolves
+     true only once both libraries are confirmed actually loaded. -->
+<script>
+(function () {
+  function loadWithFallback(urls, globalName, done) {
+    var i = 0;
+    function tryNext() {
+      if (i >= urls.length) { done(false); return; }
+      var url = urls[i++];
+      var s = document.createElement("script");
+      s.src = url;
+      s.onload = function () {
+        // a CDN can return 200 with an error/HTML page instead of the real file;
+        // only trust it once the expected global actually shows up.
+        if (window[globalName]) done(true); else tryNext();
+      };
+      s.onerror = tryNext;
+      document.head.appendChild(s);
+    }
+    tryNext();
+  }
+
+  window.__libsReady = new Promise(function (resolve) {
+    var xlsxOk = null, docxOk = null;
+    function maybeResolve() { if (xlsxOk !== null && docxOk !== null) resolve(xlsxOk && docxOk); }
+    loadWithFallback([
+      "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
+      "https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js",
+    ], "XLSX", function (ok) { xlsxOk = ok; maybeResolve(); });
+    loadWithFallback([
+      "https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js",
+      "https://unpkg.com/docx@8.5.0/build/index.umd.js",
+    ], "docx", function (ok) { docxOk = ok; maybeResolve(); });
+  });
+
+  // Supabase is optional (only used for cloud-syncing manual Fund_Application
+  // entries), so it loads independently and never blocks the main app.
+  window.__supabaseLibReady = new Promise(function (resolve) {
+    loadWithFallback([
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js",
+      "https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js",
+    ], "supabase", function (ok) { resolve(ok); });
+  });
+})();
+</script>
+
+<script>
+/* =========================================================================
+   PART 1 — core helpers (ported from generate_proceedings.py)
+   ========================================================================= */
+// ============================================================================
+// Core helpers — ported 1:1 from generate_proceedings.py
+// ============================================================================
+function norm(s) { return String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]/g, ""); }
+
+function clean(v) {
+  if (v === null || v === undefined) return "";
+  if (v instanceof Date) return v; // caller handles dates specially
+  if (typeof v === "number") {
+    if (Number.isNaN(v)) return "";
+    if (Number.isInteger(v)) return String(v);
+    return String(v);
+  }
+  let s = String(v).trim();
+  if (["nan", "nat", "none", ""].includes(s.toLowerCase())) return "";
+  if (/^\d+\.0$/.test(s)) s = s.slice(0, -2);
+  return s;
+}
+
+function cleanStr(v) { const c = clean(v); return c instanceof Date ? fmtDate(c) : c; }
+
+function toNumber(v) {
+  const s = cleanStr(v).replace(/,/g, "");
+  const n = parseFloat(s);
+  return Number.isNaN(n) ? 0 : n;
+}
+
+function fmtInr(n) {
+  n = Math.round(n * 100) / 100;
+  let whole = Math.trunc(n);
+  let frac = Math.round((n - whole) * 100);
+  if (frac < 0) frac = -frac;
+  let s = String(Math.abs(whole));
+  if (s.length > 3) {
+    let head = s.slice(0, -3), tail = s.slice(-3);
+    const parts = [];
+    while (head.length > 2) { parts.unshift(head.slice(-2)); head = head.slice(0, -2); }
+    if (head) parts.unshift(head);
+    s = parts.join(",") + "," + tail;
+  }
+  if (whole < 0) s = "-" + s;
+  return s + (frac ? "." + String(frac).padStart(2, "0") : "");
+}
+
+const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+  "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
+  "Eighteen", "Nineteen"];
+const TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+function below1000(n) {
+  const out = [];
+  if (n >= 100) { out.push(ONES[Math.floor(n / 100)] + " Hundred"); n %= 100; }
+  if (n >= 20) { out.push(TENS[Math.floor(n / 10)] + (n % 10 ? " " + ONES[n % 10] : "")); }
+  else if (n > 0) { out.push(ONES[n]); }
+  return out.join(" ");
+}
+
+function amountInWords(amount) {
+  const total = Math.round(amount * 100) / 100;
+  let rupees = Math.trunc(Math.round(total * 100) / 100);
+  rupees = Math.floor(total);
+  let paise = Math.round((total - rupees) * 100);
+  rupees = Math.trunc(rupees);
+  if (rupees === 0 && paise === 0) return "Rupees Zero only";
+  const parts = [];
+  let crore = Math.floor(rupees / 10000000); rupees %= 10000000;
+  let lakh = Math.floor(rupees / 100000); rupees %= 100000;
+  let thousand = Math.floor(rupees / 1000); rupees %= 1000;
+  if (crore) parts.push(below1000(crore) + (crore > 1 ? " Crores" : " Crore"));
+  if (lakh) parts.push(below1000(lakh) + (lakh > 1 ? " Lakhs" : " Lakh"));
+  if (thousand) parts.push(below1000(thousand) + " Thousand");
+  if (rupees) parts.push(below1000(rupees));
+  let text = "Rupees " + parts.join(" ");
+  if (paise) text += " and " + below1000(paise) + " Paise";
+  return text + " only";
+}
+
+function pad2(n) { return String(n).padStart(2, "0"); }
+
+function fmtDate(v) {
+  if (v === null || v === undefined) return "";
+  if (v instanceof Date && !Number.isNaN(v.getTime())) {
+    return `${pad2(v.getDate())}.${pad2(v.getMonth() + 1)}.${v.getFullYear()}`;
+  }
+  const s = cleanStr(v);
+  if (!s) return "";
+  let m;
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return `${m[3]}.${m[2]}.${m[1]}`;
+  if ((m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/))) return `${m[1]}.${m[2]}.${m[3]}`;
+  if ((m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/))) return s;
+  if ((m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/))) return `${m[1]}.${m[2]}.${m[3]}`;
+  return s;
+}
+
+function vssShortName(name) {
+  let s = String(name || "").replace(/\(?\s*VSS\s*\)?\s*$/i, "").trim();
+  s = s.replace(/\s*Vana\s+Samrakshana\s+Samithi\s*$/i, "").trim();
+  return s || name || "";
+}
+
+function titleCase(s) {
+  return String(s || "").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function fmtTpl(template, ctx) {
+  return String(template || "").replace(/\{(\w+)\}/g, (m, k) => (k in ctx ? ctx[k] : m));
+}
+
+</script>
+<script>
+/* =========================================================================
+   PART 2 — workbook reading / grouping (ported from load_sheets/build_proceedings)
+   ========================================================================= */
+// ============================================================================
+// Reading the workbook — ported from load_sheets() / build_proceedings()
+// ============================================================================
+const SHEET_NAMES = {
+  fa: ["Fund_Application"], est: ["Estimate"], adv: ["Advance"],
+  wa: ["Withdrawal_Accounts"], set: ["Voucher Settings"],
+};
+
+function col(row, name) { return row ? cleanStr(row[norm(name)]) : ""; }
+
+function loadSheets(workbook) {
+  const byNorm = {};
+  workbook.SheetNames.forEach(n => { byNorm[norm(n)] = n; });
+  const sheets = {};
+  const missing = [];
+  for (const [key, names] of Object.entries(SHEET_NAMES)) {
+    const found = names.map(n => byNorm[norm(n)]).find(Boolean);
+    if (!found) {
+      // Fund_Application is no longer required in the workbook: when Supabase is
+      // connected, its data comes live from fund_application_summary instead.
+      // "fa" defaults to [] (not null) so .length/.concat keep working unchanged.
+      sheets[key] = key === "fa" ? [] : null;
+      if (["est", "adv", "wa"].includes(key)) missing.push(names[0]);
+      continue;
+    }
+    const ws = workbook.Sheets[found];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: "", raw: true });
+    sheets[key] = rows.map(r => {
+      const nr = {};
+      for (const [k, v] of Object.entries(r)) nr[norm(k)] = v;
+      return nr;
+    });
+  }
+  if (missing.length) {
+    throw new Error("Sheet(s) not found in workbook: " + missing.join(", ") +
+      "  (sheets present: " + workbook.SheetNames.join(", ") + ")");
+  }
+  return sheets;
+}
+
+function buildProceedings(sheets, cfg, filters) {
+  const { fa, est, adv, wa, set } = sheets;
+  filters = filters || {};
+
+  const estRows = {}; est.forEach(r => { const k = col(r, "Esti_no"); if (k) estRows[k] = r; });
+  const advRows = {}; adv.forEach(r => { const k = col(r, "Token_No"); if (k) advRows[k] = r; });
+  const waRows = {}; wa.forEach(r => { const k = col(r, "Account_No"); if (k) waRows[k] = r; });
+
+  let rangeName = cfg.range_name;
+  if (set && set.length) rangeName = col(set[0], "range") || rangeName;
+
+  const groups = {};
+  const order = [];
+  for (const r of fa) {
+    const batchNo = col(r, "Batch_No"), estiNo = col(r, "Esti_no"), tokenNo = col(r, "Token_no");
+    if (!estiNo) continue;
+    const key = batchNo + "\u0001" + estiNo + "\u0001" + tokenNo;
+    if (!(key in groups)) { groups[key] = { batchNo, estiNo, tokenNo, amount: 0, date: "", manualAccountNo: "", manualVssName: "" }; order.push(key); }
+    const g = groups[key];
+    g.amount += toNumber(r[norm("amount")]);
+    g.date = g.date || fmtDate(r[norm("Application_Date")]);
+    if (r.manual_account_no) g.manualAccountNo = g.manualAccountNo || r.manual_account_no;
+    if (r.manual_vss_name) g.manualVssName = g.manualVssName || r.manual_vss_name;
+  }
+
+  const sortKey = (k) => {
+    const g = groups[k];
+    const bNum = /^\d+$/.test(g.batchNo) ? parseInt(g.batchNo, 10) : 1e9;
+    return [bNum, g.batchNo, g.estiNo, g.tokenNo];
+  };
+  const keysSorted = order.slice().sort((a, b) => {
+    const ka = sortKey(a), kb = sortKey(b);
+    for (let i = 0; i < ka.length; i++) {
+      if (ka[i] < kb[i]) return -1;
+      if (ka[i] > kb[i]) return 1;
+    }
+    return 0;
+  });
+
+  const warnings = [];
+  const out = [];
+  for (const key of keysSorted) {
+    const g = groups[key];
+    const { batchNo, estiNo, tokenNo } = g;
+    if (filters.batch && batchNo !== String(filters.batch)) continue;
+    if (filters.estis && filters.estis.length && !filters.estis.includes(estiNo)) continue;
+    if (filters.token && tokenNo !== String(filters.token)) continue;
+
+    const e = estRows[estiNo];
+    if (!e) { warnings.push(`estimate "${estiNo}" (Fund_Application) not found in Estimate sheet - skipped`); continue; }
+    const a = advRows[tokenNo] || null;
+    if (tokenNo && !a) warnings.push(`token "${tokenNo}" not found in Advance sheet (estimate ${estiNo})`);
+    let acctNo = col(a, "Credited_Account_No") || g.manualAccountNo || filters.fallbackAccount || "";
+    if (!acctNo) warnings.push(`no Credited_Account_No for token "${tokenNo}" (estimate ${estiNo}) - bank details left blank`);
+    const w = waRows[acctNo] || null;
+    if (acctNo && !w && !g.manualVssName) warnings.push(`account "${acctNo}" not found in Withdrawal_Accounts (estimate ${estiNo})`);
+    const sch = col(a, "Scheme") || col(e, "Scheme");
+    if (filters.scheme && norm(sch) !== norm(filters.scheme)) continue;
+    const fyM = estiNo.match(/\d{4}-\d{4}/);
+    out.push({
+      batch: batchNo, esti_no: estiNo, token_no: tokenNo,
+      so_no: estiNo, work: col(e, "Esti_Description"),
+      scheme: sch, hoa: col(a, "Hoa"),
+      fy: cfg.financial_year || (fyM ? fyM[0] : ""),
+      vss_name: col(w, "Name_of_Account") || g.manualVssName || "",
+      bank: col(w, "Bank"), branch: col(w, "Branch"), account_no: acctNo,
+      amount: g.amount, fa_date: g.date, range: rangeName,
+    });
+  }
+  return { items: out, warnings };
+}
+
+</script>
+<script>
+/* =========================================================================
+   PART 3 — docx generation (ported from the Word-building functions)
+   ========================================================================= */
+// ============================================================================
+// Word document generation — ported from the docx-building section of
+// generate_proceedings.py, using the browser "docx" library.
+// ============================================================================
+const FONT = "Verdana";
+const SIZE = 21; // 10.5pt in half-points
+const NORMAL_SIZE = 24; // 12pt
+
+function twips(n) { return Math.round(n); }
+function emuToTwips(e) { return Math.round(e / 635); }
+const FIRST_INDENT = emuToTwips(457200);   // 720
+const SIG_INDENT = emuToTwips(3657600);    // 5758
+
+const MARK_RE = /(\*\*.+?\*\*|\^.+?\^)/;
+
+function markedRuns(text, { bold = false, size = SIZE, font = FONT, underline = false } = {}) {
+  const runs = [];
+  const pieces = String(text || "").split(MARK_RE);
+  for (const piece of pieces) {
+    if (!piece) continue;
+    let b = bold, sup = false, t = piece;
+    if (t.startsWith("**") && t.endsWith("**")) { t = t.slice(2, -2); b = true; }
+    else if (t.startsWith("^") && t.endsWith("^")) { t = t.slice(1, -1); sup = true; }
+    runs.push(new docx.TextRun({
+      text: t, bold: b || undefined, font, size,
+      underline: underline ? {} : undefined,
+      superScript: sup || undefined,
+    }));
+  }
+  return runs;
+}
+
+function para(text, opts = {}) {
+  const {
+    align, bold = false, size = SIZE, font = FONT, firstIndent, leftIndent,
+    spacing, underline = false, spaceAfter = 0, pageBreakBefore = false,
+  } = opts;
+  const paraOpts = {
+    alignment: align,
+    spacing: { after: spaceAfter, before: 0, ...(spacing ? { line: Math.round(spacing * 240), lineRule: docx.LineRuleType.AUTO } : {}) },
+    indent: {
+      ...(firstIndent !== undefined ? { firstLine: firstIndent } : {}),
+      ...(leftIndent !== undefined ? { left: leftIndent } : {}),
+    },
+    pageBreakBefore: pageBreakBefore || undefined,
+    children: text ? markedRuns(text, { bold, size, font, underline }) : [],
+  };
+  return new docx.Paragraph(paraOpts);
+}
+
+function cellBorders() {
+  const b = { style: docx.BorderStyle.SINGLE, size: 4, color: "000000" };
+  return { top: b, bottom: b, left: b, right: b };
+}
+
+function symbolRow() {
+  return new docx.Paragraph({
+    alignment: docx.AlignmentType.CENTER,
+    children: [
+      new docx.SymbolRun({ char: "F096", font: "Wingdings" }),
+      new docx.SymbolRun({ char: "F07B", font: "Wingdings" }),
+      new docx.SymbolRun({ char: "F097", font: "Wingdings" }),
+    ],
+  });
+}
+
+function subRefTable(ctx, cfg, refList) {
+  const widths = [817, 9356];
+  const cellFor = (label, content, opts = {}) => new docx.TableCell({
+    width: { size: opts.w, type: docx.WidthType.DXA },
+    borders: cellBorders(),
+    verticalAlign: docx.VerticalAlign.CENTER,
+    children: content,
+  });
+  const subPara = new docx.Paragraph({
+    alignment: docx.AlignmentType.JUSTIFIED,
+    children: markedRuns(fmtTpl(cfg.subject, ctx)),
+  });
+  const refParas = refList.map(line => new docx.Paragraph({
+    alignment: docx.AlignmentType.JUSTIFIED,
+    children: markedRuns(fmtTpl(line, ctx)),
+  }));
+
+  return new docx.Table({
+    width: { size: widths[0] + widths[1], type: docx.WidthType.DXA },
+    columnWidths: widths,
+    rows: [
+      new docx.TableRow({ children: [
+        cellFor(null, [para("Sub:")], { w: widths[0] }),
+        cellFor(null, [subPara], { w: widths[1] }),
+      ] }),
+      new docx.TableRow({ children: [
+        cellFor(null, [para("Ref:")], { w: widths[0] }),
+        cellFor(null, refParas, { w: widths[1] }),
+      ] }),
+    ],
+  });
+}
+
+function cellLines(lines, { align = docx.AlignmentType.CENTER, bold = false, size = 20, font = null } = {}) {
+  return lines.map(line => new docx.Paragraph({
+    alignment: align,
+    spacing: { after: 0 },
+    children: line ? markedRuns(line, { bold, size, font: font || FONT }) : [],
+  }));
+}
+
+function fundTable(item, amountTxt) {
+  const heads = ["Sl. No", "Name of the Range/VSS", "SO No", "Name of the Work/Component",
+    "Name of the Bank &,Branch", "Account No", "Amount now released"];
+  const grid = [392, 1984, 851, 2835, 1278, 1984, 1031];
+  const C = docx.AlignmentType.CENTER;
+
+  const cell = (content, w) => new docx.TableCell({
+    width: { size: w, type: docx.WidthType.DXA },
+    borders: cellBorders(),
+    verticalAlign: docx.VerticalAlign.CENTER,
+    children: content,
+  });
+
+  const headerRow = new docx.TableRow({
+    children: heads.map((h, i) => cell(cellLines([h], { align: C, size: 20 }), grid[i])),
+  });
+
+  const vssLine = `${item.range}/ ${vssShortName(item.vss_name)}`;
+  const bank = item.bank + (item.bank ? "," : "");
+  const dataRow = new docx.TableRow({
+    children: [
+      cell(cellLines(["1."], { bold: true, size: 20 }), grid[0]),
+      cell(cellLines([vssLine, "VSS"], { bold: true, size: 20 }), grid[1]),
+      cell(cellLines([item.so_no], { bold: true, size: 20 }), grid[2]),
+      cell(cellLines([item.work], { size: 22, font: "Calibri" }), grid[3]),
+      cell(cellLines([bank, item.branch], { bold: true, size: 22 }), grid[4]),
+      cell(cellLines([item.account_no], { bold: true, size: 22 }), grid[5]),
+      cell(cellLines([amountTxt], { bold: true, size: 22 }), grid[6]),
+    ],
+  });
+
+  const totalRow = new docx.TableRow({
+    children: [
+      cell([new docx.Paragraph("")], grid[0]),
+      cell([new docx.Paragraph("")], grid[1]),
+      cell([new docx.Paragraph("")], grid[2]),
+      cell(cellLines(["TOTAL :"], { align: docx.AlignmentType.LEFT, bold: true, size: 22 }), grid[3]),
+      cell([new docx.Paragraph("")], grid[4]),
+      cell([new docx.Paragraph("")], grid[5]),
+      cell(cellLines([amountTxt], { align: C, bold: true, size: 22 }), grid[6]),
+    ],
+  });
+
+  const tableWidth = grid.reduce((a, b) => a + b, 0);
+  return new docx.Table({
+    width: { size: tableWidth, type: docx.WidthType.DXA },
+    alignment: docx.AlignmentType.CENTER,
+    layout: docx.TableLayoutType.FIXED,
+    columnWidths: grid,
+    rows: [headerRow, dataRow, totalRow],
+  });
+}
+
+function buildContext(item, cfg) {
+  const amountTxt = fmtInr(item.amount);
+  const vssShort = vssShortName(item.vss_name);
+  // {vss_full} now prints the name exactly as it's stored (e.g. "Thimmasamudram
+  // VSS"), rather than being expanded into "<short> Vana Samrakshana Samithi
+  // (VSS)". {vss_short} stays the bare name with no suffix, for templates
+  // like "Chairman, {vss_short} VSS" that append " VSS" themselves.
+  const vssRaw = String(item.vss_name || "").trim();
+  const vssFull = vssRaw || (vssShort ? `${vssShort} VSS` : "");
+  const hoa = item.hoa;
+  const schemeIsUpper = item.scheme && item.scheme === item.scheme.toUpperCase() && /[A-Z]/.test(item.scheme);
+  const schemeTitle = schemeIsUpper ? titleCase(item.scheme) : item.scheme;
+  return {
+    ctx: {
+      vss_full: vssFull,
+      vss_short: vssShort, hoa, hoa_v: hoa + cfg.hoa_suffix,
+      scheme_upper: (item.scheme || "").toUpperCase(), scheme_title: schemeTitle,
+      fy: item.fy, range: item.range, fa_date: item.fa_date,
+      purpose: cfg.purpose, purpose_lc: cfg.purpose.replace("Raising of Nursery", "Raising of nurseries"),
+      amount: amountTxt,
+    },
+    amountTxt,
+  };
+}
+
+function buildProceeding(item, cfg, first) {
+  const { ctx, amountTxt } = buildContext(item, cfg);
+  const J = docx.AlignmentType.JUSTIFIED, C = docx.AlignmentType.CENTER;
+  const children = [];
+
+  const schemeUpper = (item.scheme || "").trim().toUpperCase();
+  let isCampa;
+  if (item.paraOverride === "campa") isCampa = true;
+  else if (item.paraOverride === "nonCampa") isCampa = false;
+  else isCampa = schemeUpper.includes("CAMPA"); // "auto" / unset -> default, scheme-driven behaviour
+  const refList = isCampa ? cfg.ref_2 : cfg.ref;
+
+  // ---- heading block
+  children.push(para(cfg.office_title, { align: C, bold: true, pageBreakBefore: !first }));
+  children.push(para("", { align: C, size: 11 }));
+  children.push(para("               " + cfg.present_line, { align: C, bold: true }));
+  children.push(para("                " + cfg.designation_line, { align: C, bold: true, spacing: 1.5 }));
+  children.push(para("", { spacing: 1.5, size: 2 }));
+
+  // ---- Progs.No / date
+  const now = new Date();
+  let pdTxt = cfg.progs_date || `Dt.    .${pad2(now.getMonth() + 1)}.${now.getFullYear()}`;
+  if (cfg.progs_date && !pdTxt.toLowerCase().startsWith("dt")) pdTxt = "Dt. " + pdTxt;
+  children.push(new docx.Paragraph({
+    children: [
+      ...markedRuns(`Progs.No${cfg.progs_no},`, { bold: true, underline: true }),
+      new docx.TextRun({ break: 1 }),
+      ...markedRuns(pdTxt, { bold: true, underline: true }),
+    ],
+  }));
+  children.push(para());
+
+  // ---- Sub/Ref table + ornament
+  children.push(subRefTable(ctx, cfg, refList));
+  children.push(para("", { size: 7 }));
+  children.push(symbolRow());
+
+  // ---- body paragraphs (scheme-dependent)
+  children.push(para("", { align: J, size: 7 }));
+
+  if (isCampa) {
+    children.push(para(fmtTpl(cfg.para_4, ctx), { align: J, firstIndent: FIRST_INDENT, spacing: 1.2 }));
+    children.push(para("", { align: J }));
+    children.push(para(fmtTpl(cfg.para_2, ctx), { align: J, firstIndent: FIRST_INDENT, spacing: 1.2 }));
+    children.push(fundTable(item, amountTxt));
+    children.push(para("", { spacing: 1.3, size: 9 }));
+    children.push(para(`Rs. ${amountTxt}/- (${amountInWords(item.amount)})`, { bold: true, spacing: 1.3 }));
+    children.push(para("", { spacing: 1.3, size: 7 }));
+    children.push(para("", { align: J }));
+    children.push(para(fmtTpl(cfg.para_5, ctx), { align: J, firstIndent: FIRST_INDENT, spacing: 1.2 }));
+  } else {
+    children.push(new docx.Paragraph({
+      alignment: J,
+      children: [
+        new docx.TextRun({ children: [new docx.Tab(), new docx.Tab()] }),
+        ...markedRuns(fmtTpl(cfg.para_1, ctx)),
+      ],
+    }));
+    children.push(para("", { align: J }));
+    children.push(para(fmtTpl(cfg.para_2, ctx), { align: J, firstIndent: FIRST_INDENT, spacing: 1.2 }));
+    children.push(fundTable(item, amountTxt));
+    children.push(para("", { spacing: 1.3, size: 9 }));
+    children.push(para(`Rs. ${amountTxt}/- (${amountInWords(item.amount)})`, { bold: true, spacing: 1.3 }));
+    children.push(para("", { spacing: 1.3, size: 7 }));
+  }
+
+  // ---- signature
+  children.push(para("", { align: C, leftIndent: SIG_INDENT }));
+  children.push(para("", { align: C, leftIndent: SIG_INDENT }));
+  for (const line of cfg.signature) {
+    children.push(para(fmtTpl(line, ctx), { align: C, bold: true, leftIndent: SIG_INDENT }));
+  }
+
+  // ---- distribution (scheme-dependent)
+  if (isCampa) {
+    children.push(para(cfg.to_heading_2, { bold: true }));
+    for (const line of cfg.to_lines_2) children.push(para(fmtTpl(line, ctx), { align: J }));
+  } else {
+    children.push(para(cfg.to_heading, { bold: true }));
+    for (const line of cfg.to_lines) children.push(para(fmtTpl(line, ctx), { align: J }));
+  }
+
+  return children;
+}
+
+async function generateDocx(items, cfg) {
+  const allChildren = [];
+  items.forEach((item, i) => {
+    allChildren.push(...buildProceeding(item, cfg, i === 0));
+  });
+  const doc = new docx.Document({
+    styles: {
+      default: { document: { run: { font: "Book Antiqua", size: NORMAL_SIZE } } },
+    },
+    sections: [{
+      properties: {
+        page: {
+          size: { width: 12242, height: 15842 },
+          margin: { top: 568, bottom: 1276, left: 1440, right: 663 },
+        },
+      },
+      children: allChildren,
+    }],
+  });
+  return docx.Packer.toBlob(doc);
+}
+
+</script>
+<script>
+/* =========================================================================
+   PART 4 — UI wiring
+   ========================================================================= */
+// ============================================================================
+// PART 4 — UI wiring
+// ============================================================================
+const DEFAULT_CONFIG = {
+  office_title: "PROCEEDINGS OF THE DIVISIONAL FOREST OFFICE, SOCIAL FORESTRY DIVISION, CHITTOOR.",
+  present_line: "Present: Sri G.SUBBURAJ ,IFS.,",
+  designation_line: "DIVISIONAL FOREST OFFICER(FAC)",
+  progs_no: "254/2025/M1",
+  progs_date: "",
+  range_name: "Chittoor",
+  purpose: "Raising of Nursery",
+  hoa_suffix: "VN",
+  financial_year: "",
+  subject: "Forest Department \u2013 \u2013 Release of advance funds to the  {vss_full}  for {purpose} under the "
+    + "Head of Account {hoa} (**{scheme_upper}** Scheme) in Social Forestry "
+    + ",{range} of SF,Division,Chittoor for the year {fy} \u2013 Orders issued \u2013 Regarding.",
+  ref: [
+    "1.Prl.CCF, AP, Mangalagiri, F.no.EFS02-20047/1/2023/SFDA.2 Date: 22-06-2026.",
+    "2.VSS Proposals and Fund application received from the FRO,SF,{range} dt: {fa_date}",
+  ],
+  ref_2: [
+    "1.G.O.Ms.No.46 EFS&T (For-III) Dept., dt.25.07.2023.",
+    "2.Prl.CCF, AP, Hyderabad, Circular No.4/2004.",
+    "3.Prl.CCF, AP, Mangalagiri, Rc.No.7420/2025/CAMPA-I,Dt:23.07.2026,",
+    "4.VSS Proposals and Fund application received from the FRO,SF,{range} dt: {fa_date}",
+  ],
+  para_1: "Under the powers delegated in Section 99 (3) read with Section 104(2) of Andhra Pradesh "
+    + "Forest Code & Article-257 of A.P Financial Code, as amended in G.O.Ms.No.46 EFS&T "
+    + "(For-III) Dept., dt.25.07.2023, PCCF's Circular instructions issued in Circular No: 4 "
+    + "of 2004 and basing on the recommendation made by the Forest Range Officer, vide "
+    + "reference 2^nd^ cited ,the Forest Range Officer, Social Forestry Range {range} has "
+    + "submitted fund application for releasing of fund to  {vss_full} under {hoa_v}  "
+    + "({scheme_title} Scheme) for {purpose_lc} in SF Range {range} during {fy} by the "
+    + "Vana Samrakshana Samithi.",
+  para_2: "The Fund applications of the {vss_full} of SF Range, {range} has been scrutinized "
+    + "and sanctioned  as detailed in the table below",
+  para_3: "The Expenditure is debitable under Head of Account {hoa_v} under {scheme_title} Scheme.",
+  para_4: "Under the powers delegated in Section 99 (3) read with Section 104(2) of Andhra Pradesh Forest Code "
+    + "& Article-257 of A.P Financial Code, as amended in G.O.Ms.No.46 EFS&T (For-III) Dept., dt.25.07.2023, "
+    + "PCCF's Circular instructions issued in Circular No: 4 of 2004 and vide reference 3rd cited and basing "
+    + "on the recommendation made by the Forest Range Officer, vide reference 4th cited, the following "
+    + "advances are hereby released to the VSS for the works as noted against each for the year 2026-27 "
+    + "under the Head of Account: 2406-04-103-00-08-270-271 CAMPA NPV Scheme.",
+  para_5: "The Forest Range Officer, SF, Chittoor Range should submit the accounts for the funds now released "
+    + "without keeping balance amount in the VSS accounts without fail.",
+  signature: ["Divisional Forest Officer(FAC),", "Social Forestry Division, {range}."],
+  to_heading: "To",
+  to_lines: [
+    "The Deputy Director,District Treasury Office,{range} for information and necessary action",
+    "The Forest Range Officer, Social Forestry Range, {range} information and necessary action.",
+    "Copy to the Chairman, {vss_short} VSS for information and necessary action.",
+  ],
+  to_heading_2: "To",
+  to_lines_2: [
+    "The Forest Range Officer, Social Forestry Range, {range} information and necessary action.",
+    "Copy to the Chairman, {vss_short} VSS for information and necessary action.",
+  ],
+};
+
+let cfg = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+let uploadedSheets = { fa: [], est: [], adv: [], wa: [], set: [] };
+let currentWorkbook = null;   // the raw SheetJS workbook, kept so we can write manual rows back into it
+let currentWorkbookName = "workbook.xlsx";
+let faSheetName = null;       // the actual Fund_Application sheet name inside currentWorkbook
+let manualFaRows = [];        // local cache; backed by Supabase when connected, else in-memory only
+let previousRawKeys = new Set();
+let rawItems = [];
+let selectedKeys = new Set();
+let paraOverrides = {}; // itemKey -> "nonCampa" | "campa" (absent/"auto" = decide from scheme)
+
+let supabaseClient = null;
+let supabaseConfigured = false;
+let supabaseFaSummaryRows = []; // live aggregate from the fund_application_summary view, when connected
+let supabaseEstRows = [];       // live rows from the estimate table, when connected
+let supabaseAdvRows = [];       // live rows from the advance table, when connected
+let supabaseWaRows = [];        // live rows from the withdrawal_accounts table, when connected
+
+const $ = (id) => document.getElementById(id);
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const itemKey = (it) => `${it.batch}\u0001${it.esti_no}\u0001${it.token_no}`;
+
+// ---- config form -----------------------------------------------------------
+function fieldBlock(label, help, inputEl) {
+  const wrap = document.createElement("div");
+  const l = document.createElement("label");
+  l.className = "field-label"; l.textContent = label;
+  wrap.appendChild(l);
+  wrap.appendChild(inputEl);
+  if (help) {
+    const p = document.createElement("p");
+    p.className = "text-xs opacity-55 mt-1"; p.textContent = help;
+    wrap.appendChild(p);
+  }
+  return wrap;
+}
+
+function textInput(key, label, help) {
+  const inp = document.createElement("input");
+  inp.type = "text"; inp.value = cfg[key];
+  inp.oninput = () => {
+    cfg[key] = inp.value;
+    // these two feed directly into how proceedings are grouped/derived, not just display text
+    if (key === "range_name" || key === "financial_year") rebuildItems();
+  };
+  return fieldBlock(label, help, inp);
+}
+
+function textArea(key, label, help, rows) {
+  const ta = document.createElement("textarea");
+  ta.rows = rows || 3; ta.value = cfg[key];
+  ta.oninput = () => { cfg[key] = ta.value; };
+  return fieldBlock(label, help, ta);
+}
+
+function listArea(key, label, help, rows) {
+  const ta = document.createElement("textarea");
+  ta.rows = rows || 4; ta.value = cfg[key].join("\n");
+  ta.oninput = () => { cfg[key] = ta.value.split("\n").filter(l => l.trim() !== ""); };
+  return fieldBlock(label, help + " (one per line)", ta);
+}
+
+function sectionTitle(text) {
+  const h = document.createElement("h3");
+  h.className = "serif text-sm font-semibold pt-3 pb-1"; h.style.color = "var(--forest)"; h.style.borderBottom = "1px solid var(--line)";
+  h.textContent = text;
+  return h;
+}
+
+function buildConfigForm() {
+  const root = $("cfgForm");
+  root.innerHTML = "";
+
+  const basics = document.createElement("div");
+  basics.className = "grid md:grid-cols-2 gap-4";
+  basics.append(
+    textInput("office_title", "Office title (heading)"),
+    textInput("present_line", "Present line"),
+    textInput("designation_line", "Designation line"),
+    textInput("progs_no", "Progs. No"),
+    textInput("progs_date", "Progs. date", "Blank prints \u201cDt.    .MM.YYYY\u201d for you to fill in by hand"),
+    textInput("range_name", "Range name", "Fallback used only if the workbook's Voucher Settings sheet has none"),
+    textInput("purpose", "Purpose"),
+    textInput("hoa_suffix", "HOA suffix"),
+    textInput("financial_year", "Financial year override", "Blank = taken from the Esti No, e.g. DSO 08/2026-27"),
+  );
+  root.append(sectionTitle("Letterhead & basics"), basics);
+
+  root.append(
+    sectionTitle("Subject & references"),
+    textArea("subject", "Subject", "Supports {placeholders}, **bold**, ^superscript^", 3),
+    listArea("ref", "Ref list \u2014 ref", "Used when the scheme does NOT contain \u201cCAMPA\u201d", 3),
+    listArea("ref_2", "Ref list \u2014 ref_2", "Used when the scheme contains \u201cCAMPA\u201d (e.g. CAMPA NPV)", 5),
+  );
+
+  root.append(
+    sectionTitle("Body paragraphs"),
+    textArea("para_1", "para_1", "Emitted for non-CAMPA schemes (e.g. AGRO)", 4),
+    textArea("para_2", "para_2", "Emitted for every scheme", 3),
+    textArea("para_3", "para_3", "Kept for reference \u2014 not currently emitted by either branch", 2),
+    textArea("para_4", "para_4", "Emitted for CAMPA schemes", 4),
+    textArea("para_5", "para_5", "Emitted for CAMPA schemes", 3),
+  );
+
+  root.append(
+    sectionTitle("Signature & distribution"),
+    listArea("signature", "Signature lines", "Printed centered above the distribution list", 2),
+    textInput("to_heading", "\u2018To\u2019 heading \u2014 non-CAMPA"),
+    listArea("to_lines", "\u2018To\u2019 lines \u2014 non-CAMPA", "", 3),
+    textInput("to_heading_2", "\u2018To\u2019 heading \u2014 CAMPA"),
+    listArea("to_lines_2", "\u2018To\u2019 lines \u2014 CAMPA", "", 2),
+  );
+
+  const resetWrap = document.createElement("div");
+  resetWrap.className = "pt-2";
+  const resetBtn = document.createElement("button");
+  resetBtn.className = "btn-ghost px-3 py-1.5 text-xs";
+  resetBtn.textContent = "Reset all fields to the office defaults";
+  resetBtn.onclick = () => {
+    cfg = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    buildConfigForm();
+    rebuildItems();
+  };
+  resetWrap.appendChild(resetBtn);
+  root.appendChild(resetWrap);
+}
+
+// ---- items table / filtering ------------------------------------------------
+function schemeBadge(scheme) {
+  const s = (scheme || "").toUpperCase();
+  const cls = s.includes("CAMPA") ? "badge-campa" : (s.includes("AGRO") ? "badge-agro" : "badge-other");
+  return `<span class="badge ${cls}">${escapeHtml(scheme || "\u2014")}</span>`;
+}
+
+// A filter change narrows what's selected to generate, not just what's shown:
+// re-sync selectedKeys to exactly the newly-filtered set. Individual checkboxes
+// can still be toggled afterwards to fine-tune within that filtered view.
+function onFilterChange() {
+  selectedKeys = new Set(getFiltered().map(itemKey));
+  renderItemsTable();
+}
+
+function getFiltered() {
+  const batch = $("fBatch").value.trim().toLowerCase();
+  const esti = $("fEsti").value.trim().toLowerCase();
+  const scheme = $("fScheme").value;
+  const token = $("fToken").value.trim().toLowerCase();
+  return rawItems.filter(it =>
+    (!batch || it.batch.toLowerCase().includes(batch)) &&
+    (!esti || it.esti_no.toLowerCase().includes(esti)) &&
+    (!scheme || it.scheme === scheme) &&
+    (!token || it.token_no.toLowerCase().includes(token))
+  );
+}
+
+function populateSchemeFilter() {
+  const sel = $("fScheme");
+  const current = sel.value;
+  const schemes = Array.from(new Set(rawItems.map(it => it.scheme).filter(Boolean))).sort();
+  sel.innerHTML = '<option value="">All schemes</option>' +
+    schemes.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
+  if (schemes.includes(current)) sel.value = current;
+}
+
+function renderItemsTable() {
+  const list = getFiltered();
+  const body = $("itemsBody");
+  body.innerHTML = "";
+  $("noItemsMsg").classList.toggle("hidden", list.length !== 0);
+  for (const it of list) {
+    const key = itemKey(it);
+    const ov = paraOverrides[key] || "auto";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="checkbox" ${selectedKeys.has(key) ? "checked" : ""}></td>
+      <td>${escapeHtml(it.batch || "\u2014")}</td>
+      <td class="mono">${escapeHtml(it.esti_no)}</td>
+      <td class="mono">${escapeHtml(it.token_no || "\u2014")}</td>
+      <td>${schemeBadge(it.scheme)}</td>
+      <td>${escapeHtml(it.vss_name || "\u2014")}</td>
+      <td class="mono">\u20b9${escapeHtml(fmtInr(it.amount))}</td>
+      <td>${escapeHtml(it.fa_date || "\u2014")}</td>
+      <td>
+        <select class="para-override text-xs" style="padding:.2rem .3rem;">
+          <option value="auto" ${ov === "auto" ? "selected" : ""}>Auto (scheme)</option>
+          <option value="nonCampa" ${ov === "nonCampa" ? "selected" : ""}>Non-CAMPA (para_1/2)</option>
+          <option value="campa" ${ov === "campa" ? "selected" : ""}>CAMPA (para_4/2/5)</option>
+        </select>
+      </td>`;
+    tr.querySelector("input").onchange = (e) => {
+      if (e.target.checked) selectedKeys.add(key); else selectedKeys.delete(key);
+      updateSelectionSummary();
+    };
+    tr.querySelector(".para-override").onchange = (e) => {
+      if (e.target.value === "auto") delete paraOverrides[key];
+      else paraOverrides[key] = e.target.value;
+    };
+    body.appendChild(tr);
+  }
+  updateSelectionSummary();
+}
+
+function updateSelectionSummary() {
+  const selectedItems = rawItems.filter(it => selectedKeys.has(itemKey(it)));
+  const total = selectedItems.reduce((s, it) => s + it.amount, 0);
+  $("selectionSummary").textContent = selectedItems.length
+    ? `${selectedItems.length} selected \u2014 \u20b9${fmtInr(total)} total`
+    : "Nothing selected yet";
+  $("generateBtn").disabled = selectedItems.length === 0;
+}
+
+// ---- workbook loading --------------------------------------------------------
+function showWarnings(warnings) {
+  const box = $("warningsBox");
+  if (!warnings.length) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+  box.classList.remove("hidden");
+  box.innerHTML = "<strong>Heads up:</strong><ul class='list-disc pl-4 mt-1 space-y-0.5'>"
+    + warnings.map(w => `<li>${escapeHtml(w)}</li>`).join("") + "</ul>";
+}
+
+// Each lookup sheet independently prefers its live Supabase rows when any
+// are loaded, and falls back to the uploaded workbook's sheet otherwise — so
+// you can mix: some sources live, others still from the workbook, as each
+// becomes available.
+function currentEst() { return (supabaseConfigured && supabaseEstRows.length) ? supabaseEstRows : uploadedSheets.est; }
+function currentAdv() { return (supabaseConfigured && supabaseAdvRows.length) ? supabaseAdvRows : uploadedSheets.adv; }
+function currentWa() { return (supabaseConfigured && supabaseWaRows.length) ? supabaseWaRows : uploadedSheets.wa; }
+
+function currentSheets() {
+  // When Supabase is connected, fund_application_summary (a live view over the
+  // real fund_application table, already grouped by batch/esti/token) replaces
+  // the uploaded workbook's Fund_Application sheet as the source of truth.
+  // manualFaRows still fills in for esti/token keys that haven't landed in
+  // fund_application yet; once they do, the matching manual row is dropped
+  // here automatically so the amount isn't double-counted.
+  const liveKeys = new Set(supabaseFaSummaryRows.map(r => `${r.batchno}\u0001${r.estino}\u0001${r.tokenno}`));
+  const manualNotYetLive = manualFaRows.filter(r => !liveKeys.has(`${r.batchno}\u0001${r.estino}\u0001${r.tokenno}`));
+  const faRows = supabaseConfigured && supabaseFaSummaryRows.length
+    ? supabaseFaSummaryRows.concat(manualNotYetLive)
+    : uploadedSheets.fa.concat(manualFaRows);
+  return {
+    fa: faRows,
+    est: currentEst(), adv: currentAdv(),
+    wa: currentWa(), set: uploadedSheets.set,
+  };
+}
+
+function rebuildItems() {
+  const { items, warnings } = buildProceedings(currentSheets(), cfg, {});
+  rawItems = items;
+  const validKeys = new Set(items.map(itemKey));
+  // keep existing checkbox state for items that still exist...
+  selectedKeys = new Set(Array.from(selectedKeys).filter(k => validKeys.has(k)));
+  // ...and auto-check anything new (first load, or a manual row that just started resolving)
+  items.forEach(it => { if (!previousRawKeys.has(itemKey(it))) selectedKeys.add(itemKey(it)); });
+  previousRawKeys = validKeys;
+  populateSchemeFilter();
+  renderItemsTable();
+  showWarnings(warnings);
+  const hasData = uploadedSheets.fa.length > 0 || manualFaRows.length > 0 || supabaseFaSummaryRows.length > 0;
+  $("step2").classList.toggle("hidden", !hasData);
+  $("step3").classList.toggle("hidden", !hasData);
+}
+
+function generateNewTokenNo() {
+  const used = new Set([
+    ...currentAdv().map(r => col(r, "Token_No")),
+    ...uploadedSheets.fa.map(r => col(r, "Token_no")),
+    ...supabaseFaSummaryRows.map(r => r.tokenno),
+    ...manualFaRows.map(r => r.tokenno),
+  ].filter(Boolean));
+  let n = 1;
+  while (used.has(`NEW-${n}`)) n++;
+  return `NEW-${n}`;
+}
+
+function refreshEstiDatalist() {
+  const dl = $("estiNoOptions");
+  const estiList = Array.from(new Set(currentEst().map(r => col(r, "Esti_no")).filter(Boolean))).sort();
+  dl.innerHTML = estiList.map(e => `<option value="${escapeHtml(e)}"></option>`).join("");
+}
+
+function refreshAccountDropdowns() {
+  const accSel = $("mAccount"), vssSel = $("mVss");
+  const prevAcc = accSel.value, prevVss = vssSel.value;
+  const rows = currentWa()
+    .map(r => ({ acc: col(r, "Account_No"), vss: col(r, "Name_of_Account") }))
+    .filter(o => o.acc);
+
+  accSel.innerHTML = '<option value="">\u2014 none \u2014</option>' + rows
+    .map(o => `<option value="${escapeHtml(o.acc)}">${escapeHtml(o.acc)}${o.vss ? " \u2014 " + escapeHtml(o.vss) : ""}</option>`)
+    .join("");
+  const vssNames = Array.from(new Set(rows.map(o => o.vss).filter(Boolean))).sort();
+  vssSel.innerHTML = '<option value="">\u2014 none \u2014</option>' + vssNames
+    .map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`)
+    .join("");
+
+  if (rows.some(o => o.acc === prevAcc)) accSel.value = prevAcc;
+  if (vssNames.includes(prevVss)) vssSel.value = prevVss;
+}
+
+function updateManualHint() {
+  const val = $("mEsti").value.trim();
+  const hint = $("mEstiHint");
+  if (!val) { hint.textContent = ""; return; }
+  const exists = currentEst().some(r => col(r, "Esti_no") === val);
+  hint.textContent = exists ? "" : "Not found in Estimate data yet \u2014 this row will be skipped (with a warning) until it is.";
+  hint.style.color = exists ? "" : "var(--danger)";
+}
+
+// ---- Supabase cloud sync (manual Fund_Application entries only) -----------
+// Fixed to this one department's Supabase project — this app is self-hosted
+// for a single deployment, so the project URL/anon key are baked in rather
+// than typed in each time. The anon key is not a secret (it's meant to be
+// public; real access control is RLS + sign-in below), but it still only
+// identifies the PROJECT, not a person — who can see what data is decided by
+// which account signs in, via that account's existing has_perm permissions.
+const SUPABASE_URL = "https://ewnrcnfyiulrjritaeam.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3bnJjbmZ5aXVscmpyaXRhZWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTEwMDYsImV4cCI6MjEwNzc2NzAwNn0.rbJNPpBgS4k2uKxM9Igk6S7rN_FL3gZcoJu-8jkgeD8";
+
+function setCloudSyncBadge(state) {
+  // state: "out" (not connected) | "needsLogin" (client ready, not signed in) | "in" (signed in)
+  const badge = $("cloudSyncBadge");
+  if (!badge) return;
+  const label = { out: "Not connected", needsLogin: "Sign-in required", in: "Connected" }[state];
+  const cls = { out: "badge-other", needsLogin: "badge-campa", in: "badge-agro" }[state];
+  badge.textContent = label;
+  badge.className = "badge " + cls;
+}
+
+function showLoginUI(show) {
+  $("supaLoginFields").classList.toggle("hidden", !show);
+  if (show) $("cloudSyncDetails").open = true;
+}
+function showSignedInUI(show, email) {
+  $("supaSignedInInfo").classList.toggle("hidden", !show);
+  if (show) $("supaUserEmail").textContent = email || "";
+}
+
+// Creates the client (against the fixed project above) and checks for an
+// already-active Supabase Auth session (persisted by supabase-js in this
+// browser) \u2014 it never touches fund_application directly, since that table's
+// RLS is gated per signed-in user, not by the anon key alone.
+async function connectSupabase(opts = {}) {
+  const status = $("supaStatus");
+  await window.__supabaseLibReady;
+  if (!window.supabase || typeof window.supabase.createClient !== "function") {
+    if (status) status.innerHTML = '<span style="color:var(--danger)">Supabase library didn\u2019t load \u2014 check your connection and try again.</span>';
+    return false;
+  }
+  try {
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data: { session }, error } = await client.auth.getSession();
+    if (error) throw error;
+    supabaseClient = client;
+    if (session && session.user) {
+      await afterSignedIn(session.user);
+    } else {
+      supabaseConfigured = false;
+      setCloudSyncBadge("needsLogin");
+      showSignedInUI(false);
+      showLoginUI(true);
+      if (status && !opts.silent) status.innerHTML = "";
+    }
+    return true;
+  } catch (err) {
+    supabaseClient = null; supabaseConfigured = false;
+    setCloudSyncBadge("out");
+    showLoginUI(false); showSignedInUI(false);
+    if (status && !opts.silent) {
+      status.innerHTML = `<span style="color:var(--danger)">Couldn\u2019t reach Supabase: ${escapeHtml(err.message || String(err))}.</span>`;
+    }
+    return false;
+  }
+}
+
+async function signInSupabase(email, password) {
+  const status = $("supaSignInStatus");
+  email = (email || "").trim(); password = password || "";
+  if (!supabaseClient) return;
+  if (!email || !password) { if (status) status.innerHTML = '<span style="color:var(--danger)">Email and password are required.</span>'; return; }
+  if (status) status.textContent = "Signing in\u2026";
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    if (status) status.textContent = "";
+    $("supaPassword").value = "";
+    await afterSignedIn(data.user);
+  } catch (err) {
+    if (status) status.innerHTML = `<span style="color:var(--danger)">${escapeHtml(err.message || String(err))}</span>`;
+  }
+}
+
+async function signOutSupabase() {
+  if (supabaseClient) { try { await supabaseClient.auth.signOut(); } catch (err) { console.error(err); } }
+  supabaseConfigured = false;
+  supabaseFaSummaryRows = [];
+  supabaseEstRows = [];
+  supabaseAdvRows = [];
+  supabaseWaRows = [];
+  manualFaRows = [];
+  setCloudSyncBadge("needsLogin");
+  showSignedInUI(false);
+  showLoginUI(true);
+  $("supaStatus").textContent = "";
+  renderManualRows();
+  refreshEstiDatalist();
+  refreshAccountDropdowns();
+  updateManualHint();
+  rebuildItems();
+  updateDownloadWorkbookBtn();
+}
+
+async function afterSignedIn(user) {
+  supabaseConfigured = true;
+  setCloudSyncBadge("in");
+  showLoginUI(false);
+  showSignedInUI(true, user && user.email);
+  const status = $("supaStatus");
+  if (status) status.innerHTML = '<span style="color:var(--ok)">Loading data\u2026</span>';
+  const [, fa, est, adv, wa] = await Promise.all([
+    loadManualRowsFromSupabase(),
+    loadFundApplicationSummary(),
+    loadEstimateFromSupabase(),
+    loadAdvanceFromSupabase(),
+    loadWithdrawalAccountsFromSupabase(),
+  ]);
+  if (status) {
+    const sources = [
+      ["fund_application", fa], ["estimate", est], ["advance", adv], ["withdrawal_accounts", wa],
+    ];
+    const failed = sources.filter(([, r]) => !r.ok);
+    if (!failed.length) {
+      const counts = sources.map(([name, r]) => `${name}: ${r.count}`).join(", ");
+      status.innerHTML = `<span style="color:var(--ok)">Loaded live \u2014 ${counts}. Manual entries sync too.</span>`;
+    } else {
+      const lines = failed.map(([name, r]) => `${escapeHtml(name)}: ${escapeHtml(r.error)}`).join("<br>");
+      const okNames = sources.filter(([, r]) => r.ok).map(([name]) => name).join(", ") || "none";
+      status.innerHTML = `<span style="color:var(--danger)">Signed in, but some sources failed:<br>${lines}<br>` +
+        `(loaded OK: ${escapeHtml(okNames)}) \u2014 check this account's view permission on those tables, or upload the ` +
+        `matching workbook sheet(s) as a fallback. Manual entries still sync.</span>`;
+    }
+  }
+}
+
+async function loadManualRowsFromSupabase() {
+  if (!supabaseConfigured) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from("manual_fa_rows").select("*").order("created_at", { ascending: true });
+    if (error) throw error;
+    manualFaRows = (data || []).map(r => ({
+      id: r.id,
+      batchno: r.batch_no || "",
+      estino: r.esti_no || "",
+      tokenno: r.token_no || "",
+      amount: r.amount,
+      applicationdate: r.application_date || "",
+      manual_account_no: r.manual_account_no || "",
+      manual_vss_name: r.manual_vss_name || "",
+    }));
+    renderManualRows();
+    rebuildItems();
+    updateDownloadWorkbookBtn();
+  } catch (err) {
+    console.error(err);
+    const status = $("supaStatus");
+    if (status) status.innerHTML = `<span style="color:var(--danger)">Couldn\u2019t load entries: ${escapeHtml(err.message || String(err))}</span>`;
+  }
+}
+
+// fund_application_summary is a live SQL view over the real, task-wise
+// fund_application table, already grouped by (batch_no, esti_no, token_no)
+// with amount summed and application_date = earliest date in the group \u2014 the
+// same grouping the Proceedings Builder itself does over an uploaded workbook.
+// Rows are reshaped to match uploadedSheets.fa's shape so currentSheets() can
+// treat them identically either way.
+async function loadFundApplicationSummary() {
+  if (!supabaseConfigured) return { ok: true, count: 0 };
+  try {
+    const { data, error } = await supabaseClient
+      .from("fund_application_summary").select("*");
+    if (error) throw error;
+    supabaseFaSummaryRows = (data || []).map(r => ({
+      batchno: r.batch_no || "",
+      estino: r.esti_no || "",
+      tokenno: r.token_no || "",
+      amount: r.amount,
+      applicationdate: r.application_date || "",
+    }));
+    rebuildItems();
+    return { ok: true, count: supabaseFaSummaryRows.length };
+  } catch (err) {
+    console.error(err);
+    supabaseFaSummaryRows = [];
+    return { ok: false, error: err.message || String(err) };
+  }
+}
+
+// Row keys already come back from Supabase as snake_case matching the
+// workbook's own column names (esti_no, token_no, account_no, ...), so the
+// same norm()-based key folding used for uploaded sheets makes them for
+// col() lookups.
+function normalizeRow(r) {
+  const nr = {};
+  for (const [k, v] of Object.entries(r)) nr[norm(k)] = v;
+  return nr;
+}
+
+async function loadEstimateFromSupabase() {
+  if (!supabaseConfigured) return { ok: true, count: 0 };
+  try {
+    const { data, error } = await supabaseClient.from("estimate").select("*");
+    if (error) throw error;
+    supabaseEstRows = (data || []).map(normalizeRow);
+    refreshEstiDatalist();
+    rebuildItems();
+    return { ok: true, count: supabaseEstRows.length };
+  } catch (err) {
+    console.error(err);
+    supabaseEstRows = [];
+    return { ok: false, error: err.message || String(err) };
+  }
+}
+
+async function loadAdvanceFromSupabase() {
+  if (!supabaseConfigured) return { ok: true, count: 0 };
+  try {
+    const { data, error } = await supabaseClient.from("advance").select("*");
+    if (error) throw error;
+    supabaseAdvRows = (data || []).map(normalizeRow);
+    rebuildItems();
+    return { ok: true, count: supabaseAdvRows.length };
+  } catch (err) {
+    console.error(err);
+    supabaseAdvRows = [];
+    return { ok: false, error: err.message || String(err) };
+  }
+}
+
+async function loadWithdrawalAccountsFromSupabase() {
+  if (!supabaseConfigured) return { ok: true, count: 0 };
+  try {
+    const { data, error } = await supabaseClient.from("withdrawal_accounts").select("*");
+    if (error) throw error;
+    supabaseWaRows = (data || []).map(normalizeRow);
+    refreshAccountDropdowns();
+    updateManualHint();
+    rebuildItems();
+    return { ok: true, count: supabaseWaRows.length };
+  } catch (err) {
+    console.error(err);
+    supabaseWaRows = [];
+    return { ok: false, error: err.message || String(err) };
+  }
+}
+
+function renderManualRows() {
+  const body = $("manualRowsBody");
+  body.innerHTML = "";
+  manualFaRows.forEach((r, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${escapeHtml(r.batchno || "\u2014")}</td>
+      <td class="mono">${escapeHtml(r.estino)}</td>
+      <td class="mono">${escapeHtml(r.tokenno || "\u2014")}</td>
+      <td class="mono">\u20b9${escapeHtml(fmtInr(r.amount))}</td>
+      <td>${escapeHtml(fmtDate(r.applicationdate) || "\u2014")}</td>
+      <td class="mono">${escapeHtml(r.manual_account_no || "\u2014")}</td>
+      <td>${escapeHtml(r.manual_vss_name || "\u2014")}</td>
+      <td><button class="btn-ghost px-2 py-0.5 text-xs">Remove</button></td>`;
+    const removeBtn = tr.querySelector("button");
+    removeBtn.onclick = async () => {
+      const row = manualFaRows[i];
+      if (supabaseConfigured && row.id) {
+        removeBtn.disabled = true; removeBtn.textContent = "Removing\u2026";
+        try {
+          const { error } = await supabaseClient.from("manual_fa_rows").delete().eq("id", row.id);
+          if (error) throw error;
+        } catch (err) {
+          console.error(err);
+          alert("Couldn\u2019t remove from Supabase: " + (err.message || err));
+          removeBtn.disabled = false; removeBtn.textContent = "Remove";
+          return;
+        }
+      }
+      manualFaRows.splice(i, 1);
+      renderManualRows();
+      rebuildItems();
+      updateDownloadWorkbookBtn();
+    };
+    body.appendChild(tr);
+  });
+  $("manualRowsEmpty").classList.toggle("hidden", manualFaRows.length !== 0);
+}
+
+async function addManualRow() {
+  const esti = $("mEsti").value.trim();
+  const amount = parseFloat($("mAmount").value);
+  if (!esti) {
+    $("mEstiHint").textContent = "Esti No is required."; $("mEstiHint").style.color = "var(--danger)";
+    $("mEsti").focus(); return;
+  }
+  if (!amount || amount <= 0) { $("mAmount").focus(); $("mAmount").reportValidity && $("mAmount").reportValidity(); return; }
+
+  const row = {
+    batchno: $("mBatch").value.trim(),
+    estino: esti,
+    tokenno: $("mToken").value.trim(),
+    amount: amount,
+    applicationdate: $("mDate").value || "",
+    manual_account_no: $("mAccount").value || "",
+    manual_vss_name: $("mVss").value || "",
+  };
+
+  const addBtn = $("addManualRowBtn");
+  if (supabaseConfigured) {
+    addBtn.disabled = true; addBtn.textContent = "Saving\u2026";
+    try {
+      const { data, error } = await supabaseClient.from("manual_fa_rows").insert({
+        batch_no: row.batchno || null,
+        esti_no: row.estino,
+        token_no: row.tokenno || null,
+        amount: row.amount,
+        application_date: row.applicationdate || null,
+        manual_account_no: row.manual_account_no || null,
+        manual_vss_name: row.manual_vss_name || null,
+      }).select().single();
+      if (error) throw error;
+      row.id = data.id;
+      manualFaRows.push(row);
+    } catch (err) {
+      console.error(err);
+      alert("Couldn\u2019t save to Supabase (" + (err.message || err) + ") \u2014 added locally instead; it won\u2019t sync until this is resolved.");
+      manualFaRows.push(row);
+    } finally {
+      addBtn.disabled = false; addBtn.textContent = "+ Add row";
+    }
+  } else {
+    manualFaRows.push(row);
+  }
+
+  $("mBatch").value = ""; $("mEsti").value = ""; $("mToken").value = "";
+  $("mAmount").value = ""; $("mDate").value = "";
+  $("mAccount").value = ""; $("mVss").value = "";
+  updateManualHint();
+  renderManualRows();
+  rebuildItems();
+  updateDownloadWorkbookBtn();
+}
+
+function updateDownloadWorkbookBtn() {
+  const btn = $("downloadWorkbookBtn");
+  btn.disabled = !currentWorkbook || !faSheetName || manualFaRows.length === 0;
+}
+
+async function downloadUpdatedWorkbook() {
+  if (!currentWorkbook || !faSheetName || !manualFaRows.length) return;
+  const status = $("workbookDownloadStatus");
+  status.textContent = "Building updated workbook\u2026";
+  try {
+    const ws = currentWorkbook.Sheets[faSheetName];
+    const headerRows = XLSX.utils.sheet_to_json(ws, { header: 1, range: 0 });
+    const originalHeaders = (headerRows[0] || []).map(h => String(h)).filter(h => h !== "" && h !== "undefined");
+
+    const newRows = manualFaRows.map(r => {
+      const row = {};
+      originalHeaders.forEach(h => {
+        const nk = norm(h);
+        if (nk === "batchno") row[h] = r.batchno || "";
+        else if (nk === "estino") row[h] = r.estino || "";
+        else if (nk === "tokenno") row[h] = r.tokenno || "";
+        else if (nk === "amount") row[h] = r.amount != null ? r.amount : "";
+        else if (nk === "applicationdate") row[h] = r.applicationdate ? new Date(r.applicationdate + "T00:00:00") : "";
+        else row[h] = "";
+      });
+      return row;
+    });
+
+    // Append right after the last *actual* data row, not the sheet's declared "!ref" range.
+    // Exported workbooks very often have formatting/old data pushing "!ref" far past the real
+    // rows, and origin:-1 trusts that range — silently dropping the new row dozens/hundreds of
+    // rows below the visible data. uploadedSheets.fa.length is the true row count instead.
+    const realDataRowCount = uploadedSheets.fa.length;
+    XLSX.utils.sheet_add_json(ws, newRows, {
+      header: originalHeaders, skipHeader: true,
+      origin: { r: realDataRowCount + 1, c: 0 },
+    });
+
+    const out = XLSX.write(currentWorkbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const baseName = currentWorkbookName.replace(/\.xlsx?$/i, "");
+    await saveFile(`${baseName}_updated.xlsx`, blob);
+    status.innerHTML = `<span style="color:var(--ok)">Saved \u2014 ${manualFaRows.length} row(s) appended to Fund_Application.</span>`;
+  } catch (err) {
+    console.error(err);
+    status.innerHTML = `<span style="color:var(--danger)">Failed: ${escapeHtml(err.message)}</span>`;
+  }
+}
+
+function findSheetName(workbook, candidates) {
+  const byNorm = {}; workbook.SheetNames.forEach(n => { byNorm[norm(n)] = n; });
+  return candidates.map(c => byNorm[norm(c)]).find(Boolean) || null;
+}
+
+function handleFile(file) {
+  $("uploadStatus").textContent = "Reading workbook\u2026";
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array", cellDates: true });
+      uploadedSheets = loadSheets(workbook);
+      currentWorkbook = workbook;
+      currentWorkbookName = file.name;
+      faSheetName = findSheetName(workbook, SHEET_NAMES.fa);
+      refreshEstiDatalist();
+      refreshAccountDropdowns();
+      rebuildItems();
+      $("uploadStatus").innerHTML = `Loaded <strong>${uploadedSheets.fa.length}</strong> Fund_Application row(s) `
+        + `from \u201c${escapeHtml(file.name)}\u201d.`;
+      $("dropText").textContent = `${file.name} \u2014 click to choose a different file`;
+      updateDownloadWorkbookBtn();
+    } catch (err) {
+      console.error(err);
+      $("uploadStatus").innerHTML = `<span style="color:var(--danger)">${escapeHtml(err.message)}</span>`;
+      $("generateBtn").disabled = true;
+    }
+  };
+  reader.onerror = () => { $("uploadStatus").textContent = "Could not read that file."; };
+  reader.readAsArrayBuffer(file);
+}
+
+
+// ---- generate & download -----------------------------------------------------
+async function saveFile(filename, blob) {
+  // Inside a published claude.ai artifact, a plain blob-URL <a download> is inert —
+  // file saving has to go through the platform's `downloads` capability instead.
+  if (window.claude && typeof window.claude.use === "function") {
+    const downloads = await window.claude.use("downloads");
+    if (downloads) {
+      const result = await downloads.save({ filename, data: blob });
+      return result.status; // "saved" | "delivered"
+    }
+  }
+  // Fallback for when the page is opened directly in an ordinary browser tab
+  // (outside the claude.ai artifact viewer), where the blob-URL trick does work.
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return "saved";
+}
+
+async function onGenerate() {
+  const items = rawItems
+    .filter(it => selectedKeys.has(itemKey(it)))
+    .map(it => ({ ...it, paraOverride: paraOverrides[itemKey(it)] || "auto" }));
+  if (!items.length) return;
+  const btn = $("generateBtn");
+  btn.disabled = true;
+  $("genStatus").textContent = "Building document\u2026";
+  try {
+    const blob = await generateDocx(items, cfg);
+    $("genStatus").textContent = "Waiting for you to confirm the save\u2026";
+    await saveFile("Proceedings.docx", blob);
+    $("genStatus").innerHTML = `<span style="color:var(--ok)">Done \u2014 ${items.length} page(s) saved.</span>`;
+  } catch (err) {
+    console.error(err);
+    const code = err && err.code;
+    let msg = err && err.message ? err.message : String(err);
+    if (code === "declined") msg = "Save was declined.";
+    if (code === "rejected_extension" || code === "extension_not_enabled") msg = ".docx isn't allowed to save here.";
+    if (code === "too_large") msg = "The document is too large to save here.";
+    $("genStatus").innerHTML = `<span style="color:var(--danger)">Failed: ${escapeHtml(msg)}</span>`;
+  } finally {
+    btn.disabled = rawItems.filter(it => selectedKeys.has(itemKey(it))).length === 0;
+  }
+}
+
+// ---- wire up ------------------------------------------------------------------
+document.addEventListener("DOMContentLoaded", async () => {
+  const libsOk = await window.__libsReady;
+  if (!libsOk) {
+    const banner = document.createElement("div");
+    banner.style.cssText = "background:var(--danger);color:#fff;padding:.75rem 1rem;font-size:.85rem;text-align:center;";
+    banner.innerHTML = "Couldn't load required libraries from the CDN, so this tool can't run right now. "
+      + "This usually means the network (often an office/government firewall) is blocking "
+      + "<span class=\"mono\">cdnjs.cloudflare.com</span>, <span class=\"mono\">cdn.jsdelivr.net</span> "
+      + "and <span class=\"mono\">unpkg.com</span>. Try a different network (e.g. mobile data), "
+      + "disable any script/ad blocker for this page, or ask IT to allow those three domains, then reload.";
+    document.body.prepend(banner);
+    document.querySelectorAll("input, select, textarea, button").forEach(el => { el.disabled = true; });
+    return;
+  }
+
+  buildConfigForm();
+  renderManualRows();
+
+  // Cloud sync (Supabase) — project is fixed (see SUPABASE_URL/SUPABASE_ANON_KEY
+  // above); just check for an already-active session, or show the sign-in form.
+  $("supaStatus").textContent = "Checking sign-in…";
+  connectSupabase({ silent: false });
+
+  $("supaCopySqlBtn").onclick = async () => {
+    const btn = $("supaCopySqlBtn");
+    try {
+      await navigator.clipboard.writeText($("supaSql").textContent);
+      btn.textContent = "Copied!"; setTimeout(() => { btn.textContent = "Copy SQL"; }, 1500);
+    } catch {
+      btn.textContent = "Select the text above and copy manually";
+      setTimeout(() => { btn.textContent = "Copy SQL"; }, 2000);
+    }
+  };
+  $("supaSignInBtn").onclick = async () => {
+    const btn = $("supaSignInBtn");
+    btn.disabled = true; btn.textContent = "Signing in…";
+    await signInSupabase($("supaEmail").value, $("supaPassword").value);
+    btn.disabled = false; btn.textContent = "Sign in";
+  };
+  $("supaPassword").addEventListener("keydown", (e) => { if (e.key === "Enter") $("supaSignInBtn").click(); });
+  $("supaSignOutBtn").onclick = signOutSupabase;
+
+  $("addManualRowBtn").onclick = addManualRow;
+  $("downloadWorkbookBtn").onclick = downloadUpdatedWorkbook;
+  $("mTokenNewBtn").onclick = () => { $("mToken").value = generateNewTokenNo(); $("mToken").focus(); };
+  $("mEsti").addEventListener("input", updateManualHint);
+  $("mAmount").addEventListener("keydown", (e) => { if (e.key === "Enter") addManualRow(); });
+  $("mEsti").addEventListener("keydown", (e) => { if (e.key === "Enter") addManualRow(); });
+  $("mAccount").addEventListener("change", () => {
+    const acc = $("mAccount").value;
+    const row = currentWa().find(r => col(r, "Account_No") === acc);
+    if (row) $("mVss").value = col(row, "Name_of_Account");
+  });
+  $("mVss").addEventListener("change", () => {
+    const vss = $("mVss").value;
+    const row = currentWa().find(r => col(r, "Name_of_Account") === vss);
+    if (row) $("mAccount").value = col(row, "Account_No");
+  });
+
+  const dropzone = $("dropzone"), fileInput = $("fileInput");
+  fileInput.onchange = () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); };
+  ["dragenter", "dragover"].forEach(evt => dropzone.addEventListener(evt, (e) => {
+    e.preventDefault(); dropzone.classList.add("drag");
+  }));
+  ["dragleave", "drop"].forEach(evt => dropzone.addEventListener(evt, (e) => {
+    e.preventDefault(); dropzone.classList.remove("drag");
+  }));
+  dropzone.addEventListener("drop", (e) => {
+    const f = e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  });
+
+  ["fBatch", "fEsti", "fScheme", "fToken"].forEach(id => {
+    $(id).addEventListener("input", onFilterChange);
+    $(id).addEventListener("change", onFilterChange);
+  });
+
+  $("selectAllBtn").onclick = () => {
+    getFiltered().forEach(it => selectedKeys.add(itemKey(it)));
+    renderItemsTable();
+  };
+  $("selectNoneBtn").onclick = () => {
+    getFiltered().forEach(it => selectedKeys.delete(itemKey(it)));
+    renderItemsTable();
+  };
+
+  $("generateBtn").onclick = onGenerate;
+});
+
+</script>
+</body>
+</html>

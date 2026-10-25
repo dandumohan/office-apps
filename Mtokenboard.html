@@ -340,14 +340,6 @@
     .strip-metric:first-child { border-left: none; }
     .strip-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
     .strip-value { font-size: 15px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; margin-top: 1px; }
-    .strip-status-row { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 5px 0 0 18px; }
-    .strip-status-chip { font-size: 10.5px; font-weight: 600; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--border); background: #fff; color: var(--muted); white-space: nowrap; cursor: default; }
-    .strip-status-chip b { color: var(--ink); font-variant-numeric: tabular-nums; }
-    .strip-status-chip.zero { opacity: 0.45; }
-    .strip-status-chip.st-pending { background: #FFF4DB; border-color: #F2DDA4; }
-    .strip-status-chip.st-inprogress { background: #E8F0FE; border-color: #BFD3F8; }
-    .strip-status-chip.st-completed { background: #EEF7F1; border-color: #BFE0CB; }
-    .strip-status-chip.st-cancelled { background: #FDECEA; border-color: #F3C4BF; }
     .strip-balance { background: #EEF7F1; border-radius: 8px; border-left: none; margin-left: 10px; padding: 4px 14px; }
     .strip-balance .strip-value { color: #1E7B45; }
     .strip-balance.neg { background: #FDECEA; }
@@ -368,13 +360,13 @@
     }
     .scheme-card-header .num { font-weight: 700; color: var(--ink); font-size: 13px; }
     .scheme-col-labels {
-      display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 0.8fr 32px;
+      display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr 0.8fr 32px;
       padding: 6px 16px; gap: 6px;
       font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em;
       border-bottom: 1px solid var(--border);
     }
     .est-row {
-      display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 0.8fr 32px;
+      display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr 0.8fr 32px;
       padding: 9px 16px; gap: 6px;
       font-size: 12.5px; cursor: pointer;
       border-bottom: 1px solid #F0F1F4;
@@ -4198,8 +4190,8 @@
   /* ===== Nursery > Nursery Transactions (the Seedling Portal) and Reports > Mreports (the report generator), embedded; both use this app's signed-in connection ===== */
   const NURTXN_SCREEN_HTML = /*@@NURTXN_HTML@@*/ null;
   const MREPORTS_SCREEN_HTML = /*@@MREPORTS_HTML@@*/ null;
-  function loadNurTxnFrame() { const f = document.getElementById('nurtxnFrame'); if (!f) return; if (NURTXN_SCREEN_HTML) f.srcdoc = NURTXN_SCREEN_HTML; else f.src = 'nursery/index.html'; }
-  function loadMreportsFrame() { const f = document.getElementById('mreportsFrame'); if (!f) return; if (MREPORTS_SCREEN_HTML) f.srcdoc = MREPORTS_SCREEN_HTML; else f.src = 'mreports/index.html'; }
+  function loadNurTxnFrame() { const f = document.getElementById('nurtxnFrame'); if (!f) return; if (NURTXN_SCREEN_HTML) f.srcdoc = NURTXN_SCREEN_HTML; else f.src = 'Mnursery.html'; }
+  function loadMreportsFrame() { const f = document.getElementById('mreportsFrame'); if (!f) return; if (MREPORTS_SCREEN_HTML) f.srcdoc = MREPORTS_SCREEN_HTML; else f.src = 'Macc_rpt.html'; }
   window.__NURSERY__ = { sb: () => db() };
   window.__MREPORTS__ = { sb: () => db(), can: () => permCan('Reports', 'V') };
   let currentNursery = 'planting';
@@ -7035,14 +7027,6 @@
       .reduce((s, a) => s + ((Number(a.Credited_Amt) > 0 ? Number(a.Credited_Amt) : Number(a.Amount)) || 0), 0);
   }
 
-  // Advances issued for an estimate but not yet credited (total issued - credited).
-  function computeEstimateAdvToBeCredited(estiNo) {
-    const issued = advanceCache
-      .filter(a => String(a.Trans_id) === String(estiNo))
-      .reduce((s, a) => s + (Number(a.Amount) || 0), 0);
-    return issued - computeEstimateAdvCredited(estiNo);
-  }
-
   function computeEstimateExpenditure(estiNo) {
     const tokens = getAdvTokensForEstiNo(estiNo);
     return expenditureCache
@@ -7343,20 +7327,6 @@
       const sumCost = items.reduce((s, r) => s + (Number(r.Est_cost) || 0), 0);
       const sumExp = items.reduce((s, r) => s + computeEstimateExpenditure(r.Esti_no), 0);
       const sumCredited = items.reduce((s, r) => s + computeEstimateAdvCredited(r.Esti_no), 0);
-      const sumToBeCred = items.reduce((s, r) => s + computeEstimateAdvToBeCredited(r.Esti_no), 0);
-      const statusOrder = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
-      const statusCounts = {};
-      statusOrder.forEach(st => { statusCounts[st] = 0; });
-      items.forEach(r => {
-        const st = String(r.status || '').trim() || 'Unspecified';
-        statusCounts[st] = (statusCounts[st] || 0) + 1;
-      });
-      const statusChipsHtml = Object.keys(statusCounts).map(st => {
-        const n = statusCounts[st];
-        const cls = 'st-' + st.toLowerCase().replace(/[^a-z]/g, '');
-        const label = String(st).replace(/</g, '&lt;');
-        return `<span class="strip-status-chip ${cls}${n ? '' : ' zero'}" title="${n} estimate(s) with status ${label}">${label}: <b>${n}</b></span>`;
-      }).join('');
       const stripBalance = sumCredited - sumExp;
       const balanceCls = stripBalance < 0 ? 'neg' : (stripBalance === 0 ? 'zero' : '');
       const isCollapsed = !expandedSchemes.has(scheme);
@@ -7366,21 +7336,17 @@
       card.className = 'scheme-card';
       card.innerHTML = `
         <div class="scheme-card-header scheme-strip" style="cursor:pointer;" onclick="toggleSchemeBand('${schemeKey}')">
-          <div>
-            <span class="scheme-card-title"><span style="display:inline-block; transition: transform 0.15s; transform: rotate(${isCollapsed ? '-90deg' : '0deg'}); margin-right:6px;">&#9660;</span>${scheme} (${items.length})</span>
-            <div class="strip-status-row">${statusChipsHtml}</div>
-          </div>
+          <span class="scheme-card-title"><span style="display:inline-block; transition: transform 0.15s; transform: rotate(${isCollapsed ? '-90deg' : '0deg'}); margin-right:6px;">&#9660;</span>${scheme} (${items.length})</span>
           <div class="strip-metrics">
             <div class="strip-metric" title="Sum of the estimate costs in this scheme"><span class="strip-label">Total Cost</span><span class="strip-value">${sumCost.toLocaleString('en-IN')}</span></div>
             <div class="strip-metric" title="Advance tokens already credited against these estimates"><span class="strip-label">Adv. Credited</span><span class="strip-value">${sumCredited.toLocaleString('en-IN')}</span></div>
-            <div class="strip-metric" title="Advances issued but not yet credited against these estimates"><span class="strip-label">Adv. To Be Credited</span><span class="strip-value">${sumToBeCred.toLocaleString('en-IN')}</span></div>
             <div class="strip-metric" title="Expenditure booked against these estimates"><span class="strip-label">Total Exp</span><span class="strip-value">${sumExp.toLocaleString('en-IN')}</span></div>
             <div class="strip-metric strip-balance ${balanceCls}" title="Adv. Credited minus Total Exp"><span class="strip-label">Balance</span><span class="strip-value">${stripBalance.toLocaleString('en-IN')}</span></div>
           </div>
         </div>
         <div class="scheme-band-body" style="display:${isCollapsed ? 'none' : 'block'};">
           <div class="scheme-col-labels">
-            <span>Esti_no</span><span>Cost</span><span>Adv. Credited</span><span>Adv. To Be Credited</span><span>Exp</span><span>Balance</span><span>Date</span><span>Status</span><span></span>
+            <span>Esti_no</span><span>Cost</span><span>Adv. Credited</span><span>Exp</span><span>Balance</span><span>Date</span><span>Status</span><span></span>
           </div>
         </div>`;
 
@@ -7390,7 +7356,6 @@
         const rowWrap = document.createElement('div');
 
         const rowCredited = computeEstimateAdvCredited(r.Esti_no);
-        const rowToBeCred = computeEstimateAdvToBeCredited(r.Esti_no);
         const rowExp = computeEstimateExpenditure(r.Esti_no);
         const rowBal = rowCredited - rowExp;
         const row = document.createElement('div');
@@ -7400,7 +7365,6 @@
           <span data-est-no="${ntEsc_(r.Esti_no)}">${r.Esti_no}</span>
           <span>${(Number(r.Est_cost) || 0).toLocaleString('en-IN')}</span>
           <span>${rowCredited.toLocaleString('en-IN')}</span>
-          <span title="Advances issued minus Adv. Credited">${rowToBeCred.toLocaleString('en-IN')}</span>
           <span>${rowExp.toLocaleString('en-IN')}</span>
           <span style="font-weight:700; color:${rowBal < 0 ? 'var(--danger)' : (rowBal > 0 ? 'var(--success)' : 'var(--muted)')};" title="Adv. Credited minus Exp">${rowBal.toLocaleString('en-IN')}</span>
           <span>${r.Est_date}</span>
@@ -8809,7 +8773,7 @@
   // required, and Batch No must be unique within the estimate.
   let faPreview = [];
   let faExistingBatchNos = [];  // lowercased Batch_No values already used for the current estimate
-  let faExistingBatches = [];   // [{batch_no, date, amount}] history for the current estimate, deduped by batch_no
+  let faExistingBatches = [];   // [{batch_no, date}] history for the current estimate, deduped by batch_no
   let faTotalBalanceFund = 0;   // sum of balance_fund across all tasks of the estimate currently open in the planner
 
   function faFormatDate_(d) {
@@ -8844,15 +8808,9 @@
       faExistingBatches = [];
       (existingFa || []).forEach(f => {
         const b = String(f.Batch_No || '').trim();
-        if (!b) return;
-        const amt = Number(f.Amount) || 0;
-        if (seenBatches[b]) {
-          // Same batch spans several task rows: add up the amount.
-          seenBatches[b].amount += amt;
-          return;
-        }
-        seenBatches[b] = { batch_no: b, date: f.Application_Date || '', amount: amt };
-        faExistingBatches.push(seenBatches[b]);
+        if (!b || seenBatches[b]) return;
+        seenBatches[b] = true;
+        faExistingBatches.push({ batch_no: b, date: f.Application_Date || '' });
       });
 
       const totalAdvCredited = (estAdvances || []).reduce((s, a) => {
@@ -8912,7 +8870,7 @@
       <div style="margin-bottom:14px;">
         <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">Previous Batches for this Estimate</div>
         <div style="display:flex; flex-wrap:wrap; gap:8px;">
-          ${faExistingBatches.map(b => `<span style="font-size:12px; padding:3px 8px; border:1px solid var(--border); border-radius:12px;">${String(b.batch_no).replace(/</g, '&lt;')} &middot; ${faFormatDate_(b.date)} &middot; <b>${inr(b.amount)}</b></span>`).join('')}
+          ${faExistingBatches.map(b => `<span style="font-size:12px; padding:3px 8px; border:1px solid var(--border); border-radius:12px;">${String(b.batch_no).replace(/</g, '&lt;')} &middot; ${faFormatDate_(b.date)}</span>`).join('')}
         </div>
       </div>` : '';
 

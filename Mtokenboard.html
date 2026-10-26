@@ -512,21 +512,24 @@
 
     <div class="tab-nav level-1" id="topNav">
       <button class="tab-btn active" data-top="accounts" onclick="showTopTab('accounts')">Accounts</button>
+      <button class="tab-btn" data-top="nursery" onclick="showTopTab('nursery')">Progress</button>
       <button class="tab-btn" data-top="establishment" onclick="showTopTab('establishment')">Establishment</button>
       <button class="tab-btn" data-top="vehicle" onclick="showTopTab('vehicle')">Vehicle</button>
       <button class="tab-btn" data-top="procurement" onclick="showTopTab('procurement')">Procurement &amp; Services</button>
-      <button class="tab-btn" data-top="nursery" onclick="showTopTab('nursery')">Nursery</button>
       <button class="tab-btn" data-top="reports" onclick="showTopTab('reports')">Reports</button>
     </div>
 
     <div class="tab-nav level-2" id="acctNav" style="display: flex;">
       <button class="tab-btn" data-acc="apo" onclick="showAccTab('apo')">APOs</button>
       <button class="tab-btn" data-acc="budget" onclick="showAccTab('budget')">Budget</button>
-      <button class="tab-btn active" data-acc="estimate" onclick="showAccTab('estimate')">Estimate</button>
       <button class="tab-btn" data-acc="fsrest" onclick="showAccTab('fsrest')">FSR Estimate</button>
-      <button class="tab-btn" data-acc="mbook" onclick="showAccTab('mbook')">Mbook</button>
+      <button class="tab-btn" data-acc="fundapp" onclick="showAccTab('fundapp')">Fund Application</button>
+      <button class="tab-btn active" data-acc="estimate" onclick="showAccTab('estimate')">Estimate</button>
       <button class="tab-btn" data-acc="tokens" onclick="showAccTab('tokens')">Tokens</button>
+      <button class="tab-btn" data-acc="mbook" onclick="showAccTab('mbook')">Mbook</button>
       <button class="tab-btn" data-acc="overview" onclick="showAccTab('overview')">Overview</button>
+      <button class="tab-btn" data-acc="acc" onclick="showAccTab('acc')">Acc</button>
+      <button class="tab-btn" data-acc="mreports" onclick="showAccTab('mreports')">Mreports</button>
     </div>
 
     <div class="tab-nav level-2" id="nurseryNav" style="display: none;">
@@ -535,11 +538,8 @@
     </div>
 
     <div class="tab-nav level-2" id="reportsNav" style="display: none;">
-      <button class="tab-btn active" data-report="acc" onclick="showReportTab('acc')">Acc</button>
-      <button class="tab-btn" data-report="mreports" onclick="showReportTab('mreports')">Mreports</button>
-      <button class="tab-btn" data-report="establishment" onclick="showReportTab('establishment')">Establishment</button>
+      <button class="tab-btn active" data-report="establishment" onclick="showReportTab('establishment')">Establishment</button>
       <button class="tab-btn" data-report="scheme" onclick="showReportTab('scheme')">Scheme</button>
-      <button class="tab-btn" data-report="fundapp" onclick="showReportTab('fundapp')">Fund Application</button>
     </div>
 
     <div class="tab-nav level-3" id="tokNav" style="display: none;">
@@ -1127,88 +1127,6 @@
     <!-- ===================== ESTIMATE SCREEN ===================== -->
     <div class="screen active" id="screen-estimate">
       <div class="card">
-        <div class="card-head"><h2 class="section-title">Estimate Stats</h2></div>
-        <div class="stats-board">
-          <div class="stat-card"><div class="stat-label">No. of Estimates</div><div class="stat-value" id="est_stat_count">0</div></div>
-          <div class="stat-card"><div class="stat-label">Sum Est_cost</div><div class="stat-value" id="est_stat_cost">0</div><div class="stat-words" id="est_stat_cost_words"></div></div>
-          <div class="stat-card"><div class="stat-label">Sum Adv. Credited</div><div class="stat-value" id="est_stat_adv">0</div><div class="stat-words" id="est_stat_adv_words"></div></div>
-          <div class="stat-card"><div class="stat-label">Sum Est_exp</div><div class="stat-value" id="est_stat_exp">0</div><div class="stat-words" id="est_stat_exp_words"></div></div>
-          <div class="stat-card stat-highlight" title="Sum Adv. Credited minus Sum Est_exp"><div class="stat-label">Balance (Adv. Credited - Exp)</div><div class="stat-value" id="est_stat_advbal">0</div><div class="stat-words" id="est_stat_advbal_words"></div></div>
-          <div class="stat-card"><div class="stat-label">Balance (Cost - Exp)</div><div class="stat-value" id="est_stat_bal">0</div></div>
-          <div class="stat-card"><div class="stat-label">Closed / Open</div><div class="stat-value" id="est_stat_closed" style="font-size:16px;">0 / 0</div></div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 18px;">
-          <div>
-            <div class="stat-label" style="margin-bottom: 6px;">Expenditure by Estimate (Esti_no)</div>
-            <div class="list-wrap" style="max-height: 220px;">
-              <table class="grid">
-                <thead><tr><th>Esti_no</th><th>Scheme</th><th>Esti_cost</th><th>Expenditure</th><th>Balance</th></tr></thead>
-                <tbody id="est_by_no_table"></tbody>
-              </table>
-            </div>
-          </div>
-          <div>
-            <div class="stat-label" style="margin-bottom: 6px;">Expenditure by Month</div>
-            <div class="list-wrap" style="max-height: 220px;">
-              <table class="grid">
-                <thead><tr><th>Month</th><th>Expenditure</th></tr></thead>
-                <tbody id="est_by_month_table"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top: 16px;">
-          <div class="stat-label" style="margin-bottom: 6px;">Expenditure by Month, Scheme &amp; Type</div>
-          <div class="list-wrap" style="max-height: 280px;">
-            <table class="grid">
-              <thead><tr><th>Month</th><th>Scheme</th><th>Esti Type</th><th>No. of Estimates</th><th>Sum of Expenditure</th></tr></thead>
-              <tbody id="est_by_month_scheme_exp_table"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <h2 class="section-title">Estimate Records</h2>
-          <button class="icon-btn" title="Refresh" onclick="refreshEstimateTable(true)">&#8635;</button>
-        </div>
-        <div class="form-grid" style="margin-bottom: 6px;">
-          <div class="field-row">
-            <label>Search</label>
-            <input type="text" id="est_search" placeholder="Search Esti_no, Scheme, Description, Remarks..." oninput="applyEstimateFilters()">
-          </div>
-          <div class="field-row">
-            <label>Status</label>
-            <select id="est_filter_status" onchange="applyEstimateFilters()">
-              <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
-          <div class="field-row">
-            <label>Closed?</label>
-            <select id="est_filter_closed" onchange="applyEstimateFilters()">
-              <option value="">All</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-            </select>
-          </div>
-          <div class="field-row">
-            <label>Scheme</label>
-            <select id="est_filter_scheme" onchange="applyEstimateFilters()">
-              <option value="">All</option>
-            </select>
-          </div>
-        </div>
-        <div id="est_cards_container"></div>
-      </div>
-
-      <div class="card">
         <div class="card-head"><h2 class="section-title">Estimate</h2></div>
         <div class="form-grid">
           <div class="field-row">
@@ -1264,6 +1182,88 @@
           <button class="action" onclick="clearEstimateForm()">ADD</button>
         </div>
         <div class="status" id="est_status_msg"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2 class="section-title">Estimate Records</h2>
+          <button class="icon-btn" title="Refresh" onclick="refreshEstimateTable(true)">&#8635;</button>
+        </div>
+        <div class="form-grid" style="margin-bottom: 6px;">
+          <div class="field-row">
+            <label>Search</label>
+            <input type="text" id="est_search" placeholder="Search Esti_no, Scheme, Description, Remarks..." oninput="applyEstimateFilters()">
+          </div>
+          <div class="field-row">
+            <label>Status</label>
+            <select id="est_filter_status" onchange="applyEstimateFilters()">
+              <option value="">All</option>
+              <option value="Pending">Pending</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <label>Closed?</label>
+            <select id="est_filter_closed" onchange="applyEstimateFilters()">
+              <option value="">All</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <label>Scheme</label>
+            <select id="est_filter_scheme" onchange="applyEstimateFilters()">
+              <option value="">All</option>
+            </select>
+          </div>
+        </div>
+        <div id="est_cards_container"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2 class="section-title">Estimate Stats</h2></div>
+        <div class="stats-board">
+          <div class="stat-card"><div class="stat-label">No. of Estimates</div><div class="stat-value" id="est_stat_count">0</div></div>
+          <div class="stat-card"><div class="stat-label">Sum Est_cost</div><div class="stat-value" id="est_stat_cost">0</div><div class="stat-words" id="est_stat_cost_words"></div></div>
+          <div class="stat-card"><div class="stat-label">Sum Adv. Credited</div><div class="stat-value" id="est_stat_adv">0</div><div class="stat-words" id="est_stat_adv_words"></div></div>
+          <div class="stat-card"><div class="stat-label">Sum Est_exp</div><div class="stat-value" id="est_stat_exp">0</div><div class="stat-words" id="est_stat_exp_words"></div></div>
+          <div class="stat-card stat-highlight" title="Sum Adv. Credited minus Sum Est_exp"><div class="stat-label">Balance (Adv. Credited - Exp)</div><div class="stat-value" id="est_stat_advbal">0</div><div class="stat-words" id="est_stat_advbal_words"></div></div>
+          <div class="stat-card"><div class="stat-label">Balance (Cost - Exp)</div><div class="stat-value" id="est_stat_bal">0</div></div>
+          <div class="stat-card"><div class="stat-label">Closed / Open</div><div class="stat-value" id="est_stat_closed" style="font-size:16px;">0 / 0</div></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 18px;">
+          <div>
+            <div class="stat-label" style="margin-bottom: 6px;">Expenditure by Estimate (Esti_no)</div>
+            <div class="list-wrap" style="max-height: 220px;">
+              <table class="grid">
+                <thead><tr><th>Esti_no</th><th>Scheme</th><th>Esti_cost</th><th>Expenditure</th><th>Balance</th></tr></thead>
+                <tbody id="est_by_no_table"></tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div class="stat-label" style="margin-bottom: 6px;">Expenditure by Month</div>
+            <div class="list-wrap" style="max-height: 220px;">
+              <table class="grid">
+                <thead><tr><th>Month</th><th>Expenditure</th></tr></thead>
+                <tbody id="est_by_month_table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px;">
+          <div class="stat-label" style="margin-bottom: 6px;">Expenditure by Month, Scheme &amp; Type</div>
+          <div class="list-wrap" style="max-height: 280px;">
+            <table class="grid">
+              <thead><tr><th>Month</th><th>Scheme</th><th>Esti Type</th><th>No. of Estimates</th><th>Sum of Expenditure</th></tr></thead>
+              <tbody id="est_by_month_scheme_exp_table"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div class="card" id="est_month_scheme_card">
@@ -1476,36 +1476,6 @@
 
     <div class="screen" id="screen-apo">
       <div class="card">
-        <div class="card-head"><h2 class="section-title">APO Stats</h2></div>
-        <div class="stats-board">
-          <div class="stat-card"><div class="stat-label">No. of APOs</div><div class="stat-value" id="apo_stat_count">0</div></div>
-          <div class="stat-card"><div class="stat-label">Sum APO Approved</div><div class="stat-value" id="apo_stat_approved">0</div><div class="stat-words" id="apo_stat_approved_words"></div></div>
-          <div class="stat-card"><div class="stat-label">Sum Budget Released</div><div class="stat-value" id="apo_stat_released">0</div><div class="stat-words" id="apo_stat_released_words"></div></div>
-          <div class="stat-card stat-highlight" title="Sum APO Approved minus Sum Budget Released"><div class="stat-label">Sum Balance To Be Received</div><div class="stat-value" id="apo_stat_balance">0</div><div class="stat-words" id="apo_stat_balance_words"></div></div>
-          <div class="stat-card"><div class="stat-label">No. of Schemes</div><div class="stat-value" id="apo_stat_schemes">0</div></div>
-          <div class="stat-card"><div class="stat-label">Total Advances</div><div class="stat-value" id="apo_stat_adv">0</div><div class="stat-words" id="apo_stat_adv_words"></div></div>
-          <div class="stat-card stat-highlight" title="Sum Budget Released minus Sum Total Advances"><div class="stat-label">Adv Balance (Released - Advances)</div><div class="stat-value" id="apo_stat_advbal">0</div><div class="stat-words" id="apo_stat_advbal_words"></div></div>
-          <div class="stat-card" title="Advances issued but not yet marked Credited - awaiting bank credit"><div class="stat-label">To Be Credited</div><div class="stat-value" id="apo_stat_tobecredited">0</div><div class="stat-words" id="apo_stat_tobecredited_words"></div></div>
-          <div class="stat-card"><div class="stat-label">Expenditure</div><div class="stat-value" id="apo_stat_exp">0</div><div class="stat-words" id="apo_stat_exp_words"></div></div>
-          <div class="stat-card stat-highlight" title="Sum Advance Credited minus Sum Expenditure"><div class="stat-label">Exp Balance (Adv. Credited - Exp)</div><div class="stat-value" id="apo_stat_expbal">0</div><div class="stat-words" id="apo_stat_expbal_words"></div></div>
-        </div>
-
-        <div style="margin-top: 18px;">
-          <div class="stat-label" style="margin-bottom: 6px;">Budget Received, Scheme-wise</div>
-          <div class="list-wrap" style="max-height: 360px; overflow-x: auto;">
-            <table class="grid" style="min-width: 980px;">
-              <thead><tr>
-                <th>Scheme</th><th>Approved</th><th>Released</th><th>Balance</th>
-                <th>Total Advances</th><th>Adv Balance</th><th>To Be Credited</th><th>Expenditure</th><th>Exp Balance</th>
-                <th style="min-width:150px;">% Received</th>
-              </tr></thead>
-              <tbody id="apo_by_scheme_table"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
         <div class="card-head"><h2 class="section-title">APO</h2></div>
         <div class="form-grid">
           <div class="field-row">
@@ -1585,40 +1555,39 @@
           </table>
         </div>
       </div>
-    </div>
 
-    <div class="screen" id="screen-budget">
       <div class="card">
-        <div class="card-head"><h2 class="section-title">Budget Stats</h2></div>
+        <div class="card-head"><h2 class="section-title">APO Stats</h2></div>
         <div class="stats-board">
-          <div class="stat-card"><div class="stat-label">No. of Records</div><div class="stat-value" id="bud_stat_count">0</div></div>
-          <div class="stat-card"><div class="stat-label">Sum Amt</div><div class="stat-value" id="bud_stat_sum">0</div><div class="stat-words" id="bud_stat_sum_words"></div></div>
-          <div class="stat-card"><div class="stat-label">No. of Schemes</div><div class="stat-value" id="bud_stat_schemes">0</div></div>
-          <div class="stat-card"><div class="stat-label">No. of Years</div><div class="stat-value" id="bud_stat_years">0</div></div>
+          <div class="stat-card"><div class="stat-label">No. of APOs</div><div class="stat-value" id="apo_stat_count">0</div></div>
+          <div class="stat-card"><div class="stat-label">Sum APO Approved</div><div class="stat-value" id="apo_stat_approved">0</div><div class="stat-words" id="apo_stat_approved_words"></div></div>
+          <div class="stat-card"><div class="stat-label">Sum Budget Released</div><div class="stat-value" id="apo_stat_released">0</div><div class="stat-words" id="apo_stat_released_words"></div></div>
+          <div class="stat-card stat-highlight" title="Sum APO Approved minus Sum Budget Released"><div class="stat-label">Sum Balance To Be Received</div><div class="stat-value" id="apo_stat_balance">0</div><div class="stat-words" id="apo_stat_balance_words"></div></div>
+          <div class="stat-card"><div class="stat-label">No. of Schemes</div><div class="stat-value" id="apo_stat_schemes">0</div></div>
+          <div class="stat-card"><div class="stat-label">Total Advances</div><div class="stat-value" id="apo_stat_adv">0</div><div class="stat-words" id="apo_stat_adv_words"></div></div>
+          <div class="stat-card stat-highlight" title="Sum Budget Released minus Sum Total Advances"><div class="stat-label">Adv Balance (Released - Advances)</div><div class="stat-value" id="apo_stat_advbal">0</div><div class="stat-words" id="apo_stat_advbal_words"></div></div>
+          <div class="stat-card" title="Advances issued but not yet marked Credited - awaiting bank credit"><div class="stat-label">To Be Credited</div><div class="stat-value" id="apo_stat_tobecredited">0</div><div class="stat-words" id="apo_stat_tobecredited_words"></div></div>
+          <div class="stat-card"><div class="stat-label">Expenditure</div><div class="stat-value" id="apo_stat_exp">0</div><div class="stat-words" id="apo_stat_exp_words"></div></div>
+          <div class="stat-card stat-highlight" title="Sum Advance Credited minus Sum Expenditure"><div class="stat-label">Exp Balance (Adv. Credited - Exp)</div><div class="stat-value" id="apo_stat_expbal">0</div><div class="stat-words" id="apo_stat_expbal_words"></div></div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 18px;">
-          <div>
-            <div class="stat-label" style="margin-bottom: 6px;">Amount by Year</div>
-            <div class="list-wrap" style="max-height: 220px;">
-              <table class="grid">
-                <thead><tr><th>Year</th><th>Scheme</th><th>Amt</th></tr></thead>
-                <tbody id="bud_by_year_table"></tbody>
-              </table>
-            </div>
-          </div>
-          <div>
-            <div class="stat-label" style="margin-bottom: 6px;">Scheme-wise Count &amp; Sum</div>
-            <div class="list-wrap" style="max-height: 220px;">
-              <table class="grid">
-                <thead><tr><th>Scheme</th><th>Hoa</th><th>Count</th><th>Amt</th><th>Expenditure</th><th>Balance</th></tr></thead>
-                <tbody id="bud_by_scheme_table"></tbody>
-              </table>
-            </div>
+        <div style="margin-top: 18px;">
+          <div class="stat-label" style="margin-bottom: 6px;">Budget Received, Scheme-wise</div>
+          <div class="list-wrap" style="max-height: 360px; overflow-x: auto;">
+            <table class="grid" style="min-width: 980px;">
+              <thead><tr>
+                <th>Scheme</th><th>Approved</th><th>Released</th><th>Balance</th>
+                <th>Total Advances</th><th>Adv Balance</th><th>To Be Credited</th><th>Expenditure</th><th>Exp Balance</th>
+                <th style="min-width:150px;">% Received</th>
+              </tr></thead>
+              <tbody id="apo_by_scheme_table"></tbody>
+            </table>
           </div>
         </div>
       </div>
+    </div>
 
+    <div class="screen" id="screen-budget">
       <div class="card">
         <div class="card-head"><h2 class="section-title">Budget</h2></div>
         <div class="form-grid">
@@ -1706,6 +1675,37 @@
             <thead><tr><th>Budget_id</th><th>Year</th><th>Scheme</th><th>HOA</th><th>QTR</th><th>AMT</th><th>Dt</th></tr></thead>
             <tbody id="bud_table"></tbody>
           </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2 class="section-title">Budget Stats</h2></div>
+        <div class="stats-board">
+          <div class="stat-card"><div class="stat-label">No. of Records</div><div class="stat-value" id="bud_stat_count">0</div></div>
+          <div class="stat-card"><div class="stat-label">Sum Amt</div><div class="stat-value" id="bud_stat_sum">0</div><div class="stat-words" id="bud_stat_sum_words"></div></div>
+          <div class="stat-card"><div class="stat-label">No. of Schemes</div><div class="stat-value" id="bud_stat_schemes">0</div></div>
+          <div class="stat-card"><div class="stat-label">No. of Years</div><div class="stat-value" id="bud_stat_years">0</div></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 18px;">
+          <div>
+            <div class="stat-label" style="margin-bottom: 6px;">Amount by Year</div>
+            <div class="list-wrap" style="max-height: 220px;">
+              <table class="grid">
+                <thead><tr><th>Year</th><th>Scheme</th><th>Amt</th></tr></thead>
+                <tbody id="bud_by_year_table"></tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div class="stat-label" style="margin-bottom: 6px;">Scheme-wise Count &amp; Sum</div>
+            <div class="list-wrap" style="max-height: 220px;">
+              <table class="grid">
+                <thead><tr><th>Scheme</th><th>Hoa</th><th>Count</th><th>Amt</th><th>Expenditure</th><th>Balance</th></tr></thead>
+                <tbody id="bud_by_scheme_table"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -5280,7 +5280,7 @@
   let currentTop = 'accounts';
   let currentAcc = 'estimate';
   let currentTok = 'advance';
-  let currentReport = 'acc';
+  let currentReport = 'establishment';
 
   function showTopTab(name) {
     currentTop = name;
@@ -5323,6 +5323,9 @@
     else if (currentTop === 'nursery') screenName = currentNursery === 'transactions' ? 'nurtxn' : 'planting';
     else if (currentAcc === 'overview') screenName = 'overview';
     else if (currentAcc === 'fsrest') screenName = 'fsrest';
+    else if (currentAcc === 'fundapp') screenName = 'report-fundapp';
+    else if (currentAcc === 'acc') screenName = 'report-acc';
+    else if (currentAcc === 'mreports') screenName = 'report-mreports';
     else if (currentAcc === 'estimate') screenName = 'estimate';
     else if (currentAcc === 'mbook') screenName = 'mbook';
     else if (currentAcc === 'apo') screenName = 'apo';

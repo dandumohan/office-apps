@@ -66,12 +66,14 @@
 
         <!-- Noting slips -->
         <div class="bg-white p-6 rounded-2xl shadow-sm mb-8">
-            <h3 class="font-bold text-yellow-600 uppercase text-sm tracking-widest mb-3">Noting Slips</h3>
+            <div id="notesHead"></div>
+            <div id="notesBody">
             <div class="flex gap-3">
                 <input id="noteText" class="flex-1 p-2 border rounded-lg" placeholder="Jot something down..." onkeydown="if(event.key==='Enter')addNote()">
                 <button onclick="addNote()" class="bg-yellow-400 text-yellow-900 px-5 py-2 rounded-lg font-bold hover:bg-yellow-500">Add Slip</button>
             </div>
             <div id="noteList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4"></div>
+            </div>
         </div>
 
         <!-- Dashboard -->
@@ -98,19 +100,19 @@
         let data = [];
 
         // Show/hide state for each board (remembered in this browser)
-        let show = { dashboard: true, tasks: true, processing: true, completed: true, box: true };
+        let show = { dashboard: false, tasks: false, processing: false, completed: false, box: false, notes: false, pinned: false };
 
         // Expand/collapse state for the month-wise boxes in the Dashboard (key: "<box>|<yyyy-mm>")
         let monthOpen = {};
         try { monthOpen = JSON.parse(localStorage.getItem('kanban_month_open')) || {}; } catch (e) {}
         // Expand/collapse state for each of the 4 month boxes
-        let mbox = { tasks: true, processing: true, completed: true, box: true };
-        try { Object.assign(mbox, JSON.parse(localStorage.getItem('kanban_mbox')) || {}); } catch (e) {}
+        let mbox = { tasks: false, processing: false, completed: false, box: false };
+        try { Object.assign(mbox, JSON.parse(localStorage.getItem('kanban_mbox_v2')) || {}); } catch (e) {}
 
         function saveMonthState() {
             try {
                 localStorage.setItem('kanban_month_open', JSON.stringify(monthOpen));
-                localStorage.setItem('kanban_mbox', JSON.stringify(mbox));
+                localStorage.setItem('kanban_mbox_v2', JSON.stringify(mbox));
             } catch (e) {}
         }
         // ---------- Noting slips (saved in this browser) ----------
@@ -175,9 +177,14 @@
             const bar = document.getElementById('pinned');
             bar.classList.toggle('hidden', !pinned.length);
             bar.innerHTML = pinned.length ? `<div class="bg-yellow-50 border border-yellow-300 rounded-2xl shadow-md p-3">
-                <p class="text-[10px] font-bold text-yellow-600 uppercase tracking-widest mb-2">📌 Pinned (${pinned.length})</p>
-                <div class="flex gap-3 overflow-x-auto pb-1">${pinned.map(n => slip(n, true)).join('')}</div>
+                <button onclick="toggleBoard('pinned')" class="w-full flex items-center justify-between ${show.pinned ? 'mb-2' : ''}">
+                    <span class="text-[10px] font-bold text-yellow-600 uppercase tracking-widest">📌 Pinned (${pinned.length})</span>
+                    <span class="text-xs text-yellow-600">${show.pinned ? '▼ Collapse' : '▶ Expand'}</span>
+                </button>
+                ${show.pinned ? `<div class="flex gap-3 overflow-x-auto pb-1">${pinned.map(n => slip(n, true)).join('')}</div>` : ''}
             </div>` : '';
+            document.getElementById('notesHead').innerHTML = header('Noting Slips', 'text-yellow-600', 'notes', notes.length);
+            document.getElementById('notesBody').classList.toggle('hidden', !show.notes);
             const rest = notes.filter(n => !n.pinned);
             document.getElementById('noteList').innerHTML = rest.length ? rest.map(n => slip(n, false)).join('')
                 : `<p class="text-xs text-slate-400">${notes.length ? 'All slips are pinned on top.' : 'No slips yet.'}</p>`;
@@ -185,11 +192,11 @@
 
         function toggleMonth(key) { monthOpen[key] = monthOpen[key] === false; saveMonthState(); render(); }
         function toggleMBox(key) { mbox[key] = !mbox[key]; saveMonthState(); render(); }
-        try { Object.assign(show, JSON.parse(localStorage.getItem('kanban_show')) || {}); } catch (e) {}
+        try { Object.assign(show, JSON.parse(localStorage.getItem('kanban_show_v3')) || {}); } catch (e) {}
 
         function toggleBoard(key) {
             show[key] = !show[key];
-            try { localStorage.setItem('kanban_show', JSON.stringify(show)); } catch (e) {}
+            try { localStorage.setItem('kanban_show_v3', JSON.stringify(show)); } catch (e) {}
             render();
         }
 
@@ -197,7 +204,7 @@
             const on = show[key];
             return `<div class="flex items-center justify-between ${on ? 'mb-4' : ''}">
                 <h3 class="font-bold ${color} uppercase text-sm tracking-widest">${label}${count === undefined ? '' : ` <span class="text-slate-300 font-normal">(${count})</span>`}</h3>
-                <button onclick="toggleBoard('${key}')" role="switch" aria-checked="${on}" title="${on ? 'Hide' : 'Show'} tasks"
+                <button onclick="toggleBoard('${key}')" role="switch" aria-checked="${on}" title="${on ? 'Collapse' : 'Expand'}"
                     class="relative w-9 h-5 rounded-full transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-300'}">
                     <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${on ? 'translate-x-4' : ''}"></span>
                 </button>

@@ -25,6 +25,9 @@
     </div>
 
     <div id="app" class="max-w-6xl mx-auto hidden">
+        <!-- Pinned slips: stay on top of the screen while scrolling -->
+        <div id="pinned" class="sticky top-0 z-20 mb-4 hidden"></div>
+
         <div class="bg-white p-6 rounded-2xl shadow-sm mb-8">
             <div class="flex flex-wrap gap-4 items-end">
                 <div class="flex-1 min-w-[200px]">
@@ -34,6 +37,10 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Due Date</label>
                     <input id="d" type="date" class="p-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Completion Date</label>
+                    <input id="cd" type="date" class="p-2 border rounded-lg">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Priority</label>
@@ -55,6 +62,16 @@
                     <button onclick="signOut()" class="ml-3 text-red-400 font-bold">Log out</button>
                 </p>
             </div>
+        </div>
+
+        <!-- Noting slips -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm mb-8">
+            <h3 class="font-bold text-yellow-600 uppercase text-sm tracking-widest mb-3">Noting Slips</h3>
+            <div class="flex gap-3">
+                <input id="noteText" class="flex-1 p-2 border rounded-lg" placeholder="Jot something down..." onkeydown="if(event.key==='Enter')addNote()">
+                <button onclick="addNote()" class="bg-yellow-400 text-yellow-900 px-5 py-2 rounded-lg font-bold hover:bg-yellow-500">Add Slip</button>
+            </div>
+            <div id="noteList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4"></div>
         </div>
 
         <!-- Dashboard -->
@@ -82,6 +99,66 @@
 
         // Show/hide state for each board (remembered in this browser)
         let show = { dashboard: true, tasks: true, processing: true, completed: true, box: true };
+
+        // Expand/collapse state for the month-wise boxes in the Dashboard (key: "<box>|<yyyy-mm>")
+        let monthOpen = {};
+        try { monthOpen = JSON.parse(localStorage.getItem('kanban_month_open')) || {}; } catch (e) {}
+        // Expand/collapse state for each of the 4 month boxes
+        let mbox = { tasks: true, processing: true, completed: true, box: true };
+        try { Object.assign(mbox, JSON.parse(localStorage.getItem('kanban_mbox')) || {}); } catch (e) {}
+
+        function saveMonthState() {
+            try {
+                localStorage.setItem('kanban_month_open', JSON.stringify(monthOpen));
+                localStorage.setItem('kanban_mbox', JSON.stringify(mbox));
+            } catch (e) {}
+        }
+        // ---------- Noting slips (saved in this browser) ----------
+        let notes = [];
+        try { notes = JSON.parse(localStorage.getItem('kanban_notes')) || []; } catch (e) {}
+        function saveNotes() { try { localStorage.setItem('kanban_notes', JSON.stringify(notes)); } catch (e) {} renderNotes(); }
+
+        function addNote() {
+            const el = document.getElementById('noteText');
+            if (!el.value.trim()) return;
+            notes.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text: el.value.trim(), pinned: false });
+            el.value = '';
+            saveNotes();
+        }
+        function pinNote(id) { const n = notes.find(x => x.id === id); if (n) { n.pinned = !n.pinned; saveNotes(); } }
+        function editNote(id) {
+            const n = notes.find(x => x.id === id); if (!n) return;
+            const t = prompt('Edit slip:', n.text);
+            if (t && t.trim()) { n.text = t.trim(); saveNotes(); }
+        }
+        function delNote(id) { notes = notes.filter(x => x.id !== id); saveNotes(); }
+
+        function slip(n, compact) {
+            return `<div class="bg-yellow-100 border border-yellow-200 rounded-lg shadow-sm p-3 ${compact ? 'w-56 shrink-0' : ''}">
+                <p class="text-sm text-yellow-900 whitespace-pre-wrap break-words">${esc(n.text)}</p>
+                <div class="flex gap-2 mt-2 items-center text-xs">
+                    <button onclick="pinNote('${n.id}')" title="${n.pinned ? 'Unpin' : 'Pin on top'}" class="${n.pinned ? 'text-red-500' : 'text-yellow-700'} font-bold">${n.pinned ? '📌 Unpin' : '📍 Pin'}</button>
+                    <button onclick="editNote('${n.id}')" class="text-blue-500 font-bold">✎</button>
+                    <button onclick="delNote('${n.id}')" class="text-red-400 ml-auto">Delete</button>
+                </div>
+            </div>`;
+        }
+
+        function renderNotes() {
+            const pinned = notes.filter(n => n.pinned);
+            const bar = document.getElementById('pinned');
+            bar.classList.toggle('hidden', !pinned.length);
+            bar.innerHTML = pinned.length ? `<div class="bg-yellow-50 border border-yellow-300 rounded-2xl shadow-md p-3">
+                <p class="text-[10px] font-bold text-yellow-600 uppercase tracking-widest mb-2">📌 Pinned (${pinned.length})</p>
+                <div class="flex gap-3 overflow-x-auto pb-1">${pinned.map(n => slip(n, true)).join('')}</div>
+            </div>` : '';
+            const rest = notes.filter(n => !n.pinned);
+            document.getElementById('noteList').innerHTML = rest.length ? rest.map(n => slip(n, false)).join('')
+                : `<p class="text-xs text-slate-400">${notes.length ? 'All slips are pinned on top.' : 'No slips yet.'}</p>`;
+        }
+
+        function toggleMonth(key) { monthOpen[key] = monthOpen[key] === false; saveMonthState(); render(); }
+        function toggleMBox(key) { mbox[key] = !mbox[key]; saveMonthState(); render(); }
         try { Object.assign(show, JSON.parse(localStorage.getItem('kanban_show')) || {}); } catch (e) {}
 
         function toggleBoard(key) {
@@ -111,8 +188,22 @@
             return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         }
 
+        // completion_date is stored as ISO (YYYY-MM-DD) so it works with a Postgres date column;
+        // it is shown everywhere as DD-MM-YYYY.
+        function toDMY(v) {
+            if (!v) return '';
+            const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+            return m ? `${m[3]}-${m[2]}-${m[1]}` : String(v);
+        }
+        function toISO(v) {
+            if (!v) return null;
+            const m = String(v).trim().match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+            if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+            return /^\d{4}-\d{2}-\d{2}$/.test(String(v).trim()) ? String(v).trim() : null;
+        }
+
         function fromRow(r) {
-            return { id: r.id, t: r.title, d: r.due_date, p: r.priority, s: r.status, boxed: !!r.boxed, sort: r.sort_order, cc: r.completed_count || 0, history: r.date_history || [] };
+            return { id: r.id, t: r.title, d: r.due_date, p: r.priority, s: r.status, boxed: !!r.boxed, sort: r.sort_order, cc: r.completed_count || 0, history: r.date_history || [], cd: toDMY(r.completion_date) };
         }
 
         async function load() {
@@ -128,9 +219,10 @@
             if (!t.value.trim()) return;
             let date = d.value ? new Date(d.value) : new Date();
             let fmt = `${date.getDate().toString().padStart(2,'0')}-${(date.getMonth()+1).toString().padStart(2,'0')}-${date.getFullYear()}`;
-            const { error } = await sb.from('tasks').insert({ title: t.value.trim(), due_date: fmt, priority: p.value, status: 'tasks', boxed: false, date_history: [] });
+            const cdEl = document.getElementById('cd');
+            const { error } = await sb.from('tasks').insert({ title: t.value.trim(), due_date: fmt, completion_date: cdEl.value || null, priority: p.value, status: 'tasks', boxed: false, date_history: [] });
             if (error) { setStatus('Add failed: ' + error.message, true); return; }
-            t.value = '';
+            t.value = ''; cdEl.value = '';
             load();
         }
 
@@ -148,6 +240,12 @@
                 history.push(item.d);
                 update.due_date = newD.trim();
                 update.date_history = history;
+            }
+
+            let newCD = prompt("Completion Date (DD-MM-YYYY, leave blank to clear):", item.cd || '');
+            if (newCD !== null && newCD.trim() !== (item.cd || '')) {
+                if (newCD.trim() === '') update.completion_date = null;
+                else if (toISO(newCD)) update.completion_date = toISO(newCD);
             }
 
             let newP = prompt("Edit Priority (low/medium/high):", item.p);
@@ -206,7 +304,7 @@
                 <p class="font-bold text-sm">${esc(item.t)}
                     ${item.cc > 0 ? `<span class="ml-2 text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">C${item.cc}</span>` : ''}
                 </p>
-                <p class="text-[10px] text-slate-400 mt-1">📅 Due: ${esc(item.d)} | ⚠️ ${esc(item.p.toUpperCase())}${inBox ? ` | 📌 ${esc(s)}` : ''}
+                <p class="text-[10px] text-slate-400 mt-1">📅 Due: ${esc(item.d)}${item.cd ? ` | 🏁 Completion: ${esc(item.cd)}` : ''} | ⚠️ ${esc(item.p.toUpperCase())}${inBox ? ` | 📌 ${esc(s)}` : ''}
                     ${item.history.length ? `<br><span class="text-slate-300 italic">Prev: ${item.history.map(esc).join(', ')}</span>` : ''}
                 </p>
                 <div class="flex gap-2 mt-3 items-center">
@@ -225,6 +323,117 @@
             const [dd, mm, yy] = String(str).split('-').map(Number);
             if (!dd || !mm || !yy) return null;
             return new Date(yy, mm - 1, dd);
+        }
+
+        const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+        // Month-wise stats table: same stats as the cards above, one row per month
+        // (a task's month = its completion date, falling back to its due date)
+        function renderMonthStats() {
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const groups = {};
+            data.forEach(i => {
+                const dt = parseDue(i.cd) || parseDue(i.d);
+                const k = dt ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}` : 'none';
+                (groups[k] = groups[k] || { dt, items: [] }).items.push(i);
+            });
+            const keys = Object.keys(groups).sort((a, b) => a === 'none' ? 1 : b === 'none' ? -1 : a.localeCompare(b));
+            if (!keys.length) return '';
+
+            const cell = (v, color) => `<td class="px-3 py-2 text-center font-bold ${v ? color : 'text-slate-300'}">${v}</td>`;
+            const rows = keys.map(k => {
+                const g = groups[k], it = g.items;
+                const open = it.filter(i => i.s !== 'completed');
+                const total = it.length;
+                const todo = it.filter(i => i.s === 'tasks').length;
+                const prog = it.filter(i => i.s === 'processing').length;
+                const done = it.filter(i => i.s === 'completed').length;
+                const overdue = open.filter(i => { const d = parseDue(i.d); return d && d < today; }).length;
+                const dueToday = open.filter(i => { const d = parseDue(i.d); return d && d.getTime() === today.getTime(); }).length;
+                const high = open.filter(i => i.p === 'high').length;
+                const parked = it.filter(i => i.boxed).length;
+                const pct = total ? Math.round(done / total * 100) : 0;
+                const label = k === 'none' ? 'No date' : `${MONTHS[g.dt.getMonth()]} ${g.dt.getFullYear()}`;
+                return `<tr class="border-t border-slate-100">
+                    <td class="px-3 py-2 font-bold text-slate-600 whitespace-nowrap">${label}</td>
+                    ${cell(total, 'text-slate-700')}${cell(todo, 'text-slate-500')}${cell(prog, 'text-amber-500')}${cell(done, 'text-emerald-500')}
+                    ${cell(overdue, 'text-red-500')}${cell(dueToday, 'text-blue-500')}${cell(high, 'text-red-500')}${cell(parked, 'text-slate-500')}
+                    <td class="px-3 py-2 min-w-[110px]">
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width:${pct}%"></div></div>
+                            <span class="text-xs font-bold text-slate-500 w-9 text-right">${pct}%</span>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            const th = t => `<th class="px-3 py-2 text-center text-[11px] font-bold text-slate-400 uppercase">${t}</th>`;
+            return `<div class="mt-6">
+                <p class="text-xs font-bold uppercase text-slate-400 mb-3">Stats by Month</p>
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50"><tr>
+                            <th class="px-3 py-2 text-left text-[11px] font-bold text-slate-400 uppercase">Month</th>
+                            ${th('Total')}${th('To do')}${th('In progress')}${th('Completed')}${th('Overdue')}${th('Due today')}${th('High (open)')}${th('In box')}${th('Completion')}
+                        </tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+        }
+
+        // Month-wise boxes: grouped by completion date (falls back to due date)
+        function renderMonthBoxes() {
+            const defs = [
+                { key: 'tasks', label: 'Tasks List', color: 'text-slate-500', pick: i => i.s === 'tasks' && !i.boxed },
+                { key: 'processing', label: 'Processing', color: 'text-amber-500', pick: i => i.s === 'processing' && !i.boxed },
+                { key: 'completed', label: 'Completed', color: 'text-emerald-500', pick: i => i.s === 'completed' && !i.boxed },
+                { key: 'box', label: 'Tasks Box', color: 'text-slate-600', pick: i => i.boxed }
+            ];
+            const html = defs.map(def => {
+                const items = data.filter(def.pick);
+                const groups = {};
+                items.forEach(i => {
+                    const dt = parseDue(i.cd) || parseDue(i.d);
+                    const k = dt ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}` : 'none';
+                    (groups[k] = groups[k] || { dt, items: [] }).items.push(i);
+                });
+                const keys = Object.keys(groups).sort((a, b) => a === 'none' ? 1 : b === 'none' ? -1 : a.localeCompare(b));
+                const open = mbox[def.key];
+                let body = '';
+                if (open) {
+                    body = keys.length ? keys.map(k => {
+                        const g = groups[k];
+                        const id = def.key + '|' + k;
+                        const isOpen = monthOpen[id] !== false;
+                        const label = k === 'none' ? 'No date' : `${MONTHS[g.dt.getMonth()]} ${g.dt.getFullYear()}`;
+                        const rows = isOpen ? g.items.map(i => {
+                            const dateTxt = i.cd ? `🏁 ${esc(i.cd)}` : `📅 ${esc(i.d)}`;
+                            const pc = i.p === 'high' ? 'border-l-red-500' : i.p === 'medium' ? 'border-l-amber-400' : 'border-l-blue-400';
+                            return `<div class="text-xs border-l-4 ${pc} bg-slate-50 rounded px-2 py-1.5 mb-1">
+                                <p class="font-semibold text-slate-600">${esc(i.t)}</p>
+                                <p class="text-[10px] text-slate-400">${dateTxt} | ${esc(i.p.toUpperCase())}</p>
+                            </div>`;
+                        }).join('') : '';
+                        return `<div class="mb-2">
+                            <button onclick="toggleMonth('${id}')" class="w-full flex items-center justify-between text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-1.5 mb-1">
+                                <span>${isOpen ? '▼' : '▶'} ${label}</span>
+                                <span class="text-slate-400 font-normal">${g.items.length}</span>
+                            </button>${rows}
+                        </div>`;
+                    }).join('') : `<p class="text-xs text-slate-300">No tasks</p>`;
+                }
+                return `<div class="p-3 rounded-xl border border-slate-200">
+                    <button onclick="toggleMBox('${def.key}')" class="w-full flex items-center justify-between ${open ? 'mb-3' : ''}">
+                        <h4 class="font-bold ${def.color} uppercase text-xs tracking-widest">${def.label} <span class="text-slate-300 font-normal">(${items.length})</span></h4>
+                        <span class="text-xs text-slate-400">${open ? '▼ Collapse' : '▶ Expand'}</span>
+                    </button>${body}
+                </div>`;
+            }).join('');
+            return `<div class="mt-6">
+                <p class="text-xs font-bold uppercase text-slate-400 mb-3">Tasks by Month</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">${html}</div>
+            </div>`;
         }
 
         function renderDashboard() {
@@ -282,10 +491,13 @@
                         ${prio('Medium', 'medium', 'bg-amber-400')}
                         ${prio('Low', 'low', 'bg-blue-400')}
                     </div>
-                </div>`);
+                </div>
+                ${renderMonthStats()}
+                ${renderMonthBoxes()}`);
         }
 
         function render() {
+            renderNotes();
             renderDashboard();
             STAGES.forEach(s => {
                 let col = document.getElementById(s);
@@ -330,7 +542,7 @@
                     const base = Date.now() / 1000;
                     const rows = items.map((i, n) => ({
                         sort_order: base + n * 0.001,
-                        title: i.t, due_date: i.d, priority: i.p || 'low',
+                        title: i.t, due_date: i.d, completion_date: toISO(i.cd), priority: i.p || 'low',
                         status: STAGES.includes(i.s) ? i.s : 'tasks',
                         boxed: !!i.boxed,
                         completed_count: i.cc || 0,

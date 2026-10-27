@@ -423,10 +423,10 @@ function wrapText(c, text, font, size, maxW) {
 // wrap that may also break after "/" (e.g. rates like 12.5/nos)
 const wrapCell = (c, text, font, size, maxW) => wrapText(c, String(text).replace(/\//g, "/ "), font, size, maxW).map(l => l.replace(/\/ /g, "/"));
 function dotted(c, x1, y, x2) { c.d.setLineDashPattern([1, 2], 0); c.line(x1, y, x2, y); c.d.setLineDashPattern([], 0); }
-function drawField(c, label, value, x, y, lineTo) {
-  c.setFont("Helvetica", 10);
+function drawField(c, label, value, x, y, lineTo, fs = 10) {
+  c.setFont("Helvetica", fs);
   const txt = label + " :"; c.drawString(x, y, txt);
-  const vx = x + sw(c, txt, "Helvetica", 10) + 4, endX = lineTo ?? vx + 150;
+  const vx = x + sw(c, txt, "Helvetica", fs) + 4, endX = lineTo ?? vx + 150;
   dotted(c, vx, y - 2, endX); c.drawString(vx + 2, y, value);
   return endX;
 }
@@ -788,10 +788,10 @@ const FA = {
 };
 const FA_COLS = [["S.\nNo.", 0.42], ["Activity", 2.35], ["Total outlay\nfor the year", 0.80], ["Amount\nreleased till\nprevious\nquarter", 0.85],
   ["Expenditure\ntill previous", 0.85], ["Balance\navailable", 0.78], ["Funds now\nrequired", 0.82], ["Remarks", 0.75]];
-const FA_WR_COLS = [["Name of the\nVSS", 1.00], ["SO\nNO", 0.60], ["Name of the work", 1.85], ["Total\nAmount\nSanctioned", 0.80],
-  ["Spent\namount by\nend of\nprevious\nmonth", 0.85], ["Amount\nnow\nrequired", 0.80], ["Amounted\nrecommended\nfor release", 0.95]];
-const WR_PG = 6.6;   // smallest readable Watch Register font; beyond this the register continues on another page
-const FA_MARGIN = 0.55 * INCH, FA_ROW_H = 15.5, WR_MAX = 7.6, WR_MIN = 5.8, WR_LEAD = 1.15, WR_ASC = 0.74, WR_DESC = 0.22;
+const FA_WR_COLS = [["Name of the\nVSS", 1.35], ["SO\nNO", 0.50], ["Name of the work", 1.75], ["Total\nAmount\nSanctioned", 0.90],
+  ["Spent\namount by\nend of\nprevious\nmonth", 0.90], ["Amount\nnow\nrequired", 0.95], ["Amounted\nrecommended\nfor release", 0.85]];
+const WR_PG = 11;   // smallest readable Watch Register font; beyond this the register continues on another page
+const FA_MARGIN = 0.55 * INCH, FA_ROW_H = 15.5, WR_MAX = 11, WR_MIN = 5.8, WR_LEAD = 1.15, WR_ASC = 0.74, WR_DESC = 0.22;
 
 const faScheme = sc => { sc = String(sc ?? "").trim(); return FA.scheme_display_map[sc] ?? schemeDisplay(sc); };
 const faQuarter = t => {
@@ -843,9 +843,9 @@ function faGeometry(cols, left, right) {
   const xs = [left]; w.forEach(x => xs.push(xs[xs.length - 1] + x));
   return [xs, w, centersOf(xs)];
 }
-function faHeader(c, cols, xs, cx, top, hh, fsz = 7.4) {
+function faHeader(c, cols, xs, cx, top, hh, fsz = 8.4) {
   c.setFont("Helvetica-Bold", fsz);
-  cols.forEach(([label], i) => { const ls = label.split("\n"); let ly = top - (hh - ls.length * 8.6) / 2 - 7; ls.forEach(l => { c.drawCentredString(cx[i], ly, l); ly -= 8.6; }); });
+  cols.forEach(([label], i) => { const ls = label.split("\n"); let ly = top - (hh - ls.length * 9.8) / 2 - 7; ls.forEach(l => { c.drawCentredString(cx[i], ly, l); ly -= 9.8; }); });
   c.line(xs[0], top - hh, xs[xs.length - 1], top - hh);
 }
 function faGrid(c, xs, top, bottom, hh, nRows, rowH) {
@@ -856,47 +856,47 @@ function faGrid(c, xs, top, bottom, hh, nRows, rowH) {
   c.setLineWidth(1);
 }
 function faSignatures(c, y, left, right, cs) {
-  c.setFont("Helvetica", 8.5); c.drawString(left, y - 34, "Section Officer (Signature)");
-  const mid = (left + right) / 2; c.setFont("Helvetica-Bold", 8.5);
-  CONFIG.fro_block.forEach((ln, i) => c.drawCentredString(mid, y - 24 - i * 10, ln));
-  c.setFont("Helvetica", 8.5); c.drawCentredString(mid, y - 24 - CONFIG.fro_block.length * 10 - 2, "Range Officer (Signature)");
+  c.setFont("Helvetica", 10); c.drawString(left, y - 38, "Section Officer (Signature)");
+  const mid = (left + right) / 2; c.setFont("Helvetica-Bold", 10);
+  CONFIG.fro_block.forEach((ln, i) => c.drawCentredString(mid, y - 26 - i * 11.5, ln));
+  c.setFont("Helvetica", 10); c.drawCentredString(mid, y - 26 - CONFIG.fro_block.length * 11.5 - 2, "Range Officer (Signature)");
   const cx = right - 1.25 * INCH;
-  c.setFont("Helvetica-Bold", 9.5); c.drawCentredString(cx, y, "CHAIRMAN");
-  c.setFont("Helvetica-Bold", 8.5); c.drawCentredString(cx, y - 11, `${cs.vss_short.toUpperCase()} V.S.S.`);
-  c.setFont("Helvetica", 8.5); c.drawCentredString(cx, y - 22, "Chairperson (Signature)");
+  c.setFont("Helvetica-Bold", 11); c.drawCentredString(cx, y, "CHAIRMAN");
+  c.setFont("Helvetica-Bold", 10); c.drawCentredString(cx, y - 13, `${cs.vss_short.toUpperCase()} V.S.S.`);
+  c.setFont("Helvetica", 10); c.drawCentredString(cx, y - 25, "Chairperson (Signature)");
 }
 const faMoney = v => v == null ? "" : Math.abs(v) < 1 ? "NIL" : fmtAmount(v);
 const truncFit = (c, t, f, s, w) => { t = String(t); if (sw(c, t, f, s) <= w) return t; while (t && sw(c, t + "...", f, s) > w) t = t.slice(0, -1); return t.trimEnd() + "..."; };
 
 function drawFA1(c, cs) {
   const left = FA_MARGIN, right = PAGE_W - FA_MARGIN; let y = PAGE_H - 0.5 * INCH;
-  c.setFont("Helvetica", 9.5); c.drawRightString(right, y, `Scheme: ${cs.scheme}`);
-  y -= 18; c.setFont("Times-Bold", 13.5); c.drawCentredString(PAGE_W / 2, y, "RESOLUTION OF VSS FOR RELEASE OF FUNDS");
-  y -= 15; c.setFont("Times-Bold", 11); c.drawCentredString(PAGE_W / 2, y, "(FUND APPLICATION:: VA-2)");
+  c.setFont("Helvetica", 11); c.drawRightString(right, y, `Scheme: ${cs.scheme}`);
+  y -= 20; c.setFont("Times-Bold", 15.5); c.drawCentredString(PAGE_W / 2, y, "RESOLUTION OF VSS FOR RELEASE OF FUNDS");
+  y -= 15; c.setFont("Times-Bold", 12.5); c.drawCentredString(PAGE_W / 2, y, "(FUND APPLICATION:: VA-2)");
   y -= 26; const rcx = PAGE_W / 2 + 0.15 * INCH;
-  drawField(c, "Division", CONFIG.division, left, y, rcx - 20); drawField(c, "VSS Name", cs.vss_short, rcx, y, right);
-  y -= 18; drawField(c, "Range", CONFIG.range, left, y, rcx - 20); drawField(c, "Year", cs.year, rcx, y, right);
-  y -= 18; drawField(c, "Section", CONFIG.section, left, y, rcx - 20);
-  c.setFont("Helvetica", 9.5); c.drawString(rcx, y, "Quarter: (Indicate month included)");
-  y -= 13; c.drawString(rcx + 12, y, cs.quarter);
+  drawField(c, "Division", CONFIG.division, left, y, rcx - 20, 11); drawField(c, "VSS Name", cs.vss_short, rcx, y, right, 11);
+  y -= 21; drawField(c, "Range", CONFIG.range, left, y, rcx - 20, 11); drawField(c, "Year", cs.year, rcx, y, right, 11);
+  y -= 21; drawField(c, "Section", CONFIG.section, left, y, rcx - 20, 11);
+  c.setFont("Helvetica", 11); c.drawString(rcx, y, "Quarter: (Indicate month included)");
+  y -= 15; c.drawString(rcx + 12, y, cs.quarter);
 
-  y -= 22; c.setFont("Helvetica", 9.5);
+  y -= 26; c.setFont("Helvetica", 11);
   let seg = "The managing committee of the VSS"; c.drawString(left, y, seg);
-  let x = left + sw(c, seg + " ", "Helvetica", 9.5); const vw = Math.max(120, sw(c, cs.vss_short, "Helvetica", 9.5) + 12);
+  let x = left + sw(c, seg + " ", "Helvetica", 11); const vw = Math.max(120, sw(c, cs.vss_short, "Helvetica", 11) + 12);
   dotted(c, x, y - 2, x + vw); c.drawString(x + 3, y, cs.vss_short); x += vw + 4;
-  seg = "its meeting held on"; c.drawString(x, y, seg); x += sw(c, seg + " ", "Helvetica", 9.5);
+  seg = "its meeting held on"; c.drawString(x, y, seg); x += sw(c, seg + " ", "Helvetica", 11);
   dotted(c, x, y - 2, Math.min(x + 95, right)); c.drawString(x + 3, y, fmtDate(cs.application_date));
-  y -= 14; seg = "resolved to request the"; c.drawString(left, y, seg); x = left + sw(c, seg + " ", "Helvetica", 9.5);
-  const aw = sw(c, FA.release_authority, "Helvetica", 9.5) + 12;
+  y -= 17; seg = "resolved to request the"; c.drawString(left, y, seg); x = left + sw(c, seg + " ", "Helvetica", 11);
+  const aw = sw(c, FA.release_authority, "Helvetica", 11) + 12;
   dotted(c, x, y - 2, x + aw); c.drawString(x + 3, y, FA.release_authority); x += aw + 4;
-  c.drawString(x, y, "for release of funds as detailed below:");
+  seg = "for release of funds as detailed below:"; if (x + sw(c, seg, "Helvetica", 11) > right) { y -= 15; x = left; } c.drawString(x, y, seg);
 
-  const top = y - 14, bottom = 2.55 * INCH, hh = 46, [xs, widths, cx] = faGeometry(FA_COLS, left, right);
+  const top = y - 14, bottom = 2.8 * INCH, hh = 50, [xs, widths, cx] = faGeometry(FA_COLS, left, right);
   // Each record is ONE ruled row: its text wraps inside the cell, the row grows to fit, and every value is centred vertically in that row.
   const bodyH = top - hh - bottom, totH = 20, soTxt = `${cs.so_label} ${cs.so_num}/${cs.so_year}`;
-  let fs = 8, lines, soFs, rowH;
+  let fs = 10, lines, soFs, rowH;
   for (;;) {
-    lines = wrapText(c, cs.name_of_work, "Helvetica", fs, widths[1] - 8);
+    lines = wrapText(c, cs.name_of_work, "Helvetica", fs, widths[1] - 12);
     soFs = fs; while (soFs > 5.5 && sw(c, soTxt, "Helvetica-Bold", soFs) > widths[1] - 8) soFs -= 0.2;   // S.O. No. stays on one line
     rowH = (lines.length + 1) * fs * 1.25 + 8;
     if (rowH <= bodyH - totH || fs <= 6) break; fs -= 0.2;
@@ -908,69 +908,69 @@ function drawFA1(c, cs) {
   c.line(xs[0], ry, xs[xs.length - 1], ry); c.line(xs[0], tb, xs[xs.length - 1], tb);
   const mid = bt - rowH / 2, vy = mid - 3;                       // vertical centre of the data row
   const LH = fs * 1.25, blockTop = mid + ((lines.length + 1) * LH) / 2 - LH * 0.78;
-  c.setFont("Helvetica", 8.5); c.drawCentredString(cx[0], vy, "1");
-  c.setFont("Helvetica", fs); lines.forEach((ln, i) => c.drawString(xs[1] + 4, blockTop - i * LH, ln));
-  c.setFont("Helvetica-Bold", soFs); c.drawString(xs[1] + 4, blockTop - lines.length * LH, soTxt);
-  c.setFont("Helvetica", 8.5);
+  c.setFont("Helvetica", 10); c.drawCentredString(cx[0], vy, "1");
+  c.setFont("Helvetica", fs); lines.forEach((ln, i) => c.drawString(xs[1] + 6, blockTop - i * LH, ln));
+  c.setFont("Helvetica-Bold", soFs); c.drawString(xs[1] + 6, blockTop - lines.length * LH, soTxt);
+  c.setFont("Helvetica", 9.5);
   c.drawCentredString(cx[2], vy, faMoney(cs.sanctioned)); c.drawCentredString(cx[3], vy, faMoney(cs.released_prev));
   c.drawCentredString(cx[4], vy, faMoney(cs.spent_prev)); c.drawCentredString(cx[5], vy, faMoney(cs.balance_available));
   c.drawCentredString(cx[6], vy, fmtAmount(cs.total));
-  const ty = bottom + totH / 2 - 3; c.setFont("Helvetica-Bold", 8.5);
+  const ty = bottom + totH / 2 - 3; c.setFont("Helvetica-Bold", 10);
   c.drawString(xs[0] + 4, ty, "TOTAL :"); c.drawCentredString(cx[6], ty, fmtAmount(cs.total));
 
-  let fy = bottom - 20; c.setFont("Helvetica", 9.5);
+  let fy = bottom - 22; c.setFont("Helvetica", 11);
   seg = "        It is requested to release the above funds to Joint Account No."; c.drawString(left, fy, seg);
-  x = left + sw(c, seg + " ", "Helvetica", 9.5); const acct = String(cs.joint_account_no || ""), acw = Math.max(115, sw(c, acct, "Helvetica", 9.5) + 12);
+  x = left + sw(c, seg + " ", "Helvetica", 11); const acct = String(cs.joint_account_no || ""), acw = Math.max(115, sw(c, acct, "Helvetica", 11) + 12);
   dotted(c, x, fy - 2, Math.min(x + acw, right - 30)); c.drawString(x + 3, fy, acct); c.drawRightString(right, fy, "held");
-  fy -= 15; c.drawString(left, fy, "in"); x = left + sw(c, "in ", "Helvetica", 9.5);
-  const bw = sw(c, FA.bank_name, "Helvetica", 9.5) + 16; dotted(c, x, fy - 2, x + bw); c.drawString(x + 3, fy, FA.bank_name); x += bw + 4;
-  seg = "(Name of the Bank)"; c.drawString(x, fy, seg); x += sw(c, seg + " ", "Helvetica", 9.5);
+  fy -= 18; c.drawString(left, fy, "in"); x = left + sw(c, "in ", "Helvetica", 11);
+  const bw = sw(c, FA.bank_name, "Helvetica", 11) + 16; dotted(c, x, fy - 2, x + bw); c.drawString(x + 3, fy, FA.bank_name); x += bw + 4;
+  seg = "(Name of the Bank)"; c.drawString(x, fy, seg); x += sw(c, seg + " ", "Helvetica", 11);
   dotted(c, x, fy - 2, Math.min(x + 120, right)); c.drawString(x + 3, fy, FA.bank_branch);
-  faSignatures(c, fy - 30, left, right, cs);
+  faSignatures(c, fy - 34, left, right, cs);
 }
 
 function drawFA2(c, cs) {
   const left = FA_MARGIN, right = PAGE_W - FA_MARGIN; let y = PAGE_H - 0.5 * INCH;
-  c.setFont("Helvetica", 9.5); c.drawRightString(right, y, `Scheme: ${cs.scheme}`);
-  y -= 26; c.setFont("Times-Roman", 12); c.drawCentredString(PAGE_W / 2, y, "Watch Register for recommending advances to VSS (VA – 2A)");
-  y -= 24; let x = drawField(c, "Division", CONFIG.division, left, y, left + 1.55 * INCH);
-  x = drawField(c, "Range", CONFIG.range, x + 22, y, x + 22 + 1.5 * INCH); drawField(c, "Section", CONFIG.section, x + 22, y, right);
+  c.setFont("Helvetica", 11); c.drawRightString(right, y, `Scheme: ${cs.scheme}`);
+  y -= 28; c.setFont("Times-Roman", 14); c.drawCentredString(PAGE_W / 2, y, "Watch Register for recommending advances to VSS (VA – 2A)");
+  y -= 26; let x = drawField(c, "Division", CONFIG.division, left, y, left + 1.55 * INCH, 11);
+  x = drawField(c, "Range", CONFIG.range, x + 22, y, x + 22 + 1.5 * INCH, 11); drawField(c, "Section", CONFIG.section, x + 22, y, right, 11);
 
-  const top = y - 16, bottom = 2.55 * INCH, hh = 52, [xs, widths, cx] = faGeometry(FA_WR_COLS, left, right);
+  const top = y - 16, bottom = 2.8 * INCH, hh = 58, [xs, widths, cx] = faGeometry(FA_WR_COLS, left, right);
   const workW = widths[2] - 8, bodyH = top - hh - bottom, totH = 20;
   // Each record (the work, then every item) is ONE ruled row; text wraps inside its cell, the row grows to fit,
   // and all values in the row are centred vertically so the data lines up.
   let fs = WR_MAX, rows, total;
   for (;;) {
-    const LH = fs * 1.25, mk = (cells, amt) => { const n = Math.max(1, ...cells.map(x => x.length)); return { cells, amt, n, h: n * LH + 7 }; };
+    const LH = fs * 1.25, wf = 11, WLH = wf * 1.25, mk = (cells, amt) => { const n = Math.max(1, cells[0].length, cells[1].length), nw = cells[2].length; return { cells, amt, n, h: Math.max(n * LH, nw * WLH) + 7 }; };
     rows = [];
     const soL = wrapText(c, `${cs.so_label.replace(".So No.", "SO ")}${cs.so_num}`, "Helvetica", fs, widths[1] - 4); if (cs.so_year) soL.push(cs.so_year);
-    rows.push({ ...mk([wrapText(c, cs.vss_short, "Helvetica", fs, widths[0] - 6), soL, wrapText(c, cs.name_of_work, "Helvetica", fs, workW)]), main: true });
+    rows.push({ ...mk([wrapText(c, cs.vss_short, "Helvetica", fs, widths[0] - 6), soL, wrapText(c, cs.name_of_work, "Helvetica", wf, workW)]), main: true });
     cs.items.forEach(it => {   // task description, then its quantity, rate and amount on the next line
       const nstr = n => String(Number(Number(n).toFixed(3))), hasQ = it.qnty != null && it.qnty !== 0, unit = hasQ ? (it.unit || "") : "", perTxt = (it.rate > 0 && it.unit) ? ` per ${it.per || "1"} ${it.unit}` : "",
         segs = [it.qnty != null ? `Qty: ${nstr(it.qnty)}${unit ? " " + unit : ""}` : "", it.rate != null ? `Rate: Rs. ${nstr(it.rate)}${perTxt}` : "", `Amount: Rs. ${fmtAmount(it.amount)}`].filter(Boolean);
-      const detL = []; segs.forEach(sg => { const last = detL[detL.length - 1]; if (last !== undefined && sw(c, last + "  |  " + sg, "Helvetica", fs) <= workW) detL[detL.length - 1] = last + "  |  " + sg; else detL.push(sg); });   // Qty | Rate | Amount, never split mid-item
-      rows.push(mk([[], [], [...wrapText(c, `(${it.sl_no}) ${it.description}`, "Helvetica", fs, workW), ...detL]], it.amount));
+      const detL = []; segs.forEach(sg => { const last = detL[detL.length - 1]; if (last !== undefined && sw(c, last + "  |  " + sg, "Helvetica", wf) <= workW) detL[detL.length - 1] = last + "  |  " + sg; else detL.push(sg); });   // Qty | Rate | Amount, never split mid-item
+      rows.push(mk([[], [], [...wrapText(c, `(${it.sl_no}) ${it.description}`, "Helvetica", wf, workW), ...detL]], it.amount));
     });
     total = rows.reduce((a, r) => a + r.h, 0);
     if (total <= bodyH - totH || fs <= WR_PG) break;
     fs = Math.max(WR_PG, Math.round((fs - 0.2) * 10) / 10);
   }
-  const LH = fs * 1.25, bt = top - hh, tb = bottom + totH;
+  const LH = fs * 1.25, wf = 11, WLH = wf * 1.25, bt = top - hh, tb = bottom + totH;
   // Split the rows over as many pages as needed (a work with many items does not fit on one page at a readable size).
   // Every page repeats the heading and column titles; the Total and signatures go on the last page only.
   const pages = [[]]; let used = 0;
   rows.forEach(r => { if (used + r.h > bodyH && pages[pages.length - 1].length) { pages.push([]); used = 0; } pages[pages.length - 1].push(r); used += r.h; });
   const lastH = pages[pages.length - 1].reduce((a, r) => a + r.h, 0);
   if (lastH > bodyH - totH && pages[pages.length - 1].length > 1) { const mv = pages[pages.length - 1].pop(); pages.push([mv]); }
-  const block = (ls, align, x, mid) => { const t = mid + (ls.length * LH) / 2 - LH * 0.78; ls.forEach((ln, i) => align === "c" ? c.drawCentredString(x, t - i * LH, ln) : c.drawString(x, t - i * LH, ln)); };
+  const block = (ls, align, x, mid, lh = LH) => { const t = mid + (ls.length * lh) / 2 - lh * 0.78; ls.forEach((ln, i) => align === "c" ? c.drawCentredString(x, t - i * lh, ln) : c.drawString(x, t - i * lh, ln)); };
   pages.forEach((pr, pi) => {
     const isLast = pi === pages.length - 1;
     if (pi) {   // continuation page: repeat the heading
-      c.newPage(); c.setFont("Helvetica", 9.5); c.drawRightString(right, PAGE_H - 0.5 * INCH, `Scheme: ${cs.scheme}`);
-      let yy = PAGE_H - 0.5 * INCH - 26; c.setFont("Times-Roman", 12); c.drawCentredString(PAGE_W / 2, yy, "Watch Register for recommending advances to VSS (VA – 2A) - Contd.");
-      yy -= 24; let xx = drawField(c, "Division", CONFIG.division, left, yy, left + 1.55 * INCH);
-      xx = drawField(c, "Range", CONFIG.range, xx + 22, yy, xx + 22 + 1.5 * INCH); drawField(c, "Section", CONFIG.section, xx + 22, yy, right);
+      c.newPage(); c.setFont("Helvetica", 11); c.drawRightString(right, PAGE_H - 0.5 * INCH, `Scheme: ${cs.scheme}`);
+      let yy = PAGE_H - 0.5 * INCH - 26; c.setFont("Times-Roman", 14); c.drawCentredString(PAGE_W / 2, yy, "Watch Register for recommending advances to VSS (VA – 2A) - Contd.");
+      yy -= 26; let xx = drawField(c, "Division", CONFIG.division, left, yy, left + 1.55 * INCH, 11);
+      xx = drawField(c, "Range", CONFIG.range, xx + 22, yy, xx + 22 + 1.5 * INCH, 11); drawField(c, "Section", CONFIG.section, xx + 22, yy, right, 11);
     }
     c.setLineWidth(1); c.rect(xs[0], bottom, xs[xs.length - 1] - xs[0], top - bottom);
     xs.slice(1, -1).forEach(x => c.line(x, bottom, x, top));
@@ -981,54 +981,54 @@ function drawFA2(c, cs) {
       const mid = ry - r.h / 2, vy = mid - fs * 0.35; ry -= r.h;
       c.setFont("Helvetica", fs);
       if (r.main) { block(r.cells[0], "c", cx[0], mid); block(r.cells[1], "c", cx[1], mid); }
-      block(r.cells[2], "l", xs[2] + 4, mid);
+      c.setFont("Helvetica", wf); block(r.cells[2], "l", xs[2] + 4, mid, WLH); c.setFont("Helvetica", fs);
       if (r.main) { c.drawCentredString(cx[3], vy, faMoney(cs.sanctioned)); c.drawCentredString(cx[4], vy, faMoney(cs.spent_prev)); }
-      else c.drawCentredString(cx[5], vy, fmtAmount(r.amt));
+      else { c.setFont("Helvetica", wf); c.drawCentredString(cx[5], mid - wf * 0.35, fmtAmount(r.amt)); c.setFont("Helvetica", fs); }
       if (ry > (isLast ? tb : bottom) + 0.5 && i < pr.length - 1) c.line(xs[0], ry, xs[xs.length - 1], ry);
     });
     if (isLast) {
       const ty = bottom + totH / 2 - 3; c.setFont("Helvetica-Bold", Math.max(fs + 0.2, WR_PG));
       c.drawCentredString(cx[4], ty, "Total"); c.drawCentredString(cx[5], ty, fmtAmount(cs.total));
-      faSignatures(c, bottom - 26, left, right, cs);
-    } else { c.setFont("Helvetica-Oblique", 8); c.drawRightString(right - 4, bottom - 12, "Contd. on next page"); }
+      faSignatures(c, bottom - 26 - 2 * 13, left, right, cs);   // two blank lines above the Chairman stamp
+    } else { c.setFont("Helvetica-Oblique", 9.5); c.drawRightString(right - 4, bottom - 12, "Contd. on next page"); }
   });
 }
 
 function drawFA3(c, cs) {
   const left = FA_MARGIN + 0.15 * INCH, right = PAGE_W - FA_MARGIN; let y = PAGE_H - 1.4 * INCH;
-  c.setFont("Helvetica", 10); c.drawString(PAGE_W / 2 + 0.1 * INCH, y, "LOP No.");
+  c.setFont("Helvetica", 11.5); c.drawString(PAGE_W / 2 + 0.1 * INCH, y, "LOP No.");
   dotted(c, PAGE_W / 2 + 0.75 * INCH, y - 2, PAGE_W / 2 + 1.75 * INCH); c.drawRightString(right, y, "-200");
-  y -= 26; c.setFont("Times-Bold", 17); c.drawCentredString(PAGE_W / 2, y, "HAND RECEIPT");
+  y -= 29; c.setFont("Times-Bold", 17); c.drawCentredString(PAGE_W / 2, y, "HAND RECEIPT");
   let w = sw(c, "HAND RECEIPT", "Times-Bold", 17); c.setLineWidth(1); c.line(PAGE_W / 2 - w / 2, y - 3, PAGE_W / 2 + w / 2, y - 3);
   y -= 22; c.drawCentredString(PAGE_W / 2, y, "VA 6 A"); w = sw(c, "VA 6 A", "Times-Bold", 17); c.line(PAGE_W / 2 - w / 2, y - 3, PAGE_W / 2 + w / 2, y - 3);
-  const lx = left, rx = PAGE_W / 2 + 0.2 * INCH, vx = rx + 1.1 * INCH;
-  y -= 30; c.setFont("Helvetica", 10); c.drawString(lx, y, "Passed by me"); c.drawString(lx + 1.55 * INCH, y, ":");
+  const lx = left, rx = PAGE_W / 2 - 0.4 * INCH, vx = rx + 1.3 * INCH;
+  y -= 30; c.setFont("Helvetica", 11.5); c.drawString(lx, y, "Passed by me"); c.drawString(lx + 1.55 * INCH, y, ":");
   c.drawString(rx, y, "Name of payee"); c.drawString(vx - 10, y, ":");
-  c.setFont("Helvetica", 9.5); c.drawString(vx, y, `CHAIRMAN, ${cs.vss_short.toUpperCase()} V.S.S.`);
+  c.setFont("Helvetica", 11); c.drawString(vx, y, `CHAIRMAN, ${cs.vss_short.toUpperCase()} V.S.S.`);
   [["1. Pay by Cash", "Scheme", cs.scheme], ["2. Pay by Cheque", "Vor. No.", "-"], ["3. Paid by Me", "S.O. No.", `${cs.so_num}/${cs.so_year}`]].forEach(([l, rl, rv]) => {
-    y -= 18; c.setFont("Helvetica", 10); c.drawString(lx, y, l); c.drawString(lx + 1.55 * INCH, y, ":"); c.drawString(rx, y, rl); c.drawString(vx - 10, y, ":");
-    c.setFont("Helvetica", 9.5); c.drawString(vx, y, String(rv));
+    y -= 21; c.setFont("Helvetica", 11.5); c.drawString(lx, y, l); c.drawString(lx + 1.55 * INCH, y, ":"); c.drawString(rx, y, rl); c.drawString(vx - 10, y, ":");
+    c.setFont("Helvetica", 11); c.drawString(vx, y, String(rv));
   });
-  y -= 18; c.setFont("Helvetica", 10); c.drawString(rx, y, "M.B. No."); c.drawString(vx - 10, y, ":"); c.drawString(vx, y, "-");
+  y -= 21; c.setFont("Helvetica", 11.5); c.drawString(rx, y, "M.B. No."); c.drawString(vx - 10, y, ":"); c.drawString(vx, y, "-");
   c.drawString(vx + 0.9 * INCH, y, "Page No."); c.drawString(vx + 1.7 * INCH, y, "-");
 
-  y -= 34; c.setFont("Helvetica", 10); let seg = "RECEIVED From"; c.drawString(left, y, seg);
-  let x = left + sw(c, seg + " ", "Helvetica", 10); dotted(c, x, y - 2, right); c.setFont("Helvetica", 9.5); c.drawString(x + 3, y, FA.received_from);
-  y -= 24; c.setFont("Helvetica", 10); seg = "The sum of (Rs."; c.drawString(left, y, seg); x = left + sw(c, seg + " ", "Helvetica", 10);
-  const amt = `${indianComma(cs.total)}/-`; c.setFont("Helvetica", 9.5); c.drawString(x + 3, y, amt);
-  x += Math.max(1.05 * INCH, sw(c, amt, "Helvetica", 9.5) + 12); c.setFont("Helvetica", 10);
-  seg = ") Rupees"; c.drawString(x, y, seg); x += sw(c, seg + " ", "Helvetica", 10);
-  const wl = wrapText(c, `${cs.total_words} only`, "Helvetica", 9.5, right - x);
-  dotted(c, x, y - 2, right); c.setFont("Helvetica", 9.5); c.drawString(x + 3, y, wl[0]);
-  wl.slice(1).forEach(ex => { y -= 16; dotted(c, left, y - 2, right); c.drawString(left + 3, y, ex); });
+  y -= 34; c.setFont("Helvetica", 11.5); let seg = "RECEIVED From"; c.drawString(left, y, seg);
+  let x = left + sw(c, seg + " ", "Helvetica", 11.5); dotted(c, x, y - 2, right); c.setFont("Helvetica", 11); c.drawString(x + 3, y, FA.received_from);
+  y -= 27; c.setFont("Helvetica", 11.5); seg = "The sum of (Rs."; c.drawString(left, y, seg); x = left + sw(c, seg + " ", "Helvetica", 11.5);
+  const amt = `${indianComma(cs.total)}/-`; c.setFont("Helvetica", 11); c.drawString(x + 3, y, amt);
+  x += Math.max(1.05 * INCH, sw(c, amt, "Helvetica", 11) + 12); c.setFont("Helvetica", 11.5);
+  seg = ") Rupees"; c.drawString(x, y, seg); x += sw(c, seg + " ", "Helvetica", 11.5);
+  const wl = wrapText(c, `${cs.total_words} only`, "Helvetica", 11, right - x);
+  dotted(c, x, y - 2, right); c.setFont("Helvetica", 11); c.drawString(x + 3, y, wl[0]);
+  wl.slice(1).forEach(ex => { y -= 19; dotted(c, left, y - 2, right); c.drawString(left + 3, y, ex); });
 
-  y -= 26; c.setFont("Helvetica", 10); seg = "Name of the works or purpose for which payment is made."; c.drawString(left, y, seg);
-  x = left + sw(c, seg + " ", "Helvetica", 10); c.setFont("Helvetica", 9.5);
-  const pl = wrapText(c, `for ${cs.name_of_work}`, "Helvetica", 9.5, right - x); c.drawString(x + 3, y, pl[0]);
+  y -= 29; c.setFont("Helvetica", 11.5); seg = "Name of the works or purpose for which payment is made."; c.drawString(left, y, seg);
+  x = left + sw(c, seg + " ", "Helvetica", 11.5); c.setFont("Helvetica", 11);
+  const pl = wrapText(c, `for ${cs.name_of_work}`, "Helvetica", 11, right - x); c.drawString(x + 3, y, pl[0]);
   const rest = pl.slice(1).join(" ");
-  if (rest) wrapText(c, rest, "Helvetica", 9.5, right - left).forEach(ln => { y -= 16; c.drawString(left, y, ln); });
-  y -= 70; c.setFont("Helvetica", 10); c.drawString(left, y, "Date"); c.drawString(left + 0.75 * INCH, y, ":"); c.drawString(left, y - 20, "Witness:");
-  c.setFont("Helvetica", 9); c.drawCentredString(right - 1.3 * INCH, y - 11, "Signature of Payee");
+  if (rest) wrapText(c, rest, "Helvetica", 11, right - left).forEach(ln => { y -= 19; c.drawString(left, y, ln); });
+  y -= 76; c.setFont("Helvetica", 11.5); c.drawString(left, y, "Date"); c.drawString(left + 0.75 * INCH, y, ":"); c.drawString(left, y - 20, "Witness:");
+  c.setFont("Helvetica", 10.5); c.drawCentredString(right - 1.3 * INCH, y - 11, "Signature of Payee");
 }
 
 function generateFA(data, { esti, batch, date }) {

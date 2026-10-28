@@ -1135,7 +1135,7 @@
           </div>
           <div class="field-row">
             <label>Scheme</label>
-            <input type="text" id="est_scheme" class="autosize" data-min="90" data-max="240">
+            <input type="text" id="est_scheme" class="autosize" data-min="90" data-max="240" list="est_scheme_list"><datalist id="est_scheme_list"></datalist>
           </div>
           <div class="field-row" style="grid-column: span 2;">
             <label>Esti_Description</label>
@@ -1359,118 +1359,25 @@
               <button class="action" onclick="cancelMbookAttachmentEdit()">Cancel / New</button>
             </div>
             <div class="status" id="mb_status_msg"></div>
+          <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Existing Mbook Attachments</div>
+          <div class="list-wrap" style="max-height:320px;">
+            <table class="grid">
+              <thead><tr><th>Estimate</th><th>Task</th><th>Voucher No</th><th>MBook No</th><th>Page From</th><th>Page To</th><th>Payee Name</th><th>Work From</th><th>Work To</th><th>Measured By</th><th>Measured Dt</th><th>Check Measured By</th><th>Check Measured Dt</th><th>Test Checked By</th><th>Test Checked Dt</th><th>Actions</th></tr></thead>
+              <tbody id="mb_list_table"></tbody>
+            </table>
+          </div>
           </div>
 
-          <div class="voucher-form-side">
-            <div class="scheme-card-title" style="font-size:13px; margin-bottom:4px;">Issue Mbook <span class="stat-label">(one-time, per physical book)</span></div>
-            <div class="field-row">
-              <label>Scheme</label>
-              <select id="mbi_scheme" onchange="loadMbiEstimateOptions()"><option value="">Select scheme</option></select>
-            </div>
-            <div class="field-row">
-              <label>Estimate</label>
-              <select id="mbi_esti"><option value="">Select scheme first</option></select>
-            </div>
-            <div class="field-row">
-              <label>Year</label>
-              <select id="mbi_year"></select>
-            </div>
-            <div class="field-row"><label>Mbook No</label><input type="text" id="mbi_no"></div>
-            <div class="field-pair">
-              <div class="field-row"><label>Pages From</label><input type="number" id="mbi_pages_from" value="1"></div>
-              <div class="field-row"><label>Pages To</label><input type="number" id="mbi_pages_to" value="0"></div>
-            </div>
-            <div class="field-pair">
-              <div class="field-row">
-                <label>Issued By</label>
-                <input type="text" id="mbi_issued_by" list="mbi_issued_by_list" placeholder="Select or type new">
-                <datalist id="mbi_issued_by_list"></datalist>
-              </div>
-              <div class="field-row"><label>Issue Date</label><input type="date" id="mbi_issue_date"></div>
-            </div>
-            <div class="btn-row" style="margin-top:10px;">
-              <button class="action" onclick="updateMbookIssuedRecord()">Update</button>
-              <button class="action" onclick="deleteMbookIssuedRecord()">Delete</button>
-              <button class="action primary" onclick="saveMbookIssued()">Save</button>
-              <button class="action" onclick="clearMbookIssuedForm()">New</button>
-            </div>
-            <div class="status" id="mbi_status_msg"></div>
 
-            <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Issued Mbooks <span class="stat-label">(click a row to edit)</span></div>
-            <div class="list-wrap" style="max-height:200px;">
-              <table class="grid">
-                <thead><tr><th>Year</th><th>Mbook No</th><th>Pages</th><th>Issue Date</th><th>Issued By</th><th>Scheme</th><th>Estimate</th></tr></thead>
-                <tbody id="mbi_list_table"></tbody>
-              </table>
-            </div>
-
-            <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Mbook Usage</div>
-            <div class="list-wrap" style="max-height:200px;">
-              <table class="grid">
-                <thead><tr><th>Mbook No</th><th>Total Pages</th><th>Pages Used</th><th>Next Page</th><th>Pages Available</th></tr></thead>
-                <tbody id="mb_usage_table"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="voucher-form-side">
-            <div class="scheme-card-title" style="font-size:13px; margin-bottom:4px;">Master Withdrawal Accounts</div>
-            <div class="field-row"><label>Bank</label><input type="text" id="wa_bank"></div>
-            <div class="field-row"><label>Branch</label><input type="text" id="wa_branch"></div>
-            <div class="field-row"><label>Place</label><input type="text" id="wa_place"></div>
-            <div class="field-row"><label>Account No</label><input type="text" id="wa_account_no"></div>
-            <div class="field-row"><label>IFSC Code</label><input type="text" id="wa_ifsc"></div>
-            <div class="field-row"><label>Name of the Account</label><input type="text" id="wa_name_of_account"></div>
-            <div class="field-row"><label>Drawing Authorities</label><input type="text" id="wa_drawing_authorities"></div>
-            <div class="field-row"><label>No. of Cheque Books Issued</label><input type="number" id="wa_cheque_books" value="0"></div>
-            <div class="btn-row" style="margin-top:10px;">
-              <button class="action" onclick="updateWithdrawalAccountRecord()">Update</button>
-              <button class="action" onclick="deleteWithdrawalAccountRecord()">Delete</button>
-              <button class="action primary" onclick="saveWithdrawalAccount()">Save</button>
-              <button class="action" onclick="clearWithdrawalAccountForm()">New</button>
-            </div>
-            <div class="status" id="wa_status_msg"></div>
-
-            <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Accounts <span class="stat-label">(click a row to edit)</span></div>
-            <div class="list-wrap" style="max-height:220px;">
-              <table class="grid">
-                <thead><tr><th>Bank</th><th>Branch</th><th>Place</th><th>Account No</th><th>IFSC</th><th>Name of Account</th><th>Drawing Authorities</th><th>Cheque Books</th></tr></thead>
-                <tbody id="wa_list_table"></tbody>
-              </table>
-            </div>
-
-            <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:4px;">Cheque Books <span class="stat-label" id="cb_account_label">(select an account above)</span></div>
-            <div class="field-row"><label>Cheque Book No</label><input type="text" id="cb_book_no"></div>
-            <div class="field-pair">
-              <div class="field-row"><label>Leaves No From</label><input type="text" inputmode="numeric" id="cb_leaves_from" oninput="updateChequeBookLeafCount()"></div>
-              <div class="field-row"><label>Leaves No To</label><input type="text" inputmode="numeric" id="cb_leaves_to" oninput="updateChequeBookLeafCount()"></div>
-            </div>
-            <div class="field-row"><label>No. of Leaves</label><input type="text" id="cb_no_of_leaves" readonly style="background:#F1F2F5;"></div>
-            <div class="btn-row" style="margin-top:10px;">
-              <button class="action" onclick="updateChequeBookRecord()">Update</button>
-              <button class="action" onclick="deleteChequeBookRecord()">Delete</button>
-              <button class="action primary" onclick="saveChequeBook()">Save</button>
-              <button class="action" onclick="clearChequeBookForm()">New</button>
-            </div>
-            <div class="status" id="cb_status_msg"></div>
-
-            <div class="scheme-card-title" style="font-size:13px; margin-top:16px; margin-bottom:6px;">Cheque Books of selected account <span class="stat-label">(click a row to edit)</span></div>
-            <div class="list-wrap" style="max-height:220px;">
-              <table class="grid">
-                <thead><tr><th>Cheque Book No</th><th>Leaves From</th><th>Leaves To</th><th>No. of Leaves</th><th>Used Leaves</th><th>Balance Leaves</th><th>Next Leaf No</th></tr></thead>
-                <tbody id="cb_list_table"></tbody>
-              </table>
-            </div>
-          </div>
         </div>
 
-        <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Existing Mbook Attachments</div>
-        <div class="list-wrap" style="max-height:320px;">
-          <table class="grid">
-            <thead><tr><th>Estimate</th><th>Task</th><th>Voucher No</th><th>MBook No</th><th>Page From</th><th>Page To</th><th>Payee Name</th><th>Work From</th><th>Work To</th><th>Measured By</th><th>Measured Dt</th><th>Check Measured By</th><th>Check Measured Dt</th><th>Test Checked By</th><th>Test Checked Dt</th><th>Actions</th></tr></thead>
-            <tbody id="mb_list_table"></tbody>
-          </table>
-        </div>
+          <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Mbook Usage</div>
+          <div class="list-wrap" style="max-height:200px;">
+            <table class="grid">
+              <thead><tr><th>Mbook No</th><th>Total Pages</th><th>Pages Used</th><th>Next Page</th><th>Pages Available</th></tr></thead>
+              <tbody id="mb_usage_table"></tbody>
+            </table>
+          </div>
       </div>
     </div>
 
@@ -2408,6 +2315,101 @@
 
   </div>
 
+<div id="mt_wacb_holder" style="display:none;">
+<div id="mt_mbi_block" class="voucher-form-side">
+            <div class="scheme-card-title" style="font-size:13px; margin-bottom:4px;">Issue Mbook <span class="stat-label">(one-time, per physical book)</span></div>
+            <div class="field-row">
+              <label>Scheme</label>
+              <select id="mbi_scheme" onchange="loadMbiEstimateOptions()"><option value="">Select scheme</option></select>
+            </div>
+            <div class="field-row">
+              <label>Estimate</label>
+              <select id="mbi_esti"><option value="">Select scheme first</option></select>
+            </div>
+            <div class="field-row">
+              <label>Year</label>
+              <select id="mbi_year"></select>
+            </div>
+            <div class="field-row"><label>Mbook No</label><input type="text" id="mbi_no"></div>
+            <div class="field-pair">
+              <div class="field-row"><label>Pages From</label><input type="number" id="mbi_pages_from" value="1"></div>
+              <div class="field-row"><label>Pages To</label><input type="number" id="mbi_pages_to" value="0"></div>
+            </div>
+            <div class="field-pair">
+              <div class="field-row">
+                <label>Issued By</label>
+                <input type="text" id="mbi_issued_by" list="mbi_issued_by_list" placeholder="Select or type new">
+                <datalist id="mbi_issued_by_list"></datalist>
+              </div>
+              <div class="field-row"><label>Issue Date</label><input type="date" id="mbi_issue_date"></div>
+            </div>
+            <div class="btn-row" style="margin-top:10px;">
+              <button class="action" onclick="updateMbookIssuedRecord()">Update</button>
+              <button class="action" onclick="deleteMbookIssuedRecord()">Delete</button>
+              <button class="action primary" onclick="saveMbookIssued()">Save</button>
+              <button class="action" onclick="clearMbookIssuedForm()">New</button>
+            </div>
+            <div class="status" id="mbi_status_msg"></div>
+
+            <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Issued Mbooks <span class="stat-label">(click a row to edit)</span></div>
+            <div class="list-wrap" style="max-height:200px;">
+              <table class="grid">
+                <thead><tr><th>Year</th><th>Mbook No</th><th>Pages</th><th>Issue Date</th><th>Issued By</th><th>Scheme</th><th>Estimate</th></tr></thead>
+                <tbody id="mbi_list_table"></tbody>
+              </table>
+            </div>
+
+</div>
+          <div class="voucher-form-side" id="mt_wacb_block">
+            <div class="scheme-card-title" style="font-size:13px; margin-bottom:4px;">Master Withdrawal Accounts</div>
+            <div class="field-row"><label>Bank</label><input type="text" id="wa_bank"></div>
+            <div class="field-row"><label>Branch</label><input type="text" id="wa_branch"></div>
+            <div class="field-row"><label>Place</label><input type="text" id="wa_place"></div>
+            <div class="field-row"><label>Account No</label><input type="text" id="wa_account_no"></div>
+            <div class="field-row"><label>IFSC Code</label><input type="text" id="wa_ifsc"></div>
+            <div class="field-row"><label>Name of the Account</label><input type="text" id="wa_name_of_account"></div>
+            <div class="field-row"><label>Drawing Authorities</label><input type="text" id="wa_drawing_authorities"></div>
+            <div class="field-row"><label>No. of Cheque Books Issued</label><input type="number" id="wa_cheque_books" value="0"></div>
+            <div class="btn-row" style="margin-top:10px;">
+              <button class="action" onclick="updateWithdrawalAccountRecord()">Update</button>
+              <button class="action" onclick="deleteWithdrawalAccountRecord()">Delete</button>
+              <button class="action primary" onclick="saveWithdrawalAccount()">Save</button>
+              <button class="action" onclick="clearWithdrawalAccountForm()">New</button>
+            </div>
+            <div class="status" id="wa_status_msg"></div>
+
+            <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Accounts <span class="stat-label">(click a row to edit)</span></div>
+            <div class="list-wrap" style="max-height:220px;">
+              <table class="grid">
+                <thead><tr><th>Bank</th><th>Branch</th><th>Place</th><th>Account No</th><th>IFSC</th><th>Name of Account</th><th>Drawing Authorities</th><th>Cheque Books</th></tr></thead>
+                <tbody id="wa_list_table"></tbody>
+              </table>
+            </div>
+
+            <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:4px;">Cheque Books <span class="stat-label" id="cb_account_label">(select an account above)</span></div>
+            <div class="field-row"><label>Cheque Book No</label><input type="text" id="cb_book_no"></div>
+            <div class="field-pair">
+              <div class="field-row"><label>Leaves No From</label><input type="text" inputmode="numeric" id="cb_leaves_from" oninput="updateChequeBookLeafCount()"></div>
+              <div class="field-row"><label>Leaves No To</label><input type="text" inputmode="numeric" id="cb_leaves_to" oninput="updateChequeBookLeafCount()"></div>
+            </div>
+            <div class="field-row"><label>No. of Leaves</label><input type="text" id="cb_no_of_leaves" readonly style="background:#F1F2F5;"></div>
+            <div class="btn-row" style="margin-top:10px;">
+              <button class="action" onclick="updateChequeBookRecord()">Update</button>
+              <button class="action" onclick="deleteChequeBookRecord()">Delete</button>
+              <button class="action primary" onclick="saveChequeBook()">Save</button>
+              <button class="action" onclick="clearChequeBookForm()">New</button>
+            </div>
+            <div class="status" id="cb_status_msg"></div>
+
+            <div class="scheme-card-title" style="font-size:13px; margin-top:16px; margin-bottom:6px;">Cheque Books of selected account <span class="stat-label">(click a row to edit)</span></div>
+            <div class="list-wrap" style="max-height:220px;">
+              <table class="grid">
+                <thead><tr><th>Cheque Book No</th><th>Leaves From</th><th>Leaves To</th><th>No. of Leaves</th><th>Used Leaves</th><th>Balance Leaves</th><th>Next Leaf No</th></tr></thead>
+                <tbody id="cb_list_table"></tbody>
+              </table>
+            </div>
+          </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -4280,6 +4282,7 @@
           <button type="button" id="um_tab_login" onclick="umShowTab('login')">Login &amp; Logout Log</button>
           <button type="button" id="um_tab_activity" onclick="umShowTab('activity')">Activity Log</button>
           <button type="button" id="um_tab_hierarchy" onclick="umShowTab('hierarchy')">Office Hierarchy</button>
+          <button type="button" id="um_tab_masters" onclick="umShowTab('masters')">Master Tables</button>
         </div>
 
         <div id="um_pane_users">
@@ -4316,6 +4319,7 @@
         <div id="um_pane_login" style="display:none;"></div>
         <div id="um_pane_activity" style="display:none;"></div>
         <div id="um_pane_hierarchy" style="display:none;"></div>
+        <div id="um_pane_masters" style="display:none;"></div>
       </div>`;
     document.body.appendChild(modal);
     umEditingId = null;
@@ -4353,11 +4357,13 @@
 
   function closeUserManagement() {
     const m = document.getElementById('um_modal');
+    mtDock(false);
     if (m) m.remove();
     umUsers = [];
     umEditingId = null;
     UM_LOGS.login.built = false; UM_LOGS.activity.built = false;
     hierarchyBuilt = false;
+    mtBuilt = false; mtEdit = null; mtArm = null;
   }
 
   function umLoad() {
@@ -4602,10 +4608,129 @@
     }
   };
 
+
+  /* ---------- Users > Master Tables (add / edit / delete the reference lists) ---------- */
+  const MT_DEFS = {
+    org:    { label: 'Org_master',               table: 'org_units',           pk: 'id',    cols: [['circle', 'Circle', 'r'], ['division', 'Division', 'r'], ['range_name', 'Range', 'r'], ['section', 'Section', 'r'], ['beat', 'Beat', 'r']] },
+    vss:    { label: 'VSS_master',               table: 'vss',                 pk: 'id',    cols: [['vss_name', 'VSS Name', 'r'], ['account_no', 'VSS Account No'], ['chairman_name', 'Chairman'], ['members', 'Members'], ['beat', 'Beat']] },
+    scheme: { label: 'Scheme_master',            table: 'schemes',             pk: 'id',    cols: [['scheme', 'Scheme', 'r']] },
+    fsr:    { label: 'FSR Items',                table: 'fsr_items',           pk: 'id',    cols: [['code', 'FSR Code', 'r'], ['subheading', 'Sub-heading'], ['description', 'Description', 'r'], ['unit', 'Unit'], ['rate', 'Rate', 'n'], ['rate_text', 'Rate (text, if no number)']] }
+  };
+  const MT_ORDER = ['org', 'vss', 'scheme', 'wacb', 'mbi', 'fsr'];
+  const mtLabel = k => k === 'wacb' ? 'Withdrawal Accounts & Cheque Books' : k === 'mbi' ? 'Issue Mbook & Issued Mbooks' : MT_DEFS[k].label;
+  /* the Withdrawal Accounts / Cheque Books sections live in a hidden holder; show them here by moving the same elements, and park them again on close */
+  function mtDock(view) {
+    const hold = document.getElementById('mt_wacb_holder');
+    [['wacb', 'mt_wacb_block', 'mt_wacb'], ['mbi', 'mt_mbi_block', 'mt_mbi']].forEach(([v, b, x]) => {
+      const blk = document.getElementById(b), box = document.getElementById(x);
+      if (!blk) return;
+      if (view === v && box) box.appendChild(blk); else if (hold) hold.appendChild(blk);
+    });
+  }
+  let mtCur = 'org', mtRows = [], mtEdit = null, mtArm = null, mtPage = 0, mtBuilt = false;
+  const MT_PAGE = 50;
+  const mtEsc = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  function mtMsg(t, bad) { const e = document.getElementById('mt_msg'); if (e) { e.textContent = t || ''; e.style.color = bad ? '#B42318' : ''; } }
+  function mtOpen() {
+    const pane = document.getElementById('um_pane_masters');
+    if (!mtBuilt) {
+      mtBuilt = true;
+      pane.innerHTML = `
+        <div id="mt_sel" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
+        <div id="mt_generic">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+          <input type="text" id="mt_search" placeholder="Search this master" oninput="mtPage=0; mtRender()" style="flex:1 1 200px; min-width:160px;">
+          <button class="action" style="width:auto;" onclick="mtLoad()">Refresh</button>
+        </div>
+        <div id="mt_form" style="border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; margin-bottom:10px; background:#FAFAFC;"></div>
+        <div class="list-wrap" style="max-height:340px;"><table class="grid"><thead id="mt_head"></thead><tbody id="mt_body"></tbody></table></div>
+        <div id="mt_pg" style="display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-top:6px; font-size:12px; color:var(--muted);"></div>
+        </div>
+        <div id="mt_wacb" style="display:none;"></div>
+        <div id="mt_mbi" style="display:none;"></div>
+        <div id="mt_msg" style="font-size:12px; margin-top:8px; min-height:16px;"></div>`;
+      document.getElementById('mt_body').onclick = mtClick;
+    }
+    mtSelect(mtCur);
+  }
+  function mtSelect(k) {
+    mtCur = k; mtEdit = null; mtArm = null; mtPage = 0;
+    const s = document.getElementById('mt_search'); if (s) s.value = '';
+    document.getElementById('mt_sel').innerHTML = MT_ORDER.map(x => `<button type="button" class="action${x === k ? ' primary' : ''}" style="width:auto;" onclick="mtSelect('${x}')">${mtLabel(x)}</button>`).join('');
+    const wc = k === 'wacb', mb = k === 'mbi';
+    document.getElementById('mt_generic').style.display = (wc || mb) ? 'none' : '';
+    document.getElementById('mt_wacb').style.display = wc ? '' : 'none';
+    document.getElementById('mt_mbi').style.display = mb ? '' : 'none';
+    mtDock(k); mtMsg('');
+    if (wc) { refreshWithdrawalAccountsList(); refreshChequeBooks(); return; }
+    if (mb) { refreshMbookScreen(); return; }
+    mtLoad();
+  }
+  async function mtLoad() {
+    const d = MT_DEFS[mtCur]; mtMsg('Loading...');
+    try { mtRows = await fetchAll_(d.table, d.pk); mtMsg(''); }
+    catch (e) { mtRows = []; mtMsg(e && e.message ? e.message : String(e), true); }
+    mtRender();
+  }
+  function mtRender() {
+    const d = MT_DEFS[mtCur], edRow = mtEdit != null ? mtRows.find(r => r[d.pk] == mtEdit) : null;
+    document.getElementById('mt_form').innerHTML =
+      `<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px;">` +
+      d.cols.map((c, i) => `<div><label style="font-size:11px; color:var(--muted);">${c[1]}${c[2] === 'r' ? ' *' : ''}</label><input type="${c[2] === 'n' || c[2] === 'z' ? 'number' : 'text'}" ${c[2] === 'n' || c[2] === 'z' ? 'step="any"' : ''} id="mt_f${i}" autocomplete="off" value="${mtEsc(edRow ? edRow[c[0]] : (c[2] === 'z' ? 0 : ''))}"></div>`).join('') +
+      `</div><div style="display:flex; gap:8px; justify-content:flex-end; margin-top:10px;">` +
+      (edRow ? '<button class="action" style="width:auto;" onclick="mtCancel()">Cancel edit</button>' : '') +
+      `<button class="action primary" style="width:auto;" onclick="mtSave()">${edRow ? 'Update' : 'Add'}</button></div>`;
+    document.getElementById('mt_head').innerHTML = '<tr><th>#</th>' + d.cols.map(c => `<th>${c[1]}</th>`).join('') + '<th>Actions</th></tr>';
+    const q = (document.getElementById('mt_search').value || '').trim().toLowerCase();
+    const f = q ? mtRows.filter(r => d.cols.some(c => String(r[c[0]] == null ? '' : r[c[0]]).toLowerCase().includes(q))) : mtRows;
+    const pages = Math.max(1, Math.ceil(f.length / MT_PAGE)); mtPage = Math.min(mtPage, pages - 1);
+    const v = f.slice(mtPage * MT_PAGE, mtPage * MT_PAGE + MT_PAGE);
+    document.getElementById('mt_body').innerHTML = v.map((r, k) => `<tr${r[d.pk] == mtEdit ? ' class="row-selected"' : ''}><td>${mtPage * MT_PAGE + k + 1}</td>` +
+      d.cols.map(c => `<td>${mtEsc(r[c[0]])}</td>`).join('') +
+      `<td style="white-space:nowrap;"><button class="action" style="width:auto;" data-mtedit="${r[d.pk]}">Edit</button> <button class="action" style="width:auto; color:#B42318;" data-mtdel="${r[d.pk]}">${mtArm == r[d.pk] ? 'Confirm delete' : 'Delete'}</button></td></tr>`).join('') ||
+      `<tr><td colspan="${d.cols.length + 2}" class="linked-empty">No records.</td></tr>`;
+    document.getElementById('mt_pg').innerHTML = `${f.length} record${f.length === 1 ? '' : 's'}` + (pages > 1
+      ? ` &nbsp; <button class="action" style="width:auto;" ${mtPage === 0 ? 'disabled' : ''} onclick="mtPage--; mtRender()">&lsaquo; Prev</button> Page ${mtPage + 1} of ${pages} <button class="action" style="width:auto;" ${mtPage >= pages - 1 ? 'disabled' : ''} onclick="mtPage++; mtRender()">Next &rsaquo;</button>` : '');
+  }
+  /* the FSR Estimate screen keeps its own copy of the masters, so make it reload them after any change here */
+  function mtRefreshFsr() {
+    if (mtCur === 'scheme') loadSchemeMaster().then(() => { fillEstSchemeList_(); refreshSchemeDropdowns(); });
+    const f = document.getElementById('fsrFrame'); if (!f) return;
+    delete f.dataset.loaded;
+    const sc = document.getElementById('screen-fsrest');
+    if (sc && sc.classList.contains('active')) loadFsrFrame();
+  }
+  function mtCancel() { mtEdit = null; mtMsg(''); mtRender(); }
+  async function mtSave() {
+    const d = MT_DEFS[mtCur], o = {};
+    for (let i = 0; i < d.cols.length; i++) {
+      const c = d.cols[i], v = document.getElementById('mt_f' + i).value.trim();
+      if (c[2] === 'r' && !v) { mtMsg(c[1] + ' is required.', true); return; }
+      o[c[0]] = c[2] === 'n' ? (v === '' ? null : Number(v)) : c[2] === 'z' ? (v === '' ? 0 : Number(v)) : v;
+    }
+    try {
+      if (mtEdit != null) ck_(await db().from(d.table).update(o).eq(d.pk, mtEdit)); else ck_(await db().from(d.table).insert(o));
+      logActivityRow_(_who.identity, _who.name, 'Masters', mtEdit != null ? 'Updated master row' : 'Added master row', d.table + (mtEdit != null ? ' #' + mtEdit : ''), 'Success');
+      const was = mtEdit != null; mtEdit = null; mtArm = null; mtRefreshFsr(); await mtLoad(); mtMsg(was ? 'Updated.' : 'Added.');
+    } catch (e) { mtMsg(e && e.code === '23505' ? 'That record already exists.' : (e && e.message ? e.message : String(e)), true); }
+  }
+  async function mtClick(e) {
+    const d = MT_DEFS[mtCur], ed = e.target.closest('[data-mtedit]'), de = e.target.closest('[data-mtdel]');
+    if (ed) { mtEdit = ed.dataset.mtedit; mtArm = null; mtMsg('Editing \u2014 change the values above and press Update.'); mtRender(); return; }
+    if (!de) return;
+    const id = de.dataset.mtdel;
+    if (mtArm != id) { mtArm = id; mtRender(); return; }
+    try {
+      ck_(await db().from(d.table).delete().eq(d.pk, id));
+      logActivityRow_(_who.identity, _who.name, 'Masters', 'Deleted master row', d.table + ' #' + id, 'Success');
+      mtArm = null; mtEdit = null; mtRefreshFsr(); await mtLoad(); mtMsg('Deleted.');
+    } catch (err) { mtArm = null; mtRender(); mtMsg(err && err.message ? err.message : String(err), true); }
+  }
+
   let hierarchyBuilt = false;
 
   function umShowTab(tab) {
-    ['users', 'login', 'activity', 'hierarchy'].forEach(t => {
+    ['users', 'login', 'activity', 'hierarchy', 'masters'].forEach(t => {
       const pane = document.getElementById('um_pane_' + t);
       const btn = document.getElementById('um_tab_' + t);
       if (pane) pane.style.display = t === tab ? 'block' : 'none';
@@ -4613,6 +4738,10 @@
     });
     if (tab === 'hierarchy') {
       loadHierarchyInfo();
+      return;
+    }
+    if (tab === 'masters') {
+      mtOpen();
       return;
     }
     if (tab !== 'users') {
@@ -5375,7 +5504,7 @@
       yearSel.dataset.populated = '1';
     }
 
-    const schemes = Array.from(new Set(estimateCache.map(e => e.Scheme).filter(Boolean)));
+    const schemes = schemeList();
     const schemeOptsHtml = '<option value="">Select scheme</option>' +
       schemes.map(s => `<option value="${String(s).replace(/"/g, '&quot;')}">${s}</option>`).join('');
     document.getElementById('mb_attached_scheme').innerHTML = schemeOptsHtml;
@@ -6111,7 +6240,40 @@
   /* ============================================================
      APP BOOT (after login)
      ============================================================ */
-  function bootApp() {
+  /* ---------- Scheme list: every Scheme dropdown is fed from the schemes master table ---------- */
+  let schemeMaster = [];
+  function schemeList(extra) {   // master list first; 'extra' (values already present in data) only for filters, so old records stay filterable
+    const out = schemeMaster.slice();
+    (extra || []).forEach(v => { if (v && !out.includes(v)) out.push(v); });
+    if (!out.length) {   // the scheme table could not be read: fall back to the schemes found in the loaded data so dropdowns are never empty
+      try { [].concat(estimateCache, budgetCache, apoCache, advanceCache).forEach(r => { if (r && r.Scheme && !out.includes(r.Scheme)) out.push(r.Scheme); }); } catch (e) { /* caches not ready */ }
+    }
+    return out;
+  }
+  async function loadSchemeMaster() {
+    try { schemeMaster = (await fetchAll_('schemes', 'id')).map(r => String(r.scheme == null ? '' : r.scheme).trim()).filter(Boolean); }
+    catch (e) { /* keep the old list; dropdowns fall back to what is in the data */ }
+  }
+  function refreshSchemeDropdowns() {   // called after the scheme master is edited
+    const t = f => { try { f(); } catch (e) { /* screen not ready yet */ } };
+    t(() => populateAdvSchemeHoaDropdowns());
+    t(() => populateEstimateSchemeFilter(estimateCache));
+    t(() => populateAccReportSchemeFilter());
+    t(() => { const el = document.getElementById('report_fundapp_filter_scheme'); if (el) { delete el.dataset.populated; fillFundAppSchemeFilter_(); } });
+    t(() => { populateApoDatalists(apoCache); populateApoFilterOptions(apoCache); });
+    t(() => { populateBudgetDatalists(budgetCache); ['', ...BUDGET_STATS_EMBED_SUFFIXES].forEach(x => populateBudgetFilterOptionsSuffixed(x, budgetCache)); });
+    t(() => fillEstSchemeList_());
+    t(() => refreshMbookScreen());
+  }
+  function fillEstSchemeList_() { const d = document.getElementById('est_scheme_list'); if (d) d.innerHTML = schemeList().map(v => `<option value="${String(v).replace(/"/g, '&quot;')}">`).join(''); }
+  function fillFundAppSchemeFilter_() {
+    const el = document.getElementById('report_fundapp_filter_scheme'); if (!el || el.dataset.populated) return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">All</option>' + schemeList(estimateCache.map(e => e.Scheme)).map(v => `<option value="${String(v).replace(/"/g, '&quot;')}">${v}</option>`).join('');
+    if (cur) el.value = cur; el.dataset.populated = '1';
+  }
+  function bootApp() { loadSchemeMaster().then(() => { fillEstSchemeList_(); bootAppData_(); }, bootAppData_); }
+  function bootAppData_() {
     // Estimates load first since Advance's Trans_id dropdown is sourced from them.
     gsr().withSuccessHandler(rows => {
       estimateCache = rows;
@@ -6309,8 +6471,7 @@
   }
 
   function populateAdvSchemeHoaDropdowns() {
-    const schemes = [...new Set(budgetCache.map(r => r.Scheme).filter(Boolean))];
-    fillSelect('adv_scheme', schemes);
+    fillSelect('adv_scheme', schemeList());
     updateAdvHoaOptions();
   }
 
@@ -6514,10 +6675,7 @@
   function populateAccReportSchemeFilter() {
     const sel = document.getElementById('report_acc_filter_scheme');
     const current = sel.value;
-    const schemes = [...new Set([
-      ...budgetCache.map(r => r.Scheme),
-      ...advanceCache.map(r => r.Scheme)
-    ].filter(Boolean))];
+    const schemes = schemeList([...budgetCache.map(r => r.Scheme), ...advanceCache.map(r => r.Scheme)]);
     sel.innerHTML = '<option value="">All</option>';
     schemes.forEach(s => {
       const opt = document.createElement('option');
@@ -6541,12 +6699,7 @@
       fundAppStatusCache = rows || [];
 
       const schemeSel = document.getElementById('report_fundapp_filter_scheme');
-      if (schemeSel && !schemeSel.dataset.populated) {
-        const schemes = Array.from(new Set(estimateCache.map(e => e.Scheme).filter(Boolean)));
-        schemeSel.innerHTML = '<option value="">All</option>' +
-          schemes.map(s => `<option value="${String(s).replace(/"/g, '&quot;')}">${s}</option>`).join('');
-        schemeSel.dataset.populated = '1';
-      }
+      fillFundAppSchemeFilter_();
 
       applyFundAppFilters();
     }).catch(() => {
@@ -7177,7 +7330,7 @@
   function populateEstimateSchemeFilter(rows) {
     const sel = document.getElementById('est_filter_scheme');
     const current = sel.value;
-    const schemes = [...new Set(rows.map(r => r.Scheme).filter(s => s !== '' && s !== null && s !== undefined))];
+    const schemes = schemeList(rows.map(r => r.Scheme));
     sel.innerHTML = '<option value="">All</option>';
     schemes.forEach(s => {
       const opt = document.createElement('option');
@@ -9600,7 +9753,7 @@
     const books = withdrawChequeBooks.filter(b => String(b.Account_No).trim() === acctNo && Number(b.Balance_Leaves) > 0 && b.Leaves_No_Next !== '');
     if (!books.length) {
       leafEl.innerHTML = '<option value="">No leaves available</option>';
-      hintEl.textContent = 'No cheque book with leaves left for account ' + acctNo + ' — add one under Cheque Books in the Mbook screen.';
+      hintEl.textContent = 'No cheque book with leaves left for account ' + acctNo + ' — add one under Users > Master Tables > Withdrawal Accounts & Cheque Books.';
       return;
     }
     leafEl.innerHTML = books.map(b =>
@@ -10563,13 +10716,13 @@
   }
 
   function populateApoDatalists(rows) {
-    const schemes = [...new Set(rows.map(r => r.Scheme).filter(Boolean))];
+    const schemes = schemeList();
     document.getElementById('apo_scheme_list').innerHTML = schemes.map(s => `<option value="${s}">`).join('');
   }
 
   function populateApoFilterOptions(rows) {
     const years = [...new Set(rows.map(r => r.Year).filter(Boolean))].sort();
-    const schemes = [...new Set(rows.map(r => r.Scheme).filter(Boolean))];
+    const schemes = schemeList(rows.map(r => r.Scheme));
 
     const yearSel = document.getElementById('apo_filter_year');
     const yearCurrent = yearSel.value;
@@ -10876,17 +11029,17 @@
   }
 
   function populateBudgetDatalists(rows) {
-    const schemes = [...new Set(rows.map(r => r.Scheme).filter(Boolean))];
+    const schemes = schemeList();
     const hoas = [...new Set(rows.map(r => r.Hoa).filter(Boolean))];
-    const schemeList = document.getElementById('bud_scheme_list');
+    const schemeDl = document.getElementById('bud_scheme_list');
     const hoaList = document.getElementById('bud_hoa_list');
-    schemeList.innerHTML = schemes.map(s => `<option value="${s}">`).join('');
+    schemeDl.innerHTML = schemes.map(s => `<option value="${s}">`).join('');
     hoaList.innerHTML = hoas.map(h => `<option value="${h}">`).join('');
   }
 
   function populateBudgetFilterOptionsSuffixed(suffix, rows) {
     const years = [...new Set(rows.map(r => r.Year).filter(Boolean))].sort();
-    const schemes = [...new Set(rows.map(r => r.Scheme).filter(Boolean))];
+    const schemes = schemeList(rows.map(r => r.Scheme));
 
     const yearSel = document.getElementById('bud_filter_year' + suffix);
     const yearCurrent = yearSel.value;

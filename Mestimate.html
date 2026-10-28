@@ -62,6 +62,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 .f input,.f select,.f textarea{border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:7px 8px;width:100%}
 .f textarea{resize:vertical;min-height:54px}
 .tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.subdd{position:relative;flex:1 1 100%;min-width:0}
+.subbtn{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;width:100%;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:6px 8px;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
+.subbtn:hover{background:var(--surface2)}
+.sublist{position:absolute;left:0;top:calc(100% + 4px);z-index:15;width:max(100%,520px);max-width:calc(100vw - 40px);max-height:320px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:5px;box-shadow:0 6px 18px rgba(0,0,0,.22)}
+.subopt{padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;white-space:normal;overflow-wrap:anywhere;line-height:1.4}
+.subopt:last-child{border-bottom:0}
+.subopt:hover,.subopt:focus-visible{background:var(--accent-soft)}
+.subopt.on{background:var(--accent-soft);font-weight:600}
 .tools input{flex:1 1 200px;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:6px 8px}
 .scroll{overflow:auto;max-width:100%}
 .scroll.tall{max-height:calc(100vh - 230px);min-height:280px}
@@ -165,7 +173,7 @@ td input.unitin{width:80px;text-align:left}
   <aside>
     <section class="panel">
     <header><h2>FSR items in this chapter</h2><span class="note" id="cnt"></span><button class="btn small" id="closeFsr" type="button">Close</button></header>
-    <div class="tools"><input id="q" type="search" placeholder="Search FSR code or description" aria-label="Search FSR items"><button class="btn small" id="selAll" type="button" title="Tick or untick every item shown">Select all shown</button><button class="btn small primary" id="addSel" type="button" disabled>Add selected (0)</button></div>
+    <div class="tools"><div class="subdd" id="fSubDd"><button class="subbtn" id="fSubBtn" type="button" aria-haspopup="listbox" aria-expanded="false"><span id="fSubTxt">All sub-headings</span><span aria-hidden="true">▾</span></button><div class="sublist" id="fSubList" role="listbox" hidden></div></div><input id="q" type="search" placeholder="Search FSR code or description" aria-label="Search FSR items"><button class="btn small" id="selAll" type="button" title="Tick or untick every item shown">Select all shown</button><button class="btn small primary" id="addSel" type="button" disabled>Add selected (0)</button></div>
     <div class="scroll tall"><table><thead><tr><th></th><th>FSR Code</th><th>Description of work with detailed specifications</th><th></th></tr></thead><tbody id="fsrBody"></tbody></table></div>
   </section>
   </aside>
@@ -655,10 +663,18 @@ function buildChapters(){
 }
 const sel=new Set();
 function selUi(){ const n=sel.size,b=$('addSel'); b.textContent='Add selected ('+n+')'; b.disabled=!n; }
+let subSel='', subChap='';
 function renderFsr(){
   const ch=$('fChap').value, q=$('q').value.trim().toLowerCase();
   const picked=new Map(); cur.lines.forEach(l=>picked.set(l.code,(picked.get(l.code)||0)+1));
-  const rows=items.filter(i=>i.code.startsWith(ch+'-') && (!q||(i.code+' '+i.desc+' '+i.sub).toLowerCase().includes(q)));
+  const NOSUB='(No sub-heading)', subOf=i=>cleanSub(i.sub)||NOSUB;
+  const chItems=items.filter(i=>i.code.startsWith(ch+'-'));
+  const subs=[...new Set(chItems.map(subOf))];
+  if(subChap!==ch||!subs.includes(subSel)){ subSel=''; subChap=ch; }
+  $('fSubTxt').textContent=subSel||'All sub-headings ('+subs.length+')';
+  $('fSubList').innerHTML=['<div class="subopt'+(subSel?'':' on')+'" role="option" tabindex="0" data-sub="">All sub-headings ('+subs.length+')</div>'].concat(subs.map((v,k)=>'<div class="subopt'+(v===subSel?' on':'')+'" role="option" tabindex="0" data-sub="'+k+'">'+esc(v)+'</div>')).join('');
+  $('fSubList')._subs=subs;
+  const rows=chItems.filter(i=>(!subSel||subOf(i)===subSel) && (!q||(i.code+' '+i.desc+' '+i.sub).toLowerCase().includes(q)));
   $('cnt').textContent=rows.length+' items'; selUi();
   $('fsrBody').innerHTML=rows.map(i=>'<tr class="'+(picked.has(i.code)?'picked':'')+'"><td><input type="checkbox" data-sel="'+i.code+'" aria-label="Select '+i.code+'"'+(sel.has(i.code)?' checked':'')+'></td><td class="code">'+i.code+'</td><td>'+esc(i.desc)+'</td><td><button class="btn small" type="button" data-pick="'+i.code+'">'+(picked.has(i.code)?'Pick again ('+picked.get(i.code)+')':'Pick')+'</button></td></tr>').join('')||'<tr><td colspan="4" class="empty">No items match.</td></tr>';
 }
@@ -694,7 +710,14 @@ $('addNewBtn').onclick=()=>{
   renderLines(); const t=document.querySelector('[data-f=task][data-i="'+(cur.lines.length-1)+'"]'); if(t){ t.scrollIntoView({block:'center'}); t.focus({preventScroll:true}); }
 };
 $('addFsrBtn').onclick=()=>setFsr(true);
-$('fChap').onchange=()=>{ sel.clear(); renderFsr(); setFsr(true); }; $('q').oninput=renderFsr;
+$('fChap').onchange=()=>{ sel.clear(); subSel=''; closeSub(); renderFsr(); setFsr(true); };
+function closeSub(){ $('fSubList').hidden=true; $('fSubBtn').setAttribute('aria-expanded','false'); }
+$('fSubBtn').onclick=e=>{ e.stopPropagation(); const o=$('fSubList').hidden; $('fSubList').hidden=!o; $('fSubBtn').setAttribute('aria-expanded',o); if(o){ const on=$('fSubList').querySelector('.on'); if(on) on.scrollIntoView({block:'nearest'}); } };
+function pickSub(el){ const k=el.dataset.sub; subSel=k===''?'':$('fSubList')._subs[+k]; closeSub(); renderFsr(); }
+$('fSubList').onclick=e=>{ const o=e.target.closest('[data-sub]'); if(o) pickSub(o); };
+$('fSubList').onkeydown=e=>{ const o=e.target.closest('[data-sub]'); if(!o) return; if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pickSub(o); } else if(e.key==='ArrowDown'&&o.nextElementSibling){ e.preventDefault(); o.nextElementSibling.focus(); } else if(e.key==='ArrowUp'&&o.previousElementSibling){ e.preventDefault(); o.previousElementSibling.focus(); } };
+document.addEventListener('click',e=>{ if(!e.target.closest('#fSubDd')) closeSub(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSub(); }); $('q').oninput=renderFsr;
 
 /* ---------- task text: add the sub-heading when the item is a sub-class ---------- */
 const ENUMERATOR=/^\s*(\(?[ivx]+\)|[ivx]+\.|\(?[a-d]\)|[a-d]\.)\s*/i;

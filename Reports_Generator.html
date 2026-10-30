@@ -10,11 +10,11 @@ main{max-width:880px;margin:0 auto;padding:20px 14px 60px}h1{font-size:21px;marg
 section{background:var(--card);border:1px solid var(--br);border-radius:12px;padding:16px;margin-bottom:14px}
 h2{font-size:15px;margin:0 0 12px}.g{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:620px){.g{grid-template-columns:1fr}}
 label{display:block;font-size:13px;color:var(--mu);margin-bottom:3px}
-input[type=text],input[type=month]{width:100%;padding:8px 10px;border:1px solid var(--br);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+input[type=text],input[type=month],input[type=password],select{width:100%;padding:8px 10px;border:1px solid var(--br);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
 button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:9px 16px;font:inherit;cursor:pointer}button.s{background:var(--ac2);color:var(--ac);padding:5px 10px;font-size:13px}
 .f{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--br);flex-wrap:wrap}.f:first-of-type{border-top:0}.f b{flex:1 1 220px;font-weight:600}.mu{color:var(--mu);font-size:13px}
 details{width:100%}summary{cursor:pointer;color:var(--ac);font-size:13px}.box table{width:100%;border-collapse:collapse;font-size:13px}.box td{padding:3px 6px;border-top:1px solid var(--br)}.box td input{width:84px;padding:3px 6px;border:1px solid var(--br);border-radius:6px;background:var(--bg);color:var(--tx)}
-.box.hide tr.bl{display:none}.tb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.tb button{background:var(--ac2);color:var(--ac)}.tb button.on{background:var(--ac);color:#fff}#pane .p{max-height:72vh;overflow:auto;background:#cfd3d0;padding:8px;border-radius:8px}#pane h3{color:#222;margin:8px 4px}.xw{overflow:auto;background:#fff;margin-bottom:12px}.xt{border-collapse:collapse;table-layout:fixed;background:#fff;color:#000;font-size:11px}.xt td{border:1px solid #bbb;padding:2px 4px;white-space:pre-wrap;word-break:break-word;vertical-align:top}.xt td.r{text-align:right;white-space:nowrap}input.calc{font-style:italic;background:var(--ac2)!important}button:disabled{opacity:.5;cursor:default}.box{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--br);border-radius:8px}h3{font-size:13px;margin:6px 8px 0}.box th{position:sticky;top:0;background:var(--ac2);color:var(--ac);font-weight:600;font-size:12px;padding:4px 6px;text-align:left;vertical-align:bottom;min-width:84px}.box th:first-child,.box td:first-child{position:sticky;left:0;background:var(--card);min-width:190px;z-index:1}.box th:first-child{background:var(--ac2)}.box td.na{color:var(--mu);text-align:center}#out .f b{font-weight:500;word-break:break-all}
+select{width:auto!important}.box.hide tr.bl{display:none}.tb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.tb button{background:var(--ac2);color:var(--ac)}.tb button.on{background:var(--ac);color:#fff}#pane .p{max-height:72vh;overflow:auto;background:#cfd3d0;padding:8px;border-radius:8px}#pane h3{color:#222;margin:8px 4px}.xw{overflow:auto;background:#fff;margin-bottom:12px}.xt{border-collapse:collapse;table-layout:fixed;background:#fff;color:#000;font-size:11px}.xt td{border:1px solid #bbb;padding:2px 4px;white-space:pre-wrap;word-break:break-word;vertical-align:top}.xt td.r{text-align:right;white-space:nowrap}input.calc{font-style:italic;background:var(--ac2)!important}button:disabled{opacity:.5;cursor:default}.box{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--br);border-radius:8px}h3{font-size:13px;margin:6px 8px 0}.box th{position:sticky;top:0;background:var(--ac2);color:var(--ac);font-weight:600;font-size:12px;padding:4px 6px;text-align:left;vertical-align:bottom;min-width:84px}.box th:first-child,.box td:first-child{position:sticky;left:0;background:var(--card);min-width:190px;z-index:1}.box th:first-child{background:var(--ac2)}.box td.na{color:var(--mu);text-align:center}#out .f b{font-weight:500;word-break:break-all}
 </style></head><body><main>
 <h1>Monthly Reports Generator</h1>
 <p class="sub">Fill the officer details, month and values. Cumulative = previous cumulative + during the month is calculated for you. Preview all files (the three letters appear together in one view), then generate the individual files.</p>
@@ -32,6 +32,13 @@ details{width:100%}summary{cursor:pointer;color:var(--ac);font-size:13px}.box ta
 <section><h2>3 · Add your own covering letter or Excel format (optional)</h2>
 <input type="file" id="addf" accept=".docx,.xlsx" multiple style="font-size:13px"> <span id="cmsg" class="mu"></span><div id="custom"></div>
 <p class="mu" style="margin:8px 0 0">Word (.docx) files are added as covering letters; Excel (.xlsx) files get the month/officer updates plus their own value-entry table. They are remembered in this browser. Standard patterns (From/To block, "for the month of …", Rc.No date, Sd/- signature) update automatically; you can also place tags such as <code>{{name}}</code> <code>{{designation}}</code> <code>{{place}}</code> <code>{{month}}</code> <code>{{year}}</code> <code>{{month_year}}</code> <code>{{fy}}</code> <code>{{next_month}}</code> <code>{{next_year}}</code> <code>{{last_date}}</code> <code>{{sig_name}}</code> <code>{{place_upper}}</code> <code>{{month_upper}}</code> anywhere in the file.</p></section>
+<section><h2>☁ Cloud storage – use your formats and saved months on any device (optional)</h2>
+<div id="cl_off"><div class="g"><div><label for="cl_url">Supabase project URL</label><input type="text" id="cl_url" placeholder="https://xxxx.supabase.co"></div><div><label for="cl_key">Anon (public) key – never the service_role key</label><input type="text" id="cl_key"></div>
+<div><label for="cl_em">Email</label><input type="text" id="cl_em"></div><div><label for="cl_pw">Password</label><input type="password" id="cl_pw"></div></div><button id="cl_in" style="margin-top:10px">Sign in</button></div>
+<div id="cl_on" hidden><span id="clwho"></span> <button class="s" id="cl_out">Sign out</button>
+<div class="f"><button id="cl_save">Save this month to cloud</button><span class="mu">(after Preview)</span></div>
+<div class="f"><select id="cmon"></select><button class="s" id="cl_load">Load officer details &amp; values</button><button class="s" id="cl_base">Use as base for next month</button></div></div>
+<p id="clmsg" class="mu" style="margin:8px 0 0"></p></section>
 <section><button id="go">Preview all files</button> <span id="msg" class="mu"></span></section>
 <section id="pv" hidden><h2>4 · Preview – check before generating</h2><div id="tabs" class="tb"></div><div id="pane"></div>
 <div style="margin:12px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button id="ok">✔ Looks good – generate individual files</button><span id="pvmsg" class="mu"></span></div><div id="out"></div></section>
@@ -269,10 +276,41 @@ const sv=()=>{try{localStorage.setItem(CK,JSON.stringify(FILES.filter(f=>f[3]).m
 function addCustom(o){ASSETS[o.key]={name:o.name,b64:o.b64};FILES.push([o.key,o.label,o.ext,1]);
  if(o.ext==='docx')LETTERS.push(o.key);else addRow(o.key,o.label);
  const li=document.createElement('div');li.className='f';li.innerHTML=`<b>${esc(o.label)}</b><span class="mu">${o.ext==='docx'?'covering letter (Word)':'Excel format'}</span><button class="s">Remove</button>`;
- li.querySelector('button').onclick=()=>{const i=FILES.findIndex(f=>f[0]===o.key);if(i>=0)FILES.splice(i,1);delete ASSETS[o.key];const j=LETTERS.indexOf(o.key);if(j>=0)LETTERS.splice(j,1);li.remove();const r=$('#wb_'+o.key);if(r)r.remove();sv();stale()};
+ li.querySelector('button').onclick=()=>{const i=FILES.findIndex(f=>f[0]===o.key);if(i>=0)FILES.splice(i,1);delete ASSETS[o.key];const j=LETTERS.indexOf(o.key);if(j>=0)LETTERS.splice(j,1);li.remove();const r=$('#wb_'+o.key);if(r)r.remove();sv();cloudDel(o.key);stale()};
  $('#custom').append(li)}
 $('#addf').onchange=async e=>{for(const f of e.target.files){const m=f.name.match(/\.(docx|xlsx)$/i);if(!m){alert(f.name+': please use .docx or .xlsx (use Save As in Word/Excel).');continue}
-  addCustom({key:'c'+Date.now()+Math.random().toString(36).slice(2,6),label:f.name.replace(/\.\w+$/,'').replace(/_+/g,' '),ext:m[1].toLowerCase(),name:f.name.replace(/\.\w+$/,'').replace(/[^\w\-]+/g,'_'),b64:b64s(new Uint8Array(await f.arrayBuffer()))})}
+  {const o={key:'c'+Date.now()+Math.random().toString(36).slice(2,6),label:f.name.replace(/\.\w+$/,'').replace(/_+/g,' '),ext:m[1].toLowerCase(),name:f.name.replace(/\.\w+$/,'').replace(/[^\w\-]+/g,'_'),b64:b64s(new Uint8Array(await f.arrayBuffer()))};addCustom(o);cloudPut(o)}}
  e.target.value='';sv();stale()};
 try{JSON.parse(localStorage.getItem(CK)||'[]').forEach(addCustom)}catch(e){}
+const DEFAULT_SB={url:'https://ewnrcnfyiulrjritaeam.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3bnJjbmZ5aXVscmpyaXRhZWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTEwMDYsImV4cCI6MjEwNzc2NzAwNn0.rbJNPpBgS4k2uKxM9Igk6S7rN_FL3gZcoJu-8jkgeD8'},nk=x=>x.replace(/^[A-Za-z]{3}\d{4}!/,'M!');
+const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+let SB=Object.assign({url:'',key:'',tok:null,ref:null,email:''},JSON.parse(LS.get('rg_sb')||'{}'));
+const sbSave=()=>LS.set('rg_sb',JSON.stringify(SB)),on=()=>!!(SB.url&&SB.key&&SB.tok),cm=t=>$('#clmsg').textContent=t,base=()=>SB.url.trim().replace(/\/+$/,'');
+function ui(){const o=on();$('#cl_off').hidden=o;$('#cl_on').hidden=!o;if(o)$('#clwho').textContent='Signed in'+(SB.email?' as '+SB.email:'')}
+async function auth(grant,body){const r=await fetch(`${base()}/auth/v1/token?grant_type=${grant}`,{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify(body)}),j=await r.json();
+ if(!r.ok)throw new Error(j.error_description||j.msg||j.message||'Sign-in failed');SB.tok=j.access_token;SB.ref=j.refresh_token;sbSave()}
+async function sb(path,o={},retry=true){const r=await fetch(base()+path,{...o,headers:{apikey:SB.key,Authorization:'Bearer '+SB.tok,'Content-Type':'application/json',...(o.headers||{})}});
+ if(r.status===401&&retry&&SB.ref){try{await auth('refresh_token',{refresh_token:SB.ref})}catch(e){SB.tok=null;sbSave();ui();throw new Error('Session expired – please sign in again')}return sb(path,o,false)}
+ if(!r.ok)throw new Error((await r.text()).slice(0,180));return r.status===204?null:r.json().catch(()=>null)}
+const up_=(t,b)=>sb(`/rest/v1/${t}?on_conflict=user_id,${t==='rg_months'?'month':'key'}`,{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify(b)});
+const cloudPut=async o=>{if(!on())return;try{await up_('rg_formats',{key:o.key,label:o.label,ext:o.ext,name:o.name,b64:o.b64});cm('Format saved to cloud.')}catch(e){cm('Cloud save failed: '+e.message)}};
+const cloudDel=async k=>{if(!on())return;try{await sb('/rest/v1/rg_formats?key=eq.'+encodeURIComponent(k),{method:'DELETE'})}catch(e){cm('Cloud delete failed: '+e.message)}};
+async function pull(){const rows=(await sb('/rest/v1/rg_formats?select=key,label,ext,name,b64'))||[],have=new Set(FILES.map(f=>f[0]));
+ rows.forEach(o=>{if(!have.has(o.key))addCustom(o)});sv();
+ for(const f of FILES.filter(f=>f[3]&&!rows.some(o=>o.key===f[0])))await cloudPut({key:f[0],label:f[1],ext:f[2],name:ASSETS[f[0]].name,b64:ASSETS[f[0]].b64});
+ const m=(await sb('/rest/v1/rg_months?select=month,updated_at&order=month.desc'))||[];$('#cmon').innerHTML=m.map(x=>`<option>${esc(x.month)}</option>`).join('')||'<option value="">(none saved)</option>';return rows.length}
+async function getMonth(){const mo=$('#cmon').value;if(!mo)throw new Error('Nothing saved yet.');const r=await sb('/rest/v1/rg_months?select=payload&month=eq.'+encodeURIComponent(mo));return{mo,p:r[0].payload}}
+$('#cl_url').value=SB.url||DEFAULT_SB.url;$('#cl_key').value=SB.key||DEFAULT_SB.key;$('#cl_em').value=SB.email||'';ui();
+$('#cl_in').onclick=async()=>{try{SB.url=$('#cl_url').value.trim();SB.key=$('#cl_key').value.trim();SB.email=$('#cl_em').value.trim();cm('Signing in…');await auth('password',{email:SB.email,password:$('#cl_pw').value});$('#cl_pw').value='';ui();const n=await pull();cm(`Signed in. ${n} saved format(s) synced.`)}catch(e){cm(e.message)}};
+$('#cl_out').onclick=()=>{SB.tok=SB.ref=null;sbSave();ui();cm('Signed out.')};
+$('#cl_save').onclick=async()=>{if(!res||!pvOn){cm('Click "Preview all files" first, then save.');return}
+ try{const vals={},xl={};for(const k in grid)vals[k]=Object.fromEntries(grid[k].filter(g=>g.el&&g.el.value.trim()!==g.orig).map(g=>[nk(g.sheet+'!'+g.ref),g.el.value.trim()]));
+  for(const[k,,ext]of FILES)if(ext==='xlsx'&&res[k])xl[k]=b64s(new Uint8Array(await res[k].blob.arrayBuffer()));
+  const mo=$('#month').value;await up_('rg_months',{month:mo,payload:{name:$('#name').value,des:$('#des').value,place:$('#place').value,vals,xl}});cm('Saved '+mo+' to cloud.');await pull()}catch(e){cm('Save failed: '+e.message)}};
+$('#cl_load').onclick=async()=>{try{const{mo,p}=await getMonth();$('#name').value=p.name;$('#des').value=p.des;$('#place').value=p.place;$('#month').value=mo;
+  for(const k in p.vals)for(const g of grid[k]||[]){const v=p.vals[k][nk(g.sheet+'!'+g.ref)];if(v!==undefined&&g.el&&!g.el.readOnly){g.el.value=v;g.el.dispatchEvent(new Event('input',{bubbles:true}))}}
+  cm('Loaded '+mo+' (officer details and entered values).')}catch(e){cm(e.message)}};
+$('#cl_base').onclick=async()=>{try{const{mo,p}=await getMonth();for(const k in p.xl){if(!FILES.some(f=>f[0]===k))continue;up[k]=Uint8Array.from(atob(p.xl[k]),c=>c.charCodeAt(0));const r=$('#wb_'+k);r.querySelector('span').textContent='base: '+mo+' (cloud)';await showCells(k,r.querySelector('details'))}
+  const[y,m]=mo.split('-').map(Number);$('#month').value=m==12?`${y+1}-01`:`${y}-${String(m+1).padStart(2,'0')}`;cm(`Loaded ${mo} files as the base for ${$('#month').value}; previous cumulative rolls forward.`)}catch(e){cm(e.message)}};
+if(on())pull().then(n=>cm(`Cloud connected. ${n} saved format(s) synced.`)).catch(e=>cm(e.message));
 </script></body></html>

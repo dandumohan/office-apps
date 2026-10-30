@@ -288,12 +288,13 @@
                         <tr>
                             <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-checkbox" onclick="toggleSelectAllBatch(this)"></th>
                             <th>File Detail </th>
+                            <th style="width: 150px;">File Last Updated </th>
                             <th>File-id Status </th>
                             <th style="width: 140px; text-align: center;">Actions </th>
                         </tr>
                     </thead>
                     <tbody id="batch-letters-tbody">
-                        <tr><td colspan="4" style="text-align: center; color: #666;">Loading available letters... </td></tr>
+                        <tr><td colspan="5" style="text-align: center; color: #666;">Loading available letters... </td></tr>
                     </tbody>
                 </table>
             </div>
@@ -359,9 +360,9 @@
                 <div id="letter-preview-box" class="hidden" style="background: white; border: 1px solid #ced4da; padding: 25px; border-radius: 6px; margin-bottom: 20px; font-family: 'Times New Roman', Times, serif; font-size: 15px; color: #000; max-height: 450px; overflow-y: auto; box-shadow: inset 0 0 5px rgba(0,0,0,0.05);">
                     <div style="text-align: center; font-weight: bold; margin-bottom: 15px; line-height: 1.4;" id="preview-header-div"></div>
                     
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 20px; line-height: 1.4;">
-                        <div id="preview-from-div" style="width: 45%;"></div>
-                        <div id="preview-to-div" style="width: 45%;"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; line-height: 1.4;">
+                        <div id="preview-from-div" style="width: 50%; text-align: left; padding-right: 12px;"></div>
+                        <div id="preview-to-div" style="width: 50%; text-align: left; padding-left: 12px;"></div>
                     </div>
                     
                     <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 15px;" id="preview-fileno-div"></div>
@@ -688,6 +689,7 @@
 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
 <script>
 /* ============================================================
  *  supabase-adapter.js
@@ -767,14 +769,41 @@
     return { letter, refs, paras: paras.filter(p => S(p.para_text).trim()), tables: tbls.map(t => t.table_json) };
   }
 
+  // Address lines: split on newlines, drop blanks and stray trailing commas (avoids ",," and ragged blocks)
+  const addrParts = (...vals) => vals.flatMap(v => S(v).split(/\r?\n|<br\s*\/?>/i)).map(x => x.trim().replace(/,[,\s]*$/, ',')).filter(Boolean);       // collapse ",," to a single comma
+  const endPunct = x => (/[.,]$/.test(x) ? x : x + ',');
+  const addrHtml = (...vals) => addrParts(...vals).map(x => esc(endPunct(x))).join('<br>');
+
+  // Tables in letters/previews: keep the header row, every sub-total / total row, and only those data rows
+  // that actually carry a value (a non-zero number, or any text for text-only tables). The stored table
+  // itself is untouched, so the table editor still shows every row.
+  function compactRows(rows) {
+    if (!rows || rows.length < 2) return rows || [];
+    const cell = v => S(v).trim();
+    const ncol = Math.max(...rows.map(r => r.length));
+    const from = ncol > 1 ? 1 : 0;                                   // column 0 is the serial no. -> never counts as a "value"
+    const isNum = v => /^[\s₹]*(?:rs\.?)?\s*-?\d[\d,]*(?:\.\d+)?\s*(?:%|lakhs?|kms?|nos?\.?)?\s*$/i.test(v);
+    const isZero = v => parseFloat(v.replace(/[^\d.\-]/g, '')) === 0;
+    const isTotal = r => r.some(c => /\b(sub[\s-]*total|grand[\s-]*total|total)\b/i.test(cell(c)));
+    const body = rows.slice(1);
+    const numeric = body.some(r => r.some((c, i) => i >= from && isNum(cell(c))));
+    const hasValue = r => r.some((c, i) => {
+      if (i < from) return false;
+      const v = cell(c); if (!v) return false;
+      return numeric ? (isNum(v) && !isZero(v)) : true;
+    });
+    return [rows[0]].concat(body.filter(r => isTotal(r) || hasValue(r)));
+  }
+
   function renderLetterHtml(info, dateStr) {
     const l = info.letter;
+    if (isDoLetter(l.document_type)) return renderDoLetterHtml(info, dateStr);   // DO Letter -> sample-letter format
     const nl = s => esc(s).replace(/\n/g, '<br>');
-    const from = 'From<br>' + nl(l.from_officer || 'Sri xxxxxxxxxxxxxxx, SFS.,') + ',<br>' + nl(l.from_address || 'Social Forestry Division, Chittoor.');
-    const to = 'To<br>' + nl(l.to_officer || 'The Project Director,') + '<br>' + nl(l.to_address || 'PIU, Tirupati<br>NHAI');
+    const from = 'From<br>' + addrHtml(l.from_officer || 'Sri xxxxxxxxxxxxxxx, SFS.,', l.from_address || 'Social Forestry Division, Chittoor.');
+    const to = 'To<br>' + addrHtml(l.to_officer || 'The Project Director,', l.to_address || 'PIU, Tirupati\nNHAI');
     let h = '<div class="letter">';
     h += '<p style="text-align:center;font-weight:bold">' + nl(l.title1 || 'GOVERNMENT OF ANDHRA PRADESH') + '<br>' + nl(l.title2 || 'FOREST DEPARTMENT') + '</p><br>';
-    h += '<table style="width:100%;border:0"><tr><td style="vertical-align:top;width:50%">' + from + '</td><td style="vertical-align:top">' + to + '</td></tr></table><br>';
+    h += '<table style="width:100%;border:0;border-collapse:collapse;table-layout:fixed"><tr><td style="vertical-align:top;width:50%;text-align:left;padding:0 12px 0 0">' + from + '</td><td style="vertical-align:top;width:50%;text-align:left;padding:0 0 0 12px">' + to + '</td></tr></table><br>';
     h += '<p><b>' + esc(l.file_no || '143/2023/M1') + ', dt: ' + esc(dateStr) + '</b></p><p>Sir,</p>';
     h += '<p><b>Sub: ' + esc(l.subject || 'Operation & Maintenance of plantation works...') + ' – Reg.</b></p><p>Ref:</p>';
     if (info.refs.length) info.refs.forEach((r, i) => { h += '<p style="margin-left:36px">' + (i + 1) + '. ' + esc(r.refer_no || 'N/A') + ', dt: ' + (r.refer_dt ? esc(fmtDate(r.refer_dt)) : 'N/A') + '</p>'; });
@@ -782,8 +811,9 @@
     h += '<p style="text-align:center">🙢🏵🙠</p>';
     if (info.paras.length) info.paras.forEach(p => { h += '<p style="margin-left:36px;text-align:justify">' + p.para_no + '. ' + nl(p.para_text) + '</p>'; });
     else h += '<p style="margin-left:36px">1. In compliance with the references cited above, it is informed that the scheme proposals for records matching ID ' + esc(l.letter_id) + ' have been compiled successfully.</p>';
-    info.tables.forEach(rows => {
-      if (rows && rows.length) h += '<br><table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse">' +
+    info.tables.forEach(rawRows => {
+      const rows = compactRows(rawRows);
+      if (rows && rows.length) h += '<br><table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;width:100%;table-layout:auto">' +
         rows.map(r => '<tr>' + r.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('') + '</table>';
     });
     h += '<p style="margin-left:36px">Hence, it is requested that necessary administrative sanction be accorded at the earliest possible.</p>';
@@ -795,11 +825,25 @@
     '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' +
     'body{font-family:"Times New Roman",serif;font-size:14px;max-width:800px;margin:20px auto;padding:0 24px;line-height:1.5}' +
     '.bar{position:sticky;top:0;background:#eef;padding:8px;margin-bottom:12px;font-family:sans-serif}' +
-    '.divider{text-align:center;font-weight:bold;margin:30px 0;page-break-before:always}@media print{.bar{display:none}}</style></head><body>' +
+    '.divider{text-align:center;font-weight:bold;margin:30px 0;page-break-before:always;break-before:page}' +
+    '.letter{display:block}.letter + .letter{page-break-before:always;break-before:page}' +          // every letter starts on a fresh page
+    'table{border-collapse:collapse}tr,td,th{page-break-inside:avoid;break-inside:avoid}thead{display:table-header-group}' +
+    'p{orphans:3;widows:3}' +
+    (/do-letter/.test(inner)
+      ? '@page{size:8.5in 14in;margin:0.3in 0.89in 0.5in 0.79in}'      // same page setup as the sample DO letter
+      : '@page{size:A4;margin:18mm 20mm 18mm 22mm}') +
+    '@media print{.bar{display:none}body{max-width:none;margin:0;padding:0;font-size:12pt;line-height:1.3}' +
+    '.divider{margin:0 0 12pt}}</style></head><body>' +
     (editable ? '<div class="bar">Editing mode – click in the page to edit. <button onclick="saveDoc()">Save changes</button> <span id="st"></span></div>' : '') +
     '<div id="doc"' + (editable ? ' contenteditable="true"' : '') + '>' + inner + '</div>' +
-    (editable ? '<script>function saveDoc(){var st=document.getElementById("st");window.opener&&window.opener.__dmsSaveDoc?window.opener.__dmsSaveDoc(' +
-      JSON.stringify(letterId) + ',document.getElementById("doc").innerHTML).then(function(){st.textContent="Saved ✔"},function(e){st.textContent="Error: "+e.message}):st.textContent="Open this from the DMS app to save."}<\/script>' : '') +
+    (editable ? '<script>var LID=' + JSON.stringify(letterId) + ',busy=false;' +
+      'window.addEventListener("message",function(e){var d=e.data;if(!d||d.type!=="dms-saved"||d.letterId!==LID)return;busy=false;clearTimeout(window.__t);' +
+      'document.getElementById("st").textContent=d.ok?"Saved \\u2714 "+new Date().toLocaleTimeString():"Error: "+d.error;});' +
+      'function saveDoc(){var st=document.getElementById("st");' +
+      'if(!window.opener||window.opener.closed){st.textContent="The DMS app tab is closed. Reopen the app, log in, then click Edit Document again (copy your edits first).";return;}' +
+      'if(busy)return;busy=true;st.textContent="Saving...";' +
+      'window.__t=setTimeout(function(){busy=false;st.textContent="No response from the DMS app tab - make sure it is still open and logged in, then try again.";},20000);' +
+      'try{window.opener.postMessage({type:"dms-save",letterId:LID,html:document.getElementById("doc").innerHTML},"*");}catch(err){busy=false;clearTimeout(window.__t);st.textContent="Error: "+err.message;}}<\/script>' : '') +
     '</body></html>';
 
   const blobUrl = (html, type) => URL.createObjectURL(new Blob([html], { type: type || 'text/html' }));
@@ -810,10 +854,234 @@
     return r.doc_html;
   }
 
+  // Edit Document pages (blob: windows) ask this tab to save via postMessage - works even when the app runs
+  // from a local file or another origin, where reaching into window.opener directly is blocked.
+  window.__dmsEditWins = new Set();
+  window.addEventListener('message', async e => {
+    const d = e.data;
+    if (!d || d.type !== 'dms-save' || !e.source) return;
+    if (!Array.from(window.__dmsEditWins).some(w => w === e.source)) return;      // only windows opened by this app
+    const reply = r => { try { e.source.postMessage(Object.assign({ type: 'dms-saved', letterId: d.letterId }, r), '*'); } catch (_) {} };
+    try {
+      if (!appToken) throw new Error('Your login session has expired. Log in again in the DMS tab, then reopen Edit Document.');
+      await window.__dmsSaveDoc(String(d.letterId), String(d.html || ''));
+      reply({ ok: true });
+    } catch (err) { reply({ ok: false, error: err.message || String(err) }); }
+  });
+
   window.__dmsSaveDoc = async (letterId, html) => {
-    must(await sb.from('letter_info').update({ doc_html: html }).eq('letter_id', letterId));
+    const saved = must(await sb.from('letter_info').update({ doc_html: html }).eq('letter_id', letterId).select('letter_id'));
+    if (!saved || !saved.length) throw new Error('Nothing was saved - the letter was not found or you do not have permission to change it.');
     logAct('UPDATE_DOCUMENT', 'letter_info', letterId, 'Edited generated document.');
   };
+
+  // ============================================================
+  //  DO Letter format  (modelled on "revised_Oct26_letter_-_21_00KMS_aligned.docx")
+  //  Tahoma · legal page (8.5x14in) · From/To block · centred bold-underlined Rc.No ·
+  //  "Sub:" and "Ref:" hanging indents · justified 11 pt body · shaded header row in tables ·
+  //  "Yours faithfully," block indented to the right.
+  // ============================================================
+  const isDoLetter = t => String(t || '').toLowerCase().replace(/[^a-z0-9]/g, '') === 'doletter';
+
+  function renderDoLetterHtml(info, dateStr) {
+    const l = info.letter;
+    const lines = s => S(s).split(/\r?\n|<br\s*\/?>/i).map(x => x.trim()).filter(Boolean);
+    const P = (inner, st) => '<p style="margin:0;' + (st || '') + '">' + inner + '</p>';
+    const blank = () => P('&nbsp;');
+    const TAB = '<span class="tab" style="display:inline-block;width:48px"></span>';
+    const BODY = 'font-size:11pt;text-align:justify;';
+
+    const fromOff = addrParts(l.from_officer || 'Sri xxxxxxxxxxxxxxx, SFS.,').map(endPunct);
+    const fromAddr = addrParts(l.from_address || 'Social Forestry Division, Chittoor.').map(endPunct);
+    const toLines = addrParts(l.to_officer || 'The Project Director,', l.to_address || 'PIU, Tirupati, NHAI').map(endPunct);
+    const fromHtml = fromOff.map((ln, i) => {
+      if (i) return esc(ln);
+      const c = ln.indexOf(',');                                   // officer's name in bold, rest normal
+      return c > 0 ? '<b>' + esc(ln.slice(0, c)) + '</b>' + esc(ln.slice(c)) : '<b>' + esc(ln) + '</b>';
+    }).concat(fromAddr.map(esc)).join('<br>');
+
+    let h = '<div class="letter do-letter" style="font-family:Tahoma,Arial,sans-serif;font-size:12pt;line-height:1.15">';
+    h += P('<b>' + esc(l.title1 || 'GOVERNMENT OF ANDHRA PRADESH') + '</b>', 'text-align:center');
+    h += P(esc(l.title2 || 'FOREST DEPARTMENT'), 'text-align:center');
+    h += '<table style="width:100%;border:0;border-collapse:collapse"><tr>' +
+         '<td style="width:55%;vertical-align:top;text-align:left">From<br>' + fromHtml + '</td>' +
+         '<td style="width:45%;vertical-align:top;text-align:left">To<br>' + toLines.map(esc).join('<br>') + '</td></tr></table>';
+    h += P('<b><u>' + esc(l.file_no || '143/2023/M1') + ', dt: ' + esc(dateStr) + '</u></b>', 'text-align:center');
+    h += P('Sir,');
+    h += P('Sub:' + TAB + esc(l.subject || 'Operation & Maintenance of plantation works...') + ' – Reg.', 'text-align:justify;margin-left:96px;text-indent:-48px');
+    h += blank();
+    if (info.refs.length) info.refs.forEach((r, i) => {
+      const t = (i + 1) + '. ' + esc(r.refer_no || 'N/A') + ', dt: ' + (r.refer_dt ? esc(fmtDate(r.refer_dt)) : 'N/A');
+      h += i === 0 ? P('Ref:' + TAB + t, 'margin-left:96px;text-indent:-48px') : P(t, 'margin-left:96px');
+    });
+    else h += P('Ref:' + TAB + '1. [No references explicitly mapped]', 'margin-left:96px;text-indent:-48px');
+    h += P('🙢🙠', 'text-align:center;font-family:Wingdings');
+    const paras = info.paras;
+    if (paras.length) paras.forEach((p, i) => {
+      h += P((paras.length > 1 ? p.para_no + '. ' : '') + esc(p.para_text).replace(/\n/g, '<br>'), BODY + 'text-indent:48px');
+      if (i < paras.length - 1) h += blank();
+    });
+    else h += P('In compliance with the references cited above, it is informed that the scheme proposals for records matching ID ' + esc(l.letter_id) + ' have been compiled successfully.', BODY + 'text-indent:48px');
+    info.tables.forEach(rawRows => {
+      const rows = compactRows(rawRows);
+      if (!rows || !rows.length) return;
+      h += blank() + '<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:10pt">' +
+        rows.map((r, ri) => '<tr>' + r.map(c => {
+          const t = S(c);
+          const st = ri === 0 ? 'background-color:#D9D9D9;font-weight:bold;text-align:center' : 'text-align:' + (t.length <= 18 ? 'center' : 'justify');
+          return '<td style="' + st + '">' + esc(t).replace(/\n/g, '<br>') + '</td>';
+        }).join('') + '</tr>').join('') + '</table>' + blank();
+    });
+    h += P('Hence, it is requested that necessary administrative sanction be accorded at the earliest possible.', BODY + 'text-indent:48px');
+    h += blank();
+    h += P('Yours faithfully,', 'font-size:11pt;margin-left:432px');
+    h += blank() + blank();
+    fromOff.slice(1).concat(fromAddr).forEach(ln => { h += P(esc(ln), 'font-size:11pt;margin-left:384px'); });
+    return h + '</div>';
+  }
+
+  // ---------- real .docx export (used for the "DO Letter" document type) ----------
+  // Walks the stored letter HTML (including any hand edits) and rebuilds it with the `docx`
+  // library as a genuine Office Open XML file using the sample letter's page setup and fonts.
+  async function htmlToDocxBase64(html) {
+    const D = window.docx;
+    if (!D || !D.Document) throw new Error('Word (.docx) library could not be loaded. Check your internet connection and reload.');
+    const FONT = 'Tahoma', SIZE = 22;                       // 11 pt body, as in the sample letter
+    const PAGE_W = 12240, PAGE_H = 20160;                   // legal 8.5 x 14 in
+    const M = { top: 426, bottom: 709, left: 1134, right: 1276 };
+    const TEXT_W = PAGE_W - M.left - M.right;               // 9830 twips
+    const SP = { before: 0, after: 0, line: 240 };
+    const dom = new DOMParser().parseFromString('<body>' + html + '</body>', 'text/html');
+    const BLOCKS = new Set(['P', 'DIV', 'TABLE', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'HR', 'BLOCKQUOTE']);
+
+    const styleOf = (el, prop) => {
+      const m = new RegExp('(?:^|;)\\s*' + prop + '\\s*:\\s*([^;]+)', 'i').exec(el.getAttribute('style') || '');
+      return m ? m[1].trim() : '';
+    };
+    const alignOf = el => {
+      const a = (styleOf(el, 'text-align') || el.getAttribute('align') || '').toLowerCase();
+      return { center: D.AlignmentType.CENTER, right: D.AlignmentType.RIGHT, justify: D.AlignmentType.JUSTIFIED, left: D.AlignmentType.LEFT }[a];
+    };
+    const pxTw = v => { const m = /(-?[\d.]+)\s*(px|pt)?/.exec(v || ''); return m ? Math.round(parseFloat(m[1]) * (m[2] === 'pt' ? 20 : 15)) : 0; };
+    const hexOf = v => { const m = /#([0-9a-f]{6})/i.exec(v || ''); return m ? m[1].toUpperCase() : null; };
+    // merge an element's own character formatting into the inherited one
+    function fmtOf(el, fmt) {
+      const f = Object.assign({}, fmt), tag = el.tagName || '';
+      if (tag === 'B' || tag === 'STRONG' || tag === 'TH' || /^(bold|[6-9]00)$/i.test(styleOf(el, 'font-weight'))) f.bold = true;
+      if (/^H[1-6]$/.test(tag)) f.bold = true;
+      if (tag === 'I' || tag === 'EM' || /italic/i.test(styleOf(el, 'font-style'))) f.italics = true;
+      if (tag === 'U' || /underline/i.test(styleOf(el, 'text-decoration'))) f.underline = {};
+      const ff = styleOf(el, 'font-family'); if (ff) f.font = ff.split(',')[0].replace(/["']/g, '').trim();
+      const fs = /([\d.]+)\s*(pt|px)/.exec(styleOf(el, 'font-size'));
+      if (fs) f.size = Math.round(parseFloat(fs[1]) * (fs[2] === 'px' ? 1.5 : 2));
+      return f;
+    }
+    function inline(node, fmt, out) {
+      node.childNodes.forEach(n => {
+        if (n.nodeType === 3) {
+          const t = n.nodeValue.replace(/\s+/g, ' ');
+          if (t) out.push(Object.assign({ text: t }, fmt));
+        } else if (n.nodeType === 1) {
+          if (n.tagName === 'BR') { out.push({ br: true }); return; }
+          if (n.classList && n.classList.contains('tab')) { out.push({ tab: true }); return; }
+          if (BLOCKS.has(n.tagName)) return;
+          inline(n, fmtOf(n, fmt), out);
+        }
+      });
+      return out;
+    }
+    function makeRuns(pieces) {
+      const real = pieces.filter(p => p.br || p.tab || p.text);
+      for (const p of real) { if (p.br || p.tab) continue; p.text = p.text.replace(/^ +/, ''); if (p.text) break; }
+      for (let i = real.length - 1; i >= 0; i--) { const p = real[i]; if (p.br || p.tab) continue; p.text = p.text.replace(/ +$/, ''); if (p.text) break; }
+      return real.filter(p => p.br || p.tab || p.text).map(p => {
+        const base = { font: p.font || FONT, size: p.size || SIZE };
+        if (p.br) return new D.TextRun(Object.assign({ break: 1 }, base));
+        if (p.tab) return new D.TextRun(Object.assign({ children: [new D.Tab()] }, base));
+        return new D.TextRun(Object.assign({ text: p.text, bold: p.bold, italics: p.italics, underline: p.underline }, base));
+      });
+    }
+    const para = (pieces, opts) => new D.Paragraph(Object.assign({ children: makeRuns(pieces), spacing: SP }, opts));
+    const emptyPara = (size, opts) => new D.Paragraph(Object.assign({ children: [new D.TextRun({ text: '', font: FONT, size: size || SIZE })], spacing: SP }, opts));
+
+    function blocks(container, ctx) {
+      const out = []; let pending = [];
+      const flush = () => {
+        if (pending.some(p => p.br || p.tab || /\S/.test(p.text))) out.push(para(pending, ctx.pOpts || {}));
+        pending = [];
+      };
+      container.childNodes.forEach(n => {
+        if (n.nodeType === 3) { const t = n.nodeValue.replace(/\s+/g, ' '); if (t) pending.push(Object.assign({ text: t }, ctx.fmt || {})); return; }
+        if (n.nodeType !== 1) return;
+        const tag = n.tagName;
+        if (!BLOCKS.has(tag)) { const tmp = []; if (n.tagName === 'BR') tmp.push({ br: true }); else if (n.classList.contains('tab')) tmp.push({ tab: true }); else inline({ childNodes: [n] }, ctx.fmt || {}, tmp); pending.push(...tmp); return; }
+        flush();
+        const fmt = fmtOf(n, ctx.fmt || {});
+        if (tag === 'TABLE') { out.push(...table(n, fmt)); return; }
+        if (tag === 'HR') { out.push(new D.Paragraph({ children: [], spacing: SP, border: { bottom: { style: D.BorderStyle.SINGLE, size: 6, space: 1, color: '000000' } } })); return; }
+        const own = Object.assign({}, ctx.pOpts || {});
+        const al = alignOf(n); if (al) own.alignment = al;
+        const ml = pxTw(styleOf(n, 'margin-left')), ti = pxTw(styleOf(n, 'text-indent'));
+        if (ml || ti) { own.indent = {}; if (ml) own.indent.left = ml; if (ti > 0) own.indent.firstLine = ti; if (ti < 0) { own.indent.left = Math.max(ml, -ti); own.indent.hanging = -ti; } }
+        if (tag === 'LI') own.bullet = { level: 0 };
+        if (n.classList && n.classList.contains('divider')) { own.alignment = D.AlignmentType.CENTER; own.pageBreakBefore = true; fmt.bold = true; }
+        const hasBlockKids = Array.from(n.children).some(c => BLOCKS.has(c.tagName));
+        if (hasBlockKids) out.push(...blocks(n, { fmt, pOpts: own }));
+        else {
+          const pieces = inline(n, fmt, []);
+          if (pieces.some(p => p.br || p.tab || /\S/.test(p.text))) out.push(para(pieces, own));
+          else if (tag === 'P') out.push(emptyPara(fmt.size, own));          // keep intentional blank lines
+        }
+      });
+      flush();
+      return out;
+    }
+
+    function table(t, tfmt) {
+      const rows = Array.from(t.querySelectorAll('tr')).filter(tr => tr.closest('table') === t);
+      if (!rows.length) return [];
+      const ncol = Math.max(...rows.map(r => r.children.length));
+      const bordered = !/border\s*:\s*(0|none)/i.test(t.getAttribute('style') || '') && parseInt(t.getAttribute('border') || '0', 10) > 0;
+      // widths: explicit % on first-row cells if given, else proportional to longest text (clamped)
+      const pct = Array.from({ length: ncol }, (_, c) => { const td = rows[0].children[c]; const m = td && /([\d.]+)\s*%/.exec(styleOf(td, 'width')); return m ? parseFloat(m[1]) : 0; });
+      const weight = pct.every(x => x > 0) ? pct
+        : Array.from({ length: ncol }, (_, c) => Math.min(60, Math.max(5, ...rows.map(r => r.children[c] ? (r.children[c].textContent || '').trim().length : 0))));
+      const wsum = weight.reduce((a, b) => a + b, 0);
+      const cols = weight.map(w => Math.floor(TEXT_W * w / wsum));
+      const none = { style: D.BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+      const line = { style: D.BorderStyle.SINGLE, size: 4, color: '000000' };
+      const b = bordered ? { top: line, bottom: line, left: line, right: line } : { top: none, bottom: none, left: none, right: none };
+      return [new D.Table({
+        width: { size: TEXT_W, type: D.WidthType.DXA }, columnWidths: cols, layout: D.TableLayoutType.FIXED,
+        borders: Object.assign({ insideHorizontal: bordered ? line : none, insideVertical: bordered ? line : none }, b),
+        rows: rows.map((r, ri) => new D.TableRow({
+          cantSplit: true, tableHeader: bordered && ri === 0,
+          children: Array.from({ length: ncol }, (_, c) => {
+            const td = r.children[c];
+            const cfmt = td ? fmtOf(td, tfmt) : tfmt;
+            const pOpts = {}; const al = td && alignOf(td); if (al) pOpts.alignment = al;
+            let kids = td ? blocks(td, { fmt: cfmt, pOpts }) : [];
+            if (!kids.length) kids = [emptyPara(cfmt.size)];
+            const fill = td && hexOf(styleOf(td, 'background-color') || styleOf(td, 'background'));
+            return new D.TableCell(Object.assign({ children: kids, width: { size: cols[c], type: D.WidthType.DXA }, borders: b,
+              margins: { top: 40, bottom: 40, left: 80, right: 80 } },
+              fill ? { shading: { type: D.ShadingType.CLEAR, fill, color: 'auto' } } : {}));
+          })
+        }))
+      })];
+    }
+
+    const children = blocks(dom.body, {});
+    const doc = new D.Document({
+      creator: 'Social Forestry Division, Chittoor',
+      styles: { default: { document: { run: { font: FONT, size: SIZE }, paragraph: { spacing: SP } } } },
+      sections: [{
+        properties: { page: { size: { width: PAGE_W, height: PAGE_H }, margin: Object.assign({ header: 0, footer: 0 }, M) } },
+        children: children.length ? children : [new D.Paragraph('')]
+      }]
+    });
+    return await D.Packer.toBase64String(doc);
+  }
 
   // ============================================================
   //  API  (same names/arguments/return shapes as the .gs file)
@@ -889,7 +1157,7 @@
         const fSub = S(r.subject_id).trim().toLowerCase(), fSec = S(r.section).trim().toUpperCase();
         if (target === '' || fSub === target || fSub === '') {
           if (perm && perm.length && fSec !== '' && !(perm.includes(fSec) || perm.some(s => fNo.toUpperCase().includes(s)))) return;
-          if (!out.some(o => o.primary === fNo)) out.push({ primary: fNo, secondary: fSec ? fNo + ' (Section: ' + fSec + ')' : fNo, fileId: S(r.file_id) });
+          if (!out.some(o => o.primary === fNo)) out.push({ primary: fNo, secondary: fSec ? fNo + ' (Section: ' + fSec + ')' : fNo, fileId: S(r.file_id), section: fSec });
         }
       });
       return out;
@@ -991,23 +1259,47 @@
         letter,
         references: info.refs.map(r => ({ refer_no: S(r.refer_no), refer_dt: r.refer_dt ? fmtDate(r.refer_dt) : '' })),
         paragraphs: info.paras.map(p => ({ no: p.para_no, text: S(p.para_text).trim() })),
-        tables: info.tables
+        tables: info.tables.map(compactRows)
       };
     },
     getLettersForBatchDropdown: async (userSections) => {
       const subMap = {}; (await loadSubjects()).forEach(s => { subMap[S(s.subject_id).trim()] = S(s.subject_name).trim(); });
-      const rows = must(await sb.from('letter_info').select('letter_id,file_no,section,subject_id,created_at,lt_generated'));
+      // optional columns (letter_name, updated_at) may not exist yet -> try the richest select first
+      const baseCols = 'letter_id,file_no,section,subject_id,created_at,lt_generated';
+      let qr;
+      for (const extra of [',letter_name,updated_at', ',updated_at', ',letter_name', '']) {
+        qr = await sb.from('letter_info').select(baseCols + extra);
+        if (!qr.error) break;
+      }
+      const rows = must(qr);
+      // "File last updated" = newest of: letter edit time, and when its references / paragraphs / tables were last added
+      const lastTouch = {};
+      const touch = (id, v) => { const t = v ? new Date(v).getTime() : 0; if (id && t && (!lastTouch[id] || t > lastTouch[id])) lastTouch[id] = t; };
+      for (const tb of ['ref_info', 'paras', 'letter_tables']) {
+        const q = await sb.from(tb).select('letter_id,created_at');
+        if (!q.error) (q.data || []).forEach(x => touch(x.letter_id, x.created_at));
+      }
       // A letter with a stored document counts as generated even if the flag column is blank
       const withDoc = new Set(must(await sb.from('letter_info').select('letter_id').not('doc_html', 'is', null)).map(r => r.letter_id));
       const perm = permitted(userSections), out = [];
+      // The file master knows each file's true section; use it in preference to the section stamped on the letter
+      const fileSecMap = {};
+      must(await sb.from('file_no').select('file_no,section')).forEach(f => { const k = S(f.file_no).trim(); if (k && S(f.section).trim()) fileSecMap[k] = S(f.section).trim(); });
       rows.forEach(r => {
-        const fileNo = S(r.file_no).trim(), sec = S(r.section).trim() || 'Uncategorized';
-        if (perm && perm.length && !perm.some(s => sec.toUpperCase().includes(s) || fileNo.toUpperCase().includes(s))) return;
+        const fileNo = S(r.file_no).trim(), fileSec = fileSecMap[fileNo] || '';
+        const sec = fileSec || S(r.section).trim() || 'Uncategorized';
+        if (perm && perm.length) {
+          const secUp = sec.toUpperCase();
+          const allowed = perm.some(s => secUp === s || secUp.startsWith(s + ' ')) ||
+                          (sec === 'Uncategorized' && perm.some(s => fileNo.toUpperCase().includes(s)));   // fall back to the file no. only when no section is known
+          if (!allowed) return;
+        }
         let subj = subMap[S(r.subject_id).trim()] || 'General Letter';
         if (subj.length > 100) subj = subj.slice(0, 97) + '...';
         let label = 'Uncategorized Date', y = 1970, m = 0, raw = 0;
         if (r.created_at) { const d = new Date(r.created_at); raw = d.getTime(); y = d.getFullYear(); m = d.getMonth(); label = MONTHS[m] + ' ' + y; }
-        out.push({ id: r.letter_id, section: sec, month: label, yearNum: y, monthNum: m, rawTimestamp: raw,
+        touch(r.letter_id, r.created_at); touch(r.letter_id, r.updated_at);
+        out.push({ id: r.letter_id, customName: S(r.letter_name).trim(), lastUpdated: lastTouch[r.letter_id] || 0, section: sec, month: label, yearNum: y, monthNum: m, rawTimestamp: raw,
           label: 'File: ' + (fileNo || 'N/A') + ' - ' + subj, ltGenerated: (withDoc.has(r.letter_id) || S(r.lt_generated).trim().toLowerCase() === 'yes') ? 'Yes' : S(r.lt_generated).trim() });
       });
       out.sort((a, b) => a.section.localeCompare(b.section, undefined, { sensitivity: 'accent', numeric: true })
@@ -1103,21 +1395,51 @@
       const existing = await getDocHtml(letterId);
       const dateStr = new Date().toLocaleDateString();
       const fresh = renderLetterHtml(await gatherLetter(letterId), dateStr);
-      const html = existing + '<div class="divider">— Updated / Synced on ' + esc(dateStr) + ' —</div>' + fresh;
+      const html = existing + '<div class="divider" style="page-break-before:always;break-before:page;text-align:center;font-weight:bold;margin:30px 0">— Updated / Synced on ' + esc(dateStr) + ' —</div>' + fresh;
       must(await sb.from('letter_info').update({ doc_html: html, lt_gen_dt: dateStr + ' (updated)' }).eq('letter_id', letterId));
       return ok({ message: 'Latest data appended to the document (existing content preserved).', fileId: letterId });
     }),
-    downloadGeneratedFileBlob: async (letterId, format) => {
+    renameLetter: wrap(async (letterId, newName) => {
+      const name = S(newName).trim();
+      const { data, error } = await sb.from('letter_info').update({ letter_name: name || null }).eq('letter_id', letterId).select('letter_id');
+      if (error) {
+        if (/letter_name/i.test(error.message || '')) throw new Error("The 'letter_name' column does not exist yet. Run this once in the Supabase SQL editor:  alter table letter_info add column if not exists letter_name text;");
+        throw new Error(friendly(error));
+      }
+      if (!data.length) throw new Error('Letter not found, or you do not have permission to rename it.');
+      logAct('RENAME_LETTER', 'letter_info', letterId, name ? 'Renamed letter to: ' + name : 'Reset letter name to default.');
+      return ok({ message: name ? 'Letter renamed.' : 'Name reset to default.' });
+    }),
+    getDefaultDownloadName: async (letterId) => {
+      let q = await sb.from('letter_info').select('file_no,letter_name').eq('letter_id', letterId).maybeSingle();
+      if (q.error) q = await sb.from('letter_info').select('file_no').eq('letter_id', letterId).maybeSingle();
+      const l = must(q);
+      if (l && S(l.letter_name).trim()) return S(l.letter_name).trim().replace(/[\/\\:*?"<>|]/g, '_');
+      return (l && l.file_no ? S(l.file_no).replace(/[\/\\:*?"<>|]/g, '_') + '_' : '') + letterId;
+    },
+    downloadGeneratedFileBlob: async (letterId, format, customName) => {
       const html = await getDocHtml(letterId);
-      const l = must(await sb.from('letter_info').select('file_no').eq('letter_id', letterId).maybeSingle());
-      const base = (l && l.file_no ? S(l.file_no).replace(/[\/\\:]/g, '_') + '_' : '') + letterId;
+      const l = must(await sb.from('letter_info').select('file_no,document_type').eq('letter_id', letterId).maybeSingle());
+      // a name typed by the user wins; otherwise "<file no>_<letter id>"
+      const typed = S(customName).replace(/\.(docx?|pdf)$/i, '').replace(/[\/\\:*?"<>|]/g, '_').trim();
+      const base = typed || ((l && l.file_no ? S(l.file_no).replace(/[\/\\:*?"<>|]/g, '_') + '_' : '') + letterId);
       if (String(format).toLowerCase() === 'pdf') {
         // Opens the browser's print dialog -> choose "Save as PDF"
         const w = window.open(blobUrl(pageShell(base, html, false, letterId)), '_blank');
         if (w) w.addEventListener('load', () => w.print());
         return { handled: true, message: "Print dialog opened — choose 'Save as PDF'." };
       }
-      const wordHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body>' + html + '</body></html>';
+      // DO Letter -> genuine .docx file
+      if (l && isDoLetter(l.document_type)) {
+        const docxB64 = await htmlToDocxBase64(html);
+        return { success: true, base64: docxB64, fileName: base + '.docx',
+                 mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
+      }
+      // all other document types -> legacy Word-compatible HTML (.doc)
+      const wordCss = '@page Section1{size:21.0cm 29.7cm;margin:2.0cm 2.0cm 2.0cm 2.5cm}div.Section1{page:Section1}' +
+        'body{font-family:"Times New Roman";font-size:12pt}p{margin:0 0 6pt}table{border-collapse:collapse}tr{page-break-inside:avoid}' +
+        '.divider{page-break-before:always;text-align:center;font-weight:bold}';
+      const wordHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>' + wordCss + '</style></head><body><div class="Section1">' + html + '</div></body></html>';
       const b64 = btoa(unescape(encodeURIComponent('\ufeff' + wordHtml)));
       return { success: true, base64: b64, fileName: base + '.doc', mimeType: 'application/msword' };
     }
@@ -1267,6 +1589,7 @@
             if (appShell) appShell.classList.remove('hidden');
             showMainTab('create');
             screenName = 'main';
+            if (currentUserRole) loadSectionFilteredDropdowns();   // pick up master/subject/letter changes made elsewhere
         }
 
         // Highlight the active sidebar link so it's always clear which screen you're on.
@@ -1330,6 +1653,7 @@
             if (createBtn) createBtn.classList.remove('active');
             if (manageBtn) manageBtn.classList.add('active');
             if (sidebarManageActions) sidebarManageActions.classList.remove('hidden');
+            if (currentUserRole) loadBatchLetterDropdown();          // always show the latest letters / generated status
         } else {
             createPanel.classList.remove('hidden');
             managePanel.classList.add('hidden');
@@ -1686,6 +2010,7 @@
             .withSuccessHandler(function(values) {
                 const select = document.getElementById(elementId);
                 if (!select) return;
+                const prevValue = select.value;          // keep what the user already picked on a refresh
                 select.innerHTML = '<option value="">--Select--</option>';
                 values.forEach(val => {
                     let opt = document.createElement('option');
@@ -1693,6 +2018,7 @@
                     opt.textContent = val;
                     select.appendChild(opt);
                 });
+                if (prevValue && values.indexOf(prevValue) !== -1) { select.value = prevValue; return; }
 
                 if (elementId === "t2") {
                     if (select.options.length > 2) {
@@ -1713,12 +2039,29 @@
             .getDropdownValues(sheetName, columnLetter);
     }
 
+    let lastLiveRefresh = Date.now();
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible' || !currentUserRole) return;
+        if (Date.now() - lastLiveRefresh < 15000) return;
+        lastLiveRefresh = Date.now();
+        const mainScreen = document.getElementById('screen-main');
+        const createTab = document.getElementById('main-tab-create');
+        if (mainScreen && !mainScreen.classList.contains('hidden') && createTab && !createTab.classList.contains('hidden')) {
+            loadDropdown("t1", "titles", "A"); loadDropdown("t2", "titles", "A");
+            loadDropdown("doc-type-select", "Document_type", "A");
+            loadDropdown("foff", "from_officer", "A"); loadDropdown("toff", "to_officer", "A");
+            loadDropdown("fa", "from_address", "A"); loadDropdown("ta", "to_address", "A");
+            loadSubjectDropdown();
+        }
+    });
+
     function loadSubjectDropdown() {
         google.script.run
             .withSuccessHandler(function(subjects) {
                 globalSubjectsData = subjects || [];
                 const select = document.getElementById("subject-select");
                 if (!select) return;
+                const prevSubject = select.value;       // keep the current choice on a refresh
                 select.innerHTML = '<option value="">--Select Subject--</option>';
                 globalSubjectsData.forEach(s => {
                     let opt = document.createElement('option');
@@ -1726,6 +2069,7 @@
                     opt.textContent = s.name; 
                     select.appendChild(opt);
                  });
+                if (prevSubject && globalSubjectsData.some(x => String(x.id) === String(prevSubject))) select.value = prevSubject;
             })
             .withFailureHandler(err => console.error("Failed to load subjects:", err))
             .getSubjectDropdownValues(currentUserSections);
@@ -1779,6 +2123,7 @@
                 
                 if (selectedFileNo) {
                     fileSelect.value = selectedFileNo;
+                    syncHiddenFromFile(selectedFileNo);
                 }
             })
             .withFailureHandler(err => {
@@ -1788,18 +2133,41 @@
             .getFilteredFilesBySubject(subjectId, currentUserSections);
     }
 
+    // Keeps the hidden File ID + Section in step with the chosen File No. The letter's section must come
+    // from the FILE (file_no.section); the subject's section is only the fallback when the file has none.
+    function syncHiddenFromFile(selectedVal) {
+        const hiddenFileIdInput = document.getElementById('hidden-file-id-input');
+        const hiddenSectionInput = document.getElementById('hidden-section-input');
+        let matchedFile = globalFilesData.find(f => String(f.primary).trim() === String(selectedVal).trim());
+        if (hiddenFileIdInput) hiddenFileIdInput.value = matchedFile ? (matchedFile.fileId || "") : "";
+        if (matchedFile && matchedFile.section && hiddenSectionInput) hiddenSectionInput.value = matchedFile.section;
+    }
     document.addEventListener('change', function(e) {
-        if (e.target && e.target.id === 'fn1') {
-            const selectedVal = e.target.value;
-            const hiddenFileIdInput = document.getElementById('hidden-file-id-input');
-            let matchedFile = globalFilesData.find(f => String(f.primary).trim() === String(selectedVal).trim());
-            if (matchedFile && hiddenFileIdInput) {
-                hiddenFileIdInput.value = matchedFile.fileId || "";
-            } else if (hiddenFileIdInput) {
-                hiddenFileIdInput.value = "";
-            }
-        }
+        if (e.target && e.target.id === 'fn1') syncHiddenFromFile(e.target.value);
     });
+
+    let batchLetterNames_ = {};
+    function formatLastUpdated_(ms) {
+        if (!ms) return '<span style="color:#999;">—</span>';
+        const d = new Date(ms); if (isNaN(d)) return '<span style="color:#999;">—</span>';
+        const dt = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const tm = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        return dt + '<br><small style="color:#666;">' + tm + '</small>';
+    }
+    // Lets the user give a letter its own name in the Manage & Generate list (blank = back to the default)
+    function renameLetterRecord(letterId) {
+        const cur = batchLetterNames_[letterId] || { custom: '', label: '' };
+        const entered = prompt('Letter name shown in the list.\nLeave blank to restore the default name:', cur.custom || cur.label);
+        if (entered === null) return;
+        const name = entered.trim() === cur.label ? '' : entered.trim();      // unchanged default text = no custom name
+        google.script.run
+            .withSuccessHandler(res => {
+                if (res && res.result === 'success') { showToast(res.message || 'Renamed.', 'success'); loadBatchLetterDropdown(); }
+                else showToast('Error: ' + ((res && res.error) || 'Could not rename.'), 'error', 12000);
+            })
+            .withFailureHandler(err => showToast('Error: ' + err.message, 'error', 12000))
+            .renameLetter(letterId, name);
+    }
 
     function loadBatchLetterDropdown() {
         resetSelectedLetterAction();
@@ -1808,9 +2176,11 @@
                 const tbody = document.getElementById("batch-letters-tbody");
                 if (!tbody) return;
                 tbody.innerHTML = '';
+                batchLetterNames_ = {};
+                (letterList || []).forEach(it => { batchLetterNames_[it.id] = { custom: it.customName || '', label: it.label || '' }; });
                 
                 if (!letterList || letterList.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #666;">No permitted letters found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">No permitted letters found</td></tr>';
                     return;
                 }
                 
@@ -1834,7 +2204,7 @@
                     secRow.className = 'table-primary';
                     secRow.style.backgroundColor = '#fff3cd';
                     secRow.innerHTML = `
-                      <td colspan="4" class="py-2 px-3">
+                      <td colspan="5" class="py-2 px-3">
                         <div class="table-primary">
                           <i class="bg-light text-secondary border-top border-bottom"></i>
                           <span>📁 ${section} Section Files</span>
@@ -1864,7 +2234,7 @@
                     sortedMonths.forEach(month => {
                         let monthRow = document.createElement('tr');
                         monthRow.className = 'batch-month-header';
-                        monthRow.innerHTML = `<td colspan="4">📅 Month: ${month}</td>`;
+                        monthRow.innerHTML = `<td colspan="5">📅 Month: ${month}</td>`;
                         tbody.appendChild(monthRow);
                         
                         let dates = monthsObj[month];
@@ -1876,10 +2246,12 @@
                                 
                                 row.innerHTML = `
                                     <td style="text-align: center;"><input type="checkbox" class="batch-row-checkbox" value="${item.id}" data-generated="${isGenerated ? 'yes' : 'no'}" onchange="handleBatchCheckboxChange(this)"></td>
-                                    <td>${item.label}</td>
+                                    <td>${item.customName ? escapeHtml_(item.customName) : item.label}</td>
+                                    <td style="white-space: nowrap;">${formatLastUpdated_(item.lastUpdated)}</td>
                                     <td>${statusText}</td>
                                     <td style="text-align: center;">
                                         <button type="button" onclick="editLetterRecord('${item.id}')" style="background-color: #17a2b8; padding: 4px 8px; font-size: 12px; width: auto; margin-right: 4px;">Edit</button>
+                                        <button type="button" onclick="renameLetterRecord('${item.id}')" style="background-color: #6f42c1; padding: 4px 8px; font-size: 12px; width: auto; margin-right: 4px;">Rename</button>
                                         <button type="button" onclick="deleteLetterRecord('${item.id}')" style="background-color: #dc3545; padding: 4px 8px; font-size: 12px; width: auto;">Delete</button>
                                     </td>
                                 `;
@@ -1986,7 +2358,9 @@
         google.script.run
             .withSuccessHandler(res => {
                 setFileActionStatus("", false);
-                window.open(res.editUrl, "_blank");
+                const ew = window.open(res.editUrl, "_blank");
+                if (!ew) return showToast("Pop-up blocked - allow pop-ups for this page and click Edit Document again.", "error");
+                window.__dmsEditWins.add(ew);
             })
             .withFailureHandler(err => {
                 setFileActionStatus("Error: " + err.message, true);
@@ -2024,8 +2398,25 @@
     // Bytes are fetched from the server as base64 and turned into a Blob client-side,
     // which is far more reliable inside an embedded web app than relying on Drive's
     // browser download URL (that needs an active Google session in the same tab).
+    const downloadNames_ = {};      // remembers the file name you chose for each letter during this session
     function downloadGeneratedFile(format) {
         if (!selectedLetterIdForAction) return showToast("Select a letter first.", "warning");
+        const letterId = selectedLetterIdForAction;
+        // Let the user rename the file before it downloads (blank = default name)
+        google.script.run
+            .withSuccessHandler(defName => {
+                const ext = String(format).toLowerCase() === 'pdf' ? 'PDF' : 'Word';
+                const entered = prompt('File name for the ' + ext + ' download (without extension).\nLeave as is to use the default:', downloadNames_[letterId] || defName);
+                if (entered === null) return;                       // cancelled
+                const chosen = entered.trim();
+                downloadNames_[letterId] = chosen && chosen !== defName ? chosen : '';
+                runDownload_(format, letterId, downloadNames_[letterId]);
+            })
+            .withFailureHandler(() => runDownload_(format, letterId, ''))
+            .getDefaultDownloadName(letterId);
+    }
+
+    function runDownload_(format, letterId, customName) {
         setFileActionStatus("Preparing " + format.toUpperCase() + " download...", false);
 
         google.script.run
@@ -2057,7 +2448,7 @@
             .withFailureHandler(err => {
                 setFileActionStatus("Error downloading: " + err.message, true);
             })
-            .downloadGeneratedFileBlob(selectedLetterIdForAction, format);
+            .downloadGeneratedFileBlob(letterId, format, customName);
     }
 
     function editLetterRecord(letterId) {
@@ -2796,10 +3187,13 @@
                     document.getElementById('preview-header-div').innerHTML = 
                         `${l.title1 || 'GOVERNMENT OF ANDHRA PRADESH'}<br>${l.title2 || 'FOREST DEPARTMENT'}`;
 
+                    const addrLinesHtml_ = (...vals) => vals.flatMap(v => String(v || '').split(/\r?\n|<br\s*\/?>/i))
+                        .map(x => x.trim().replace(/,[,\s]*$/, ',')).filter(Boolean)
+                        .map(x => escapeHtml_(/[.,]$/.test(x) ? x : x + ',')).join('<br>');
                     document.getElementById('preview-from-div').innerHTML = 
-                        `<strong>From</strong><br>${l.from_officer || ''},<br>${l.from_address || ''}`;
+                        `<strong>From</strong><br>${addrLinesHtml_(l.from_officer, l.from_address)}`;
                     document.getElementById('preview-to-div').innerHTML = 
-                        `<strong>To</strong><br>${l.to_officer || ''},<br>${l.to_address || ''}`;
+                        `<strong>To</strong><br>${addrLinesHtml_(l.to_officer, l.to_address)}`;
 
                     const currentDate = new Date().toLocaleDateString();
                     document.getElementById('preview-fileno-div').innerHTML = 
@@ -2944,7 +3338,6 @@
                     }
 
                     switchScreen('main');
-                    loadSectionFilteredDropdowns();
                 } else {
                     loginStatusMessage.style.color = "red";
                     loginStatusMessage.textContent = res.error || "Login failed.";

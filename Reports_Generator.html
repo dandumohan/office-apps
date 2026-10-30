@@ -14,7 +14,7 @@ input[type=text],input[type=month]{width:100%;padding:8px 10px;border:1px solid 
 button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:9px 16px;font:inherit;cursor:pointer}button.s{background:var(--ac2);color:var(--ac);padding:5px 10px;font-size:13px}
 .f{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--br);flex-wrap:wrap}.f:first-of-type{border-top:0}.f b{flex:1 1 220px;font-weight:600}.mu{color:var(--mu);font-size:13px}
 details{width:100%}summary{cursor:pointer;color:var(--ac);font-size:13px}.box table{width:100%;border-collapse:collapse;font-size:13px}.box td{padding:3px 6px;border-top:1px solid var(--br)}.box td input{width:84px;padding:3px 6px;border:1px solid var(--br);border-radius:6px;background:var(--bg);color:var(--tx)}
-.tb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.tb button{background:var(--ac2);color:var(--ac)}.tb button.on{background:var(--ac);color:#fff}#pane .p{max-height:72vh;overflow:auto;background:#cfd3d0;padding:8px;border-radius:8px}#pane h3{color:#222;margin:8px 4px}.xw{overflow:auto;background:#fff;margin-bottom:12px}.xt{border-collapse:collapse;table-layout:fixed;background:#fff;color:#000;font-size:11px}.xt td{border:1px solid #bbb;padding:2px 4px;white-space:pre-wrap;word-break:break-word;vertical-align:top}.xt td.r{text-align:right;white-space:nowrap}input.calc{font-style:italic;background:var(--ac2)!important}button:disabled{opacity:.5;cursor:default}.box{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--br);border-radius:8px}h3{font-size:13px;margin:6px 8px 0}.box th{position:sticky;top:0;background:var(--ac2);color:var(--ac);font-weight:600;font-size:12px;padding:4px 6px;text-align:left;vertical-align:bottom;min-width:84px}.box th:first-child,.box td:first-child{position:sticky;left:0;background:var(--card);min-width:190px;z-index:1}.box th:first-child{background:var(--ac2)}.box td.na{color:var(--mu);text-align:center}#out .f b{font-weight:500;word-break:break-all}
+.box.hide tr.bl{display:none}.tb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.tb button{background:var(--ac2);color:var(--ac)}.tb button.on{background:var(--ac);color:#fff}#pane .p{max-height:72vh;overflow:auto;background:#cfd3d0;padding:8px;border-radius:8px}#pane h3{color:#222;margin:8px 4px}.xw{overflow:auto;background:#fff;margin-bottom:12px}.xt{border-collapse:collapse;table-layout:fixed;background:#fff;color:#000;font-size:11px}.xt td{border:1px solid #bbb;padding:2px 4px;white-space:pre-wrap;word-break:break-word;vertical-align:top}.xt td.r{text-align:right;white-space:nowrap}input.calc{font-style:italic;background:var(--ac2)!important}button:disabled{opacity:.5;cursor:default}.box{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--br);border-radius:8px}h3{font-size:13px;margin:6px 8px 0}.box th{position:sticky;top:0;background:var(--ac2);color:var(--ac);font-weight:600;font-size:12px;padding:4px 6px;text-align:left;vertical-align:bottom;min-width:84px}.box th:first-child,.box td:first-child{position:sticky;left:0;background:var(--card);min-width:190px;z-index:1}.box th:first-child{background:var(--ac2)}.box td.na{color:var(--mu);text-align:center}#out .f b{font-weight:500;word-break:break-all}
 </style></head><body><main>
 <h1>Monthly Reports Generator</h1>
 <p class="sub">Fill the officer details, month and values. Cumulative = previous cumulative + during the month is calculated for you. Preview all files (the three letters appear together in one view), then generate the individual files.</p>
@@ -29,8 +29,11 @@ details{width:100%}summary{cursor:pointer;color:var(--ac);font-size:13px}.box ta
 <section><h2>2 · Excel returns (optional: upload this month's .xlsx, otherwise the built-in August 2026 data is used)</h2><div id="wb"></div>
 <p class="mu" style="margin:8px 0 0">Uploading an .xls? Open it in Excel and use Save As → .xlsx first, so cell formatting is kept.</p></section>
 
+<section><h2>3 · Add your own covering letter or Excel format (optional)</h2>
+<input type="file" id="addf" accept=".docx,.xlsx" multiple style="font-size:13px"> <span id="cmsg" class="mu"></span><div id="custom"></div>
+<p class="mu" style="margin:8px 0 0">Word (.docx) files are added as covering letters; Excel (.xlsx) files get the month/officer updates plus their own value-entry table. They are remembered in this browser. Standard patterns (From/To block, "for the month of …", Rc.No date, Sd/- signature) update automatically; you can also place tags such as <code>{{name}}</code> <code>{{designation}}</code> <code>{{place}}</code> <code>{{month}}</code> <code>{{year}}</code> <code>{{month_year}}</code> <code>{{fy}}</code> <code>{{next_month}}</code> <code>{{next_year}}</code> <code>{{last_date}}</code> <code>{{sig_name}}</code> <code>{{place_upper}}</code> <code>{{month_upper}}</code> anywhere in the file.</p></section>
 <section><button id="go">Preview all files</button> <span id="msg" class="mu"></span></section>
-<section id="pv" hidden><h2>3 · Preview – check before generating</h2><div id="tabs" class="tb"></div><div id="pane"></div>
+<section id="pv" hidden><h2>4 · Preview – check before generating</h2><div id="tabs" class="tb"></div><div id="pane"></div>
 <div style="margin:12px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button id="ok">✔ Looks good – generate individual files</button><span id="pvmsg" class="mu"></span></div><div id="out"></div></section>
 </main>
 <script>/*!
@@ -67,9 +70,10 @@ const cs=(o,n)=>o.length>1&&o===o.toUpperCase()?n.toUpperCase():n;
 const d0=new Date();d0.setDate(1);d0.setMonth(d0.getMonth()-1);$('#month').value=d0.getFullYear()+'-'+String(d0.getMonth()+1).padStart(2,'0');
 
 function ctx(){const[y,m]=$('#month').value.split('-').map(Number),n=$('#name').value.trim();
- return{y,m,M:MONTHS[m-1],mm:String(m).padStart(2,'0'),nm:String(m%12+1).padStart(2,'0'),ny:m==12?y+1:y,
+ const o={y,m,M:MONTHS[m-1],mm:String(m).padStart(2,'0'),nm:String(m%12+1).padStart(2,'0'),ny:m==12?y+1:y,
  fy:m>=4?`${y}-${String(y+1).slice(2)}`:`${y-1}-${String(y).slice(2)}`,last:new Date(y,m,0).getDate(),
- name:n,sig:n.replace(/^(Sri|Smt|Dr)\.?\s+/i,'').replace(/[,\s]+$/,''),des:$('#des').value.trim(),place:$('#place').value.trim()}}
+ name:n,sig:n.replace(/^(Sri|Smt|Dr)\.?\s+/i,'').replace(/[,\s]+$/,''),des:$('#des').value.trim(),place:$('#place').value.trim()};
+ const M=o.M,pl=o.place;o.tok={name:o.name,sig_name:o.sig,designation:o.des,place:pl,place_upper:pl.toUpperCase(),month:M,month_upper:M.toUpperCase(),year:String(y),month_year:M+' '+y,fy:o.fy,next_month:o.nm,next_year:String(o.ny),last_date:`${o.last}.${o.mm}.${y}`};return o}
 
 const ser=d=>'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'+S.serializeToString(d).replace(/^<\?xml[^>]*\?>\s*/,'');
 function edits(t,c){const E=[];
@@ -81,9 +85,10 @@ function edits(t,c){const E=[];
  if(/^\s*Rc\.\s*No/i.test(t))run(/\.(\d{2})\.(\d{4})(?!\d)/d,m=>[[1,c.nm],[2,String(c.ny)]]);
  run(/(Agro Forestry Scheme during |Approved APO )(20\d\d-\d\d)/dig,m=>[[2,c.fy]]);
  run(/^(\s*)(Sd\/-\s*(?!K\.Somasekharam)\S.*)$/d,m=>[[2,`Sd/- ${c.sig},`]]);
+ run(/\{\{\s*(\w+)\s*\}\}/dg,m=>{const v=c.tok[m[1].toLowerCase()];return v===undefined?[]:[[0,v]]});
  if(c.name)run(/^\s*(\S.*?)(?=\s*The\s+Conservator)/d,m=>[[1,c.name]]);
  if(c.des)run(/Divisional Forest Officer(?:\s*\(FAC\))?/dg,m=>[[0,c.des]]);
- if(c.place)run(/Chittoor/dig,m=>[[0,cs(m[0],c.place)]]);
+ if(c.place)run(/Chit+oor/dig,m=>[[0,cs(m[0],c.place)]]);
  E.sort((a,b)=>b[0]-a[0]);const R=[];let lim=1e9;for(const e of E)if(e[1]<=lim){R.push(e);lim=e[0]}return R}
 
 function setSpan(ns,s,e,str){let o=0,first=true;for(const n of ns){const t=n.textContent,a=o;o+=t.length;if(o<=s||a>=e)continue;
@@ -94,8 +99,29 @@ function proc(xml,unit,tag,c){const d=P.parseFromString(xml,'application/xml');l
   const E=edits(t,c);E.forEach(([a,b,s])=>setSpan(ns,a,b,s));n+=E.length}
  return{n,xml:n?ser(d):xml}}
 
+function fixAddr(xml){const d=P.parseFromString(xml,'application/xml'),body=d.getElementsByTagName('w:body')[0];if(!body)return null;
+ const W='http://schemas.openxmlformats.org/wordprocessingml/2006/main',K=[...body.childNodes],tx=p=>[...p.getElementsByTagName('w:t')].map(t=>t.textContent).join('');
+ const si=K.findIndex(n=>n.nodeName==='w:p'&&/^\s*From\s*,/i.test(tx(n))),ei=K.findIndex((n,i)=>i>si&&n.nodeName==='w:p'&&/^\s*Rc\./i.test(tx(n)));
+ if(si<0||ei<0)return null;const blk=K.slice(si,ei);
+ if(blk.some(n=>n.nodeName!=='w:p'||n.getElementsByTagName('w:drawing').length))return null;
+ const mk=(n,a,...c)=>{const e=d.createElementNS(W,'w:'+n);for(const k in a)e.setAttributeNS(W,'w:'+k,a[k]);c.flat().forEach(x=>x&&e.appendChild(x));return e};
+ const sp=[...body.getElementsByTagName('w:sectPr')].pop(),pg=sp&&sp.getElementsByTagName('w:pgSz')[0],pm=sp&&sp.getElementsByTagName('w:pgMar')[0];
+ const tw=pg&&pm?+pg.getAttribute('w:w')-+pm.getAttribute('w:left')-+pm.getAttribute('w:right'):9000,half=Math.floor(tw/2);
+ const lt=rs=>{for(const r of rs)for(const t of r.getElementsByTagName('w:t')){t.textContent=t.textContent.replace(/^\s+/,'');if(t.textContent)return}},has=x=>x.some(r=>[...r.getElementsByTagName('w:t')].some(t=>t.textContent.trim())),rows=[];
+ for(const p of blk){const L=[],R=[];let seen=false;
+  for(const r of[...p.childNodes].filter(n=>n.nodeName==='w:r')){const a=r.cloneNode(false),b=r.cloneNode(false);let ca=0,cb=0;
+   for(const k of r.childNodes){if(k.nodeName==='w:rPr'){a.appendChild(k.cloneNode(true));b.appendChild(k.cloneNode(true))}
+    else if(k.nodeName==='w:tab')seen=true;else if(seen){b.appendChild(k.cloneNode(true));cb++}else{a.appendChild(k.cloneNode(true));ca++}}
+   if(ca)L.push(a);if(cb)R.push(b)}
+  lt(L);lt(R);if(!has(L)&&!has(R))continue;
+  const pp=[...p.childNodes].find(n=>n.nodeName==='w:pPr'),cell=runs=>{const q=mk('p',{});if(pp){const c=pp.cloneNode(true);[...c.childNodes].forEach(n=>{if(/^w:(tabs|ind|numPr)$/.test(n.nodeName))c.removeChild(n)});q.appendChild(c)}runs.forEach(r=>q.appendChild(r));return mk('tc',{},mk('tcPr',{},mk('tcW',{w:half,type:'dxa'})),q)};
+  rows.push(mk('tr',{},cell(L),cell(R)))}
+ if(!rows.length)return null;
+ const tbl=mk('tbl',{},mk('tblPr',{},mk('tblW',{w:half*2,type:'dxa'}),mk('tblLayout',{type:'fixed'}),mk('tblCellMar',{},mk('left',{w:0,type:'dxa'}),mk('right',{w:0,type:'dxa'}))),mk('tblGrid',{},mk('gridCol',{w:half}),mk('gridCol',{w:half})),rows);
+ body.insertBefore(tbl,blk[0]);body.insertBefore(mk('p',{}),blk[0]);blk.forEach(n=>body.removeChild(n));return ser(d)}
 async function mkDocx(k,c){const z=await JSZip.loadAsync(buf(k));let n=0;
  for(const f of Object.keys(z.files).filter(f=>/^word\/(document|header\d*|footer\d*)\.xml$/.test(f))){const r=proc(await z.file(f).async('string'),'w:p','w:t',c);if(r.n){z.file(f,r.xml);n+=r.n}}
+ const dz=z.file('word/document.xml');if(dz){const fx=fixAddr(await dz.async('string'));if(fx)z.file('word/document.xml',fx)}
  return{n,blob:await z.generateAsync({type:'blob',compression:'DEFLATE',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}}
 
 async function sheetMap(z){const w=P.parseFromString(await z.file('xl/workbook.xml').async('string'),'application/xml'),
@@ -180,20 +206,22 @@ async function cacheVals(z,B){for(const sh of B){const fr=Object.keys(sh.cells).
  z.file(sh.path,ser(d))}}
 function sheetHTML(sh){const E=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'),fm=n=>Number.isInteger(n)?String(n):String(+n.toFixed(2)),
  ds=r=>{const c=sh.cells[r];if(!c)return'';if(c.f){const v=sh.get(r);return v==null?'':fm(v)}return c.s!==undefined?(c.s.trim()?c.s:''):fm(c.n)};
- let mr=0,mc=0;for(const r in sh.cells)if(ds(r)!==''){const[,a,b]=r.match(/([A-Z]+)(\d+)/);mr=Math.max(mr,+b);mc=Math.max(mc,colIdx(a))}
+ let mr=0,mc=0;const rowAny={},rowD={},UR=[];
+ for(const r in sh.cells){const v=ds(r);if(v==='')continue;const[,a,b]=r.match(/([A-Z]+)(\d+)/),R=+b,C=colIdx(a);mr=Math.max(mr,R);mc=Math.max(mc,C);rowAny[R]=1;if(C>=4&&!/^-?0(\.0+)?$/.test(v))rowD[R]=1;if(a==='C'&&/^[A-Za-z.\/ ]{1,10}$/.test(v)&&!/^unit/i.test(v))UR.push(R)}
+ const f0=UR.length>=8?Math.min(...UR):1e9,vis={};for(let r=1;r<=mr;r++)vis[r]=!sh.hid.has(r)&&!!rowAny[r]&&(r<f0||!!rowD[r]);
  const sp={},sk=new Set();
  for(const m of sh.mg){const[a,b]=m.split(':'),[,c1,r1]=a.match(/([A-Z]+)(\d+)/),[,c2,r2]=(b||a).match(/([A-Z]+)(\d+)/),C1=colIdx(c1),C2=Math.min(colIdx(c2),mc),R2=Math.min(+r2,mr);
-  if(C1>mc||+r1>mr)continue;sp[a]=[R2-r1+1,C2-C1+1];for(let r=+r1;r<=R2;r++)for(let c=C1;c<=C2;c++)if(r!=r1||c!=C1)sk.add(r+':'+c)}
+  if(C1>mc||+r1>mr||!vis[+r1])continue;let rs=0;for(let r=+r1;r<=R2;r++)if(vis[r])rs++;sp[a]=[rs,C2-C1+1];for(let r=+r1;r<=R2;r++)for(let c=C1;c<=C2;c++)if(r!=r1||c!=C1)sk.add(r+':'+c)}
  let w=0,h='';for(let i=1;i<=mc;i++){const x=Math.round((sh.cw[i]||9)*7+8);w+=x;h+=`<col style="width:${x}px">`}
  h=`<table class="xt" style="width:${w}px"><colgroup>${h}</colgroup>`;
- for(let r=1;r<=mr;r++){if(sh.hid.has(r))continue;h+='<tr>';for(let c=1;c<=mc;c++){if(sk.has(r+':'+c))continue;const ref=idxCol(c)+r,s=sp[ref],cl=sh.cells[ref];
+ for(let r=1;r<=mr;r++){if(!vis[r])continue;h+='<tr>';for(let c=1;c<=mc;c++){if(sk.has(r+':'+c))continue;const ref=idxCol(c)+r,s=sp[ref],cl=sh.cells[ref];
   h+=`<td${s?` rowspan="${s[0]}" colspan="${s[1]}"`:''}${cl&&(cl.f||cl.n!==undefined)?' class="r"':''}>${E(ds(ref))}</td>`}h+='</tr>'}
  return h+'</table>'}
-
 async function showCells(k,box){box.textContent='reading…';try{const T=await listCells(k),g=grid[k]=[],E=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;'),tot=T.reduce((a,t)=>a+t.rows.reduce((b,r)=>b+Object.keys(r.cells).length,0),0);
- box.innerHTML=`<summary>Enter values for the month – Target / During / Cumulative (${tot} cells)</summary>`+T.map(t=>`<div class="box"><h3>Sheet ${E(t.sheet)}</h3><table><tr><th>Item</th>${t.cols.map(c=>`<th>${E(c.head)}</th>`).join('')}</tr>`+
-  t.rows.map(r=>`<tr><td>${E(r.label)}</td>${t.cols.map(c=>{const x=r.cells[c.col];if(!x)return'<td class="na">–</td>';g.push({sheet:t.sheet,ref:x.ref,orig:x.orig});return`<td><input data-g="${g.length-1}" value="${x.orig}"></td>`}).join('')}</tr>`).join('')+'</table></div>').join('');
- box.querySelectorAll('input').forEach(el=>g[el.dataset.g].el=el)
+ const hv=r=>Object.values(r.cells).some(x=>x.orig!==''&&+x.orig!==0),nt=T.reduce((a,t)=>a+t.rows.length,0),nh=T.reduce((a,t)=>a+t.rows.filter(r=>!hv(r)).length,0);
+ box.innerHTML=`<summary>Enter values for the month – Target / During / Cumulative (${nt-nh} rows with values${nh?` · ${nh} rows without values hidden`:''})</summary>${nh?'<label class="mu" style="display:block;margin:6px 0"><input type="checkbox" class="sa"> Show rows without values</label>':''}`+T.map(t=>`<div class="box hide"><h3>Sheet ${E(t.sheet)}</h3><table><tr><th>Item</th>${t.cols.map(c=>`<th>${E(c.head)}</th>`).join('')}</tr>`+
+  t.rows.map(r=>`<tr${hv(r)?'':' class="bl"'}><td>${E(r.label)}</td>${t.cols.map(c=>{const x=r.cells[c.col];if(!x)return'<td class="na">–</td>';g.push({sheet:t.sheet,ref:x.ref,orig:x.orig});return`<td><input data-g="${g.length-1}" value="${x.orig}"></td>`}).join('')}</tr>`).join('')+'</table></div>').join('');
+ box.querySelectorAll('input[data-g]').forEach(el=>g[el.dataset.g].el=el);const sa=box.querySelector('.sa');if(sa)sa.onchange=()=>box.querySelectorAll('.box').forEach(b=>b.classList.toggle('hide',!sa.checked))
  const gm={};g.forEach(x=>gm[x.sheet+'!'+x.ref]=x);
  const B=evalBook(await loadBook(await JSZip.loadAsync(buf(k)))),bk={},num=s=>parseFloat(s)||0;B.forEach(s=>bk[s.name]=s);
  for(const t of T){const sh=bk[t.sheet],ix=re=>t.cols.filter(c=>re.test(c.head)).map(c=>c.col),Pc=ix(/previous/i),Dc=ix(/during/i),Cc=ix(/cumulative/i);
@@ -205,14 +233,16 @@ async function showCells(k,box){box.textContent='reading…';try{const T=await l
    [pe,de].forEach(x=>x&&x.el.addEventListener('input',rc));if(ce){ce.el.readOnly=true;ce.el.classList.add('calc')}rc()})}
 }catch(e){box.textContent='Could not read this workbook: '+e.message}}
 
-for(const[k,lab,ext]of FILES.filter(f=>f[2]==='xlsx')){const r=document.createElement('div');r.className='f';
- r.innerHTML=`<b>${lab}</b><span class="mu">built-in data</span><input type="file" accept=".xlsx" style="font-size:13px"><details></details>`;$('#wb').append(r);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const LETTERS=['est_letter','ag_letter','campa_letter'];
+function addRow(k,lab){const r=document.createElement('div');r.className='f';r.id='wb_'+k;
+ r.innerHTML=`<b>${esc(lab)}</b><span class="mu">${FILES.find(f=>f[0]===k)[3]?'your format':'built-in data'}</span><input type="file" accept=".xlsx" style="font-size:13px"><details></details>`;$('#wb').append(r);
  const st=r.querySelector('span'),dt=r.querySelector('details');showCells(k,dt);
  r.querySelector('input').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(!/\.xlsx$/i.test(f.name)){alert('Please upload an .xlsx file (Save As .xlsx in Excel).');e.target.value='';return}
   up[k]=new Uint8Array(await f.arrayBuffer());st.textContent=f.name;await showCells(k,dt)}}
-
+FILES.filter(f=>f[2]==='xlsx').forEach(f=>addRow(f[0],f[1]));
 let res=null,pvOn=false;
-const TABS=[['letters','Cover letters (all 3, one view)'],['do_report','D.O. Report'],['est','Estimates & CRs'],['campa','CAMPA'],['agro','Agro Forestry'],['pension','Pension']];
+const tabs=()=>[['letters',`Cover letters (all ${LETTERS.length}, one view)`],['do_report','D.O. Report'],...FILES.filter(f=>f[2]==='xlsx').map(f=>[f[0],f[1]])];
 const dop={className:'docx',inWrapper:true,breakPages:true,ignoreLastRenderedPageBreak:true};
 function dl(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),8000)}
 const stale=()=>{if(pvOn){$('#ok').disabled=true;$('#pvmsg').textContent='Values changed – click "Preview all files" again.'}};
@@ -222,15 +252,27 @@ $('#go').onclick=async()=>{const c=ctx();if(!$('#month').value||!c.name||!c.des|
  try{res={};for(const[k,lab,ext]of FILES){const r=ext==='docx'?await mkDocx(k,c):await mkXlsx(k,c);res[k]={...r,lab,ext,name:`${ASSETS[k].name}_${c.M.slice(0,3).toUpperCase()}${c.y}.${ext}`}}
   const pane=$('#pane');pane.innerHTML='';
   const mk=id=>{const d=document.createElement('div');d.className='p';d.id='p_'+id;d.hidden=true;pane.append(d);return d};
-  const L=mk('letters');for(const[i,k]of['est_letter','ag_letter','campa_letter'].entries()){const h=document.createElement('h3'),box=document.createElement('div');h.textContent=`Letter ${i+1} of 3 · ${res[k].lab}`;L.append(h,box);await docx.renderAsync(res[k].blob,box,null,dop)}
+  const L=mk('letters');for(const[i,k]of LETTERS.entries()){const h=document.createElement('h3'),box=document.createElement('div');h.textContent=`Letter ${i+1} of ${LETTERS.length} · ${res[k].lab}`;L.append(h,box);await docx.renderAsync(res[k].blob,box,null,dop)}
   const D=mk('do_report');await docx.renderAsync(res.do_report.blob,D,null,dop);
-  for(const k of['est','campa','agro','pension']){const d=mk(k);for(const sh of res[k].book){if(sh.name==='agro')continue;d.insertAdjacentHTML('beforeend',`<h3>${res[k].lab} · sheet ${sh.name}</h3><div class="xw">${sheetHTML(sh)}</div>`)}}
-  $('#tabs').innerHTML='';TABS.forEach(([id,lab],i)=>{const b=document.createElement('button');b.textContent=lab;b.onclick=()=>{TABS.forEach(([j])=>$('#p_'+j).hidden=j!==id);[...$('#tabs').children].forEach(x=>x.classList.toggle('on',x===b))};$('#tabs').append(b);if(!i)b.click()});
+  for(const k of FILES.filter(f=>f[2]==='xlsx').map(f=>f[0])){const d=mk(k);for(const sh of res[k].book){if(sh.name==='agro')continue;d.insertAdjacentHTML('beforeend',`<h3>${esc(res[k].lab)} · sheet ${esc(sh.name)}</h3><div class="xw">${sheetHTML(sh)}</div>`)}}
+  $('#tabs').innerHTML='';const TB=tabs();TB.forEach(([id,lab],i)=>{const b=document.createElement('button');b.textContent=lab;b.onclick=()=>{TB.forEach(([j])=>$('#p_'+j).hidden=j!==id);[...$('#tabs').children].forEach(x=>x.classList.toggle('on',x===b))};$('#tabs').append(b);if(!i)b.click()});
   $('#pv').hidden=false;pvOn=true;$('#ok').disabled=false;$('#pvmsg').textContent='';$('#msg').textContent='Preview ready – check it below.';$('#pv').scrollIntoView({behavior:'smooth'})}
  catch(e){$('#msg').textContent='Error: '+e.message;console.error(e)}};
 $('#ok').onclick=()=>{const out=$('#out'),c=ctx();out.innerHTML='';
- for(const[k]of FILES){const r=res[k],row=document.createElement('div');row.className='f';row.innerHTML=`<b>${r.name}</b><span class="mu">${r.lab} · ${r.n} updates</span><button class="s">Download</button>`;row.querySelector('button').onclick=()=>dl(r.blob,r.name);out.append(row)}
+ for(const[k]of FILES){const r=res[k],row=document.createElement('div');row.className='f';row.innerHTML=`<b>${r.name}</b><span class="mu">${esc(r.lab)} · ${r.n} updates</span><button class="s">Download</button>`;row.querySelector('button').onclick=()=>dl(r.blob,r.name);out.append(row)}
  const zb=document.createElement('button');zb.textContent='Download all as ZIP';zb.style.marginTop='10px';
  zb.onclick=async()=>{const z=new JSZip();FILES.forEach(([k])=>z.file(res[k].name,res[k].blob));dl(await z.generateAsync({type:'blob'}),`Reports_${c.M}_${c.y}.zip`)};out.append(zb);
  $('#pvmsg').textContent=`${FILES.length} individual files generated for ${c.M} ${c.y}.`};
+const CK='rg_custom';
+const b64s=u=>{let s='';for(let i=0;i<u.length;i+=32768)s+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(s)};
+const sv=()=>{try{localStorage.setItem(CK,JSON.stringify(FILES.filter(f=>f[3]).map(f=>({key:f[0],label:f[1],ext:f[2],name:ASSETS[f[0]].name,b64:ASSETS[f[0]].b64}))));$('#cmsg').textContent=''}catch(e){$('#cmsg').textContent='Added for this session only (browser storage is full or blocked).'}};
+function addCustom(o){ASSETS[o.key]={name:o.name,b64:o.b64};FILES.push([o.key,o.label,o.ext,1]);
+ if(o.ext==='docx')LETTERS.push(o.key);else addRow(o.key,o.label);
+ const li=document.createElement('div');li.className='f';li.innerHTML=`<b>${esc(o.label)}</b><span class="mu">${o.ext==='docx'?'covering letter (Word)':'Excel format'}</span><button class="s">Remove</button>`;
+ li.querySelector('button').onclick=()=>{const i=FILES.findIndex(f=>f[0]===o.key);if(i>=0)FILES.splice(i,1);delete ASSETS[o.key];const j=LETTERS.indexOf(o.key);if(j>=0)LETTERS.splice(j,1);li.remove();const r=$('#wb_'+o.key);if(r)r.remove();sv();stale()};
+ $('#custom').append(li)}
+$('#addf').onchange=async e=>{for(const f of e.target.files){const m=f.name.match(/\.(docx|xlsx)$/i);if(!m){alert(f.name+': please use .docx or .xlsx (use Save As in Word/Excel).');continue}
+  addCustom({key:'c'+Date.now()+Math.random().toString(36).slice(2,6),label:f.name.replace(/\.\w+$/,'').replace(/_+/g,' '),ext:m[1].toLowerCase(),name:f.name.replace(/\.\w+$/,'').replace(/[^\w\-]+/g,'_'),b64:b64s(new Uint8Array(await f.arrayBuffer()))})}
+ e.target.value='';sv();stale()};
+try{JSON.parse(localStorage.getItem(CK)||'[]').forEach(addCustom)}catch(e){}
 </script></body></html>

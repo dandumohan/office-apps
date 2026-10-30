@@ -93,6 +93,11 @@ td input.unitin{width:80px;text-align:left}
 .grip{cursor:grab;color:var(--muted);user-select:none;padding:0 4px;font-size:16px;line-height:1}
 #lineBody tr.dragover td{box-shadow:inset 0 2px 0 var(--accent)}
 #lineBody tr.dragging{opacity:.45}
+#fsrBody tr[data-drag]{cursor:grab}
+#fsrBody tr.fdragging{opacity:.45}
+#lineBody tr.dragover-after td{box-shadow:inset 0 -2px 0 var(--accent)}
+section.panel.dropzone{outline:2px dashed var(--accent);outline-offset:-2px}
+section.panel.dropzone #lineBody .empty{background:var(--accent-soft)}
 .nowrap{white-space:nowrap}
 .note{font-size:12px;color:var(--warn)}
 .total{display:flex;justify-content:flex-end;gap:16px;padding:12px 14px;font-weight:600;border-top:1px solid var(--line)}
@@ -676,7 +681,7 @@ function renderFsr(){
   $('fSubList')._subs=subs;
   const rows=chItems.filter(i=>(!subSel||subOf(i)===subSel) && (!q||(i.code+' '+i.desc+' '+i.sub).toLowerCase().includes(q)));
   $('cnt').textContent=rows.length+' items'; selUi();
-  $('fsrBody').innerHTML=rows.map(i=>'<tr class="'+(picked.has(i.code)?'picked':'')+'"><td><input type="checkbox" data-sel="'+i.code+'" aria-label="Select '+i.code+'"'+(sel.has(i.code)?' checked':'')+'></td><td class="code">'+i.code+'</td><td>'+esc(i.desc)+'</td><td><button class="btn small" type="button" data-pick="'+i.code+'">'+(picked.has(i.code)?'Pick again ('+picked.get(i.code)+')':'Pick')+'</button></td></tr>').join('')||'<tr><td colspan="4" class="empty">No items match.</td></tr>';
+  $('fsrBody').innerHTML=rows.map(i=>'<tr class="'+(picked.has(i.code)?'picked':'')+'" draggable="true" data-drag="'+i.code+'" title="Drag to Picked tasks"><td><input type="checkbox" data-sel="'+i.code+'" aria-label="Select '+i.code+'"'+(sel.has(i.code)?' checked':'')+'></td><td class="code">'+i.code+'</td><td>'+esc(i.desc)+'</td><td><button class="btn small" type="button" data-pick="'+i.code+'">'+(picked.has(i.code)?'Pick again ('+picked.get(i.code)+')':'Pick')+'</button></td></tr>').join('')||'<tr><td colspan="4" class="empty">No items match.</td></tr>';
 }
 function addItem(it){
   const u=splitUnit(it.unit), num=typeof it.rate==='number';
@@ -766,6 +771,39 @@ $('lineBody').addEventListener('dragstart',e=>{ const g=e.target.closest('[data-
 $('lineBody').addEventListener('dragover',e=>{ if(dragFrom===null) return; const tr=e.target.closest('tr[data-row]'); if(!tr) return; e.preventDefault(); $('lineBody').querySelectorAll('.dragover').forEach(x=>x.classList.remove('dragover')); tr.classList.add('dragover'); });
 $('lineBody').addEventListener('drop',e=>{ if(dragFrom===null) return; const tr=e.target.closest('tr[data-row]'); e.preventDefault(); const to=tr?+tr.dataset.row:dragFrom; const from=dragFrom; dragFrom=null; moveLine(from,to); });
 $('lineBody').addEventListener('dragend',()=>{ dragFrom=null; $('lineBody').querySelectorAll('.dragover,.dragging').forEach(x=>x.classList.remove('dragover','dragging')); });
+/* drag an FSR item (or all ticked items, when the dragged one is ticked) from the FSR list and drop it into Picked tasks */
+let fsrDrag=null;
+const dropZone=$('lineBody').closest('section');
+function dropPos(e){
+  const tr=e.target.closest('#lineBody tr[data-row]'); if(!tr) return {pos:cur.lines.length,tr:null,after:false};
+  const r=tr.getBoundingClientRect(), after=e.clientY>r.top+r.height/2, i=+tr.dataset.row;
+  return {pos:after?i+1:i,tr,after};
+}
+function clearDropMarks(){ $('lineBody').querySelectorAll('.dragover,.dragover-after').forEach(x=>x.classList.remove('dragover','dragover-after')); dropZone.classList.remove('dropzone'); }
+$('fsrBody').addEventListener('dragstart',e=>{
+  const tr=e.target.closest('tr[data-drag]'); if(!tr){ return; }
+  const code=tr.dataset.drag;
+  fsrDrag=(sel.size>1&&sel.has(code))?items.filter(i=>sel.has(i.code)).map(i=>i.code):[code];
+  e.dataTransfer.effectAllowed='copy'; try{e.dataTransfer.setData('text/plain',fsrDrag.join(','));}catch(_){}
+  tr.classList.add('fdragging');
+});
+$('fsrBody').addEventListener('dragend',()=>{ fsrDrag=null; clearDropMarks(); $('fsrBody').querySelectorAll('.fdragging').forEach(x=>x.classList.remove('fdragging')); });
+dropZone.addEventListener('dragover',e=>{
+  if(!fsrDrag) return; e.preventDefault(); e.dataTransfer.dropEffect='copy';
+  clearDropMarks(); dropZone.classList.add('dropzone');
+  const d=dropPos(e); if(d.tr) d.tr.classList.add(d.after?'dragover-after':'dragover');
+});
+dropZone.addEventListener('dragleave',e=>{ if(fsrDrag&&!dropZone.contains(e.relatedTarget)) clearDropMarks(); });
+dropZone.addEventListener('drop',e=>{
+  if(!fsrDrag) return; e.preventDefault();
+  const d=dropPos(e), codes=fsrDrag; fsrDrag=null; clearDropMarks();
+  const start=cur.lines.length;
+  codes.map(c=>items.find(i=>i.code===c)).filter(Boolean).forEach(addItem);
+  const added=cur.lines.splice(start); if(!added.length) return;
+  cur.lines.splice(d.pos,0,...added);
+  codes.forEach(c=>sel.delete(c));
+  renderFsr(); renderLines(); focusQty(d.pos);
+});
 $('lineBody').onclick=e=>{
   const up=e.target.closest('[data-up]'), dn=e.target.closest('[data-down]');
   if(up){ moveLine(+up.dataset.up,+up.dataset.up-1); return; }

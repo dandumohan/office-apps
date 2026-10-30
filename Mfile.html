@@ -152,6 +152,7 @@
             <button type="button" class="nav-link" data-screen="reference" onclick="switchScreen('reference')">📎 Reference Form</button>
             <button type="button" class="nav-link" data-screen="paragraphs" onclick="switchScreen('paragraphs')">📝 Paragraphs Form</button>
             <button type="button" class="nav-link" data-screen="master" onclick="switchScreen('master')">🗂️ Master Update</button>
+            <button type="button" class="nav-link" data-screen="reports" onclick="switchScreen('reports')">📈 Reports</button>
             <button type="button" class="nav-link" data-screen="user-mgmt" id="nav-usermgmt-btn" onclick="switchScreen('user-mgmt')">👤 User Management</button>
             <button type="button" class="nav-link" data-screen="logs" id="nav-logs-btn" style="display:none;" onclick="switchScreen('logs')">📊 Activity Logs</button>
             <button type="button" class="nav-link" data-screen="backup" id="nav-backup-btn" style="display:none;" onclick="switchScreen('backup')">💾 Backup Workbook</button>
@@ -662,6 +663,35 @@
     </div>
 
     <!-- ================= SCREEN 7: BACKUP WORKBOOK (ADMIN ONLY) ================= -->
+    <!-- MASTER REPORTS -->
+    <div id="screen-reports" class="hidden">
+        <h2>Master File Reports </h2>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:12px;">
+            <div style="flex:1 1 220px;"><label style="font-weight:bold;">Report:</label>
+                <select id="report-type" onchange="renderMasterReport()">
+                    <option value="summary">1. Master Summary (counts per master &amp; per section)</option>
+                    <option value="subject">2. Subject-wise Report</option>
+                    <option value="file">3. File No-wise Report</option>
+                    <option value="unused">4. Files with no letters</option>
+                    <option value="check">5. Data Check (missing / mismatched master data)</option>
+                </select></div>
+            <div style="flex:0 1 160px;"><label style="font-weight:bold;">Section:</label>
+                <select id="report-section" onchange="renderMasterReport()"><option value="">All sections</option></select></div>
+            <div style="flex:1 1 180px;"><label style="font-weight:bold;">Search:</label>
+                <input type="text" id="report-search" placeholder="Type to filter rows..." oninput="renderMasterReport()"></div>
+            <div style="display:flex; gap:6px;">
+                <button type="button" style="width:auto; background:#28a745; padding:8px 14px;" onclick="loadReportsScreen()">🔄 Refresh</button>
+                <button type="button" style="width:auto; background:#17a2b8; padding:8px 14px;" onclick="exportMasterReportCsv()">⬇ Export CSV</button>
+                <button type="button" style="width:auto; background:#6f42c1; padding:8px 14px;" onclick="printMasterReport()">🖨 Print</button>
+            </div>
+        </div>
+        <div id="report-cards" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;"></div>
+        <div class="batch-table-container">
+            <table class="batch-table" id="report-table"><thead></thead><tbody><tr><td style="text-align:center; color:#666;">Loading... </td></tr></tbody></table>
+        </div>
+        <p id="report-status" style="color:#666; font-size:13px; margin-top:8px;"></p>
+    </div>
+
     <div id="screen-backup" class="hidden">
         <h2>Backup Workbook </h2>
         <p style="color:#666; text-align:center; margin-top:-10px;">Creates a full copy of the backend Google Sheet in a "DMS Backups" folder next to it, so you can restore from a point in time if anything ever goes wrong.</p>
@@ -1307,6 +1337,33 @@
       return out;
     },
 
+    // ---------- master file reports ----------
+    getMasterReportData: wrap(async (userSections) => {
+      const perm = permitted(userSections);
+      const okSec = sec => !perm || perm.includes(S(sec).trim().toUpperCase());
+      const subjects = must(await sb.from('subject').select('subject_id,subject_name,section_id').order('seq'))
+        .map(s => ({ subject_id: S(s.subject_id), subject_name: S(s.subject_name), section: S(s.section_id).trim() }));
+      const subSec = {}; subjects.forEach(s => { subSec[s.subject_id.trim()] = s.section; });
+      const files = must(await sb.from('file_no').select('file_no,subject_id,section,file_id').order('seq'))
+        .map(f => ({ file_no: S(f.file_no).trim(), subject_id: S(f.subject_id).trim(), file_id: S(f.file_id), section: S(f.section).trim() || subSec[S(f.subject_id).trim()] || '' }));
+      const fileSec = {}; files.forEach(f => { if (f.file_no && f.section) fileSec[f.file_no] = f.section; });
+      let lq;
+      for (const extra of [',updated_at', '']) { lq = await sb.from('letter_info').select('letter_id,file_no,section,subject_id,created_at,lt_generated' + extra); if (!lq.error) break; }
+      const withDoc = new Set(must(await sb.from('letter_info').select('letter_id').not('doc_html', 'is', null)).map(r => r.letter_id));
+      const letters = must(lq).map(r => ({
+        id: r.letter_id, file_no: S(r.file_no).trim(), subject_id: S(r.subject_id).trim(),
+        section: fileSec[S(r.file_no).trim()] || S(r.section).trim() || subSec[S(r.subject_id).trim()] || '',
+        created: r.created_at ? new Date(r.updated_at && new Date(r.updated_at) > new Date(r.created_at) ? r.updated_at : r.created_at).getTime() : 0,
+        generated: withDoc.has(r.letter_id) || S(r.lt_generated).trim().toLowerCase() === 'yes'
+      }));
+      const counts = {};
+      for (const k of Object.keys(MASTER)) {
+        const q = await sb.from(MASTER[k].t).select('*', { count: 'exact', head: true });
+        counts[k] = q.error ? undefined : q.count;
+      }
+      return ok({ data: { counts, subjects: subjects.filter(s => okSec(s.section)), files: files.filter(f => okSec(f.section)), letters: letters.filter(l => okSec(l.section)) } });
+    }),
+
     // ---------- references ----------
     getReferencesForLetter: async (letterId) => must(await sb.from('ref_info').select('id,refer_no,refer_dt').eq('letter_id', letterId).order('created_at').order('id'))
       .map(r => ({ id: S(r.id), refer_no: S(r.refer_no), refer_dt: r.refer_dt ? fmtDate(r.refer_dt) : '' })),
@@ -1522,6 +1579,8 @@
         if (screenLogsEl) screenLogsEl.classList.add('hidden');
         const screenBackupEl = document.getElementById('screen-backup');
         if (screenBackupEl) screenBackupEl.classList.add('hidden');
+        const screenReportsEl = document.getElementById('screen-reports');
+        if (screenReportsEl) screenReportsEl.classList.add('hidden');
 
         // Hide the sidebar's "Manage & Generate" action group by default when
         // navigating anywhere — showMainTab('manage') is what turns it back on.
@@ -1555,6 +1614,10 @@
             document.getElementById('screen-paragraphs').classList.remove('hidden');
             loadParagraphScreenData();
             if (appShell) appShell.classList.remove('hidden');
+        } else if (screenName === 'reports') {
+            document.getElementById('screen-reports').classList.remove('hidden');
+            if (appShell) appShell.classList.remove('hidden');
+            loadReportsScreen();
         } else if (screenName === 'master') {
             document.getElementById('screen-master').classList.remove('hidden');
             if (appShell) appShell.classList.remove('hidden');
@@ -1637,6 +1700,152 @@
     // create/edit letter form) and 'manage' (search + batch letter table +
     // generate/view/edit/update/download actions). Keeps both panels in the DOM
     // (just hidden) so none of the existing lookups/handlers need to change.
+    // ============================================================
+    //  MASTER FILE REPORTS
+    // ============================================================
+    let reportData_ = null, reportView_ = { title: '', cols: [], rows: [] };
+
+    function loadReportsScreen() {
+        const st = document.getElementById('report-status');
+        if (st) { st.style.color = '#666'; st.textContent = 'Loading report data...'; }
+        google.script.run
+            .withSuccessHandler(res => {
+                if (!res || res.result !== 'success') {
+                    if (st) { st.style.color = 'red'; st.textContent = 'Error: ' + ((res && res.error) || 'Could not load report data.'); }
+                    return;
+                }
+                reportData_ = res.data;
+                const secSel = document.getElementById('report-section');
+                const prev = secSel.value;
+                const secs = new Set();
+                reportData_.subjects.forEach(x => x.section && secs.add(x.section));
+                reportData_.files.forEach(x => x.section && secs.add(x.section));
+                reportData_.letters.forEach(x => x.section && secs.add(x.section));
+                secSel.innerHTML = '<option value="">All sections</option>' + Array.from(secs).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+                    .map(x => `<option value="${escapeHtml_(x)}">${escapeHtml_(x)}</option>`).join('');
+                if (prev && secs.has(prev)) secSel.value = prev;
+                if (st) st.textContent = '';
+                renderMasterReport();
+            })
+            .withFailureHandler(err => { if (st) { st.style.color = 'red'; st.textContent = 'Error: ' + err.message; } })
+            .getMasterReportData(currentUserSections);
+    }
+
+    function renderMasterReport() {
+        const d = reportData_;
+        const thead = document.querySelector('#report-table thead'), tbody = document.querySelector('#report-table tbody');
+        const cards = document.getElementById('report-cards');
+        if (!d || !thead || !tbody) return;
+        const type = document.getElementById('report-type').value;
+        const sec = document.getElementById('report-section').value.trim().toUpperCase();
+        const q = document.getElementById('report-search').value.trim().toLowerCase();
+        const inSec = x => !sec || String(x.section || '').trim().toUpperCase() === sec;
+        const fmtD = ms => ms ? new Date(ms).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+        const K = v => String(v || '').trim();
+
+        const subjects = d.subjects.filter(inSec), files = d.files.filter(inSec), letters = d.letters.filter(inSec);
+        const lettersByFile = {}, lettersBySubject = {};
+        letters.forEach(l => {
+            (lettersByFile[K(l.file_no)] = lettersByFile[K(l.file_no)] || []).push(l);
+            (lettersBySubject[K(l.subject_id)] = lettersBySubject[K(l.subject_id)] || []).push(l);
+        });
+        const gen = arr => (arr || []).filter(l => l.generated).length;
+        const subjName = {}; d.subjects.forEach(s => { subjName[K(s.subject_id)] = s.subject_name; });
+        const filesBySubject = {}; files.forEach(f => { (filesBySubject[K(f.subject_id)] = filesBySubject[K(f.subject_id)] || []).push(f); });
+
+        let title = '', cols = [], rows = [], cardList = [];
+
+        if (type === 'summary') {
+            title = 'Master Summary';
+            const labels = { titles: 'Titles', Document_type: 'Document Types', from_officer: 'From Officers', to_officer: 'To Officers', from_address: 'From Addresses', to_address: 'To Addresses', ref_master: 'Reference Master', subject: 'Subjects', file_no: 'File Nos' };
+            cols = ['Master', 'Records'];
+            rows = Object.keys(labels).map(k => [labels[k], d.counts[k] === undefined ? '—' : d.counts[k]]);
+            rows.push(['Letters (all documents)', d.letters.length]);
+            const secMap = {};
+            const bump = (s, f) => { const key = K(s) || 'Unassigned'; (secMap[key] = secMap[key] || { sub: 0, file: 0, let: 0, gen: 0 })[f]++; };
+            d.subjects.forEach(x => bump(x.section, 'sub')); d.files.forEach(x => bump(x.section, 'file'));
+            d.letters.forEach(x => { bump(x.section, 'let'); if (x.generated) bump(x.section, 'gen'); });
+            rows.push(['', '']);
+            rows.push(['SECTION-WISE', 'Subjects | Files | Letters | Generated | Pending']);
+            Object.keys(secMap).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).forEach(k => {
+                const m = secMap[k];
+                if (!sec || k.toUpperCase() === sec) rows.push([k, `${m.sub} | ${m.file} | ${m.let} | ${m.gen} | ${m.let - m.gen}`]);
+            });
+            cardList = [['Subjects', subjects.length], ['File Nos', files.length], ['Letters', letters.length], ['Generated', gen(letters)], ['Pending', letters.length - gen(letters)]];
+        } else if (type === 'subject') {
+            title = 'Subject-wise Report';
+            cols = ['Subject ID', 'Subject', 'Section', 'File Nos', 'Letters', 'Generated', 'Pending'];
+            rows = subjects.map(s => { const ls = lettersBySubject[K(s.subject_id)] || [];
+                return [s.subject_id, s.subject_name, s.section, (filesBySubject[K(s.subject_id)] || []).length, ls.length, gen(ls), ls.length - gen(ls)]; });
+            cardList = [['Subjects', rows.length], ['With no files', rows.filter(r => r[3] === 0).length], ['Letters', letters.length]];
+        } else if (type === 'file' || type === 'unused') {
+            title = type === 'file' ? 'File No-wise Report' : 'Files with no letters';
+            cols = ['File No', 'File ID', 'Subject', 'Section', 'Letters', 'Generated', 'Pending', 'Latest Letter'];
+            rows = files.map(f => { const ls = lettersByFile[K(f.file_no)] || [];
+                const latest = ls.reduce((m, l) => Math.max(m, l.created || 0), 0);
+                return [f.file_no, f.file_id, subjName[K(f.subject_id)] || f.subject_id || '—', f.section, ls.length, gen(ls), ls.length - gen(ls), fmtD(latest)]; });
+            if (type === 'unused') rows = rows.filter(r => r[4] === 0);
+            cardList = type === 'file'
+                ? [['File Nos', rows.length], ['Used', rows.filter(r => r[4] > 0).length], ['Unused', rows.filter(r => r[4] === 0).length]]
+                : [['Files with no letters', rows.length], ['Total File Nos', files.length]];
+        } else {
+            title = 'Data Check';
+            cols = ['Issue', 'Item', 'Detail'];
+            const subIds = new Set(d.subjects.map(s => K(s.subject_id))), subSec = {};
+            d.subjects.forEach(s => { subSec[K(s.subject_id)] = K(s.section).toUpperCase(); });
+            const fileNos = new Set(d.files.map(f => K(f.file_no))), seen = {};
+            d.files.forEach(f => { seen[K(f.file_no)] = (seen[K(f.file_no)] || 0) + 1; });
+            files.forEach(f => {
+                const sid = K(f.subject_id), fn = K(f.file_no);
+                if (!sid) rows.push(['File has no Subject', fn, 'Assign a Subject in Master Update > file_no']);
+                else if (!subIds.has(sid)) rows.push(['File points to a missing Subject', fn, 'Subject ID ' + sid + ' not found']);
+                else if (K(f.section) && subSec[sid] && K(f.section).toUpperCase() !== subSec[sid]) rows.push(['File section differs from Subject section', fn, 'File: ' + f.section + ' / Subject: ' + subSec[sid]]);
+                if (!K(f.section)) rows.push(['File has no Section', fn, 'Section is blank']);
+                if (seen[fn] > 1) rows.push(['Duplicate File No', fn, seen[fn] + ' entries']);
+            });
+            subjects.forEach(s => { if (!(filesBySubject[K(s.subject_id)] || []).length) rows.push(['Subject has no File Nos', K(s.subject_id) + ' - ' + K(s.subject_name), 'Section ' + K(s.section)]); });
+            letters.forEach(l => { if (K(l.file_no) && !fileNos.has(K(l.file_no))) rows.push(['Letter uses a File No not in master', K(l.file_no), 'Letter ' + l.id]); });
+            cardList = [['Issues found', rows.length]];
+        }
+
+        if (q) rows = rows.filter(r => r.join(' ').toLowerCase().includes(q));
+        reportView_ = { title: title + (sec ? ' — Section ' + document.getElementById('report-section').value : ''), cols, rows };
+        cards.innerHTML = cardList.map(c => `<div style="background:#eef5ff; border:1px solid #cfe0f0; border-radius:6px; padding:8px 16px; text-align:center;"><div style="font-size:20px; font-weight:bold; color:#0056b3;">${c[1]}</div><div style="font-size:12px; color:#555;">${escapeHtml_(c[0])}</div></div>`).join('');
+        thead.innerHTML = '<tr>' + cols.map(c => `<th>${escapeHtml_(c)}</th>`).join('') + '</tr>';
+        tbody.innerHTML = rows.length
+            ? rows.map(r => '<tr>' + r.map(c => `<td>${escapeHtml_(c === undefined || c === null ? '' : c)}</td>`).join('') + '</tr>').join('')
+            : `<tr><td colspan="${cols.length}" style="text-align:center; color:#666;">No records to show.</td></tr>`;
+        const st = document.getElementById('report-status');
+        if (st) { st.style.color = '#666'; st.textContent = rows.length + ' row(s)'; }
+    }
+
+    function exportMasterReportCsv() {
+        const v = reportView_;
+        if (!v.cols.length) return showToast('Nothing to export yet.', 'warning');
+        const cell = x => '"' + String(x === undefined || x === null ? '' : x).replace(/"/g, '""') + '"';
+        const csv = '\ufeff' + [v.cols].concat(v.rows).map(r => r.map(cell).join(',')).join('\r\n');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        a.download = v.title.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.csv';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    }
+
+    function printMasterReport() {
+        const v = reportView_;
+        if (!v.cols.length) return showToast('Nothing to print yet.', 'warning');
+        const w = window.open('', '_blank');
+        if (!w) return showToast('Pop-up blocked - allow pop-ups and try again.', 'error');
+        w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml_(v.title) + '</title><style>' +
+            '@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;font-size:12px}h2{margin:0 0 4px}p{margin:0 0 10px;color:#555}' +
+            'table{border-collapse:collapse;width:100%}th,td{border:1px solid #333;padding:4px 6px;text-align:left;vertical-align:top}th{background:#d9d9d9}tr{page-break-inside:avoid}thead{display:table-header-group}</style></head><body>' +
+            '<h2>' + escapeHtml_(v.title) + '</h2><p>Generated on ' + new Date().toLocaleString('en-GB') + ' &nbsp;|&nbsp; ' + v.rows.length + ' row(s)</p><table><thead><tr>' +
+            v.cols.map(c => '<th>' + escapeHtml_(c) + '</th>').join('') + '</tr></thead><tbody>' +
+            v.rows.map(r => '<tr>' + r.map(c => '<td>' + escapeHtml_(c === undefined || c === null ? '' : c) + '</td>').join('') + '</tr>').join('') +
+            '</tbody></table></body></html>');
+        w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
+    }
+
     function showMainTab(tab) {
         const createPanel = document.getElementById('main-tab-create');
         const managePanel = document.getElementById('main-tab-manage');

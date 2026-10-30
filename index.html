@@ -160,6 +160,7 @@ const ICONS={
   plantation:'<path d="M12 3l5 7h-3l4 7H6l4-7H7z"/><path d="M12 17v4"/>',
   nursery:'<path d="M12 21v-8"/><path d="M12 13c0-4-3-6-7-6 0 4 3 6 7 6z"/><path d="M12 15c0-3 2-5 6-5 0 3-2 5-6 5z"/>',
   reports:'<path d="M4 20h16M7 20v-7M12 20V6M17 20v-10"/>',
+  monthly:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M8 14h3M8 17h6"/>',
   kanban:'<rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/>'
 };
 const GROUPS=[
@@ -177,6 +178,7 @@ const GROUPS=[
   ]},
   {title:'Reports and tasks', apps:[
     {id:'reports', name:'Mreports', sub:'Accounts reports (PDF)', path:'Macc_rpt.html', desc:'Generate accounts reports as PDF.'},
+    {id:'monthly', name:'Reports generator', sub:'Monthly reports', path:'Reports_Generator.html', desc:'Generate monthly reports for the Social Forestry Division.'},
     {id:'kanban', name:'Kanban board', sub:'Task board', path:'Mkanban.html', desc:'Track tasks on a board.'}
   ]}
 ];
@@ -280,6 +282,7 @@ if(want&&find(want)) openApp(want);
 <li><a href="Mplantation.html">Plantation tracker</a></li>
 <li><a href="Mnursery.html">Seedling portal</a></li>
 <li><a href="Macc_rpt.html">Mreports</a></li>
+<li><a href="Reports_Generator.html">Reports generator</a></li>
 <li><a href="Mkanban.html">Kanban board</a></li></ul></main>
 </noscript>
 </body>

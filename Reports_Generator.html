@@ -282,7 +282,7 @@ $('#addf').onchange=async e=>{for(const f of e.target.files){const m=f.name.matc
   {const o={key:'c'+Date.now()+Math.random().toString(36).slice(2,6),label:f.name.replace(/\.\w+$/,'').replace(/_+/g,' '),ext:m[1].toLowerCase(),name:f.name.replace(/\.\w+$/,'').replace(/[^\w\-]+/g,'_'),b64:b64s(new Uint8Array(await f.arrayBuffer()))};addCustom(o);cloudPut(o)}}
  e.target.value='';sv();stale()};
 try{JSON.parse(localStorage.getItem(CK)||'[]').forEach(addCustom)}catch(e){}
-const DEFAULT_SB={url:'https://ewnrcnfyiulrjritaeam.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3bnJjbmZ5aXVscmpyaXRhZWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTEwMDYsImV4cCI6MjEwNzc2NzAwNn0.rbJNPpBgS4k2uKxM9Igk6S7rN_FL3gZcoJu-8jkgeD8'},nk=x=>x.replace(/^[A-Za-z]{3}\d{4}!/,'M!');
+const DEFAULT_SB={url:'',key:''},nk=x=>x.replace(/^[A-Za-z]{3}\d{4}!/,'M!');
 const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 let SB=Object.assign({url:'',key:'',tok:null,ref:null,email:''},JSON.parse(LS.get('rg_sb')||'{}'));
 const sbSave=()=>LS.set('rg_sb',JSON.stringify(SB)),on=()=>!!(SB.url&&SB.key&&SB.tok),cm=t=>$('#clmsg').textContent=t,base=()=>SB.url.trim().replace(/\/+$/,'');

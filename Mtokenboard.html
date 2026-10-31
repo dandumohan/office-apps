@@ -368,18 +368,45 @@
     }
     .scheme-card-header .num { font-weight: 700; color: var(--ink); font-size: 13px; }
     .scheme-col-labels {
-      display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 0.8fr 32px;
+      display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr 1.7fr 1fr 0.8fr 32px;
       padding: 6px 16px; gap: 6px;
       font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em;
       border-bottom: 1px solid var(--border);
     }
     .est-row {
-      display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 0.8fr 32px;
+      display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr 1.7fr 1fr 0.8fr 32px;
       padding: 9px 16px; gap: 6px;
       font-size: 12.5px; cursor: pointer;
       border-bottom: 1px solid #F0F1F4;
       align-items: center;
     }
+    .strip-metrics { align-items: flex-start; }
+    /* all scheme figures (incl. Total Exp) share ONE line and divide the width between them */
+    .scheme-strip .strip-metrics { flex: 1 1 100%; width: 100%; margin-left: 0; flex-wrap: nowrap; overflow-x: auto; }
+    .scheme-strip .strip-metric { flex: 1 1 0; min-width: 0; padding: 2px 8px; align-items: flex-end; }
+    .scheme-strip .strip-metric:first-child { padding-left: 0; }
+    .scheme-strip .strip-label { white-space: normal; text-align: right; font-size: 9px; }
+    .scheme-strip .strip-value { font-size: 13px; }
+    .scheme-strip .strip-subs { font-size: 10px; }
+    .scheme-strip .fa-metric { min-width: 0; }
+    .scheme-strip .strip-title-row { flex: 1 1 100%; }
+    @media (max-width: 1100px) { .scheme-strip .strip-metric { flex: 0 0 auto; min-width: 110px; } }
+    .strip-subs { margin-top: 3px; font-size: 10.5px; color: var(--muted); text-align: right; line-height: 1.45; font-variant-numeric: tabular-nums; }
+    .strip-subs b { color: var(--ink); }
+    .strip-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+    .strip-title-row .strip-status-row { margin: 0; }
+    .fa-cell { font-size: 12px; white-space: nowrap; cursor: pointer; border-radius: 6px; padding: 2px 6px; }
+    .fa-cell:hover { background: #EEF0FF; }
+    .fa-metric { cursor: pointer; min-width: 150px; }
+    .fa-metric .strip-value { font-size: 13px; }
+    .fa-sub { font-size: 8.5px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+    .fa-mgr-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px; }
+    .fa-mgr { background: #fff; border-radius: var(--radius); padding: 18px; width: 1100px; max-width: 96vw; max-height: 92vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+    .fa-grp td { background: #F4F6FA; font-weight: 700; }
+    .fa-badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 8px; border-radius: 10px; margin-left: 6px; }
+    .fa-badge.done { background: #E6F6EC; color: #1E7B45; }
+    .fa-badge.pend { background: #FFF4DB; color: #92600A; }
+    .fa-form { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; margin: 10px 0; background: #FAFAFB; }
     .est-row:hover { background: #FAFAFB; }
     .est-row.expanded { background: #FFF9EC; }
     .est-row span:first-child { font-weight: 700; color: var(--ink); }
@@ -3188,6 +3215,72 @@
     return { success: true, count: n };
   };
 
+  /* ---------- Fund application: change / remove previous applications that are not processed yet ----------
+     An application line is PROCESSED once a voucher with an amount exists for the same Esti_no + Task_no + Batch_No.
+     Processed lines are locked: they cannot be edited or deleted. */
+  async function faLocked_(estiNo, batchNo, taskNo) {
+    const b = T_(batchNo).toLowerCase();
+    const v = await API_.getVoucherData(estiNo);
+    return v.some(r => T_(r.Batch_No).toLowerCase() === b && (Number(r.Voucher_Amount) || 0) > 0 && (taskNo === undefined || same_(r.Task_no, taskNo)));
+  }
+  async function faTaskCheck_(d, excludeId) {
+    const tasks = await estiTasksWithFund_(d.esti_no);
+    const task = tasks.find(t => same_(t.est_slno, d.task_no));
+    if (!task) return 'Task ' + d.task_no + ' was not found in estimate ' + d.esti_no + '.';
+    let sub = Number(task.fund_submitted) || 0;
+    if (excludeId) { const old = (await API_.getFundApplicationData(d.esti_no, d.task_no)).find(r => same_(r.FA_id, excludeId)); if (old) sub -= Number(old.Amount) || 0; }
+    const room = (Number(task.amount) || 0) - sub;
+    return (Number(d.amount) || 0) > room ? 'Fund Submitted + this amount would exceed the Amount for task "' + (task.task || d.task_no) + '". Remaining balance available: ' + room + '.' : '';
+  }
+  const faFields_ = d => ({ task_no: I_(d.task_no), task_description: S_(d.task_description), qnty: N_(d.qnty), unit: S_(d.unit), rate: N_(d.rate), per: S_(d.per), amount: N_(d.amount) });
+  API_.addFundApplication = async d => {
+    if (!T_(d.batch_no)) return { success: false, message: 'Batch No is required.' };
+    if (!T_(d.application_date)) return { success: false, message: 'Date of Application is required.' };
+    if (!(Number(d.amount) > 0)) return { success: false, message: 'Amount must be greater than 0.' };
+    if (await faLocked_(d.esti_no, d.batch_no)) return { success: false, message: 'Batch "' + d.batch_no + '" already has vouchers, so lines cannot be added to it.' };
+    const err = await faTaskCheck_(d); if (err) return { success: false, message: err };
+    const o = faFields_(d); o.esti_no = S_(d.esti_no); o.batch_no = T_(d.batch_no); o.application_date = D_(d.application_date);
+    o.token_no = (await findAdvanceTokenNo_(d.esti_no, d.batch_no)) || null;
+    return { success: true, id: await insertRow_('fund_application', 'fa_id', o) };
+  };
+  API_.updateFundApplication = async d => {
+    const old = (await API_.getFundApplicationData(d.esti_no)).find(r => same_(r.FA_id, d.fa_id));
+    if (!old) return { success: false, message: 'Fund application line not found.' };
+    if (await faLocked_(old.Esti_no, old.Batch_No)) { if (await faLocked_(old.Esti_no, old.Batch_No, old.Task_no) || await faLocked_(old.Esti_no, old.Batch_No, d.task_no)) return { success: false, message: 'This line is processed (voucher generated) and cannot be changed.' }; }
+    if (!(Number(d.amount) > 0)) return { success: false, message: 'Amount must be greater than 0.' };
+    const err = await faTaskCheck_({ esti_no: old.Esti_no, task_no: d.task_no, amount: d.amount }, d.fa_id); if (err) return { success: false, message: err };
+    return updateRow_('fund_application', 'fa_id', d.fa_id, faFields_(d), 'Fund application line not found.');
+  };
+  API_.updateFundApplicationBatch = async d => {
+    const oldB = T_(d.old_batch_no).toLowerCase(), newB = T_(d.batch_no);
+    if (!newB) return { success: false, message: 'Batch No is required.' };
+    if (!T_(d.application_date)) return { success: false, message: 'Date of Application is required.' };
+    const all = await API_.getFundApplicationData(d.esti_no);
+    const lines = all.filter(r => T_(r.Batch_No).toLowerCase() === oldB);
+    if (!lines.length) return { success: false, message: 'Batch not found.' };
+    if (await faLocked_(d.esti_no, d.old_batch_no)) return { success: false, message: 'This batch is processed (voucher generated) and cannot be changed.' };
+    if (newB.toLowerCase() !== oldB) {
+      if (all.some(r => T_(r.Batch_No).toLowerCase() === newB.toLowerCase())) return { success: false, message: 'Batch No "' + newB + '" is already used for estimate ' + d.esti_no + '.' };
+      if (await faLocked_(d.esti_no, newB)) return { success: false, message: 'Batch No "' + newB + '" already has vouchers for this estimate.' };
+    }
+    const tok = (await findAdvanceTokenNo_(d.esti_no, newB)) || null;
+    const res = ck_(await db().from('fund_application').update({ batch_no: newB, application_date: D_(d.application_date), token_no: tok }).in('fa_id', lines.map(r => r.FA_id)).select('fa_id')) || [];
+    return res.length ? { success: true, count: res.length } : { success: false, message: 'Nothing was updated.' };
+  };
+  API_.deleteFundApplication = async id => {
+    const old = (await API_.getFundApplicationData()).find(r => same_(r.FA_id, id));
+    if (!old) return { success: false, message: 'Fund application line not found.' };
+    if (await faLocked_(old.Esti_no, old.Batch_No, old.Task_no)) return { success: false, message: 'This line is processed (voucher generated) and cannot be deleted.' };
+    return deleteRow_('fund_application', 'fa_id', id, 'Fund application line not found.');
+  };
+  API_.deleteFundApplicationBatch = async (estiNo, batchNo) => {
+    const lines = (await API_.getFundApplicationData(estiNo)).filter(r => T_(r.Batch_No).toLowerCase() === T_(batchNo).toLowerCase());
+    if (!lines.length) return { success: false, message: 'Batch not found.' };
+    if (await faLocked_(estiNo, batchNo)) return { success: false, message: 'This batch is processed (voucher generated) and cannot be deleted.' };
+    const res = ck_(await db().from('fund_application').delete().in('fa_id', lines.map(r => r.FA_id)).select('fa_id')) || [];
+    return { success: true, count: res.length };
+  };
+
   /* ---------- Withdrawals (account / VSS / token amount are derived when those columns don't exist) ---------- */
   let _wdExtras = null;
   async function wdExtras_() {
@@ -4104,7 +4197,7 @@
   secR_('Withdraw', ['getWithdrawnDetailsData']); secW_('Withdraw', 'A', ['addWithdrawnDetail']); secW_('Withdraw', 'E', ['updateWithdrawnDetail']); secW_('Withdraw', 'D', ['deleteWithdrawnDetail']);
   secR_('Withdrawal Accounts', ['getWithdrawalAccountsData']); secW_('Withdrawal Accounts', 'A', ['addWithdrawalAccount']); secW_('Withdrawal Accounts', 'E', ['updateWithdrawalAccount']); secW_('Withdrawal Accounts', 'D', ['deleteWithdrawalAccount']);
   secR_('Cheque Books', ['getChequeBooksData']); secW_('Cheque Books', 'A', ['addChequeBook']); secW_('Cheque Books', 'E', ['updateChequeBook']); secW_('Cheque Books', 'D', ['deleteChequeBook']);
-  secR_('Fund Application', ['getFundApplicationData']); secW_('Fund Application', 'A', ['saveFundApplicationPlan']);
+  secR_('Fund Application', ['getFundApplicationData']); secW_('Fund Application', 'A', ['saveFundApplicationPlan', 'addFundApplication']); secW_('Fund Application', 'E', ['updateFundApplication', 'updateFundApplicationBatch']); secW_('Fund Application', 'D', ['deleteFundApplication', 'deleteFundApplicationBatch']);
   secG_('Reports', ['generateTokensReportPdf', 'generateAccReportPdf', 'exportWorkbookForVoucherSuite']);
 
   function secureActionLabel_(fn) {
@@ -6407,6 +6500,7 @@
       applyEstimateFilters();
       loadedTabs.estimate = true;
       populateAdvTransIdDropdown();
+      loadFaStatus(applyEstimateFilters);
       clearEstimateForm();
       refreshAdvanceTable();
     }).getEstimateData();
@@ -7332,6 +7426,177 @@
       .reduce((s, e) => s + (Number(e.Amount) || 0), 0);
   }
 
+  /* ===== Fund Application: band figures + manager (previous applications by batch / date) ===== */
+  let faCache = [], faProcKeys = new Set(), faBandEstis = {};
+  const faKey_ = (e, t, b) => [String(e), String(t), String(b || '').trim().toLowerCase()].join('||');
+  function loadFaStatus(cb) {
+    const full = cb !== repaintFaCells;
+    Promise.all([gsrCall('getFundApplicationData'), gsrCall('getVoucherData'), full ? gsrCall('getApoData') : null, full ? gsrCall('getBudgetData') : null]).then(r => {
+      if (Array.isArray(r[2])) apoCache = r[2];
+      if (Array.isArray(r[3])) budgetCache = r[3];
+      faCache = Array.isArray(r[0]) ? r[0] : [];
+      faProcKeys = new Set((Array.isArray(r[1]) ? r[1] : []).filter(v => (Number(v.Voucher_Amount) || 0) > 0).map(v => faKey_(v.Esti_no, v.Task_no, v.Batch_No)));
+      if (cb) cb();
+    }).catch(() => {});
+  }
+  const faIsProcessed = f => faProcKeys.has(faKey_(f.Esti_no, f.Task_no, f.Batch_No));
+  function faTotals(estiNos) {
+    const set = new Set(estiNos.map(String)); let p = 0, n = 0;
+    faCache.forEach(f => { if (!set.has(String(f.Esti_no))) return; const a = Number(f.Amount) || 0; if (faIsProcessed(f)) p += a; else n += a; });
+    return { p: p, n: n };
+  }
+  const faHtml = t => '<b style="color:var(--success)">' + inr(t.p) + '</b> | <b style="color:#92600A">' + inr(t.n) + '</b>';
+  function repaintFaCells() {
+    document.querySelectorAll('[data-fa-est]').forEach(el => { el.innerHTML = faHtml(faTotals([el.dataset.faEst])); });
+    document.querySelectorAll('[data-fa-scheme]').forEach(el => { el.innerHTML = faHtml(faTotals(faBandEstis[el.dataset.faScheme] || [])); });
+  }
+
+  let faMgr = { esti: '', scheme: '', status: 'pending', batch: '', edit: null, tasks: {} };
+  function openFaManager(esti, scheme) {
+    const er = esti ? estimateCache.find(e => String(e.Esti_no) === String(esti)) : null;
+    faMgr = { esti: esti || '', scheme: scheme || (er ? (er.Scheme || 'Unspecified') : ''), status: 'pending', batch: '', edit: null, tasks: {} };
+    const old = document.getElementById('fa_mgr_modal'); if (old) old.remove();
+    const m = document.createElement('div');
+    m.id = 'fa_mgr_modal'; m.className = 'fa-mgr-overlay';
+    m.innerHTML = '<div class="fa-mgr" id="fa_mgr_body"><div class="linked-empty">Loading fund applications...</div></div>';
+    m.addEventListener('mousedown', e => { if (e.target === m) m.remove(); });
+    m.addEventListener('click', faMgrClick);
+    m.addEventListener('change', faMgrChange);
+    m.addEventListener('input', faMgrInput);
+    document.body.appendChild(m);
+    loadFaStatus(faMgrRender);
+  }
+
+  function faMgrRender() {
+    const body = document.getElementById('fa_mgr_body'); if (!body) return;
+    const E = ntEsc_, sch = faMgr.scheme, ed = faMgr.edit;
+    const scopeEst = estimateCache.filter(e => !sch || (e.Scheme || 'Unspecified') === sch).map(e => String(e.Esti_no));
+    const scope = new Set(scopeEst);
+    const base = faCache.filter(f => scope.has(String(f.Esti_no)) && (!faMgr.esti || String(f.Esti_no) === String(faMgr.esti)));
+    const estOpts = scopeEst.filter(n => faCache.some(f => String(f.Esti_no) === n));
+    const batchOpts = Array.from(new Set(base.map(f => String(f.Batch_No || '')))).sort();
+    if (faMgr.batch && batchOpts.indexOf(faMgr.batch) === -1) faMgr.batch = '';
+    const rows = base.filter(f => (!faMgr.batch || String(f.Batch_No || '') === faMgr.batch) && (faMgr.status === 'all' || (faMgr.status === 'done') === faIsProcessed(f)));
+    const groups = {};
+    rows.forEach(f => { const k = f.Esti_no + '||' + f.Batch_No; (groups[k] = groups[k] || { esti: f.Esti_no, batch: f.Batch_No, date: f.Application_Date, lines: [] }).lines.push(f); });
+    const gl = Object.keys(groups).map(k => groups[k]).sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.batch).localeCompare(String(b.batch)));
+    let pend = 0, done = 0;
+    rows.forEach(f => { if (faIsProcessed(f)) done += Number(f.Amount) || 0; else pend += Number(f.Amount) || 0; });
+    const opt = (v, t, cur) => '<option value="' + E(v) + '"' + (String(v) === String(cur) ? ' selected' : '') + '>' + E(t) + '</option>';
+    let h = '<div class="scheme-card-title" style="margin-bottom:4px;">Fund Applications &middot; ' + E(sch || 'All schemes') + '</div>' +
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Previous fund applications by batch and date. A line is <b>processed</b> once a voucher with an amount exists for its estimate, task and batch; processed lines are locked. Not-processed lines can be edited or deleted.</div>' +
+      '<div class="form-grid" style="margin-bottom:8px;">' +
+      '<div class="field-row"><label>Estimate</label><select data-f="esti"><option value="">All estimates</option>' + estOpts.map(n => opt(n, n, faMgr.esti)).join('') + '</select></div>' +
+      '<div class="field-row"><label>Batch</label><select data-f="batch"><option value="">All batches</option>' + batchOpts.map(b => opt(b, b, faMgr.batch)).join('') + '</select></div>' +
+      '<div class="field-row"><label>Show</label><select data-f="status">' + opt('pending', 'Not processed', faMgr.status) + opt('done', 'Processed', faMgr.status) + opt('all', 'All', faMgr.status) + '</select></div></div>' +
+      '<div class="btn-row" style="gap:24px;margin-bottom:6px;"><div><span style="color:var(--muted);font-size:12px;">Processed</span><br><b style="color:var(--success)">' + inr(done) + '</b></div><div><span style="color:var(--muted);font-size:12px;">To be processed</span><br><b style="color:#92600A">' + inr(pend) + '</b></div>' +
+      (faMgr.esti ? '<button class="action" data-act="plan">+ New batch (Fund Application)</button>' : '') + '</div>';
+    if (ed) h += faFormHtml(ed);
+    h += '<div class="list-wrap" style="max-height:48vh;"><table class="grid"><thead><tr><th>Task</th><th>Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Per</th><th>Amount</th><th></th></tr></thead><tbody>';
+    if (!gl.length) h += '<tr><td colspan="8" class="linked-empty">No fund applications to show for this selection.</td></tr>';
+    gl.forEach(g => {
+      const locked = g.lines.every(faIsProcessed), part = !locked && g.lines.some(faIsProcessed);
+      const tot = g.lines.reduce((s, f) => s + (Number(f.Amount) || 0), 0);
+      const da = 'data-e="' + E(g.esti) + '" data-b="' + E(g.batch) + '" data-d="' + E(g.date) + '"';
+      h += '<tr class="fa-grp"><td colspan="6">Estimate ' + E(g.esti) + ' &middot; Batch ' + E(g.batch) + ' &middot; ' + E(faFormatDate_(g.date)) + ' <span class="fa-badge ' + (locked ? 'done' : 'pend') + '">' + (locked ? 'Processed' : (part ? 'Partly processed' : 'Not processed')) + '</span></td><td>' + inr(tot) + '</td><td style="white-space:nowrap;">' +
+        (locked || part ? '' : '<button class="icon-btn" title="Add a line to this batch" data-act="addline" ' + da + '>+</button><button class="icon-btn" title="Edit batch no / date" data-act="editbatch" ' + da + '>&#9998;</button><button class="icon-btn" title="Delete whole batch" data-act="delbatch" ' + da + '>&#10005;</button>') + '</td></tr>';
+      g.lines.slice().sort((a, b) => (Number(a.Task_no) || 0) - (Number(b.Task_no) || 0)).forEach(f => {
+        const lk = faIsProcessed(f);
+        h += '<tr><td>#' + E(f.Task_no) + '</td><td>' + E(f.Task_Description) + '</td><td>' + E(f.Qnty) + '</td><td>' + E(f.Unit) + '</td><td>' + inr(f.Rate) + '</td><td>' + E(f.Per) + '</td><td>' + inr(f.Amount) + '</td><td style="white-space:nowrap;">' +
+          (lk ? '<span class="fa-badge done">Locked</span>' : '<button class="icon-btn" title="Edit line" data-act="editline" data-id="' + E(f.FA_id) + '">&#9998;</button><button class="icon-btn" title="Delete line" data-act="delline" data-id="' + E(f.FA_id) + '">&#10005;</button>') + '</td></tr>';
+      });
+    });
+    h += '</tbody></table></div><div class="status" id="fa_mgr_msg"></div><div class="btn-row" style="margin-top:8px;"><button class="action" data-act="close">Close</button></div>';
+    body.innerHTML = h;
+  }
+
+  function faFormHtml(ed) {
+    const E = ntEsc_, inp = (id, v, type, extra) => '<input type="' + (type || 'text') + '" id="fa_f_' + id + '" value="' + E(v) + '" ' + (extra || '') + '>';
+    if (ed.mode === 'batch') {
+      return '<div class="fa-form"><b>Edit batch ' + E(ed.batch) + ' (estimate ' + E(ed.esti) + ')</b><div class="form-grid" style="margin-top:8px;"><div class="field-row"><label>Batch No</label>' + inp('batch', ed.batch) + '</div><div class="field-row"><label>Date of Application</label>' + inp('date', ed.date, 'date') + '</div></div>' +
+        '<div class="btn-row"><button class="action primary" data-act="save">Save</button><button class="action" data-act="cancel">Cancel</button></div></div>';
+    }
+    const tasks = faMgr.tasks[ed.esti] || [];
+    const taskSel = '<select id="fa_f_task" data-f="task">' + tasks.map(t => '<option value="' + E(t.est_slno) + '"' + (String(t.est_slno) === String(ed.task_no) ? ' selected' : '') + '>#' + E(t.est_slno) + ' ' + E(String(t.task || '').slice(0, 70)) + '</option>').join('') + '</select>';
+    return '<div class="fa-form"><b>' + (ed.mode === 'line' ? 'Edit line' : 'Add line to batch ' + E(ed.batch)) + ' (estimate ' + E(ed.esti) + ' &middot; ' + E(faFormatDate_(ed.date)) + ')</b><div class="form-grid" style="margin-top:8px;">' +
+      '<div class="field-row" style="grid-column:span 2;"><label>Task</label>' + taskSel + '</div>' +
+      '<div class="field-row" style="grid-column:span 2;"><label>Description</label>' + inp('desc', ed.desc) + '</div>' +
+      '<div class="field-row"><label>Qty</label>' + inp('qty', ed.qty, 'number', 'data-f="qty"') + '</div>' +
+      '<div class="field-row"><label>Unit</label>' + inp('unit', ed.unit) + '</div>' +
+      '<div class="field-row"><label>Rate</label>' + inp('rate', ed.rate, 'number', 'data-f="rate"') + '</div>' +
+      '<div class="field-row"><label>Per</label>' + inp('per', ed.per) + '</div>' +
+      '<div class="field-row"><label>Amount</label>' + inp('amt', ed.amount, 'number') + '</div></div>' +
+      '<div class="btn-row"><button class="action primary" data-act="save">Save</button><button class="action" data-act="cancel">Cancel</button></div></div>';
+  }
+
+  function faMgrMsg(text, isErr) { const el = document.getElementById('fa_mgr_msg'); if (el) { el.className = 'status ' + (isErr ? 'err' : 'ok'); el.textContent = text; } }
+  function faMgrDone(res, okText, esti) {
+    if (res && res.__denied) { faMgrMsg(res.message, true); return false; }
+    if (!res || res.success === false) { faMgrMsg((res && res.message) || 'Unable to complete the action.', true); return false; }
+    faMgr.edit = null;
+    loadFaStatus(() => {
+      faMgrRender(); repaintFaCells(); faMgrMsg(okText);
+      const er = estimateCache.find(e => String(e.Esti_no) === String(esti));
+      if (er && document.getElementById('est_tasks_section_' + er.Est_id)) loadAndRenderEstimateTasks(er);
+    });
+    return true;
+  }
+  async function faStartLine(mode, f, g) {
+    const esti = f ? f.Esti_no : g.e;
+    if (!faMgr.tasks[esti]) { try { faMgr.tasks[esti] = await gsrCall('getEstiTaskData', esti); } catch (e) { faMgr.tasks[esti] = []; } }
+    const t0 = (faMgr.tasks[esti] || [])[0] || {};
+    faMgr.edit = f ? { mode: 'line', id: f.FA_id, esti: esti, batch: f.Batch_No, date: f.Application_Date, task_no: f.Task_no, desc: f.Task_Description, qty: f.Qnty, unit: f.Unit, rate: f.Rate, per: f.Per, amount: f.Amount }
+      : { mode: 'newline', esti: esti, batch: g.b, date: g.d, task_no: t0.est_slno, desc: t0.task || '', qty: t0.qty || 0, unit: t0.unit || '', rate: t0.rate || 0, per: t0.per || '', amount: Math.round((Number(t0.qty) || 0) * (Number(t0.rate) || 0)) };
+    faMgrRender();
+  }
+  function faMgrChange(e) {
+    const f = e.target.dataset && e.target.dataset.f; if (!f) return;
+    if (f === 'esti' || f === 'batch' || f === 'status') { faMgr[f] = e.target.value; faMgr.edit = null; faMgrRender(); return; }
+    if (f === 'task' && faMgr.edit) {
+      const t = (faMgr.tasks[faMgr.edit.esti] || []).find(x => String(x.est_slno) === e.target.value); if (!t) return;
+      const set = (id, v) => { document.getElementById('fa_f_' + id).value = v; };
+      set('desc', t.task || ''); set('qty', t.qty || 0); set('unit', t.unit || ''); set('rate', t.rate || 0); set('per', t.per || ''); set('amt', Math.round((Number(t.qty) || 0) * (Number(t.rate) || 0)));
+    }
+  }
+  function faMgrInput(e) {
+    const f = e.target.dataset && e.target.dataset.f;
+    if (f === 'qty' || f === 'rate') document.getElementById('fa_f_amt').value = Math.round((Number(document.getElementById('fa_f_qty').value) || 0) * (Number(document.getElementById('fa_f_rate').value) || 0));
+  }
+  async function faMgrClick(e) {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    const act = b.dataset.act, g = b.dataset, v = id => (document.getElementById('fa_f_' + id) || {}).value;
+    if (act === 'close') { document.getElementById('fa_mgr_modal').remove(); return; }
+    if (act === 'cancel') { faMgr.edit = null; faMgrRender(); return; }
+    if (act === 'plan') { const er = estimateCache.find(x => String(x.Esti_no) === String(faMgr.esti)); if (er) { document.getElementById('fa_mgr_modal').remove(); openFundApplicationPlanner(er.Est_id); } return; }
+    if (act === 'addline') { faStartLine('newline', null, g); return; }
+    if (act === 'editline') { const f = faCache.find(x => String(x.FA_id) === g.id); if (f) faStartLine('line', f); return; }
+    if (act === 'editbatch') { faMgr.edit = { mode: 'batch', esti: g.e, batch: g.b, date: g.d }; faMgrRender(); return; }
+    if (act === 'delline') {
+      const f = faCache.find(x => String(x.FA_id) === g.id); if (!f) return;
+      if (!(await askConfirm('Delete this fund application line (task #' + f.Task_no + ', amount ' + inr(f.Amount) + ')?', { title: 'Delete Fund Application', confirmText: 'Delete', danger: true }))) return;
+      try { faMgrDone(await gsrCall('deleteFundApplication', f.FA_id), 'Line deleted.', f.Esti_no); } catch (err) { faMgrMsg(err.message || String(err), true); }
+      return;
+    }
+    if (act === 'delbatch') {
+      if (!(await askConfirm('Delete the whole batch "' + g.b + '" of estimate ' + g.e + ' (all its lines)?', { title: 'Delete Batch', confirmText: 'Delete batch', danger: true }))) return;
+      try { faMgrDone(await gsrCall('deleteFundApplicationBatch', g.e, g.b), 'Batch deleted.', g.e); } catch (err) { faMgrMsg(err.message || String(err), true); }
+      return;
+    }
+    if (act === 'save' && faMgr.edit) {
+      const ed = faMgr.edit;
+      try {
+        let res;
+        if (ed.mode === 'batch') res = await gsrCall('updateFundApplicationBatch', { esti_no: ed.esti, old_batch_no: ed.batch, batch_no: v('batch'), application_date: v('date') });
+        else {
+          const d = { esti_no: ed.esti, task_no: v('task'), task_description: v('desc'), qnty: v('qty'), unit: v('unit'), rate: v('rate'), per: v('per'), amount: v('amt') };
+          if (ed.mode === 'line') { d.fa_id = ed.id; res = await gsrCall('updateFundApplication', d); }
+          else { d.batch_no = ed.batch; d.application_date = ed.date; res = await gsrCall('addFundApplication', d); }
+        }
+        faMgrDone(res, 'Saved.', ed.esti);
+      } catch (err) { faMgrMsg(err.message || String(err), true); }
+    }
+  }
+
   function getEstimateExpenditureEntries(estiNo) {
     const tokens = getAdvTokensForEstiNo(estiNo);
     return expenditureCache.filter(e => tokens.includes(String(e.Adv_Token_No)));
@@ -7435,6 +7700,7 @@
       applyEstimateFilters();
       loadedTabs.estimate = true;
       populateAdvTransIdDropdown();
+      loadFaStatus(applyEstimateFilters);
     }).getEstimateData();
   }
 
@@ -7641,6 +7907,27 @@
         return `<span class="strip-status-chip ${cls}${n ? '' : ' zero'}" title="${n} estimate(s) with status ${label}">${label}: <b>${n}</b></span>`;
       }).join('');
       const stripBalance = sumCredited - sumExp;
+      const nf = n => (Number(n) || 0).toLocaleString('en-IN');
+      const estSet = new Set(items.map(r => String(r.Esti_no)));
+      const sumAdv = advanceCache.filter(a => estSet.has(String(a.Trans_id))).reduce((s, a) => s + (Number(a.Amount) || 0), 0);
+      const apoAmt = apoCache.filter(a => String(a.Scheme || 'Unspecified') === scheme).reduce((s, a) => s + (Number(a.APO_Approved_Amt) || 0), 0);
+      const relByQ = {}; let totRel = 0;
+      budgetCache.filter(b => String(b.Scheme || 'Unspecified') === scheme).forEach(b => { const q = String(b.Qtr || '').trim() || 'Other'; relByQ[q] = (relByQ[q] || 0) + (Number(b.Amt) || 0); totRel += Number(b.Amt) || 0; });
+      const relRows = Object.keys(relByQ).sort().map(q => `${ntEsc_(q)} | <b>${nf(relByQ[q])}</b>`);
+      const expByM = {};
+      items.forEach(r => getEstimateExpenditureEntries(r.Esti_no).forEach(e => { const d = new Date(e.Dt); if (isNaN(d)) return; const k = d.getFullYear() * 100 + d.getMonth(); (expByM[k] = expByM[k] || { l: d.toLocaleString('default', { month: 'short', year: 'numeric' }), t: 0 }).t += Number(e.Amount) || 0; }));
+      const expRows = Object.keys(expByM).sort((a, b) => a - b).map(k => `${expByM[k].l} | <b>${nf(expByM[k].t)}</b>`);
+      const toRel = apoAmt - totRel;
+      const typeG = {};
+      items.forEach(r => { const t = String(r.Esti_no || '').trim().slice(0, 3).toUpperCase() || 'Unspecified'; (typeG[t] = typeG[t] || { n: 0, a: 0 }); typeG[t].n += 1; typeG[t].a += Number(r.Est_cost) || 0; });
+      const typeRows = Object.keys(typeG).sort().map(t => `${ntEsc_(t)} | ${typeG[t].n} | <b>${nf(typeG[t].a)}</b>`);
+      const monthRows = (list, dateOf, amtOf) => { const g = {}; list.forEach(a => { const d = new Date(dateOf(a)); if (isNaN(d)) return; const k = d.getFullYear() * 100 + d.getMonth(); (g[k] = g[k] || { l: d.toLocaleString('default', { month: 'short', year: 'numeric' }), t: 0 }).t += amtOf(a); }); return Object.keys(g).sort((x, y) => x - y).map(k => `${g[k].l} | <b>${nf(g[k].t)}</b>`); };
+      const advList = advanceCache.filter(a => estSet.has(String(a.Trans_id)));
+      const advRows = monthRows(advList, a => a.Dt, a => Number(a.Amount) || 0);
+      const credRows = monthRows(advList.filter(a => String(a.Credited || '').trim().toLowerCase() === 'yes'), a => a.Credited_Date || a.Dt, a => (Number(a.Credited_Amt) > 0 ? Number(a.Credited_Amt) : Number(a.Amount)) || 0);
+      const subs = rows => rows.length ? `<div class="strip-subs">${rows.join('<br>')}</div>` : '';
+      faBandEstis[scheme] = items.map(r => r.Esti_no);
+      const faT = faTotals(faBandEstis[scheme]);
       const balanceCls = stripBalance < 0 ? 'neg' : (stripBalance === 0 ? 'zero' : '');
       const isCollapsed = !expandedSchemes.has(scheme);
       const schemeKey = scheme.replace(/'/g, "\\'");
@@ -7649,21 +7936,24 @@
       card.className = 'scheme-card';
       card.innerHTML = `
         <div class="scheme-card-header scheme-strip" style="cursor:pointer;" onclick="toggleSchemeBand('${schemeKey}')">
-          <div>
+          <div class="strip-title-row">
             <span class="scheme-card-title"><span style="display:inline-block; transition: transform 0.15s; transform: rotate(${isCollapsed ? '-90deg' : '0deg'}); margin-right:6px;">&#9660;</span>${scheme} (${items.length})</span>
-            <div class="strip-status-row">${statusChipsHtml}</div>
+            <span class="strip-status-row">${statusChipsHtml}</span>
           </div>
           <div class="strip-metrics">
-            <div class="strip-metric" title="Sum of the estimate costs in this scheme"><span class="strip-label">Total Cost</span><span class="strip-value">${sumCost.toLocaleString('en-IN')}</span></div>
-            <div class="strip-metric" title="Advance tokens already credited against these estimates"><span class="strip-label">Adv. Credited</span><span class="strip-value">${sumCredited.toLocaleString('en-IN')}</span></div>
-            <div class="strip-metric" title="Advances issued but not yet credited against these estimates"><span class="strip-label">Adv. To Be Credited</span><span class="strip-value">${sumToBeCred.toLocaleString('en-IN')}</span></div>
-            <div class="strip-metric" title="Expenditure booked against these estimates"><span class="strip-label">Total Exp</span><span class="strip-value">${sumExp.toLocaleString('en-IN')}</span></div>
-            <div class="strip-metric strip-balance ${balanceCls}" title="Adv. Credited minus Total Exp"><span class="strip-label">Balance</span><span class="strip-value">${stripBalance.toLocaleString('en-IN')}</span></div>
+            <div class="strip-metric" title="Total APO approved amount for this scheme"><span class="strip-label">APO Amount</span><span class="strip-value">${nf(apoAmt)}</span></div>
+            <div class="strip-metric" title="Budget released for this scheme, quarter-wise. To be released = APO Amount minus Total Released"><span class="strip-label">Total Released Amount</span><span class="strip-value">${nf(totRel)}</span>${subs(relRows)}<div class="strip-subs">To be released | <b>${nf(toRel)}</b></div></div>
+            <div class="strip-metric" title="Sum of the estimate costs in this scheme: estimate type | number of estimates | amount"><span class="strip-label">Est Cost</span><span class="strip-value">${nf(sumCost)}</span>${subs(typeRows)}</div>
+            <div class="strip-metric fa-metric" data-scheme="${ntEsc_(scheme)}" title="Fund applications: Processed (voucher generated) | To be processed. Click to view, edit or delete previous applications batch-wise and date-wise" onclick="event.stopPropagation(); openFaManager('', this.dataset.scheme)"><span class="strip-label">Fund Application</span><span class="strip-value" data-fa-scheme="${ntEsc_(scheme)}">${faHtml(faT)}</span><span class="fa-sub">Processed | To be processed</span></div>
+            <div class="strip-metric" title="Advances issued against these estimates, month-wise"><span class="strip-label">Adv. Amount</span><span class="strip-value">${nf(sumAdv)}</span>${subs(advRows)}</div>
+            <div class="strip-metric" title="Advance tokens already credited, month-wise (by credited date)"><span class="strip-label">Adv. Credited</span><span class="strip-value">${nf(sumCredited)}</span>${subs(credRows)}</div>
+            <div class="strip-metric" title="Advances issued but not yet credited against these estimates"><span class="strip-label">Adv. To Be Credited</span><span class="strip-value">${nf(sumToBeCred)}</span></div>
+            <div class="strip-metric" title="Expenditure booked against these estimates, month-wise"><span class="strip-label">Total Exp</span><span class="strip-value">${nf(sumExp)}</span>${subs(expRows)}<div class="strip-subs" title="Adv. Credited minus Total Exp" style="color:${stripBalance < 0 ? 'var(--danger)' : (stripBalance > 0 ? 'var(--success)' : 'var(--muted)')};">Exp to be incurred | <b style="color:inherit;">${nf(stripBalance)}</b></div></div>
           </div>
         </div>
         <div class="scheme-band-body" style="display:${isCollapsed ? 'none' : 'block'};">
           <div class="scheme-col-labels">
-            <span>Esti_no</span><span>Cost</span><span>Adv. Credited</span><span>Adv. To Be Credited</span><span>Exp</span><span>Balance</span><span>Date</span><span>Status</span><span></span>
+            <span>Esti_no</span><span>Est Cost</span><span>Adv. Credited</span><span>Adv. To Be Credited</span><span>Exp</span><span>Exp To Be Incurred</span><span title="Fund application amount: Processed (voucher generated) | To be processed">Fund Appl. (Proc. | To be proc.)</span><span>Date</span><span>Status</span><span></span>
           </div>
         </div>`;
 
@@ -7686,6 +7976,7 @@
           <span title="Advances issued minus Adv. Credited">${rowToBeCred.toLocaleString('en-IN')}</span>
           <span>${rowExp.toLocaleString('en-IN')}</span>
           <span style="font-weight:700; color:${rowBal < 0 ? 'var(--danger)' : (rowBal > 0 ? 'var(--success)' : 'var(--muted)')};" title="Adv. Credited minus Exp">${rowBal.toLocaleString('en-IN')}</span>
+          <span class="fa-cell" data-est="${ntEsc_(r.Esti_no)}" data-fa-est="${ntEsc_(r.Esti_no)}" title="Processed | To be processed fund application. Click to manage" onclick="event.stopPropagation(); openFaManager(this.dataset.est)">${faHtml(faTotals([r.Esti_no]))}</span>
           <span>${r.Est_date}</span>
           <span>${r.status}</span>
           <span title="Edit" style="text-align:right; color:var(--muted);" onclick="event.stopPropagation(); loadEstimateById('${r.Est_id}');">&#9998;</span>`;
@@ -7852,6 +8143,7 @@
   function refreshTasksStrip(estRow) {
     if (!estRow) return;
     const estId = String(estRow.Est_id);
+    loadFaStatus(repaintFaCells);
     Promise.all([gsrCall('getFundApplicationData', estRow.Esti_no), gsrCall('getVoucherData', estRow.Esti_no)])
       .then(([fa, vch]) => {
         const same = r => String(r.Esti_no) === String(estRow.Esti_no);
@@ -7922,6 +8214,7 @@
         <div class="btn-row" style="margin-top:8px;">
           ${isAdding ? '' : `<button class="action" onclick="startAddTask('${estId}')">+ Add Task</button>`}
           <button class="action" onclick="openFundApplicationPlanner('${estId}')" title="Prepare a fund application for selected tasks">&#128203; Fund Application</button>
+          <button class="action" onclick="openFaManager('${estiNo}')" title="View, edit or delete previous fund applications batch-wise and date-wise">&#128194; Fund Applications</button>
           <button class="action" onclick="openFaVoucherGenerator('${estId}')" title="Generate vouchers from saved Fund Application entries">&#128196; Generate Vouchers from Fund Application</button>
           <button class="action" onclick="openWithdrawModal('${estId}')" title="Record a bank withdrawal against an advance token">&#128176; Withdraw</button>
         </div>

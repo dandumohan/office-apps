@@ -4,89 +4,301 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Professional Kanban Board</title>
+    <title>Kanban Board</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f2f4f7;
+            --surface: #ffffff;
+            --col: #e9ecf1;
+            --ink: #172033;
+            --ink-2: #455064;
+            --muted: #768195;
+            --line: #dde1e8;
+            --line-2: #eceff3;
+            --accent: #2a45c4;
+            --accent-hover: #213aa6;
+            --accent-soft: #e8ecfb;
+            --todo: #5d6a7e;
+            --prog: #b4741a;
+            --done: #1c8a5a;
+            --high: #c23b2e;
+            --med: #c48a12;
+            --low: #3a7bd5;
+        }
+
+        .hidden { display: none !important; }
+
+        html { -webkit-text-size-adjust: 100%; }
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+        button { font-family: inherit; cursor: pointer; }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        /* ---------- Layout ---------- */
+        .shell { max-width: 1200px; margin: 0 auto; padding: 0 24px 56px; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; padding: 22px 0 20px; }
+        .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+        .brand-mark { width: 30px; height: 30px; border-radius: 8px; background: var(--ink); display: grid; place-items: center; }
+        .user { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; }
+        .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+        @media (max-width: 860px) { .board { grid-template-columns: 1fr; } .shell { padding: 0 14px 40px; } }
+
+        /* ---------- Panels ---------- */
+        .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 2px rgba(23, 32, 51, .04); }
+        .panel-title { margin: 0 0 14px; font-size: 15px; font-weight: 600; }
+        .panel-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-2); }
+        .col { background: var(--col); border-radius: 12px; padding: 14px; min-width: 0; }
+        .box-panel { margin-top: 20px; background: var(--surface); border: 1.5px dashed #c3cad6; border-radius: 12px; padding: 14px; }
+        .box-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 16px; }
+        @media (max-width: 860px) { .box-grid { grid-template-columns: 1fr; } }
+
+        /* ---------- Section header ---------- */
+        .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .sec-head.open { margin-bottom: 14px; }
+        .sec-title { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--ink); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--todo); }
+        .dot-todo { background: var(--todo); } .dot-prog { background: var(--prog); } .dot-done { background: var(--done); }
+        .dot-slate { background: #3d4757; } .dot-note { background: #e0b72e; }
+        .count { font-size: 12px; font-weight: 500; color: var(--ink-2); background: rgba(23, 32, 51, .07); padding: 0 8px; border-radius: 999px; line-height: 20px; font-variant-numeric: tabular-nums; }
+        .switch { position: relative; width: 34px; height: 20px; border-radius: 999px; border: 0; padding: 0; background: #c3cad6; transition: background .15s; flex-shrink: 0; }
+        .switch[aria-checked="true"] { background: var(--accent); }
+        .knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: transform .15s; }
+        .switch[aria-checked="true"] .knob { transform: translateX(14px); }
+
+        /* ---------- Form controls ---------- */
+        .lbl { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+        .input { width: 100%; box-sizing: border-box; height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; }
+        .input::placeholder { color: #a2abb9; }
+        .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+        .btn { height: 38px; padding: 0 16px; border-radius: 8px; border: 1px solid transparent; font-size: 14px; font-weight: 600; white-space: nowrap; transition: background .15s, border-color .15s; }
+        .btn-sm { height: 32px; padding: 0 12px; font-size: 13px; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-ghost { background: #fff; border-color: var(--line); color: var(--ink-2); }
+        .btn-ghost:hover { background: #f6f7f9; border-color: #cdd3dc; }
+        .btn-slip { background: #f3d15a; color: #3b2d00; }
+        .btn-slip:hover { background: #ecc63f; }
+        .task-form { display: grid; grid-template-columns: minmax(220px, 1fr) 160px 160px 130px auto; gap: 14px; align-items: end; }
+        @media (max-width: 980px) { .task-form { grid-template-columns: 1fr 1fr; } .task-form .f-wide { grid-column: 1 / -1; } }
+        .file-actions { display: flex; gap: 8px; }
+        .status { margin: 0; font-size: 13px; color: var(--muted); min-height: 20px; }
+        .status.is-error, .login-msg.is-error { color: var(--high); }
+
+        /* ---------- Task cards ---------- */
+        .p-high { --pc: var(--high); } .p-medium { --pc: var(--med); } .p-low { --pc: var(--low); }
+        .card { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--pc); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(23, 32, 51, .05); }
+        .card-title { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+        .badge-c { margin-left: 6px; font-size: 11px; font-weight: 600; color: #146c46; background: #dff3e9; padding: 1px 8px; border-radius: 999px; vertical-align: 1px; }
+        .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+        .meta b { font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+        .prev { margin: 6px 0 0; font-size: 11px; color: var(--muted); }
+        .pill { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; line-height: 18px; }
+        .pill-high { background: #fbeceb; color: #a1281c; } .pill-medium { background: #fbf1dc; color: #865706; } .pill-low { background: #e7f0fb; color: #2859a8; }
+        .pill-stage { background: var(--col); color: var(--ink-2); }
+        .actions { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-2); }
+        .nav-btns { display: flex; gap: 4px; margin-left: 4px; }
+        .icon-btn { min-width: 28px; height: 28px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink-2); font-size: 13px; line-height: 1; }
+        .icon-btn:hover { background: #f3f5f8; border-color: #c9cfd9; }
+        .text-btn { border: 0; background: none; padding: 4px 6px; border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--accent); }
+        .text-btn:hover { background: var(--accent-soft); }
+        .text-btn.danger { color: var(--high); margin-left: auto; }
+        .text-btn.danger:hover { background: #fbeceb; }
+        .empty { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+
+        /* ---------- Noting slips ---------- */
+        .slip-form { display: flex; gap: 10px; }
+        .slip-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+        @media (max-width: 980px) { .slip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 560px) { .slip-grid { grid-template-columns: 1fr; } .slip-form { flex-direction: column; } }
+        .slip { background: #fff8d2; border: 1px solid #eedd8c; border-radius: 8px; padding: 12px; box-shadow: 0 1px 2px rgba(80, 60, 0, .08); }
+        .slip-compact { width: 224px; flex-shrink: 0; }
+        .slip-text { margin: 0; font-size: 14px; color: #4a3b00; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .slip-actions { display: flex; align-items: center; gap: 4px; margin-top: 10px; }
+        .slip-actions button { border: 0; background: none; padding: 3px 6px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #7a5f00; }
+        .slip-actions button:hover { background: rgba(122, 95, 0, .1); }
+        .slip-actions .is-pinned { color: var(--high); }
+        .slip-actions .danger { color: var(--high); margin-left: auto; }
+        .pinbar { background: #fffbe3; border: 1px solid #e8d57a; border-radius: 12px; padding: 10px 14px; box-shadow: 0 8px 24px rgba(23, 32, 51, .12); }
+        .pinbar-head { width: 100%; display: flex; align-items: center; justify-content: space-between; border: 0; background: none; padding: 0; color: #6b5300; }
+        .pinbar-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+        .pinbar-toggle { font-size: 12px; font-weight: 600; }
+        .pinbar-body { display: flex; gap: 12px; overflow-x: auto; padding: 10px 0 4px; }
+        #pinned { position: sticky; top: 8px; z-index: 20; margin-bottom: 16px; }
+
+        /* ---------- Dashboard ---------- */
+        .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
+        @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        .stat { padding: 14px 16px; border: 1px solid var(--line-2); border-radius: 10px; background: #f9fafc; }
+        .stat-num { margin: 0; font-size: 26px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+        .stat-lbl { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+        .split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+        @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
+        .subhead { margin: 0 0 10px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+        .bar { height: 8px; background: #e8ebf0; border-radius: 999px; overflow: hidden; }
+        .bar > div { height: 100%; border-radius: 999px; }
+        .fill-done { background: var(--done); } .fill-high { background: var(--high); } .fill-medium { background: var(--med); } .fill-low { background: var(--low); }
+        .row-line { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
+        .prio-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; font-size: 13px; color: var(--ink-2); }
+        .prio-row .name { width: 64px; }
+        .prio-row .bar { flex: 1; }
+        .prio-row .n { width: 24px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .note-sm { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+        .section { margin-top: 26px; }
+        .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+        .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .tbl th { padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 600; color: var(--muted); background: #f7f8fa; white-space: nowrap; }
+        .tbl td { padding: 10px 12px; border-top: 1px solid var(--line-2); }
+        .tbl th:first-child, .tbl td:first-child { text-align: left; }
+        .tbl td.month { font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+        .tbl td.num { text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .tbl td.zero { color: #c3c9d2; }
+        .tbl .pct { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+        .tbl .pct .bar { flex: 1; height: 6px; }
+        .tbl .pct span { width: 36px; text-align: right; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+        .tone-ink { color: var(--ink); } .tone-todo { color: var(--todo); } .tone-prog { color: var(--prog); }
+        .tone-done { color: var(--done); } .tone-high { color: var(--high); } .tone-accent { color: var(--accent); }
+        .mboxes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: start; }
+        @media (max-width: 1000px) { .mboxes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 560px) { .mboxes { grid-template-columns: 1fr; } }
+        .mbox { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #fff; }
+        .mbox-head { width: 100%; display: flex; align-items: center; justify-content: space-between; border: 0; background: none; padding: 0; color: var(--ink); }
+        .mbox-head.open { margin-bottom: 12px; }
+        .mbox-toggle { font-size: 12px; font-weight: 500; color: var(--muted); }
+        .mgroup { width: 100%; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; padding: 6px 8px; border: 0; border-radius: 6px; background: #f1f3f6; color: var(--ink-2); font-size: 12px; font-weight: 600; }
+        .mgroup:hover { background: #e7eaf0; }
+        .mgroup .count { background: transparent; padding: 0; color: var(--muted); }
+        .mrow { margin-bottom: 6px; padding: 6px 10px; border-left: 3px solid var(--pc); border-radius: 4px; background: #f9fafc; }
+        .mrow-title { margin: 0; font-size: 12px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+        .mrow-meta { display: flex; gap: 10px; margin: 2px 0 0; font-size: 11px; color: var(--muted); }
+
+        /* ---------- Login ---------- */
+        .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; }
+        .login-card { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 32px; box-shadow: 0 10px 30px rgba(23, 32, 51, .08); }
+        .login-card h1 { margin: 22px 0 4px; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+        .login-card .sub { margin: 0 0 22px; color: var(--muted); font-size: 13px; }
+        .login-card .field { margin-bottom: 16px; }
+        .login-card .btn { width: 100%; }
+        .login-card .btn + .btn { margin-top: 8px; }
+        .login-msg { margin: 16px 0 0; min-height: 18px; text-align: center; font-size: 13px; color: var(--muted); }
+
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+    </style>
 </head>
 
-<body class="bg-slate-50 p-6 font-sans">
+<body>
     <!-- Login screen -->
-    <div id="login" class="max-w-sm mx-auto mt-24 bg-white p-8 rounded-2xl shadow-sm hidden">
-        <h1 class="text-xl font-bold text-slate-700 mb-6 text-center">Kanban Board</h1>
-        <form onsubmit="signIn(event)">
-            <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">User name (email)</label>
-            <input id="email" type="email" required autocomplete="username" class="w-full p-2 border rounded-lg mb-4" placeholder="you@example.com">
-            <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Password</label>
-            <input id="password" type="password" required minlength="6" autocomplete="current-password" class="w-full p-2 border rounded-lg mb-4" placeholder="Password">
-            <button type="submit" class="w-full bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700">Log in</button>
-            <button type="button" onclick="signUp()" class="w-full mt-2 bg-slate-100 text-slate-600 px-6 py-2 rounded-lg font-bold hover:bg-slate-200">Create account</button>
-        </form>
-        <p id="loginMsg" class="text-xs text-center mt-4 text-slate-400"></p>
+    <div id="login" class="hidden">
+        <div class="login-wrap">
+            <div class="login-card">
+                <div class="brand">
+                    <span class="brand-mark"><svg width="16" height="16" viewBox="0 0 16 16" fill="#fff"><rect x="1" y="2" width="4" height="12" rx="1"/><rect x="6" y="2" width="4" height="8" rx="1"/><rect x="11" y="2" width="4" height="5" rx="1"/></svg></span>
+                    Kanban Board
+                </div>
+                <h1>Log in</h1>
+                <p class="sub">Enter your email and password to open your board.</p>
+                <form onsubmit="signIn(event)">
+                    <div class="field">
+                        <label class="lbl" for="email">Email</label>
+                        <input id="email" type="email" required autocomplete="username" class="input" placeholder="you@example.com">
+                    </div>
+                    <div class="field">
+                        <label class="lbl" for="password">Password</label>
+                        <input id="password" type="password" required minlength="6" autocomplete="current-password" class="input" placeholder="At least 6 characters">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Log in</button>
+                    <button type="button" onclick="signUp()" class="btn btn-ghost">Create account</button>
+                </form>
+                <p id="loginMsg" class="login-msg"></p>
+            </div>
+        </div>
     </div>
 
-    <div id="app" class="max-w-6xl mx-auto hidden">
-        <!-- Pinned slips: stay on top of the screen while scrolling -->
-        <div id="pinned" class="sticky top-0 z-20 mb-4 hidden"></div>
+    <div id="app" class="shell hidden">
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-mark"><svg width="16" height="16" viewBox="0 0 16 16" fill="#fff"><rect x="1" y="2" width="4" height="12" rx="1"/><rect x="6" y="2" width="4" height="8" rx="1"/><rect x="11" y="2" width="4" height="5" rx="1"/></svg></span>
+                Kanban Board
+            </div>
+            <div class="user">
+                <span id="userEmail"></span>
+                <button onclick="signOut()" class="btn btn-ghost btn-sm">Log out</button>
+            </div>
+        </header>
 
-        <div class="bg-white p-6 rounded-2xl shadow-sm mb-8">
-            <div class="flex flex-wrap gap-4 items-end">
-                <div class="flex-1 min-w-[200px]">
-                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Task</label>
-                    <input id="t" class="w-full p-2 border rounded-lg" placeholder="What needs doing?">
+        <!-- Pinned slips: stay on top of the screen while scrolling -->
+        <div id="pinned" class="hidden"></div>
+
+        <section class="panel">
+            <h2 class="panel-title">New task</h2>
+            <div class="task-form">
+                <div class="f-wide">
+                    <label class="lbl" for="t">Task</label>
+                    <input id="t" class="input" placeholder="What needs doing?" onkeydown="if(event.key==='Enter')add()">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Due Date</label>
-                    <input id="d" type="date" class="p-2 border rounded-lg">
+                    <label class="lbl" for="d">Due date</label>
+                    <input id="d" type="date" class="input">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Completion Date</label>
-                    <input id="cd" type="date" class="p-2 border rounded-lg">
+                    <label class="lbl" for="cd">Completion date</label>
+                    <input id="cd" type="date" class="input">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Priority</label>
-                    <select id="p" class="p-2 border rounded-lg">
+                    <label class="lbl" for="p">Priority</label>
+                    <select id="p" class="input">
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
                     </select>
                 </div>
-                <button onclick="add()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700">Add Task</button>
-                <button onclick="exportData()" class="bg-slate-500 text-white px-4 py-2 rounded-lg">Save File</button>
-                <input type="file" id="importFile" class="hidden" onchange="importData(event)">
-                <button onclick="document.getElementById('importFile').click()" class="bg-slate-500 text-white px-4 py-2 rounded-lg">Upload File</button>
+                <button onclick="add()" class="btn btn-primary">Add task</button>
             </div>
-            <div class="flex items-center justify-between mt-3">
-                <p id="status" class="text-xs text-slate-400"></p>
-                <p class="text-xs text-slate-400">
-                    <span id="userEmail"></span>
-                    <button onclick="signOut()" class="ml-3 text-red-400 font-bold">Log out</button>
-                </p>
+            <div class="panel-foot">
+                <p id="status" class="status"></p>
+                <div class="file-actions">
+                    <input type="file" id="importFile" class="hidden" onchange="importData(event)">
+                    <button onclick="exportData()" class="btn btn-ghost btn-sm">Save file</button>
+                    <button onclick="document.getElementById('importFile').click()" class="btn btn-ghost btn-sm">Upload file</button>
+                </div>
             </div>
-        </div>
+        </section>
 
         <!-- Noting slips -->
-        <div class="bg-white p-6 rounded-2xl shadow-sm mb-8">
+        <section class="panel">
             <div id="notesHead"></div>
             <div id="notesBody">
-            <div class="flex gap-3">
-                <input id="noteText" class="flex-1 p-2 border rounded-lg" placeholder="Jot something down..." onkeydown="if(event.key==='Enter')addNote()">
-                <button onclick="addNote()" class="bg-yellow-400 text-yellow-900 px-5 py-2 rounded-lg font-bold hover:bg-yellow-500">Add Slip</button>
+                <div class="slip-form">
+                    <input id="noteText" class="input" placeholder="Jot something down..." onkeydown="if(event.key==='Enter')addNote()">
+                    <button onclick="addNote()" class="btn btn-slip">Add slip</button>
+                </div>
+                <div id="noteList" class="slip-grid"></div>
             </div>
-            <div id="noteList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4"></div>
-            </div>
-        </div>
+        </section>
 
         <!-- Dashboard -->
-        <div id="dashboard" class="bg-white p-6 rounded-2xl shadow-sm mb-8"></div>
+        <section id="dashboard" class="panel"></section>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div id="tasks" class="bg-white p-4 rounded-2xl border border-slate-200 scroll-area"></div>
-            <div id="processing" class="bg-white p-4 rounded-2xl border border-slate-200 scroll-area"></div>
-            <div id="completed" class="bg-white p-4 rounded-2xl border border-slate-200 scroll-area"></div>
+        <div class="board">
+            <div id="tasks" class="col"></div>
+            <div id="processing" class="col"></div>
+            <div id="completed" class="col"></div>
         </div>
 
         <!-- Tasks Box: sits under the board -->
-        <div id="box" class="mt-8 bg-white p-4 rounded-2xl border-2 border-dashed border-slate-300"></div>
+        <div id="box" class="box-panel"></div>
     </div>
 
     <script>
@@ -162,12 +374,12 @@
         }
 
         function slip(n, compact) {
-            return `<div class="bg-yellow-100 border border-yellow-200 rounded-lg shadow-sm p-3 ${compact ? 'w-56 shrink-0' : ''}">
-                <p class="text-sm text-yellow-900 whitespace-pre-wrap break-words">${esc(n.text)}</p>
-                <div class="flex gap-2 mt-2 items-center text-xs">
-                    <button onclick="pinNote('${n.id}')" title="${n.pinned ? 'Unpin' : 'Pin on top'}" class="${n.pinned ? 'text-red-500' : 'text-yellow-700'} font-bold">${n.pinned ? '📌 Unpin' : '📍 Pin'}</button>
-                    <button onclick="editNote('${n.id}')" class="text-blue-500 font-bold">✎</button>
-                    <button onclick="delNote('${n.id}')" class="text-red-400 ml-auto">Delete</button>
+            return `<div class="slip ${compact ? 'slip-compact' : ''}">
+                <p class="slip-text">${esc(n.text)}</p>
+                <div class="slip-actions">
+                    <button onclick="pinNote('${n.id}')" title="${n.pinned ? 'Unpin' : 'Pin on top'}" class="${n.pinned ? 'is-pinned' : ''}">${n.pinned ? 'Unpin' : 'Pin'}</button>
+                    <button onclick="editNote('${n.id}')">Edit</button>
+                    <button onclick="delNote('${n.id}')" class="danger">Delete</button>
                 </div>
             </div>`;
         }
@@ -176,18 +388,18 @@
             const pinned = notes.filter(n => n.pinned);
             const bar = document.getElementById('pinned');
             bar.classList.toggle('hidden', !pinned.length);
-            bar.innerHTML = pinned.length ? `<div class="bg-yellow-50 border border-yellow-300 rounded-2xl shadow-md p-3">
-                <button onclick="toggleBoard('pinned')" class="w-full flex items-center justify-between ${show.pinned ? 'mb-2' : ''}">
-                    <span class="text-[10px] font-bold text-yellow-600 uppercase tracking-widest">📌 Pinned (${pinned.length})</span>
-                    <span class="text-xs text-yellow-600">${show.pinned ? '▼ Collapse' : '▶ Expand'}</span>
+            bar.innerHTML = pinned.length ? `<div class="pinbar">
+                <button onclick="toggleBoard('pinned')" class="pinbar-head">
+                    <span class="pinbar-title">Pinned slips <span class="count">${pinned.length}</span></span>
+                    <span class="pinbar-toggle">${show.pinned ? 'Collapse' : 'Expand'}</span>
                 </button>
-                ${show.pinned ? `<div class="flex gap-3 overflow-x-auto pb-1">${pinned.map(n => slip(n, true)).join('')}</div>` : ''}
+                ${show.pinned ? `<div class="pinbar-body">${pinned.map(n => slip(n, true)).join('')}</div>` : ''}
             </div>` : '';
-            document.getElementById('notesHead').innerHTML = header('Noting Slips', 'text-yellow-600', 'notes', notes.length);
+            document.getElementById('notesHead').innerHTML = header('Noting slips', 'note', 'notes', notes.length);
             document.getElementById('notesBody').classList.toggle('hidden', !show.notes);
             const rest = notes.filter(n => !n.pinned);
             document.getElementById('noteList').innerHTML = rest.length ? rest.map(n => slip(n, false)).join('')
-                : `<p class="text-xs text-slate-400">${notes.length ? 'All slips are pinned on top.' : 'No slips yet.'}</p>`;
+                : `<p class="empty">${notes.length ? 'All slips are pinned on top.' : 'No slips yet. Add one above.'}</p>`;
         }
 
         function toggleMonth(key) { monthOpen[key] = monthOpen[key] === false; saveMonthState(); render(); }
@@ -200,13 +412,12 @@
             render();
         }
 
-        function header(label, color, key, count) {
+        function header(label, tone, key, count) {
             const on = show[key];
-            return `<div class="flex items-center justify-between ${on ? 'mb-4' : ''}">
-                <h3 class="font-bold ${color} uppercase text-sm tracking-widest">${label}${count === undefined ? '' : ` <span class="text-slate-300 font-normal">(${count})</span>`}</h3>
-                <button onclick="toggleBoard('${key}')" role="switch" aria-checked="${on}" title="${on ? 'Collapse' : 'Expand'}"
-                    class="relative w-9 h-5 rounded-full transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-300'}">
-                    <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${on ? 'translate-x-4' : ''}"></span>
+            return `<div class="sec-head ${on ? 'open' : ''}">
+                <h3 class="sec-title"><span class="dot dot-${tone}"></span>${label}${count === undefined ? '' : `<span class="count">${count}</span>`}</h3>
+                <button onclick="toggleBoard('${key}')" role="switch" aria-checked="${on}" aria-label="${on ? 'Collapse' : 'Expand'} ${label}" title="${on ? 'Collapse' : 'Expand'}" class="switch">
+                    <span class="knob"></span>
                 </button>
             </div>`;
         }
@@ -214,7 +425,7 @@
         function setStatus(msg, isError) {
             const el = document.getElementById('status');
             el.textContent = msg || '';
-            el.className = 'text-xs mt-3 ' + (isError ? 'text-red-500' : 'text-slate-400');
+            el.className = 'status' + (isError ? ' is-error' : '');
         }
 
         function esc(s) {
@@ -331,23 +542,29 @@
 
         function card(item, inBox, isTop) {
             let div = document.createElement('div');
-            div.className = `p-4 mb-3 border-l-4 rounded-lg shadow-sm bg-white border ${item.p==='high'?'border-l-red-500':item.p==='medium'?'border-l-amber-400':'border-l-blue-400'}`;
+            div.className = `card p-${item.p}`;
             const s = item.s;
+            const prioLabel = item.p.charAt(0).toUpperCase() + item.p.slice(1);
+            const stageLabel = { tasks: 'Tasks list', processing: 'Processing', completed: 'Completed' }[s] || s;
             div.innerHTML = `
-                <p class="font-bold text-sm">${esc(item.t)}
-                    ${item.cc > 0 ? `<span class="ml-2 text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">C${item.cc}</span>` : ''}
-                </p>
-                <p class="text-[10px] text-slate-400 mt-1">📅 Due: ${esc(item.d)}${item.cd ? ` | 🏁 Completion: ${esc(item.cd)}` : ''} | ⚠️ ${esc(item.p.toUpperCase())}${inBox ? ` | 📌 ${esc(s)}` : ''}
-                    ${item.history.length ? `<br><span class="text-slate-300 italic">Prev: ${item.history.map(esc).join(', ')}</span>` : ''}
-                </p>
-                <div class="flex gap-2 mt-3 items-center">
-                    <button onclick="edit('${item.id}')" class="text-blue-500 text-xs font-bold px-2">✎ Edit</button>
-                    ${!inBox && s!=='tasks'?`<button onclick="move('${item.id}',-1)" class="text-xs bg-slate-100 px-2 rounded">←</button>`:''}
-                    ${!inBox && s!=='completed'?`<button onclick="move('${item.id}',1)" class="text-xs bg-slate-100 px-2 rounded">→</button>`:''}
-                    ${!inBox && !isTop ? `<button onclick="moveUp('${item.id}')" title="Move up in this column" class="text-xs bg-slate-100 px-2 rounded">↑</button>` : ''}
-                    ${inBox ? `<button onclick="box('${item.id}', false)" title="Move up to board" class="text-xs bg-slate-100 px-2 rounded">↑</button>` : ''}
-                    ${!inBox ? `<button onclick="box('${item.id}', true)" title="Move down to Tasks Box" class="text-xs bg-slate-100 px-2 rounded">↓</button>` : ''}
-                    <button onclick="del('${item.id}')" class="text-red-400 text-xs ml-auto">Delete</button>
+                <p class="card-title">${esc(item.t)}${item.cc > 0 ? `<span class="badge-c">C${item.cc}</span>` : ''}</p>
+                <div class="meta">
+                    <span>Due <b>${esc(item.d)}</b></span>
+                    ${item.cd ? `<span>Completion <b>${esc(item.cd)}</b></span>` : ''}
+                    <span class="pill pill-${item.p}">${prioLabel}</span>
+                    ${inBox ? `<span class="pill pill-stage">${stageLabel}</span>` : ''}
+                </div>
+                ${item.history.length ? `<p class="prev">Previous due dates: ${item.history.map(esc).join(', ')}</p>` : ''}
+                <div class="actions">
+                    <button onclick="edit('${item.id}')" class="text-btn">Edit</button>
+                    <div class="nav-btns">
+                        ${!inBox && s!=='tasks'?`<button onclick="move('${item.id}',-1)" title="Move to previous stage" aria-label="Move to previous stage" class="icon-btn">←</button>`:''}
+                        ${!inBox && s!=='completed'?`<button onclick="move('${item.id}',1)" title="Move to next stage" aria-label="Move to next stage" class="icon-btn">→</button>`:''}
+                        ${!inBox && !isTop ? `<button onclick="moveUp('${item.id}')" title="Move up in this column" aria-label="Move up in this column" class="icon-btn">↑</button>` : ''}
+                        ${inBox ? `<button onclick="box('${item.id}', false)" title="Move up to board" aria-label="Move up to board" class="icon-btn">↑</button>` : ''}
+                        ${!inBox ? `<button onclick="box('${item.id}', true)" title="Move down to Tasks Box" aria-label="Move down to Tasks Box" class="icon-btn">↓</button>` : ''}
+                    </div>
+                    <button onclick="del('${item.id}')" class="text-btn danger">Delete</button>
                 </div>`;
             return div;
         }
@@ -373,7 +590,7 @@
             const keys = Object.keys(groups).sort((a, b) => a === 'none' ? 1 : b === 'none' ? -1 : a.localeCompare(b));
             if (!keys.length) return '';
 
-            const cell = (v, color) => `<td class="px-3 py-2 text-center font-bold ${v ? color : 'text-slate-300'}">${v}</td>`;
+            const cell = (v, tone) => `<td class="num ${v ? 'tone-' + tone : 'zero'}">${v}</td>`;
             const rows = keys.map(k => {
                 const g = groups[k], it = g.items;
                 const open = it.filter(i => i.s !== 'completed');
@@ -387,26 +604,26 @@
                 const parked = it.filter(i => i.boxed).length;
                 const pct = total ? Math.round(done / total * 100) : 0;
                 const label = k === 'none' ? 'No date' : `${MONTHS[g.dt.getMonth()]} ${g.dt.getFullYear()}`;
-                return `<tr class="border-t border-slate-100">
-                    <td class="px-3 py-2 font-bold text-slate-600 whitespace-nowrap">${label}</td>
-                    ${cell(total, 'text-slate-700')}${cell(todo, 'text-slate-500')}${cell(prog, 'text-amber-500')}${cell(done, 'text-emerald-500')}
-                    ${cell(overdue, 'text-red-500')}${cell(dueToday, 'text-blue-500')}${cell(high, 'text-red-500')}${cell(parked, 'text-slate-500')}
-                    <td class="px-3 py-2 min-w-[110px]">
-                        <div class="flex items-center gap-2">
-                            <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width:${pct}%"></div></div>
-                            <span class="text-xs font-bold text-slate-500 w-9 text-right">${pct}%</span>
+                return `<tr>
+                    <td class="month">${label}</td>
+                    ${cell(total, 'ink')}${cell(todo, 'todo')}${cell(prog, 'prog')}${cell(done, 'done')}
+                    ${cell(overdue, 'high')}${cell(dueToday, 'accent')}${cell(high, 'high')}${cell(parked, 'todo')}
+                    <td>
+                        <div class="pct">
+                            <div class="bar"><div class="fill-done" style="width:${pct}%"></div></div>
+                            <span>${pct}%</span>
                         </div>
                     </td>
                 </tr>`;
             }).join('');
 
-            const th = t => `<th class="px-3 py-2 text-center text-[11px] font-bold text-slate-400 uppercase">${t}</th>`;
-            return `<div class="mt-6">
-                <p class="text-xs font-bold uppercase text-slate-400 mb-3">Stats by Month</p>
-                <div class="overflow-x-auto rounded-xl border border-slate-200">
-                    <table class="w-full text-sm">
-                        <thead class="bg-slate-50"><tr>
-                            <th class="px-3 py-2 text-left text-[11px] font-bold text-slate-400 uppercase">Month</th>
+            const th = t => `<th>${t}</th>`;
+            return `<div class="section">
+                <p class="subhead">Stats by month</p>
+                <div class="tbl-wrap">
+                    <table class="tbl">
+                        <thead><tr>
+                            <th>Month</th>
                             ${th('Total')}${th('To do')}${th('In progress')}${th('Completed')}${th('Overdue')}${th('Due today')}${th('High (open)')}${th('In box')}${th('Completion')}
                         </tr></thead>
                         <tbody>${rows}</tbody>
@@ -418,10 +635,10 @@
         // Month-wise boxes: grouped by completion date (falls back to due date)
         function renderMonthBoxes() {
             const defs = [
-                { key: 'tasks', label: 'Tasks List', color: 'text-slate-500', pick: i => i.s === 'tasks' && !i.boxed },
-                { key: 'processing', label: 'Processing', color: 'text-amber-500', pick: i => i.s === 'processing' && !i.boxed },
-                { key: 'completed', label: 'Completed', color: 'text-emerald-500', pick: i => i.s === 'completed' && !i.boxed },
-                { key: 'box', label: 'Tasks Box', color: 'text-slate-600', pick: i => i.boxed }
+                { key: 'tasks', label: 'Tasks list', tone: 'todo', pick: i => i.s === 'tasks' && !i.boxed },
+                { key: 'processing', label: 'Processing', tone: 'prog', pick: i => i.s === 'processing' && !i.boxed },
+                { key: 'completed', label: 'Completed', tone: 'done', pick: i => i.s === 'completed' && !i.boxed },
+                { key: 'box', label: 'Tasks box', tone: 'slate', pick: i => i.boxed }
             ];
             const html = defs.map(def => {
                 const items = data.filter(def.pick);
@@ -441,31 +658,31 @@
                         const isOpen = monthOpen[id] !== false;
                         const label = k === 'none' ? 'No date' : `${MONTHS[g.dt.getMonth()]} ${g.dt.getFullYear()}`;
                         const rows = isOpen ? g.items.map(i => {
-                            const dateTxt = i.cd ? `🏁 ${esc(i.cd)}` : `📅 ${esc(i.d)}`;
-                            const pc = i.p === 'high' ? 'border-l-red-500' : i.p === 'medium' ? 'border-l-amber-400' : 'border-l-blue-400';
-                            return `<div class="text-xs border-l-4 ${pc} bg-slate-50 rounded px-2 py-1.5 mb-1">
-                                <p class="font-semibold text-slate-600">${esc(i.t)}</p>
-                                <p class="text-[10px] text-slate-400">${dateTxt} | ${esc(i.p.toUpperCase())}</p>
+                            const dateTxt = i.cd ? `Completion ${esc(i.cd)}` : `Due ${esc(i.d)}`;
+                            const prioLabel = i.p.charAt(0).toUpperCase() + i.p.slice(1);
+                            return `<div class="mrow p-${i.p}">
+                                <p class="mrow-title">${esc(i.t)}</p>
+                                <p class="mrow-meta"><span>${dateTxt}</span><span>${prioLabel}</span></p>
                             </div>`;
                         }).join('') : '';
-                        return `<div class="mb-2">
-                            <button onclick="toggleMonth('${id}')" class="w-full flex items-center justify-between text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-1.5 mb-1">
-                                <span>${isOpen ? '▼' : '▶'} ${label}</span>
-                                <span class="text-slate-400 font-normal">${g.items.length}</span>
+                        return `<div style="margin-bottom:10px">
+                            <button onclick="toggleMonth('${id}')" class="mgroup" aria-expanded="${isOpen}">
+                                <span>${isOpen ? '▾' : '▸'} ${label}</span>
+                                <span class="count">${g.items.length}</span>
                             </button>${rows}
                         </div>`;
-                    }).join('') : `<p class="text-xs text-slate-300">No tasks</p>`;
+                    }).join('') : `<p class="empty">No tasks</p>`;
                 }
-                return `<div class="p-3 rounded-xl border border-slate-200">
-                    <button onclick="toggleMBox('${def.key}')" class="w-full flex items-center justify-between ${open ? 'mb-3' : ''}">
-                        <h4 class="font-bold ${def.color} uppercase text-xs tracking-widest">${def.label} <span class="text-slate-300 font-normal">(${items.length})</span></h4>
-                        <span class="text-xs text-slate-400">${open ? '▼ Collapse' : '▶ Expand'}</span>
+                return `<div class="mbox">
+                    <button onclick="toggleMBox('${def.key}')" class="mbox-head ${open ? 'open' : ''}" aria-expanded="${open}">
+                        <span class="sec-title"><span class="dot dot-${def.tone}"></span>${def.label}<span class="count">${items.length}</span></span>
+                        <span class="mbox-toggle">${open ? 'Collapse' : 'Expand'}</span>
                     </button>${body}
                 </div>`;
             }).join('');
-            return `<div class="mt-6">
-                <p class="text-xs font-bold uppercase text-slate-400 mb-3">Tasks by Month</p>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">${html}</div>
+            return `<div class="section">
+                <p class="subhead">Tasks by month</p>
+                <div class="mboxes">${html}</div>
             </div>`;
         }
 
@@ -483,46 +700,44 @@
             const completions = data.reduce((n, i) => n + (i.cc || 0), 0);
             const pct = total ? Math.round(done / total * 100) : 0;
 
-            const stat = (label, value, color) => `
-                <div class="p-4 rounded-xl border border-slate-100 bg-slate-50">
-                    <p class="text-2xl font-bold ${color}">${value}</p>
-                    <p class="text-[11px] font-bold text-slate-400 uppercase mt-1">${label}</p>
+            const stat = (label, value, tone) => `
+                <div class="stat">
+                    <p class="stat-num tone-${tone}">${value}</p>
+                    <p class="stat-lbl">${label}</p>
                 </div>`;
 
-            const prio = (label, key, bar) => {
+            const prio = (label, key) => {
                 const n = open.filter(i => i.p === key).length;
                 const w = open.length ? Math.round(n / open.length * 100) : 0;
-                return `<div class="flex items-center gap-3 text-xs text-slate-500">
-                    <span class="w-16">${label}</span>
-                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full ${bar}" style="width:${w}%"></div></div>
-                    <span class="w-6 text-right font-bold">${n}</span>
+                return `<div class="prio-row">
+                    <span class="name">${label}</span>
+                    <div class="bar"><div class="fill-${key}" style="width:${w}%"></div></div>
+                    <span class="n">${n}</span>
                 </div>`;
             };
 
-            document.getElementById('dashboard').innerHTML = header('Dashboard', 'text-slate-600', 'dashboard') + (!show.dashboard ? '' : `
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-                    ${stat('Total tasks', total, 'text-slate-700')}
-                    ${stat('To do', todo, 'text-slate-500')}
-                    ${stat('In progress', prog, 'text-amber-500')}
-                    ${stat('Completed', done, 'text-emerald-500')}
-                    ${stat('Overdue', overdue, 'text-red-500')}
-                    ${stat('Due today', dueToday, 'text-blue-500')}
-                    ${stat('High priority (open)', highOpen, 'text-red-500')}
-                    ${stat('In Tasks Box', parked, 'text-slate-500')}
+            document.getElementById('dashboard').innerHTML = header('Dashboard', 'slate', 'dashboard') + (!show.dashboard ? '' : `
+                <div class="stats">
+                    ${stat('Total tasks', total, 'ink')}
+                    ${stat('To do', todo, 'todo')}
+                    ${stat('In progress', prog, 'prog')}
+                    ${stat('Completed', done, 'done')}
+                    ${stat('Overdue', overdue, 'high')}
+                    ${stat('Due today', dueToday, 'accent')}
+                    ${stat('High priority (open)', highOpen, 'high')}
+                    ${stat('In Tasks box', parked, 'todo')}
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="split">
                     <div>
-                        <div class="flex justify-between text-xs text-slate-500 mb-1">
-                            <span class="font-bold uppercase text-slate-400">Completion</span><span class="font-bold">${pct}%</span>
-                        </div>
-                        <div class="h-3 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width:${pct}%"></div></div>
-                        <p class="text-xs text-slate-400 mt-2">Total times tasks entered Completed: <span class="font-bold text-slate-500">${completions}</span></p>
+                        <div class="row-line"><span class="subhead" style="margin:0">Completion</span><b>${pct}%</b></div>
+                        <div class="bar"><div class="fill-done" style="width:${pct}%"></div></div>
+                        <p class="note-sm">Times tasks have entered Completed: <b>${completions}</b></p>
                     </div>
-                    <div class="space-y-2">
-                        <p class="text-xs font-bold uppercase text-slate-400">Open tasks by priority</p>
-                        ${prio('High', 'high', 'bg-red-500')}
-                        ${prio('Medium', 'medium', 'bg-amber-400')}
-                        ${prio('Low', 'low', 'bg-blue-400')}
+                    <div>
+                        <p class="subhead">Open tasks by priority</p>
+                        ${prio('High', 'high')}
+                        ${prio('Medium', 'medium')}
+                        ${prio('Low', 'low')}
                     </div>
                 </div>
                 ${renderMonthStats()}
@@ -532,10 +747,11 @@
         function render() {
             renderNotes();
             renderDashboard();
+            const defs = { tasks: ['Tasks list', 'todo'], processing: ['Processing', 'prog'], completed: ['Completed', 'done'] };
             STAGES.forEach(s => {
                 let col = document.getElementById(s);
                 const count = data.filter(i => i.s === s && !i.boxed).length;
-                col.innerHTML = header(s==='tasks'?'Tasks List':s, s==='tasks'?'text-slate-500':s==='processing'?'text-amber-500':'text-emerald-500', s, count);
+                col.innerHTML = header(defs[s][0], defs[s][1], s, count);
                 let first = true;
                 data.forEach(item => {
                     if (show[s] && item.s === s && !item.boxed) {
@@ -543,18 +759,19 @@
                         first = false;
                     }
                 });
+                if (show[s] && !count) col.insertAdjacentHTML('beforeend', `<p class="empty">No tasks in this column.</p>`);
             });
 
             let boxEl = document.getElementById('box');
             const boxed = data.filter(i => i.boxed);
-            boxEl.innerHTML = header('Tasks Box', 'text-slate-600', 'box', boxed.length);
+            boxEl.innerHTML = header('Tasks box', 'slate', 'box', boxed.length);
             if (!show.box) {
                 // hidden: header only
             } else if (!boxed.length) {
-                boxEl.innerHTML += `<p class="text-xs text-slate-400">Click ↓ on a task to move it here.</p>`;
+                boxEl.innerHTML += `<p class="empty">Nothing parked here. Use the ↓ button on a task to move it to the box.</p>`;
             } else {
                 let wrap = document.createElement('div');
-                wrap.className = 'grid grid-cols-1 md:grid-cols-3 gap-x-6';
+                wrap.className = 'box-grid';
                 boxed.forEach(item => wrap.appendChild(card(item, true)));
                 boxEl.appendChild(wrap);
             }
@@ -598,7 +815,7 @@
         function loginMsg(msg, isError) {
             const el = document.getElementById('loginMsg');
             el.textContent = msg || '';
-            el.className = 'text-xs text-center mt-4 ' + (isError ? 'text-red-500' : 'text-slate-400');
+            el.className = 'login-msg' + (isError ? ' is-error' : '');
         }
 
         function showApp(session) {

@@ -117,6 +117,27 @@ body.printing-report .section{box-shadow:none!important;border:none!important;pa
 .av-photos{display:flex;flex-wrap:wrap;gap:10px}.av-ph{width:150px;font-size:11px}.av-ph img{width:150px;height:110px;object-fit:cover;border-radius:6px;border:1px solid #d4e8d4}.av-ph input{width:100%;padding:4px 6px;border:1px solid #b5d4b5;border-radius:4px;font-size:11px;margin-top:3px}
 body.restricted{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 body.restricted input,body.restricted textarea,body.restricted select{-webkit-user-select:text;user-select:text}
+.de-steps{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.de-step{padding:9px 16px;border:1.5px solid #2d6a2d;background:#fff;color:#2d6a2d;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.de-step.active{background:#2d6a2d;color:#fff}
+.de-ben{border:1px solid #d4e8d4;border-radius:10px;padding:12px 14px;margin-bottom:12px;background:#fbfefb}
+.de-ben-h{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:#2d6a2d}
+.de-sub{margin:12px 0 8px;color:#2d6a2d;font-size:13px;border-top:1px dashed #b5d4b5;padding-top:10px}
+.de-info{padding:10px 14px;background:#e8f5e9;border-radius:8px;border:1px solid #a5d6a7;font-size:13px;color:#2d6a2d}
+.de-err{margin-top:10px;padding:10px 14px;background:#ffebee;border-radius:8px;border:1px solid #f5c6cb;color:#c62828;font-size:13px}
+.ckdd input[type=checkbox]{min-width:0;flex:none;padding:0;width:auto}
+.de-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+.de-stat h4{color:#2d6a2d;font-size:13px;margin:0 0 6px}
+.de-stat th{user-select:none}
+.de-sec{border:1px solid #d4e8d4;border-radius:10px;margin:10px 0;background:#fff}
+.de-sec>summary{cursor:pointer;padding:10px 14px;list-style:none;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.de-sec>summary::-webkit-details-marker{display:none}
+.de-sec>summary::before{content:'▶';font-size:11px;color:#2d6a2d;transition:transform .15s}
+.de-sec[open]>summary::before{transform:rotate(90deg)}
+.de-sec[open]>summary{border-bottom:1px solid #e3efe3}
+.de-sec-t{font-weight:700;color:#2d6a2d;font-size:15px}
+.de-st{font-size:12.5px;color:#3d5f3d;background:#eef6ee;padding:2px 10px;border-radius:12px}
+.de-sec-body{padding:12px 14px 14px}
 </style>
 </head>
 <body>
@@ -180,8 +201,8 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
           <select id="f-nursery" onchange="applyFilters()"></select>
           <select id="f-scheme" onchange="applyFilters()"></select>
           <input type="text" id="f-species" placeholder="Search species..." oninput="applyFilters()">
-          <input type="date" id="f-date-from" onchange="applyFilters()" title="From date">
-          <input type="date" id="f-date-to" onchange="applyFilters()" title="To date">
+          <input type="date" id="f-date-from" onchange="applyFilters()" title="Date of Raising: from">
+          <input type="date" id="f-date-to" onchange="applyFilters()" title="Date of Raising: to">
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
           <button class="abtn agr" onclick="window.print()">🖨️ Print</button>
@@ -197,7 +218,7 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>ID</th><th>District</th><th>Mandal</th><th>Division</th><th>Range</th><th>Nursery</th><th>Scheme</th><th>Species</th><th>Bag Size</th><th>Dist. Date</th><th>Available</th><th>Distributed</th><th>Balance</th><th>Status</th></tr></thead>
+          <thead><tr><th>ID</th><th>District</th><th>Mandal</th><th>Division</th><th>Range</th><th>Nursery</th><th>Scheme</th><th>Species</th><th>Bag Size</th><th>Date of Raising</th><th>Available</th><th>Distributed</th><th>Balance</th><th>Status</th></tr></thead>
           <tbody id="public-tbody"></tbody>
         </table>
       </div>
@@ -368,18 +389,54 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
           <div class="fg"><label>Range</label><select id="a-range" onchange="comboChange('a-range')"></select><input id="a-range-new" placeholder="Type new range" style="display:none;margin-top:6px"></div>
           <div class="fg"><label>Nursery</label><select id="a-nursery" onchange="comboChange('a-nursery')"></select><input id="a-nursery-new" placeholder="Type new nursery" style="display:none;margin-top:6px"></div>
           <div class="fg"><label>Scheme</label><select id="a-scheme" onchange="comboChange('a-scheme')"></select><input id="a-scheme-new" placeholder="Type new scheme" style="display:none;margin-top:6px"></div>
-          <div class="fg"><label>Species Name</label><select id="a-species" onchange="comboChange('a-species')"></select><input id="a-species-new" placeholder="Type new species name" style="display:none;margin-top:6px"></div>
-          <div class="fg"><label>Bag Size</label><select id="a-bagsize" onchange="comboChange('a-bagsize')"></select><input id="a-bagsize-new" placeholder="Type new bag size" style="display:none;margin-top:6px"></div>
-          <div class="fg"><label>Date of Distribution</label><input id="a-date" type="date"></div>
-          <div class="fg"><label>Available Seedlings</label><input id="a-avail" type="number" min="0" placeholder="0"></div>
-          <div class="fg"><label>Distributed</label><input id="a-dist" type="number" min="0" placeholder="0"></div>
+          <div class="fg"><label>Bag Size <span style="font-weight:400;font-size:11px">(same for all species below)</span></label><select id="a-bagsize" onchange="comboChange('a-bagsize')"></select><input id="a-bagsize-new" placeholder="Type new bag size" style="display:none;margin-top:6px"></div>
+          <div class="fg"><label>Year</label><select id="a-year"><option value="">-- Select --</option><option>2024-2025</option><option>2025-2026</option><option>2026-2027</option><option>2027-2028</option><option>2028-2029</option></select></div>
+          <div class="fg"><label>Stock Raised * <span style="font-weight:400;font-size:11px">(fixed once saved)</span></label><select id="a-raised" onchange="aRaisedChg()"><option value="">-- Select --</option><option>Raising</option><option>Procured</option><option>Replacement</option></select><div class="note" style="margin-top:3px">Replacement = move seedlings of an existing species to new species; the new rows are saved as Raising with the replacement flag.</div></div>
+          <div class="fg"><label>Date of Raising <span style="font-weight:400;font-size:11px">(fixed once saved)</span></label><input id="a-date" type="date"></div>
+          <div id="a-proc" style="display:none;grid-column:1/-1">
+            <h4 class="de-sub" style="margin:4px 0 8px">🧾 Procurement Details <span style="font-weight:400;font-size:11px">(staff only)</span></h4>
+            <div class="form-grid">
+              <div class="fg"><label>Procured Firm Name *</label><input id="a-pfirm" placeholder="Firm name"></div>
+              <div class="fg"><label>Firm Address</label><input id="a-paddr" placeholder="Firm address"></div>
+              <div class="fg"><label>Procured Date *</label><input id="a-pdt" type="date"></div>
+              <div class="fg"><label>Procured Price</label><input id="a-pprice" type="number" min="0" step="any" placeholder="0.00"></div>
+            </div>
+          </div>
+          <div id="a-repl" style="display:none;grid-column:1/-1">
+            <h4 class="de-sub" style="margin:4px 0 8px">🔁 Replacement Details <span style="font-weight:400;font-size:11px">(staff only)</span></h4>
+            <div class="form-grid">
+              <div class="fg"><label>Replaced Stock - Nursery *</label><select id="a-rnurs" onchange="aFillRepl()"></select></div>
+              <div class="fg"><label>Replaced Stock ID (species) *</label><select id="a-rid" onchange="aReplHint()"></select></div>
+              <div class="fg"><label>Quantity to Replace *</label><input id="a-rqty" type="number" min="1" step="1" placeholder="0" oninput="aReplHint()"><div class="note" id="a-rhint" style="margin-top:3px"></div></div>
+              <div class="fg"><label>Replacement Date *</label><input id="a-rdt" type="date"></div>
+              <div class="fg"><label>Replacement Reason *</label><input id="a-rreason" placeholder="Why was the stock replaced?"></div>
+            </div>
+          </div>
+          <div class="fg" style="grid-column:1/-1">
+            <label id="a-sp-label">Species * (select one or more, then enter No. of Seedlings for each)</label>
+            <div id="a-rtot" class="de-info" style="display:none;margin-bottom:8px"></div>
+            <div id="a-sp-pick" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
+              <details class="ckdd" style="flex:1;min-width:220px"><summary id="a-sp-sum">Select species ▾</summary><div id="a-sp-opts" style="max-height:260px;overflow:auto"></div></details>
+              <input id="a-sp-new" placeholder="Or type a new species name" style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter'){event.preventDefault();aSpNew();}">
+              <button type="button" class="abtn ao" onclick="aSpNew()">➕ Add species</button>
+            </div>
+            <div class="table-wrap" style="margin-top:8px"><table>
+              <thead><tr><th>Species</th><th>No. of Seedlings *</th><th>Distributed</th><th></th></tr></thead>
+              <tbody id="a-sp-body"></tbody></table></div>
+          </div>
         </div>
         <div class="btn-row">
           <button class="abtn ag" id="stock-save-btn" onclick="addRecord()">Add Record</button>
           <button class="abtn ao" onclick="clearForm()">Clear</button>
           <button class="abtn agr" id="stock-cancel-btn" style="display:none" onclick="clearForm()">Cancel Edit</button>
         </div>
-        <p class="note">Balance = Available − Distributed (auto-calculated)</p>
+        <p class="note">Balance = No. of Seedlings − Distributed (auto-calculated). Each species is saved as its own stock row.</p>
+      </div>
+      <div class="section">
+        <h3>🔁 Replacement History <span style="font-weight:400;font-size:12px">(staff only)</span></h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>Date</th><th>Replaced Stock</th><th>Qty Replaced</th><th>New Stock</th><th>Reason</th></tr></thead>
+          <tbody id="a-rh-body"><tr><td colspan="6" class="empty">No replacements yet.</td></tr></tbody></table></div>
       </div>
       <div class="section">
         <h3>📋 All Records</h3>
@@ -389,7 +446,7 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>ID</th><th>District</th><th>Mandal</th><th>Division</th><th>Range</th><th>Nursery</th><th>Scheme</th><th>Species</th><th>Bag Size</th><th>Date</th><th>Available</th><th>Distributed</th><th>Balance</th><th>Action</th></tr></thead>
+            <thead><tr><th>ID</th><th>District</th><th>Mandal</th><th>Division</th><th>Range</th><th>Nursery</th><th>Scheme</th><th>Species</th><th>Bag Size</th><th>Year</th><th>Stock Raised</th><th>Date of Raising</th><th>Replaced</th><th>Replacement Date</th><th>Available</th><th>Distributed</th><th>Balance</th><th>Action</th></tr></thead>
             <tbody id="admin-tbody"></tbody>
           </table>
         </div>
@@ -399,107 +456,168 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
       <div class="section"><h3>📬 Farmer Enquiries Received</h3><div id="eq-admin-list"><p class="empty">No enquiries yet.</p></div></div>
     </div>
 
-    <!-- DISTRIBUTION ENTRY -->
+    <!-- DISTRIBUTION ENTRY : 3 screens -->
     <div id="dist-entry-view" style="display:none">
-      <div id="de-edit-banner" style="display:none;margin-bottom:12px;padding:10px 14px;background:#fff8e1;border:1px solid #ffe08a;border-radius:8px;font-size:13px;color:#8a5a00"></div>
-
-      <!-- SECTION A: Sanction Details -->
-      <div class="section">
-        <h3>📄 Sanction Details</h3>
-        <div class="form-grid">
-          <div class="fg"><label>Sanction ID *</label><input id="de-sanction_id" placeholder="Sanction ID"></div>
-          <div class="fg"><label>Sanction Scheme</label><input id="de-sanction_Scheme" placeholder="e.g. CAMPA"></div>
-          <div class="fg"><label>Sanction Date</label><input id="de-sanction_dt" type="date"></div>
-          <div class="fg"><label>Sanctioned By</label><input id="de-sanction_by" placeholder="Officer name"></div>
-          <div class="fg"><label>Sanction Quantity</label><input id="de-sanction_qnty" type="number" min="0" placeholder="0" oninput="updateSelectionSummary()"></div>
-          <div class="fg"><label>Free No.</label><input id="de-sanction_free_no" type="number" min="0" placeholder="0"></div>
-          <div class="fg"><label>Cost No.</label><input id="de-sanction_cost_no" type="number" min="0" placeholder="0"></div>
-          <div class="fg"><label>Rate (₹)</label><input id="de-sanction_rate" type="number" min="0" placeholder="0"></div>
-        </div>
+      <div class="de-steps">
+        <button class="de-step active" id="des-1" onclick="deShow(1)">1️⃣ Distribution Details</button>
+        <button class="de-step" id="des-2" onclick="deShow(2)">2️⃣ Select Seedlings</button>
+        <button class="de-step" id="des-3" onclick="deShow(3)">3️⃣ Planting Details</button>
       </div>
 
-      <!-- SECTION B: Beneficiary Details -->
-      <div class="section">
-        <h3>👤 Beneficiary Details</h3>
-        <div class="form-grid">
-          <div class="fg" style="grid-column:1/-1"><label>Select Resolved Enquiry <span style="color:#888">(auto-fills beneficiary details and seedlings)</span></label><select id="de-enquiry" onchange="applyEnquiry(this.value)"><option value="">-- Select resolved enquiry --</option></select></div>
-          <div class="fg"><label>Beneficiary Name *</label><input id="de-ben_name" placeholder="Full name"></div>
-          <div class="fg"><label>Mobile No. *</label><input id="de-ben_Mobile_no" placeholder="10-digit mobile" maxlength="10"></div>
-          <div class="fg"><label>Email ID</label><input id="de-ben_email_id" type="email" placeholder="email@example.com"></div>
-          <div class="fg"><label>No. of Seedlings to Distribute *</label><input id="de-ben_Distributed_no" type="number" min="1" placeholder="0"></div>
-          <div class="fg"><label>Distribution Date *</label><input id="de-ben_Dist_Dt" type="date"></div>
-          <div class="fg"><label>Mandal</label><input id="de-Mandal" placeholder="Mandal name"></div>
-          <div class="fg"><label>Gramapanchayat</label><input id="de-Gramapanchayat" placeholder="Gramapanchayat name"></div>
-          <div class="fg"><label>Village / Habitation</label><input id="de-Village_hab" placeholder="Village or habitation"></div>
+      <!-- ===== SCREEN 1 : DISTRIBUTION DETAILS ===== -->
+      <div id="de-scr-1">
+        <div class="section">
+          <h3>📊 Distribution Statistics <span style="font-size:12px;font-weight:400;color:#888">(highest first · click a column heading to re-sort · all tables except month wise follow the month filter)</span></h3>
+          <div id="de-stats" class="de-stats"></div>
         </div>
-      </div>
 
-      <!-- SECTION C: Planting Details -->
-      <div class="section">
-        <h3>🌿 Planting Details</h3>
-        <div class="form-grid">
-          <div class="fg"><label>Planted Date</label><input id="de-Planted_dt" type="date"></div>
-          <div class="fg" style="grid-column:span 2">
-            <label>Geo Location</label>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <input id="de-geo_lat" type="number" step="any" placeholder="Latitude" style="flex:1;min-width:100px">
-              <input id="de-geo_long" type="number" step="any" placeholder="Longitude" style="flex:1;min-width:100px">
-              <button class="abtn ao" onclick="getGeoLocation()" style="white-space:nowrap">📍 Get Location</button>
+        <div class="section">
+          <h3>📋 Distribution Batches</h3>
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:space-between">
+            <select id="db-month" class="de-month" onchange="deSetMonth(this.value)" style="padding:7px 10px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px;background:#fff"></select>
+            <input id="db-search" placeholder="Search batch id, beneficiary, mobile, sanction id..." oninput="deRenderBatches()" style="max-width:340px;padding:7px 10px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px">
+            <span><button class="abtn ag" onclick="deNewBatch()">➕ New Batch</button> <button class="abtn ao" onclick="deReload()">🔄 Refresh</button></span>
+          </div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Batch ID</th><th>From</th><th>To</th><th>Beneficiary Type</th><th>Nursery</th><th>Scheme</th><th>Seedlings Distributed</th><th>Beneficiaries (entered / planned)</th><th>Seedlings Selected (Step 2)</th><th>Action</th></tr></thead>
+            <tbody id="db-tbody"></tbody></table></div>
+        </div>
+
+        <div class="section" id="db-form" style="display:none">
+          <details class="de-sec" id="db-sec-main">
+            <summary><span class="de-sec-t" id="db-form-title">➕ New Distribution Batch</span><span class="de-st" id="db-st-main"></span></summary>
+            <div class="de-sec-body">
+          <div class="form-grid">
+            <div class="fg"><label>Batch ID (auto)</label><input id="db-id" disabled value="Auto"></div>
+            <div class="fg"><label>From Date *</label><input id="db-from" type="date" onchange="if(deForm)deRenderBens()"></div>
+            <div class="fg"><label>To Date *</label><input id="db-to" type="date" onchange="if(deForm)deRenderBens()"></div>
+            <div class="fg"><label>Beneficiary Type (one or more)</label><details class="ckdd"><summary id="db-bt-sum">Select ▾</summary><div id="db-bt-opts" style="max-height:220px;overflow:auto"></div></details></div>
+            <div class="fg" id="db-ind-wrap" style="display:none"><label>Individual Type * (one or more)</label><details class="ckdd"><summary id="db-ind-sum">Select ▾</summary><div id="db-ind-opts" style="max-height:220px;overflow:auto"></div></details></div>
+            <div class="fg" id="db-org-wrap" style="display:none"><label>Organization Type * (one or more)</label><details class="ckdd"><summary id="db-org-sum">Select ▾</summary><div id="db-org-opts" style="max-height:220px;overflow:auto"></div></details></div>
+            <div class="fg"><label>Total Seedlings Distributed (sum of lines)</label><input id="db-seed" readonly style="background:#f1f5f1"></div>
+            <div class="fg"><label>Total Beneficiaries (sum of lines)</label><input id="db-count" readonly style="background:#f1f5f1"></div>
+          </div>
+
             </div>
+          </details>
+
+          <details class="de-sec" id="db-sec-lines">
+            <summary><span class="de-sec-t">🏭 Nursery &amp; Scheme Lines</span><span class="de-st" id="db-st-lines"></span></summary>
+            <div class="de-sec-body">
+              <p class="note" style="margin:0 0 8px">Add another line whenever seedlings come from another nursery or scheme.</p>
+          <div id="db-lines"></div>
+          <button type="button" class="abtn ao" onclick="deAddLine()">➕ Add Nursery / Scheme line</button>
+
+            </div>
+          </details>
+
+          <details class="de-sec" id="db-sec-bens">
+            <summary><span class="de-sec-t">👤 Beneficiary Details &amp; Sanction Details</span><span class="de-st" id="db-st-bens"></span></summary>
+            <div class="de-sec-body">
+              <p class="note" style="margin:0 0 8px">Optional – save the batch first, then add or update these any time.</p>
+          <div class="fg" style="max-width:520px;margin-bottom:10px"><label>Add a beneficiary from a resolved enquiry <span style="color:#888">(optional – pre-fills name, mobile, village and seedlings)</span></label>
+            <select id="de-enquiry" onchange="applyEnquiry(this.value)"><option value="">-- Select resolved enquiry --</option></select></div>
+          <div id="db-bens"></div>
+          <button type="button" class="abtn ao" onclick="deAddBen()">➕ Add Beneficiary</button>
+          <div id="db-tot" class="rpt-meta" style="margin-top:8px"></div>
+            </div>
+          </details>
+
+          <div id="db-error" class="de-err" style="display:none"></div>
+          <div class="btn-row">
+            <button class="abtn ag" id="db-save-btn" onclick="deSaveBatch()">💾 Save Batch</button>
+            <button class="abtn ao" onclick="deCancelBatch()">Cancel</button>
           </div>
-          <div class="fg">
-            <label>Pre Photo</label>
-            <input id="de-Pre_photo" type="file" accept="image/*" onchange="previewPhoto(this,'pre-thumb')">
-            <img id="pre-thumb" style="display:none;margin-top:6px;max-width:100%;max-height:120px;border-radius:6px;border:1px solid #d4e8d4">
-          </div>
-          <div class="fg">
-            <label>Post Photo</label>
-            <input id="de-Post_photo" type="file" accept="image/*" onchange="previewPhoto(this,'post-thumb')">
-            <img id="post-thumb" style="display:none;margin-top:6px;max-width:100%;max-height:120px;border-radius:6px;border:1px solid #d4e8d4">
-          </div>
+          <p class="note">* Required: From/To Date and at least one Nursery / Scheme line. Beneficiaries are optional; for each beneficiary you add the name, mobile (10 digits), no. of seedlings and distribution date. Aadhar, if given, must be 12 digits. Aadhar and mobile numbers must be unique across beneficiaries. Sanction Quantity is filled automatically (the beneficiary’s seedlings, at most 200); tick Exempted to edit it, with a note on why / on what basis. In Select Seedlings a beneficiary can receive only seedlings of the sanction scheme, up to the Sanction Quantity. A new Sanction ID is generated automatically; each beneficiary needs a different Sanction ID within the batch. Sanction Quantity cannot exceed the beneficiary’s seedlings, Distribution Date must fall within the batch dates, and Free / Cost No. are filled from the Sanction Quantity (Cost when “Sanctioned For” is Cost, otherwise Free).</p>
         </div>
+        <div id="db-success" class="succ">✅ Batch saved. Go to step 2 to select the seedlings for it.</div>
       </div>
 
-      <!-- STEP 2: Seedling Selection Table -->
-      <div class="section">
-        <h3>🌱 Select Seedlings from Available Stock</h3>
-        <p style="font-size:13px;color:#555;margin-bottom:10px">Fill the <strong>No. of Seedlings to Distribute</strong> above, then select seedling rows below. Selected rows will be saved as distribution transactions.</p>
-        <div class="filters" style="margin-bottom:10px">
-          <select id="de-f-district" onchange="filterDistTable()"><option value="">-- All Districts --</option></select>
-          <select id="de-f-mandal" onchange="filterDistTable()"><option value="">-- All Mandals --</option></select>
-          <select id="de-f-nursery" onchange="filterDistTable()"><option value="">-- All Nurseries --</option></select>
-          <input type="text" id="de-f-species" placeholder="Search species..." oninput="filterDistTable()" style="flex:1;min-width:120px">
-        </div>
-        <div class="table-wrap">
-          <table>
+      <!-- ===== SCREEN 2 : SELECT SEEDLINGS FROM AVAILABLE STOCK ===== -->
+      <div id="de-scr-2" style="display:none">
+        <div class="section">
+          <h3>🌱 Select Seedlings from Available Stock</h3>
+          <div class="form-grid" style="margin-bottom:10px">
+            <div class="fg"><label>Distributed Batch Month</label><select class="de-month" id="ds-month" onchange="deSetMonth(this.value)"></select></div>
+            <div class="fg" style="grid-column:span 2"><label>Batch ID *</label><select id="ds-batch" onchange="dsPick(this.value)"></select></div>
+          </div>
+          <div id="ds-info" class="de-info" style="display:none"></div>
+          <div id="ds-bens" class="table-wrap" style="margin-top:10px"></div>
+          <div class="filters" style="margin-top:10px">
+            <select id="ds-f-scheme" onchange="dsFilt()"></select>
+            <select id="ds-f-district" onchange="dsRender()"></select>
+            <select id="ds-f-mandal" onchange="dsRender()"></select>
+            <select id="ds-f-nursery" onchange="dsFilt()"></select>
+            <details class="ckdd" style="flex:1;min-width:170px"><summary id="ds-sp-sum">All species ▾</summary><div id="ds-f-species" style="max-height:260px;overflow:auto"></div></details>
+          </div>
+          <div class="table-wrap" style="max-height:420px;overflow:auto"><table>
             <thead><tr><th>Select</th><th>ID</th><th>District</th><th>Mandal</th><th>Nursery</th><th>Scheme</th><th>Species</th><th>Bag Size</th><th>Balance</th><th>Qty to Give</th></tr></thead>
-            <tbody id="dist-select-tbody"></tbody>
-          </table>
+            <tbody id="ds-tbody"></tbody></table></div>
+          <div id="ds-summary" class="de-info" style="display:none;margin-top:10px"></div>
+          <div id="ds-error" class="de-err" style="display:none"></div>
+          <div class="btn-row">
+            <button class="abtn ag" onclick="dsSave()">💾 Save Selection</button>
+            <button class="abtn ao" onclick="dsReset()">Reset to saved</button>
+          </div>
+          <div id="ds-success" class="succ">✅ Seedling selection saved and stock updated.</div>
         </div>
-        <div id="de-selection-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#e8f5e9;border-radius:8px;border:1px solid #a5d6a7;font-size:13px;color:#2d6a2d"></div>
+        <div class="section">
+          <h3>📚 Saved Seedlings for this Batch <span style="font-size:12px;font-weight:400;color:#888">(grouped by beneficiary)</span></h3>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Stock ID</th><th>Nursery</th><th>Scheme</th><th>Species</th><th>Bag Size</th><th>Qty</th><th>Action</th></tr></thead>
+            <tbody id="ds-saved-tbody"></tbody></table></div>
+        </div>
       </div>
 
-      <!-- Submit -->
-      <div class="section">
-        <div class="btn-row">
-          <button class="abtn ag" onclick="submitDistribution()">✅ Submit Distribution</button>
-          <button class="abtn ao" onclick="clearDistForm()">Clear All</button>
+      <!-- ===== SCREEN 3 : PLANTING DETAILS ===== -->
+      <div id="de-scr-3" style="display:none">
+        <div class="section">
+          <h3 id="dp-form-title">🌿 Add Planting Details</h3>
+          <div class="form-grid">
+            <div class="fg"><label>Distributed Batch Month</label><select class="de-month" id="dp-month-f" onchange="deSetMonth(this.value)"></select></div>
+            <div class="fg" style="grid-column:1/-1"><label>Beneficiary ID *</label><select id="dp-ben" onchange="dpAllot()"></select></div>
+            <div id="dp-allot" style="grid-column:1/-1"></div>
+            <div class="fg"><label>Species (allotted to the beneficiary) *</label><select id="dp-species" onchange="dpSpPick()"></select></div>
+            <div class="fg"><label>No. of Seedlings Planted *</label><input id="dp-qty" type="number" min="1" step="1" placeholder="pick a species first"><div class="note" id="dp-qty-hint" style="margin-top:3px"></div></div>
+            <div class="fg" style="grid-column:1/-1"><h4 class="de-sub" style="margin:4px 0 0">🗺️ Land Details</h4></div>
+            <div class="fg"><label>Land Area</label><div style="display:flex;gap:6px"><input id="dp-land" type="number" min="0" step="any" placeholder="Land area" style="flex:1;min-width:0"><select id="dp-land-unit" style="width:90px"><option value="">Unit</option><option>acre</option><option>Ha</option></select></div></div>
+            <div class="fg"><label>Survey No.</label><input id="dp-survey" placeholder="Survey no."></div>
+            <div class="fg"><label>Pass Book No.</label><input id="dp-passbook" placeholder="Pass book no."></div>
+            <div class="fg"><label>Planted Date</label><input id="dp-planted" type="date"></div>
+            <div class="fg" style="grid-column:span 2">
+              <label>Geo Location</label>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input id="dp-lat" type="number" step="any" placeholder="Latitude" style="flex:1;min-width:100px">
+                <input id="dp-long" type="number" step="any" placeholder="Longitude" style="flex:1;min-width:100px">
+                <button class="abtn ao" onclick="dpGeo()" style="white-space:nowrap">📍 Get Location</button>
+              </div>
+            </div>
+            <div class="fg"><label>Pre Photo</label><input id="dp-pre" type="file" accept="image/*" onchange="dpPrev(this,'dp-pre-thumb')">
+              <img id="dp-pre-thumb" style="display:none;margin-top:6px;max-width:100%;max-height:120px;border-radius:6px;border:1px solid #d4e8d4"></div>
+            <div class="fg"><label>Post Photo</label><input id="dp-post" type="file" accept="image/*" onchange="dpPrev(this,'dp-post-thumb')">
+              <img id="dp-post-thumb" style="display:none;margin-top:6px;max-width:100%;max-height:120px;border-radius:6px;border:1px solid #d4e8d4"></div>
+          </div>
+          <div id="dp-error" class="de-err" style="display:none"></div>
+          <div class="btn-row">
+            <button class="abtn ag" id="dp-save-btn" onclick="dpSave()">💾 Save Planting Details</button>
+            <button class="abtn ab" id="dp-again-btn" onclick="dpSave(true)">➕ Save &amp; add another for this beneficiary</button>
+            <button class="abtn ao" onclick="dpClear()">Clear</button>
+            <button class="abtn agr" id="dp-cancel-btn" style="display:none" onclick="dpClear()">Cancel Edit</button>
+          </div>
+          <div id="dp-success" class="succ">✅ Planting details saved.</div>
         </div>
-        <div id="de-success" class="succ">✅ Distribution record submitted successfully to DIST_DETAILS & NTRANSCATION!</div>
-        <div id="de-error" style="display:none;margin-top:10px;padding:10px 14px;background:#ffebee;border-radius:8px;border:1px solid #f5c6cb;color:#c62828;font-size:13px"></div>
-        <p class="note" style="margin-top:8px">* Required fields: Sanction ID, Beneficiary Name, Mobile No., No. of Seedlings, Distribution Date. At least one seedling row must be selected.</p>
-      </div>
-      <div class="section" id="dist-records-section">
-        <h3>📚 Distribution Records</h3>
-        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:space-between">
-          <input id="dr-search" placeholder="Search sanction, name, mobile..." oninput="renderDistRecs()" style="max-width:280px;padding:7px 10px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px">
-          <button class="abtn ao" onclick="loadDistRecords()">🔄 Refresh</button>
+        <div class="section">
+          <h3>📚 Planting Records</h3>
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:space-between">
+            <select id="dp-month" class="de-month" onchange="deSetMonth(this.value)" style="padding:7px 10px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px;background:#fff"></select>
+            <input id="dp-search" placeholder="Search beneficiary, batch..." oninput="dpRender()" style="max-width:280px;padding:7px 10px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px">
+            <button class="abtn ao" onclick="deReload()">🔄 Refresh</button>
+          </div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>#</th><th>Beneficiary</th><th>Batch</th><th>Species</th><th>Seedlings Planted</th><th>Land Area</th><th>Survey No.</th><th>Pass Book No.</th><th>Planted Date</th><th>Latitude</th><th>Longitude</th><th>Photos</th><th>Action</th></tr></thead>
+            <tbody id="dp-tbody"></tbody></table></div>
         </div>
-        <div class="table-wrap"><table>
-          <thead><tr><th>Sanction ID</th><th>Beneficiary</th><th>Mobile</th><th>Dist. Date</th><th>Mandal</th><th>Seedlings</th><th>Total Qty</th><th>Action</th></tr></thead>
-          <tbody id="dr-tbody"></tbody></table></div>
       </div>
-
     </div>
   </div>
 </div>
@@ -564,7 +682,7 @@ function showApp(label){
 let loggingOut=false;
 function sessionExpired(){
   if(!currentUser)return;
-  currentUser=null;currentRole='public';clearTimeout(refreshTimer);applyRestrictions();records=[];enquiries=[];
+  currentUser=null;currentRole='public';clearTimeout(refreshTimer);applyRestrictions();records=[];enquiries=[];deBatches=[];dePlant=[];
   document.getElementById('app-screen').style.display='none';
   document.getElementById('login-screen').style.display='flex';
   const err=document.getElementById('cred-err');err.textContent='Your session has expired. Please sign in again.';err.style.display='block';
@@ -580,7 +698,7 @@ async function logout(){
   await sb.auth.signOut({scope:'local'});
   loggingOut=false;
   currentUser=null;currentRole='public';clearTimeout(refreshTimer);applyRestrictions();
-  records=[];enquiries=[];
+  records=[];enquiries=[];deBatches=[];dePlant=[];
   document.getElementById('app-screen').style.display='none';
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('inp-user').value='';
@@ -634,12 +752,25 @@ function parseAppsScript(data){
       district:g('district'),mandal:g('mandal'),division:g('division'),
       range:g('range'),nursery:g('nursery'),scheme:g('scheme'),species:g('species'),
       bagSize:g('bag size')||g('bagsize')||g('bag_size')||'',
-      distDate:g('date of distribution')||g('distdate')||g('dist date')||'',
+      distDate:g('date of raising')||g('date of distribution')||g('distdate')||g('dist date')||'',
       available:avail,distributed:dist
     };
   }).filter(Boolean);
 }
 
+let stockNew=true;
+const STOCK_COLS='id,district,mandal,division,range_name,nursery,scheme,species,bag_size,dist_date,available,distributed';
+async function stockPage(from,step){
+  let r=await sb.from('nursery_stock').select(STOCK_COLS+(stockNew?',stock_year,stock_raised,replaced_flag,replacement_dt,replacement_count':'')).order('id').range(from,from+step-1);
+  if(r.error&&stockNew&&(r.error.code==='42703'||/stock_year|stock_raised|replaced_flag|replacement_dt|replacement_count/.test(r.error.message||''))){stockNew=false;r=await sb.from('nursery_stock').select(STOCK_COLS).order('id').range(from,from+step-1);}  // v11 not run yet
+  return r;
+}
+async function loadReplHistory(){
+  const tb=byId('a-rh-body');if(!tb)return;
+  const {data,error}=await sb.from('nursery_stock_replacement').select('*').order('id',{ascending:false});
+  if(error||!data||!data.length){tb.innerHTML='<tr><td colspan="6" class="empty">'+(error?'Not available (run v12 SQL / sign in as staff).':'No replacements yet.')+'</td></tr>';return;}
+  tb.innerHTML=data.map(h=>`<tr><td>${h.id}</td><td>${esc(h.replacement_dt)}</td><td>#${h.replaced_stock_id==null?'—':h.replaced_stock_id} ${esc(h.replaced_species)} (${esc(h.replaced_nursery)})</td><td class="num">${fmt(h.qty)}</td><td>#${h.new_stock_id==null?'—':h.new_stock_id} ${esc(h.new_species)} (${esc(h.new_nursery)})</td><td>${esc(h.replacement_reason)}</td></tr>`).join('');
+}
 async function loadSheetData(){
   clearTimeout(refreshTimer);
   showBanner('⏳ Loading data from database...');
@@ -647,17 +778,17 @@ async function loadSheetData(){
   try{
     let all=[],from=0;const step=1000;
     while(true){
-      const {data,error}=await sb.from('nursery_stock').select('id,district,mandal,division,range_name,nursery,scheme,species,bag_size,dist_date,available,distributed').order('id').range(from,from+step-1);
+      const {data,error}=await stockPage(from,step);
       if(error)throw error;
       all=all.concat(data);
       if(data.length<step)break;
       from+=step;
     }
-    records=all.map(r=>({id:r.id,district:r.district,mandal:r.mandal,division:r.division,range:r.range_name,nursery:r.nursery,scheme:r.scheme,species:r.species,bagSize:r.bag_size,distDate:r.dist_date||'',available:r.available,distributed:r.distributed}));
+    records=all.map(r=>({id:r.id,district:r.district,mandal:r.mandal,division:r.division,range:r.range_name,nursery:r.nursery,scheme:r.scheme,species:r.species,bagSize:r.bag_size,distDate:r.dist_date||'',stockYear:r.stock_year||'',stockRaised:r.stock_raised||'',replacedFlag:!!r.replaced_flag,replDt:r.replacement_dt||'',replCount:r.replacement_count||0,available:r.available,distributed:r.distributed}));
     if(!records.length){showBanner('⚠️ No stock records found.');return;}
     hideBanner();
-    populateFilters();applyFilters();populateSpeciesDropdown();populateAdminCombos();
-    if(document.getElementById('dist-entry-view').style.display==='block'){populateDistFilters();renderDistTable();}
+    populateFilters();applyFilters();populateSpeciesDropdown();populateAdminCombos();if(typeof isStaff==='function'&&isStaff())loadReplHistory();
+    if(document.getElementById('dist-entry-view').style.display==='block')deAfterStock();
     if(document.getElementById('admin-view').style.display==='block')renderAdmin();
     refreshTimer=setTimeout(loadSheetData,5*60*1000);
   }catch(e){showBanner('⚠️ Could not load data: '+esc(e.message||e)+' '+retry);}
@@ -722,32 +853,145 @@ function renderAdmin(){
   const q=(document.getElementById('admin-search').value||'').toLowerCase();
   const data=records.filter(r=>!q||[r.id,r.district,r.mandal,r.division,r.range,r.nursery,r.scheme,r.species].some(v=>String(v).toLowerCase().includes(q)));
   const tb=document.getElementById('admin-tbody');
-  if(!data.length){tb.innerHTML='<tr><td colspan="14" class="empty">No records.</td></tr>';return;}
-  tb.innerHTML=data.map(r=>{const b=r.available-r.distributed;return`<tr><td>${r.id}</td><td>${r.district}</td><td>${r.mandal}</td><td>${r.division}</td><td>${r.range}</td><td>${r.nursery}</td><td>${r.scheme}</td><td>${r.species}</td><td>${r.bagSize||'—'}</td><td>${r.distDate||'—'}</td><td class="num avail">${fmt(r.available)}</td><td class="num dist">${fmt(r.distributed)}</td><td class="num bal">${fmt(b)}</td><td><button class="abtn ab" style="padding:3px 10px;font-size:12px" onclick="editStock('${r.id}')">Edit</button> ${currentRole==='admin'?`<button class="abtn ar" style="padding:3px 10px;font-size:12px" onclick="deleteRecord('${r.id}')">Delete</button>`:''}</td></tr>`;}).join('');
+  if(!data.length){tb.innerHTML='<tr><td colspan="18" class="empty">No records.</td></tr>';return;}
+  tb.innerHTML=data.map(r=>{const b=r.available-r.distributed;return`<tr><td>${r.id}</td><td>${r.district}</td><td>${r.mandal}</td><td>${r.division}</td><td>${r.range}</td><td>${r.nursery}</td><td>${r.scheme}</td><td>${r.species}</td><td>${r.bagSize||'—'}</td><td>${esc(r.stockYear)||'—'}</td><td>${esc(r.stockRaised)||'—'}</td><td>${r.distDate||'—'}</td><td>${r.replacedFlag?'Yes'+(r.replCount>1?' ×'+r.replCount:''):'—'}</td><td>${r.replDt||'—'}</td><td class="num avail">${fmt(r.available)}</td><td class="num dist">${fmt(r.distributed)}</td><td class="num bal">${fmt(b)}</td><td><button class="abtn ab" style="padding:3px 10px;font-size:12px" onclick="editStock('${r.id}')">Edit</button> ${currentRole==='admin'?`<button class="abtn ar" style="padding:3px 10px;font-size:12px" onclick="deleteRecord('${r.id}')">Delete</button>`:''}</td></tr>`;}).join('');
 }
 const byId=id=>document.getElementById(id);
 let editingStockId=null,eqSel={};
-async function addRecord(){
-  const f=id=>comboVal(id);
-  const avail=parseInt(byId('a-avail').value)||0,dist=parseInt(byId('a-dist').value)||0;
-  if(!f('a-nursery')||!f('a-species')){alert('Please fill at least Nursery and Species.');return;}
-  if(dist>avail){alert('Distributed cannot exceed Available.');return;}
-  const row={district:f('a-district'),mandal:f('a-mandal'),division:f('a-division'),range_name:f('a-range'),nursery:f('a-nursery'),scheme:f('a-scheme'),species:f('a-species'),bag_size:f('a-bagsize'),dist_date:byId('a-date').value||null,available:avail,distributed:dist};
-  const q=editingStockId?sb.from('nursery_stock').update({...row,updated_at:new Date().toISOString()}).eq('id',editingStockId):sb.from('nursery_stock').insert(row);
-  const {data:saved,error}=await q.select('id');
-  if(error){alert('Could not save: '+error.message);return;}
-  if(!saved||!saved.length){alert('Not saved: you are not signed in as staff. Please sign out and sign in again.');return;}
-  clearForm();await loadSheetData();
+let aLines=[];
+const A_MISSING='Could not save: run nursery_distribution_migration_v11.sql and v12 in the Supabase SQL editor first.';
+function aSyncLines(){document.querySelectorAll('#a-sp-body tr[data-i]').forEach(tr=>{const l=aLines[+tr.dataset.i];if(!l)return;l.available=tr.querySelector('.a-av').value;l.distributed=tr.querySelector('.a-di').value;const n=tr.querySelector('.a-nm');if(n)l.species=n.value;});}
+function aRenderLines(){
+  const ed=!!editingStockId,rp=aIsRepl();
+  byId('a-sp-body').innerHTML=aLines.length?aLines.map((l,i)=>{
+    const av=Number(l.available)||0,di=Number(l.distributed)||0;
+    return `<tr data-i="${i}"><td>${ed?`<input class="a-nm" value="${esc(l.species)}" style="min-width:160px">`:esc(l.species)}</td>
+      <td><input class="a-av" oninput="aReplHint()" type="number" min="0" step="1" value="${esc(l.available)}" placeholder="0" style="width:110px;padding:4px 6px;border:1px solid #b5d4b5;border-radius:4px;font-size:13px"></td>
+      <td>${rp?'<input class="a-di" type="hidden" value="0">—':`<input class="a-di" type="number" min="0" step="1" value="${esc(l.distributed)}" placeholder="0" style="width:110px;padding:4px 6px;border:1px solid #b5d4b5;border-radius:4px;font-size:13px">`}</td>
+      <td>${ed?'':`<button type="button" class="abtn ar" style="padding:3px 10px;font-size:12px" onclick="aSpRemove(${i})">✕</button>`}</td></tr>`;}).join('')
+    :'<tr><td colspan="4" class="empty">No species added yet.</td></tr>';
+  byId('a-sp-pick').style.display=ed?'none':'flex';
+  byId('a-sp-label').textContent=ed?'Species / No. of Seedlings':rp?'New species * (select one or more; the quantities must add up to the quantity being replaced)':'Species * (select one or more, then enter No. of Seedlings for each)';
+  aReplHint();
+  byId('a-sp-sum').textContent=aLines.length?aLines.length+' species selected ▾':'Select species ▾';
 }
-function editStock(id){
+function aFillSpecies(){
+  const el=byId('a-sp-opts');if(!el)return;
+  const sp=[...new Set(records.map(r=>r.species).filter(Boolean).concat(aLines.map(l=>l.species)))].sort((x,y)=>String(x).localeCompare(String(y)));
+  el.innerHTML=sp.map(x=>`<label><input type="checkbox" value="${esc(x)}"${aLines.some(l=>l.species===x)?' checked':''} onchange="aSpToggle(this)">${esc(x)}</label>`).join('')||'<div class="note">No species yet - type a new one.</div>';
+}
+function aSpToggle(cb){
+  aSyncLines();
+  if(cb.checked){if(!aLines.some(l=>l.species===cb.value))aLines.push({species:cb.value,available:'',distributed:''});}
+  else aLines=aLines.filter(l=>l.species!==cb.value);
+  aRenderLines();
+}
+function aSpNew(){
+  const el=byId('a-sp-new'),n=el.value.trim().replace(/\s+/g,' ');if(!n)return;
+  aSyncLines();
+  const ex=aLines.find(l=>l.species.toLowerCase()===n.toLowerCase());
+  if(!ex){const known=records.map(r=>r.species).find(s=>String(s).toLowerCase()===n.toLowerCase());aLines.push({species:known||n,available:'',distributed:''});}
+  el.value='';aFillSpecies();aRenderLines();
+}
+function aSpRemove(i){aSyncLines();aLines.splice(i,1);aFillSpecies();aRenderLines();}
+function aIsRepl(){return byId('a-raised').value==='Replacement'&&!editingStockId;}
+function aRaisedChg(){
+  const v=byId('a-raised').value;
+  byId('a-proc').style.display=v==='Procured'?'block':'none';
+  byId('a-repl').style.display=aIsRepl()?'block':'none';
+  ['a-district','a-mandal','a-division','a-range','a-nursery','a-scheme','a-bagsize','a-year','a-date'].forEach(i=>{const fg=byId(i).closest('.fg');if(fg)fg.style.display=aIsRepl()?'none':'';});   // a replacement keeps the replaced stock's details
+  if(aIsRepl())aFillRepl();
+  aSyncLines();aRenderLines();
+}
+function aReplHint(){
+  const h=byId('a-rhint'),t=byId('a-rtot');if(!h||!t)return;
+  if(!aIsRepl()){t.style.display='none';return;}
+  const r=records.find(x=>String(x.id)===byId('a-rid').value),q=Number(byId('a-rqty').value)||0;
+  const free=r?r.available-r.distributed:null;
+  h.textContent=r?'Free in stock: '+fmt(free)+' ('+r.species+'). New species keep this stock\'s nursery, scheme, bag size ('+(r.bagSize||'—')+') and other details.':'';
+  let sum=0;document.querySelectorAll('#a-sp-body .a-av').forEach(i=>sum+=Number(i.value)||0);
+  t.style.display='block';
+  t.innerHTML='New species total: <strong>'+fmt(sum)+'</strong> of <strong>'+fmt(q)+'</strong> to replace'+(sum===q&&q>0?' ✅':' — must be equal');
+}
+function aFillRepl(keepId){
+  const ns=byId('a-rnurs');
+  if(!ns.options.length||ns.dataset.n!==String(records.length)){
+    const cur=ns.value,list=[...new Set(records.map(r=>r.nursery).filter(Boolean))].sort();
+    ns.innerHTML='<option value="">-- Select nursery --</option>'+list.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');ns.value=cur;ns.dataset.n=String(records.length);
+  }
+  const sel=byId('a-rid'),cur=keepId!=null?String(keepId):sel.value;
+  const rows=records.filter(r=>r.nursery===ns.value&&String(r.id)!==String(editingStockId));
+  sel.innerHTML='<option value="">'+(ns.value?'-- Select stock ID --':'-- Select nursery first --')+'</option>'+rows.map(r=>`<option value="${r.id}">#${r.id} – ${esc(r.species)}${r.scheme?' ('+esc(r.scheme)+')':''}${r.stockYear?' '+esc(r.stockYear):''}</option>`).join('');
+  sel.value=cur;aReplHint();
+}
+async function addRecord(){
+  aSyncLines();
+  const f=id=>comboVal(id),raised=byId('a-raised').value;
+  if(!aIsRepl()&&!f('a-nursery')){alert('Please select the Nursery.');return;}
+  if(!raised){alert('Please select Stock Raised (Raising, Procured or Replacement).');return;}
+  if(!aLines.length){alert('Select at least one species.');return;}
+  const lines=[],seen=new Set();
+  for(const l of aLines){
+    const sp=String(l.species||'').trim(),av=String(l.available).trim(),di=String(l.distributed).trim();
+    if(!sp){alert('Species name cannot be empty.');return;}
+    if(seen.has(sp.toLowerCase())){alert('Species '+sp+' is listed twice.');return;}seen.add(sp.toLowerCase());
+    if(av===''||!Number.isInteger(Number(av))||Number(av)<0){alert('Enter the No. of Seedlings for '+sp+' (a whole number).');return;}
+    if(di!==''&&(!Number.isInteger(Number(di))||Number(di)<0)){alert('Distributed for '+sp+' must be a whole number.');return;}
+    if(Number(di||0)>Number(av)){alert('Distributed cannot exceed the No. of Seedlings ('+sp+').');return;}
+    lines.push({species:sp,available:Number(av),distributed:Number(di||0)});
+  }
+  const source={},common={district:f('a-district'),mandal:f('a-mandal'),division:f('a-division'),range_name:f('a-range'),nursery:f('a-nursery'),scheme:f('a-scheme'),bag_size:f('a-bagsize'),dist_date:byId('a-date').value||null,stock_year:byId('a-year').value||null};
+  let fn='nursery_save_stock',p;
+  if(raised==='Procured'){
+    source.procured_firm_name=byId('a-pfirm').value.trim();source.firm_address=byId('a-paddr').value.trim();
+    source.procured_dt=byId('a-pdt').value;source.procured_price=byId('a-pprice').value.trim();
+    if(!source.procured_firm_name){alert('Procured Firm Name is required.');return;}
+    if(!source.procured_dt){alert('Procured Date is required.');return;}
+    if(source.procured_price!==''&&!(Number(source.procured_price)>=0)){alert('Procured Price must be a number, 0 or more.');return;}
+  }
+  if(aIsRepl()){
+    const rid=byId('a-rid').value,rn=byId('a-rnurs').value,rq=byId('a-rqty').value.trim(),rdt=byId('a-rdt').value,rr=byId('a-rreason').value.trim();
+    const old=records.find(x=>String(x.id)===rid);
+    if(!rn){alert('Select the nursery of the replaced stock.');return;}
+    if(!rid||!old){alert('Select the Stock ID that is being replaced.');return;}
+    if(rq===''||!Number.isInteger(Number(rq))||Number(rq)<1){alert('Enter the Quantity to Replace (a whole number, 1 or more).');return;}
+    if(Number(rq)>old.available-old.distributed){alert('Only '+(old.available-old.distributed)+' seedlings of '+old.species+' are free in stock #'+old.id+'.');return;}
+    if(!rdt){alert('Replacement Date is required.');return;}
+    if(!rr){alert('Replacement Reason is required.');return;}
+    let sum=0;for(const l of lines){sum+=l.available;if(l.species.toLowerCase()===String(old.species).toLowerCase()){alert('The new species must be different from the replaced species ('+old.species+').');return;}if(l.available<1){alert('Enter the No. of Seedlings for '+l.species+'.');return;}}
+    if(sum!==Number(rq)){alert('New species total ('+sum+') must equal the Quantity to Replace ('+rq+').');return;}
+    if(!confirm('Replace '+rq+' seedlings of '+old.species+' (stock #'+old.id+') with the new species listed? Stock #'+old.id+' will be reduced by '+rq+'.'))return;
+    fn='nursery_replace_stock';
+    p={replaced_stock_id:Number(rid),replaced_nursery:rn,qty:Number(rq),replacement_dt:rdt,replacement_reason:rr,lines:lines.map(l=>({species:l.species,qty:l.available}))};
+  }else p={id:editingStockId||null,...common,stock_raised:raised,source,lines};
+  const btn=byId('stock-save-btn'),t=btn.textContent;btn.disabled=true;btn.textContent='Saving…';
+  try{
+    const {data,error}=await sb.rpc(fn,{p});
+    if(error){alert(error.code==='PGRST202'||error.code==='42883'?A_MISSING:'Could not save: '+error.message);return;}
+    if(!data||!data.length){alert('Not saved: you are not signed in as staff. Please sign out and sign in again.');return;}
+    clearForm();await loadSheetData();
+  }finally{btn.disabled=false;btn.textContent=editingStockId?'Update Record':'Add Record';}
+}
+async function editStock(id){
   const r=records.find(x=>String(x.id)===String(id));if(!r)return;
-  const m={'a-district':r.district,'a-mandal':r.mandal,'a-division':r.division,'a-range':r.range,'a-nursery':r.nursery,'a-scheme':r.scheme,'a-species':r.species,'a-bagsize':r.bagSize,'a-date':r.distDate,'a-avail':r.available,'a-dist':r.distributed};
+  const m={'a-district':r.district,'a-mandal':r.mandal,'a-division':r.division,'a-range':r.range,'a-nursery':r.nursery,'a-scheme':r.scheme,'a-bagsize':r.bagSize,'a-date':r.distDate};
   Object.entries(m).forEach(([k,v])=>setCombo(k,v));
   editingStockId=r.id;
+  byId('a-year').value=r.stockYear||'';byId('a-raised').value=r.stockRaised||'';
+  ['a-pfirm','a-paddr','a-pdt','a-pprice','a-rdt','a-rreason','a-rqty'].forEach(i=>byId(i).value='');
+  aLines=[{species:r.species,available:r.available,distributed:r.distributed}];
+  aFillSpecies();aRenderLines();aRaisedChg();
+  byId('a-raised').disabled=!!r.stockRaised;byId('a-date').disabled=!!r.distDate;   // fixed once saved
   byId('stock-form-title').textContent='✏️ Edit Seedling Record #'+r.id;
   byId('stock-save-btn').textContent='Update Record';
   byId('stock-cancel-btn').style.display='inline-block';
   byId('stock-form-title').scrollIntoView({behavior:'smooth',block:'start'});
+  if(r.stockRaised==='Procured'){
+    const {data}=await sb.from('nursery_stock_source').select('*').eq('stock_id',r.id).maybeSingle();
+    if(data&&editingStockId===r.id){
+      byId('a-pfirm').value=data.procured_firm_name||'';byId('a-paddr').value=data.firm_address||'';byId('a-pdt').value=data.procured_dt||'';byId('a-pprice').value=data.procured_price==null?'':data.procured_price;
+    }
+  }
 }
 async function deleteRecord(id){
   if(!confirm('Delete record #'+id+'?'))return;
@@ -757,8 +1001,10 @@ async function deleteRecord(id){
   await loadSheetData();
 }
 function clearForm(){
-  ['a-district','a-mandal','a-division','a-range','a-nursery','a-scheme','a-species','a-bagsize','a-date','a-avail','a-dist'].forEach(id=>byId(id).value='');
+  ['a-district','a-mandal','a-division','a-range','a-nursery','a-scheme','a-bagsize','a-date','a-year','a-raised','a-pfirm','a-paddr','a-pdt','a-pprice','a-rnurs','a-rid','a-rdt','a-rreason','a-rqty','a-sp-new'].forEach(id=>byId(id).value='');
   comboReset();
+  byId('a-raised').disabled=false;byId('a-date').disabled=false;
+  aLines=[];editingStockId=null;aFillSpecies();aRenderLines();aRaisedChg();
   editingStockId=null;
   byId('stock-form-title').textContent='➕ Add Seedling Record';
   byId('stock-save-btn').textContent='Add Record';
@@ -825,7 +1071,7 @@ async function markDone(id){
 }
 function exportCSV(){
   const data=getFiltered();
-  const rows=[['ID','District','Mandal','Division','Range','Nursery','Scheme','Species','Bag Size','Dist. Date','Available','Distributed','Balance','Status']];
+  const rows=[['ID','District','Mandal','Division','Range','Nursery','Scheme','Species','Bag Size','Date of Raising','Available','Distributed','Balance','Status']];
   data.forEach(r=>{const b=r.available-r.distributed;rows.push([r.id,r.district,r.mandal,r.division,r.range,r.nursery,r.scheme,r.species,r.bagSize,r.distDate,r.available,r.distributed,b,b<=0?'Out of Stock':b<r.available*0.2?'Low Stock':'Good Stock']);});
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n'));a.download='seedling_stock_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
 }
@@ -852,7 +1098,7 @@ function showTab(tab,btn){
   if(tab==='admin')renderAdmin();
   if(tab==='charts')setTimeout(buildCharts,50);
   if(tab==='eq-admin')renderEnquiryAdmin();
-  if(tab==='dist-entry'){populateDistFilters();renderDistTable();loadDistRecords();loadResolvedEnquiries();}
+  if(tab==='dist-entry')deInit();
   document.body.classList.remove('printing-report');
   if(tab==='report')initReport();
   if(tab==='contact')initContacts();
@@ -861,273 +1107,789 @@ function showTab(tab,btn){
 </script>
 
 <script>
-/* ── DISTRIBUTION ENTRY ── */
-let selectedSeedlings={};// {id: {record, qty}}
-let prePhotoB64='',postPhotoB64='';
-
-function populateDistFilters(){
-  const dd=v=>v&&v!=='undefined'&&v!=='null';
-  const districts=[...new Set(records.map(r=>r.district).filter(dd))].sort();
-  const fd=document.getElementById('de-f-district');
-  fd.innerHTML='<option value="">-- All Districts --</option>'+districts.map(d=>`<option>${d}</option>`).join('');
-  const mandals=[...new Set(records.map(r=>r.mandal).filter(dd))].sort();
-  const fm=document.getElementById('de-f-mandal');
-  fm.innerHTML='<option value="">-- All Mandals --</option>'+mandals.map(m=>`<option>${m}</option>`).join('');
-  const nurseries=[...new Set(records.map(r=>r.nursery).filter(dd))].sort();
-  const fn=document.getElementById('de-f-nursery');
-  fn.innerHTML='<option value="">-- All Nurseries --</option>'+nurseries.map(n=>`<option>${n}</option>`).join('');
+/* ── DISTRIBUTION ENTRY : 3 screens (Batch + Beneficiaries → Seedlings → Planting) ── */
+const DE_REQ=['Office','Online','Field'];
+const DE_DOCS=['Requisition Letter','Aadhar card','Pattadar Pass book','Dept ID Card'];
+const DE_BY=['DFO','FRO','FSO','OTHERS'];
+const DE_FOR=['Free','Cost','Department','Collector Permission'];
+const DE_PT=['Farm','Bund','Road','Others'],DE_UNIT=['acre','Ha'];
+const DE_BT=['Individual','Organization','Others'];
+const DE_IND=['Farmer','Public'],DE_ORG=['Government Departments','Public sector','Private sector','NGOS','Temples','Associations','Others'];
+const deBtypeKeys=b=>{const t=b.beneficiary_types||[],k=[];
+  if(t.includes('Individual')){const x=b.individual_types||[];if(x.length)x.forEach(y=>k.push('Individual – '+y));else k.push('Individual');}
+  if(t.includes('Organization')){const x=b.organization_types||[];if(x.length)x.forEach(y=>k.push('Organization – '+y));else k.push('Organization');}
+  if(t.includes('Others'))k.push('Others');return k;};
+const deBtypeLabel=b=>{const t=b.beneficiary_types||[];if(!t.length)return '—';
+  return t.map(x=>x==='Individual'&&(b.individual_types||[]).length?'Individual ('+b.individual_types.join(', ')+')':x==='Organization'&&(b.organization_types||[]).length?'Organization ('+b.organization_types.join(', ')+')':x).join('; ');};
+function deMsRender(p,list,sel,key){
+  byId('db-'+p+'-opts').innerHTML=list.map((x,i)=>`<label><input type="checkbox"${sel.includes(x)?' checked':''} onchange="deMsToggle('${key}',${i},this.checked)">${esc(x)}</label>`).join('');
+  byId('db-'+p+'-sum').textContent=(sel.length?sel.join(', '):'Select')+' ▾';
 }
-
-function filterDistTable(){
-  const dv=document.getElementById('de-f-district').value;
-  const mv=document.getElementById('de-f-mandal').value;
-  const nv=document.getElementById('de-f-nursery').value;
-  const sp=(document.getElementById('de-f-species').value||'').toLowerCase();
-  const data=records.filter(r=>
-    (!dv||r.district===dv)&&(!mv||r.mandal===mv)&&
-    (!nv||r.nursery===nv)&&(!sp||r.species.toLowerCase().includes(sp))
-  );
-  renderDistTable(data);
+const DE_MSL={btypes:DE_BT,indTypes:DE_IND,orgTypes:DE_ORG};
+function deMsToggle(key,i,on){
+  const list=DE_MSL[key],x=list[i],cur=new Set(deForm[key]||[]);
+  if(on)cur.add(x);else cur.delete(x);
+  deForm[key]=list.filter(y=>cur.has(y));deBtypes();
 }
-
-function renderDistTable(data){
-  if(!data)data=records;
-  const tb=document.getElementById('dist-select-tbody');
-  if(!data.length){tb.innerHTML='<tr><td colspan="10" class="empty">No seedlings found.</td></tr>';return;}
-  tb.innerHTML=data.map(r=>{
-    const b=effBal(r);
-    const disabled=b<=0;
-    const checked=selectedSeedlings[r.id]?'checked':'';
-    const qty=selectedSeedlings[r.id]?selectedSeedlings[r.id].qty:'';
-    return`<tr id="drow-${r.id}" style="${checked?'background:#e8f5e9':''}">
-      <td><input type="checkbox" ${checked} ${disabled?'disabled':''} onchange="toggleSeedlingRow('${r.id}',this)"></td>
-      <td>${r.id}</td><td>${r.district}</td><td>${r.mandal}</td><td>${r.nursery}</td>
-      <td>${r.scheme}</td><td>${r.species}</td><td>${r.bagSize||'—'}</td>
-      <td class="num" style="color:${disabled?'#c62828':'#1565c0'}">${fmt(b)}</td>
-      <td><input type="number" id="dqty-${r.id}" min="1" max="${b}" value="${qty}" placeholder="0"
-        style="width:80px;padding:4px 6px;border:1px solid #b5d4b5;border-radius:4px;font-size:13px"
-        ${disabled?'disabled':''}
-        onchange="updateSeedlingQty('${r.id}',this.value,${b})"></td>
-    </tr>`;
-  }).join('');
-  updateSelectionSummary();
+function deBtypes(){
+  const f=deForm;if(!f)return;
+  const hasI=f.btypes.includes('Individual'),hasO=f.btypes.includes('Organization');
+  if(!hasI)f.indTypes=[];if(!hasO)f.orgTypes=[];
+  byId('db-ind-wrap').style.display=hasI?'':'none';byId('db-org-wrap').style.display=hasO?'':'none';
+  deMsRender('bt',DE_BT,f.btypes,'btypes');deMsRender('ind',DE_IND,f.indTypes,'indTypes');deMsRender('org',DE_ORG,f.orgTypes,'orgTypes');deSecStats();
 }
+function deToggleMs(i,k,oi,on){
+  const list=DE_BF.find(f=>f[0]===k)[3],cur=new Set(deForm.bens[i][k]||[]);
+  if(on)cur.add(list[oi]);else cur.delete(list[oi]);
+  deForm.bens[i][k]=list.filter(y=>cur.has(y));
+  const el=byId('de-ms-'+k+'-'+i);if(el)el.textContent=(deForm.bens[i][k].length?deForm.bens[i][k].join(', '):'Select')+' ▾';
+}
+let deMonth='',deBatches=[],dePlant=[],deScr=1,deForm=null,deSel={},deOrig={},deBatchId='',dpEdit=null;
 
-function toggleSeedlingRow(id,cb){
-  const r=records.find(x=>String(x.id)===String(id));
-  if(!r)return;
-  const row=document.getElementById('drow-'+id);
-  const qtyInput=document.getElementById('dqty-'+id);
-  if(cb.checked){
-    // Auto-fill qty from ben_Distributed_no if only one row selected
-    const suggestedQty=parseInt(document.getElementById('de-ben_Distributed_no').value)||1;
-    const bal=effBal(r);
-    const qty=Math.min(suggestedQty,bal);
-    selectedSeedlings[id]={record:r,qty:qty};
-    qtyInput.value=qty;
-    row.style.background='#e8f5e9';
-    // Auto-fill scheme and mandal from first selection
-    if(Object.keys(selectedSeedlings).length===1){
-      document.getElementById('de-sanction_Scheme').value=r.scheme||'';
-      document.getElementById('de-Mandal').value=r.mandal||'';
+function closeModal(){byId('modal').style.display='none';byId('modal-body').style.maxWidth='760px';}
+const deIso=v=>v?String(v).slice(0,10):'';
+const deBal=r=>r.available-r.distributed+(deOrig[r.id]||0);
+function deSecOpen(k){const e=byId('db-sec-'+k);if(e)e.open=true;}
+function deSecForErr(m){
+  if(/^Line \d|Nursery \/ Scheme line|No\. of Beneficiaries|No\. of Seedlings Distributed|^You entered/.test(m))deSecOpen('lines');
+  if(/^Beneficiary \d|^Seedlings given|sanction|mobile|Aadhar|Distribution date/i.test(m))deSecOpen('bens');
+  if(/Date|Individual type|Organization type/.test(m)&&!/^Beneficiary \d/.test(m))deSecOpen('main');
+}
+function deSecStats(){
+  if(!deForm||!byId('db-st-main'))return;
+  const L=deForm.lines.filter(l=>l.nursery||l.scheme),ns=new Set(L.map(l=>l.nursery).filter(Boolean)),ss=new Set(L.map(l=>l.scheme).filter(Boolean));
+  const seed=deForm.lines.reduce((a,l)=>a+(Number(l.seedlings)||0),0),cnt=deForm.lines.reduce((a,l)=>a+(Number(l.count)||0),0);
+  const bens=deForm.bens.filter(r=>!deBenBlank(r)),bSeed=bens.reduce((a,r)=>a+(Number(r.ben_distributed_no)||0),0),sq=bens.reduce((a,r)=>a+(Number(r.sanction_qnty)||0),0);
+  const from=byId('db-from').value,to=byId('db-to').value;
+  const bl=(deForm.btypes||[]).length?deBtypeLabel({beneficiary_types:deForm.btypes,individual_types:deForm.indTypes,organization_types:deForm.orgTypes}):'';
+  byId('db-st-main').textContent=[(from&&to)?from+' → '+to:'dates not set',bl,fmt(seed)+' seedlings',cnt+' beneficiaries planned'].filter(Boolean).join(' · ');
+  byId('db-st-lines').textContent=ns.size+' nursery & '+ss.size+' scheme · '+L.length+' line'+(L.length===1?'':'s')+' · '+fmt(seed)+' seedlings';
+  byId('db-st-bens').textContent=bens.length?bens.length+' beneficiar'+(bens.length===1?'y':'ies')+' · '+fmt(bSeed)+' seedlings'+(sq?' · sanction qty '+fmt(sq):''):'none added';
+}
+function deErr(id,msg){if(id==='db-error'&&msg)deSecForErr(msg);const el=byId(id);if(!msg){el.style.display='none';return;}el.textContent=msg;el.style.display='block';el.scrollIntoView({behavior:'smooth',block:'nearest'});}
+function deOk(id){const el=byId(id);el.style.display='block';setTimeout(()=>{el.style.display='none';},4000);}
+const deOpts=(list,cur)=>{const l=cur&&!list.includes(cur)?[cur,...list]:list;return '<option value="">-- Select --</option>'+l.map(o=>`<option${o===cur?' selected':''}>${esc(o)}</option>`).join('');};
+const DE_MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const deMonthLabel=m=>m?DE_MN[+m.slice(5,7)-1]+' '+m.slice(0,4):'No date';
+const deBatchMonth=id=>{const b=deBatches.find(x=>String(x.batch_id)===String(id));return b?deIso(b.from_date).slice(0,7):'';};
+const deInMonth=b=>!deMonth||deIso(b.from_date).slice(0,7)===deMonth;
+function deFillMonths(){
+  const ms=[...new Set(deBatches.map(b=>deIso(b.from_date).slice(0,7)).filter(Boolean))].sort().reverse();
+  if(deMonth&&!ms.includes(deMonth))deMonth='';
+  document.querySelectorAll('.de-month').forEach(el=>{el.innerHTML='<option value="">-- All Months --</option>'+ms.map(m=>`<option value="${m}"${m===deMonth?' selected':''}>${esc(deMonthLabel(m))}</option>`).join('');});
+}
+function deEnsureMonth(id){if(deMonth&&deBatchMonth(id)!==deMonth)deMonth='';deFillMonths();}
+function deSetMonth(v){
+  if(deScr===2&&deBatchId&&v&&deBatchMonth(deBatchId)!==v&&dsDirty()&&!confirm('The unsaved seedling selection will be lost. Continue?')){deFillMonths();return;}
+  deMonth=v;deFillMonths();
+  if(deBatchId&&deMonth&&deBatchMonth(deBatchId)!==deMonth){deBatchId='';deBenId='';deOrig={};deSel={};}
+  deShow(deScr);
+}
+function deGroupRows(data,rowOf,cols,monthOf){
+  const g={};data.forEach(x=>{const m=monthOf(x);(g[m]=g[m]||[]).push(x);});
+  return Object.keys(g).sort().reverse().map(m=>`<tr style="background:#e8f5e9;font-weight:600"><td colspan="${cols}">📅 ${esc(deMonthLabel(m))} — ${g[m].length} record(s)</td></tr>`+g[m].map(rowOf).join('')).join('');
+}
+const deAllBens=()=>deBatches.flatMap(b=>(b.nursery_dist_beneficiary||[]).map(x=>Object.assign({},x,{batch_id:b.batch_id})));
+
+function deShow(n){
+  deScr=n;deFillMonths();
+  [1,2,3].forEach(i=>{byId('de-scr-'+i).style.display=i===n?'block':'none';byId('des-'+i).classList.toggle('active',i===n);});
+  if(n===1)deRenderBatches();
+  if(n===2){dsFillBatches();dsFillFilters();dsRender();dsInfo();dsRenderBens();dsSaved();}
+  if(n===3){dpFillBens();dpAllot();dpRender();}
+}
+async function deInit(){
+  if(!(await hasSession()))return;
+  loadResolvedEnquiries();
+  await deLoadAll();
+  deShow(deScr);
+}
+async function deReload(){await deLoadAll();deShow(deScr);}
+async function deLoadAll(){
+  const a=await sb.from('nursery_dist_batch').select('*, nursery_dist_beneficiary(*), nursery_dist_items(id,master_id,qty,beneficiary_id), nursery_dist_batch_lines(*)').order('batch_id',{ascending:false});
+  if(a.error){deBatches=[];byId('db-tbody').innerHTML='<tr><td colspan="10" class="empty">Could not load: '+esc(a.error.message)+'</td></tr>';}
+  else deBatches=a.data;
+  const b=await sb.from('nursery_dist_planting').select('*').order('planting_id',{ascending:false});
+  dePlant=b.error?[]:b.data;
+  deFillMonths();
+}
+function deAfterStock(){if(deScr===2){dsFillFilters();dsRender();}}
+
+/* ───────── SCREEN 1 : batch + beneficiaries + sanction ───────── */
+const DE_BF=[
+  ['beneficiary_id','Beneficiary ID','id'],['req_mode','Request Mode','sel',DE_REQ],['aadhar_no','Aadhar No. (unique)','aad'],['documents','Documents (one or more)','multi',DE_DOCS],
+  ['ben_name','Beneficiary Name *','text'],['ben_mobile_no','Mobile No. * (unique)','tel'],['ben_email_id','Email ID','email'],
+  ['planting_type','Type of Planting','sel',DE_PT],['area','Area','num'],['area_unit','Unit','sel',DE_UNIT],['ben_distributed_no','No. of Seedlings *','num'],['ben_dist_dt','Distribution Date *','date'],
+  ['mandal','Mandal','text'],['gramapanchayat','Gramapanchayat','text'],['village_hab','Village / Habitation','text']];
+const DE_SF=[
+  ['sanction_id','Sanction ID','san'],['sanction_scheme','Sanction Scheme','scheme'],['sanction_dt','Sanction Date','date'],
+  ['sanction_by','Sanctioned By','sel',DE_BY],['sanctioned_for','Sanctioned For','sel',DE_FOR],
+  ['sanction_exempted','Exempted','chk'],['sanction_qnty','Sanction Quantity','sq'],['sanction_exempt_note','Exemption note – why exempted / on what basis *','note'],['sanction_free_no','Free No. (auto)','ro'],['sanction_cost_no','Cost No. (auto)','ro'],['sanction_rate','Rate (₹)','num']];
+
+function deDbSan(){return new Set(deAllBens().map(x=>x.sanction_id).filter(Boolean));}
+function deAllSan(){const s=deDbSan();if(deForm)deForm.bens.forEach(b=>{if(b.sanction_id)s.add(b.sanction_id);});return s;}
+function deNextSan(){
+  const y=new Date().getFullYear();let mx=0;
+  deAllSan().forEach(s=>{const m=/^SAN\/(\d{4})\/(\d+)$/.exec(s);if(m&&+m[1]===y)mx=Math.max(mx,+m[2]);});
+  return 'SAN/'+y+'/'+String(mx+1).padStart(4,'0');
+}
+function deBlankBen(){
+  return {beneficiary_id:null,req_mode:'',aadhar_no:'',documents:[],ben_name:'',ben_mobile_no:'',ben_email_id:'',planting_type:'',area:'',area_unit:'',ben_distributed_no:'',ben_dist_dt:'',mandal:'',gramapanchayat:'',village_hab:'',
+    sanction_id:deNextSan(),sanction_scheme:deDefScheme(),sanction_dt:'',sanction_by:'',sanctioned_for:'',sanction_qnty:'',sanction_exempted:false,sanction_exempt_note:'',sanction_free_no:'',sanction_cost_no:'',sanction_rate:''};
+}
+function deCell(i,f,r){
+  const [k,label,type,opt]=f,v=r[k]==null?'':r[k],set=`deSetB(${i},'${k}',this.value)`;let inp;
+  if(type==='id')inp=`<input disabled value="${v?esc(v):'Auto'}">`;
+  else if(type==='multi'){const sel=Array.isArray(r[k])?r[k]:[];inp=`<details class="ckdd"><summary id="de-ms-${k}-${i}">${esc(sel.length?sel.join(', '):'Select')} ▾</summary><div style="max-height:220px;overflow:auto">${opt.map((o,oi)=>`<label><input type="checkbox"${sel.includes(o)?' checked':''} onchange="deToggleMs(${i},'${k}',${oi},this.checked)">${esc(o)}</label>`).join('')}</div></details>`;}
+  else if(type==='sel')inp=`<select onchange="${set}">${deOpts(opt,v)}</select>`;
+  else if(type==='scheme'){const l=[...new Set([...records.map(x=>x.scheme),...deAllBens().map(x=>x.sanction_scheme)].filter(Boolean))].sort();inp=`<select onchange="${set}">${deOpts(l,v)}</select>`;}
+  else if(type==='san'){
+    const next=deNextSan(),db=deDbSan(),used=new Set(deForm.bens.filter((x,j)=>j!==i).map(x=>x.sanction_id).filter(Boolean)),all=[...new Set([...deAllSan(),next,v].filter(Boolean))].filter(s=>s===v||!used.has(s)).sort();
+    inp=`<select onchange="${set}">${all.map(s=>`<option value="${esc(s)}"${s===v?' selected':''}>${esc(s)}${db.has(s)?'':' (new)'}</option>`).join('')}</select>`;
+  }
+  else if(type==='aad')inp=`<input inputmode="numeric" maxlength="12" placeholder="12-digit Aadhar" value="${esc(v)}" oninput="this.value=this.value.replace(/\\D/g,'');${set}">`;
+  else if(type==='tel')inp=`<input inputmode="numeric" maxlength="10" placeholder="10-digit mobile" value="${esc(v)}" oninput="this.value=this.value.replace(/\\D/g,'');${set}">`;
+  else if(type==='chk')inp=`<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:13px;margin:0;min-height:32px"><input type="checkbox" style="width:auto" id="de-sanction_exempted-${i}"${r.sanction_exempted?' checked':''} onchange="deToggleEx(${i},this.checked)"> Exempted (edit the quantity)</label>`;
+  else if(type==='note')return `<div class="fg" id="de-exnote-${i}" style="grid-column:1/-1;${r.sanction_exempted?'':'display:none'}"><label>${label}</label><textarea rows="2" style="min-height:48px" placeholder="Why is this beneficiary exempted, and on what basis (order / letter no., authority)?" oninput="deSetB(${i},'sanction_exempt_note',this.value)">${esc(v)}</textarea></div>`;
+  else if(type==='sq'){inp=`<input type="number" min="0" step="1" id="de-sanction_qnty-${i}" value="${esc(v)}"${r.sanction_exempted?'':' readonly style="background:#f1f5f1"'} title="${r.sanction_exempted?'Exempted: enter the sanction quantity':'Automatic: the beneficiary’s seedlings, at most 200. Tick Exempted to edit.'}" oninput="${set}">`;}
+  else if(type==='ro')inp=`<input readonly tabindex="-1" style="background:#f1f5f1" id="de-${k}-${i}" value="${esc(v)}">`;
+  else if(type==='num')inp=`<input type="number" min="0" step="any" value="${esc(v)}" oninput="${set}">`;
+  else{const rg=(type==='date'&&k==='ben_dist_dt')?` min="${esc(byId('db-from').value)}" max="${esc(byId('db-to').value)}"`:'';inp=`<input type="${type}"${rg} value="${esc(v)}" oninput="${set}">`;}
+  return `<div class="fg"><label>${label}</label>${inp}</div>`;
+}
+const deBenBlank=r=>!r.beneficiary_id&&['req_mode','aadhar_no','documents','ben_name','ben_mobile_no','ben_email_id','planting_type','area','area_unit','ben_distributed_no','ben_dist_dt','mandal','gramapanchayat','village_hab','sanction_dt','sanction_by','sanctioned_for','sanction_qnty','sanction_free_no','sanction_cost_no','sanction_rate'].every(k=>String(r[k]==null?'':r[k]).trim()==='');
+const deBlankLine=()=>({nursery:'',scheme:'',seedlings:'',count:''});
+function deLines(b){
+  const ls=(b.nursery_dist_batch_lines||[]).slice().sort((x,y)=>x.id-y.id);
+  if(ls.length)return ls.map(l=>({nursery:l.nursery||'',scheme:l.scheme||'',seedlings:l.seedlings_distributed,count:l.beneficiaries_count}));
+  if(b.nursery||b.scheme)return [{nursery:b.nursery||'',scheme:b.scheme||'',seedlings:b.seedlings_distributed,count:b.beneficiaries_count}];
+  return [];
+}
+const deNurseries=b=>[...new Set(deLines(b).map(l=>l.nursery).filter(Boolean))];
+const deSchemes=b=>[...new Set(deLines(b).map(l=>l.scheme).filter(Boolean))];
+const deDefScheme=()=>{if(!deForm||!deForm.lines)return '';const s=[...new Set(deForm.lines.map(l=>l.scheme).filter(Boolean))];return s.length===1?s[0]:'';};
+function deRenderLines(){
+  const L=deForm.lines,nurs=cur=>[...new Set([...records.map(r=>r.nursery).filter(Boolean),cur].filter(Boolean))].sort();
+  byId('db-lines').innerHTML='<div class="table-wrap"><table class="av-tbl"><thead><tr><th>#</th><th>Nursery *</th><th>Scheme *</th><th>No. of Seedlings Distributed</th><th>No. of Beneficiaries</th><th></th></tr></thead><tbody>'
+   +L.map((l,i)=>{
+     const sch=[...new Set([...records.filter(r=>!l.nursery||r.nursery===l.nursery).map(r=>r.scheme).filter(Boolean),l.scheme].filter(Boolean))].sort();
+     return `<tr><td>${i+1}</td><td><select onchange="deSetL(${i},'nursery',this.value)">${deOpts(nurs(l.nursery),l.nursery)}</select></td><td><select onchange="deSetL(${i},'scheme',this.value)">${deOpts(sch,l.scheme)}</select></td><td><input type="number" min="0" step="1" value="${esc(l.seedlings)}" oninput="deSetL(${i},'seedlings',this.value)"></td><td><input type="number" min="0" step="1" value="${esc(l.count)}" oninput="deSetL(${i},'count',this.value)"></td><td>${L.length>1?`<button type="button" class="abtn ar" style="padding:3px 9px" title="Remove line" onclick="deDelLine(${i})">✕</button>`:''}</td></tr>`;}).join('')
+   +'</tbody></table></div>';
+  deLineTotals();
+}
+function deSetL(i,k,v){deForm.lines[i][k]=v;if(k==='nursery'){deForm.lines[i].scheme='';deRenderLines();}else deLineTotals();}
+function deAddLine(){deForm.lines.push(deBlankLine());deSecOpen('lines');deRenderLines();}
+function deDelLine(i){deForm.lines.splice(i,1);if(!deForm.lines.length)deForm.lines.push(deBlankLine());deRenderLines();}
+function deLineTotals(){
+  const s=deForm.lines.reduce((a,l)=>a+(Number(l.seedlings)||0),0),c=deForm.lines.reduce((a,l)=>a+(Number(l.count)||0),0);
+  byId('db-seed').value=s;byId('db-count').value=c;deTotals();deSecStats();
+}
+function deRenderBens(){
+  byId('db-bens').innerHTML=(deForm.bens.length?'':'<p class="note" style="margin-bottom:8px">No beneficiaries yet. This is optional — save the batch now and add or update beneficiaries and sanction details any time with the “Beneficiaries” button.</p>')+deForm.bens.map((r,i)=>
+    `<div class="de-ben"><div class="de-ben-h"><strong>Beneficiary ${i+1}</strong>${r.beneficiary_id?` <span class="role-badge">ID ${esc(r.beneficiary_id)}</span>`:''}
+      <button type="button" class="abtn ar" style="padding:3px 10px;font-size:12px;margin-left:auto" onclick="deDelBen(${i})">✕ Remove</button></div>
+      <div class="form-grid">${DE_BF.map(f=>deCell(i,f,r)).join('')}</div>
+      <h5 class="de-sub">Sanction Details</h5>
+      <div class="form-grid">${DE_SF.map(f=>deCell(i,f,r)).join('')}</div></div>`).join('');
+  deTotals();
+}
+function deSyncFC(r){
+  const n=Number(r.ben_distributed_no);
+  if(!r.sanction_exempted)r.sanction_qnty=(Number.isFinite(n)&&n>0)?Math.min(Math.floor(n),200):'';   // standard rule: seedlings, at most 200
+  const q=String(r.sanction_qnty==null?'':r.sanction_qnty).trim();
+  if(q===''){r.sanction_free_no='';r.sanction_cost_no='';}
+  else if(r.sanctioned_for==='Cost'){r.sanction_cost_no=q;r.sanction_free_no=0;}
+  else{r.sanction_free_no=q;r.sanction_cost_no=0;}
+}
+function deSanDom(i,skipQ){
+  const r=deForm.bens[i],q=byId('de-sanction_qnty-'+i),f=byId('de-sanction_free_no-'+i),c=byId('de-sanction_cost_no-'+i),n=byId('de-exnote-'+i);
+  if(q){if(!skipQ)q.value=r.sanction_qnty;q.readOnly=!r.sanction_exempted;q.style.background=r.sanction_exempted?'':'#f1f5f1';q.title=r.sanction_exempted?'Exempted: enter the sanction quantity':'Automatic: the beneficiary’s seedlings, at most 200. Tick Exempted to edit.';}
+  if(f)f.value=r.sanction_free_no;if(c)c.value=r.sanction_cost_no;
+  if(n){n.style.display=r.sanction_exempted?'':'none';const t=n.querySelector('textarea');if(t&&t.value!==(r.sanction_exempt_note||''))t.value=r.sanction_exempt_note||'';}
+}
+function deToggleEx(i,on){
+  const r=deForm.bens[i];r.sanction_exempted=!!on;if(!on)r.sanction_exempt_note='';
+  deSyncFC(r);deSanDom(i);
+  if(on){const t=document.querySelector('#de-exnote-'+i+' textarea');if(t)t.focus();}
+  deSecStats();
+}
+function deSetB(i,k,v){
+  const r=deForm.bens[i];r[k]=v;
+  if(k==='ben_distributed_no')deTotals();
+  if(k==='sanction_qnty'||k==='sanctioned_for'||k==='ben_distributed_no'){deSyncFC(r);deSanDom(i,k==='sanction_qnty');}
+  deSecStats();
+}
+function deAddBen(){deForm.bens.push(deBlankBen());deSecOpen('bens');deRenderBens();}
+function deDelBen(i){
+  const r=deForm.bens[i];
+  if(r.beneficiary_id&&!confirm('Remove this saved beneficiary? Its planting details will be deleted when you save the batch.'))return;
+  deForm.bens.splice(i,1);deRenderBens();
+}
+function deTotals(){
+  if(!deForm)return;
+  const n=deForm.bens.length,s=deForm.bens.reduce((a,r)=>a+(Number(r.ben_distributed_no)||0),0);
+  const seed=Number(byId('db-seed').value)||0,cnt=Number(byId('db-count').value)||0;
+  deSecStats();
+  byId('db-tot').textContent='Beneficiaries entered: '+n+(cnt>0?' of '+cnt+' planned':'')+' | Seedlings for beneficiaries: '+fmt(s)+(seed>0?' of '+fmt(seed):'')+((seed>0&&s>seed)?' ⚠️ exceeds batch total':'');
+}
+function deFillForm(b){
+  byId('db-id').value=b?b.batch_id:'Auto';
+  deForm.btypes=b?(b.beneficiary_types||[]).slice():[];deForm.indTypes=b?(b.individual_types||[]).slice():[];deForm.orgTypes=b?(b.organization_types||[]).slice():[];deBtypes();
+  byId('db-from').value=b?deIso(b.from_date):'';byId('db-to').value=b?deIso(b.to_date):'';
+  deRenderLines();
+  byId('de-enquiry').value='';deErr('db-error','');
+}
+function deShowForm(title){
+  byId('db-form-title').textContent=title;byId('db-form').style.display='block';
+  ['main','lines','bens'].forEach(k=>{byId('db-sec-'+k).open=false;});
+  deRenderBens();byId('db-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function deNewBatch(){deForm={id:null,bens:[],lines:[deBlankLine()]};deFillForm(null);deShowForm('➕ New Distribution Batch');}
+function deEditBatch(id,focusBens){
+  const b=deBatches.find(x=>x.batch_id===id);if(!b)return;
+  const bens=(b.nursery_dist_beneficiary||[]).slice().sort((x,y)=>x.beneficiary_id-y.beneficiary_id).map(r=>{
+    const o={};[...DE_BF,...DE_SF].forEach(f=>{o[f[0]]=r[f[0]]==null?'':r[f[0]];});
+    ['ben_dist_dt','sanction_dt'].forEach(k=>o[k]=deIso(o[k]));o.documents=Array.isArray(r.documents)?r.documents.slice():[];return o;});
+  bens.forEach(deSyncFC);const ln=deLines(b);deForm={id,bens,lines:ln.length?ln:[deBlankLine()]};
+  deFillForm(b);deShowForm('✏️ Edit Distribution Batch #'+id);
+  if(focusBens){if(!deForm.bens.length)deAddBen();deSecOpen('bens');byId('db-sec-bens').scrollIntoView({behavior:'smooth',block:'start'});}
+}
+function deCancelBatch(){deForm=null;byId('db-form').style.display='none';}
+async function deSaveBatch(){
+  if(!(await hasSession()))return;
+  deErr('db-error','');
+  const bens=deForm.bens.filter(r=>!deBenBlank(r)),from=byId('db-from').value,to=byId('db-to').value;
+  if(!from||!to)return deErr('db-error','From Date and To Date are required.');
+  if(to<from)return deErr('db-error','To Date cannot be before From Date.');
+  const lines=deForm.lines.filter(l=>l.nursery||l.scheme||String(l.seedlings).trim()!==''||String(l.count).trim()!=='');
+  if(!lines.length)return deErr('db-error','Add at least one Nursery / Scheme line.');
+  for(let i=0;i<lines.length;i++){
+    const l=lines[i],n='Line '+(i+1)+': ';
+    if(!l.nursery)return deErr('db-error',n+'select the Nursery.');
+    if(!l.scheme)return deErr('db-error',n+'select the Scheme.');
+    for(const [k,lab] of [['seedlings','No. of Seedlings Distributed'],['count','No. of Beneficiaries']]){
+      const x=String(l[k]).trim();if(x!==''&&(!Number.isInteger(Number(x))||Number(x)<0))return deErr('db-error',n+lab+' must be a whole number (0 or more).');
     }
-  }else{
-    delete selectedSeedlings[id];
-    qtyInput.value='';
-    row.style.background='';
   }
-  updateSelectionSummary();
+  const lSeed=lines.reduce((a,l)=>a+(Number(l.seedlings)||0),0),lCnt=lines.reduce((a,l)=>a+(Number(l.count)||0),0);
+  const bts=deForm.btypes||[],ind=bts.includes('Individual')?(deForm.indTypes||[]):[],org=bts.includes('Organization')?(deForm.orgTypes||[]):[];
+  if(bts.includes('Individual')&&!ind.length)return deErr('db-error','Select at least one Individual type (Farmer / Public).');
+  if(bts.includes('Organization')&&!org.length)return deErr('db-error','Select at least one Organization type.');
+  const sumB=bens.reduce((a,r)=>a+(Number(r.ben_distributed_no)||0),0);
+  const seed=lSeed>0?lSeed:sumB;
+  const cnt=lCnt>0?lCnt:bens.length;
+  if(!Number.isInteger(seed)||seed<0)return deErr('db-error','No. of Seedlings Distributed must be a whole number.');
+  if(!Number.isInteger(cnt)||cnt<0)return deErr('db-error','No. of Beneficiaries must be a whole number.');
+  if(bens.length>cnt)return deErr('db-error','You entered '+bens.length+' beneficiaries but No. of Beneficiaries is '+cnt+'.');
+  if(sumB>seed)return deErr('db-error','Seedlings given to beneficiaries ('+sumB+') exceed No. of Seedlings Distributed ('+seed+').');
+  for(let i=0;i<bens.length;i++){
+    const r=bens[i],n='Beneficiary '+(i+1)+': ';
+    deSyncFC(r);
+    if(r.sanction_exempted){
+      if(!String(r.sanction_exempt_note||'').trim())return deErr('db-error',n+'give the reason / basis for the exemption.');
+      if(String(r.sanction_qnty).trim()==='')return deErr('db-error',n+'enter the Sanction Quantity for the exempted beneficiary.');
+    }
+    if(!String(r.ben_name).trim())return deErr('db-error',n+'name is required.');
+    if(!/^\d{10}$/.test(r.ben_mobile_no))return deErr('db-error',n+'enter a valid 10-digit mobile number.');
+    if(r.aadhar_no&&!/^\d{12}$/.test(r.aadhar_no))return deErr('db-error',n+'Aadhar number must be 12 digits.');
+    if(r.area!==''&&!(Number(r.area)>=0))return deErr('db-error',n+'Area must be a number (0 or more).');
+    if(r.area!==''&&!r.area_unit)return deErr('db-error',n+'select the Unit (acre / Ha) for the Area.');
+    if(r.area_unit&&r.area==='')return deErr('db-error',n+'enter the Area for the selected Unit.');
+    if(r.ben_email_id&&!/^[^@\s,]+@[^@\s,]+\.[^@\s,]+$/.test(r.ben_email_id))return deErr('db-error',n+'invalid email address.');
+    const q=Number(r.ben_distributed_no);
+    if(!Number.isInteger(q)||q<1)return deErr('db-error',n+'No. of Seedlings must be a whole number of 1 or more.');
+    if(!r.ben_dist_dt)return deErr('db-error',n+'Distribution Date is required.');
+    if(r.ben_dist_dt<from||r.ben_dist_dt>to)return deErr('db-error',n+'Distribution Date must be between the batch dates ('+from+' to '+to+').');
+    if(r.sanction_qnty!==''&&(!Number.isInteger(Number(r.sanction_qnty))||Number(r.sanction_qnty)<0))return deErr('db-error',n+'Sanction Quantity must be a whole number (0 or more).');
+    if(r.sanction_qnty!==''&&Number(r.sanction_qnty)>q)return deErr('db-error',n+'Sanction Quantity ('+r.sanction_qnty+') cannot exceed the beneficiary’s No. of Seedlings ('+q+').');
+  }
+  const others=deAllBens().filter(x=>String(x.batch_id)!==String(deForm.id));
+  for(let i=0;i<bens.length;i++){
+    const r=bens[i],n='Beneficiary '+(i+1)+': ',prev=[...others,...bens.slice(0,i)];
+    const dm=prev.find(x=>String(x.ben_mobile_no)===String(r.ben_mobile_no));
+    if(dm)return deErr('db-error',n+'mobile number '+r.ben_mobile_no+' is already used by another beneficiary ('+(dm.ben_name||'')+').');
+    const da=r.aadhar_no&&prev.find(x=>String(x.aadhar_no||'')===String(r.aadhar_no));
+    if(da)return deErr('db-error',n+'Aadhar number '+r.aadhar_no+' is already used by another beneficiary ('+(da.ben_name||'')+').');
+  }
+  const sids=bens.map(r=>String(r.sanction_id||'').trim()).filter(Boolean);
+  if(new Set(sids).size!==sids.length)return deErr('db-error','Each beneficiary must have a different Sanction ID within the batch.');
+  bens.forEach(deSyncFC);
+  const p={id:deForm.id,from_date:from,to_date:to,beneficiary_types:bts,individual_types:ind,organization_types:org,nursery:lines[0].nursery,scheme:lines[0].scheme,lines:lines.map(l=>({nursery:l.nursery,scheme:l.scheme,seedlings_distributed:Number(l.seedlings)||0,beneficiaries_count:Number(l.count)||0})),seedlings_distributed:seed,beneficiaries_count:cnt,
+    beneficiaries:bens.map(r=>({beneficiary_id:r.beneficiary_id||null,req_mode:sv(r.req_mode),aadhar_no:sv(r.aadhar_no),documents:Array.isArray(r.documents)?r.documents:[],
+      ben_name:String(r.ben_name).trim(),ben_mobile_no:r.ben_mobile_no,ben_email_id:sv(r.ben_email_id),ben_distributed_no:Number(r.ben_distributed_no),ben_dist_dt:r.ben_dist_dt,
+      planting_type:sv(r.planting_type),area:nn(r.area),area_unit:sv(r.area_unit),
+      mandal:sv(r.mandal),gramapanchayat:sv(r.gramapanchayat),village_hab:sv(r.village_hab),
+      sanction_id:sv(r.sanction_id),sanction_scheme:sv(r.sanction_scheme),sanction_dt:sv(r.sanction_dt),sanction_by:sv(r.sanction_by),sanctioned_for:sv(r.sanctioned_for),
+      sanction_qnty:nn(r.sanction_qnty),sanction_exempted:!!r.sanction_exempted,sanction_exempt_note:r.sanction_exempted?sv(r.sanction_exempt_note):null,sanction_free_no:nn(r.sanction_free_no),sanction_cost_no:nn(r.sanction_cost_no),sanction_rate:nn(r.sanction_rate)}))};
+  const btn=byId('db-save-btn');btn.disabled=true;btn.textContent='Saving…';
+  const {data,error}=await sb.rpc('nursery_save_batch',{p});
+  btn.disabled=false;btn.textContent='💾 Save Batch';
+  if(error)return deErr('db-error','Could not save: '+(/nursery_dist_ben_san_uq/.test(error.message)?'each beneficiary must have a different Sanction ID within the batch.':/nursery_dist_ben_mobile_uq/.test(error.message)?'a mobile number is already used by another beneficiary.':/nursery_dist_ben_aadhar_uq/.test(error.message)?'an Aadhar number is already used by another beneficiary.':error.message));
+  deBatchId=String(data);
+  deCancelBatch();await deLoadAll();deEnsureMonth(deBatchId);dsPick(deBatchId);deRenderBatches();deOk('db-success');
+}
+const deStatS={batch:{k:'seedlings',d:-1},month:{k:'seedlings',d:-1},species:{k:'sel',d:-1},nursery:{k:'sel',d:-1},btype:{k:'seedlings',d:-1},ben:{k:'req',d:-1}};
+function deStatSort(id,k){const S=deStatS[id];if(S.k===k)S.d=-S.d;else{S.k=k;S.d=(k==='name'||k==='m')?1:-1;}deRenderStats();}
+function deStatTable(id,title,cols,rows,hl){
+  const S=deStatS[id];
+  const rs=rows.slice().sort((a,b)=>{const x=a[S.k],y=b[S.k];const c=(typeof x==='number'&&typeof y==='number')?x-y:String(x).localeCompare(String(y),undefined,{numeric:true});return (c||String(a.name||a.m).localeCompare(String(b.name||b.m),undefined,{numeric:true}))*S.d;});
+  const th=cols.map(c=>`<th style="cursor:pointer;white-space:nowrap" onclick="deStatSort('${id}','${c.k}')">${c.label}${S.k===c.k?(S.d<0?' ▼':' ▲'):''}</th>`).join('');
+  const body=rs.length?rs.map(r=>`<tr${hl&&hl(r)?' style="background:#e8f5e9;font-weight:600"':''}>`+cols.map(c=>`<td${c.n?' class="num"':''}>${c.n?fmt(r[c.k]):esc(c.f?c.f(r):r[c.k])}</td>`).join('')+'</tr>').join('')
+    +'<tr style="font-weight:700;background:#f1f5f1">'+cols.map((c,i)=>i===0?'<td>Total</td>':(c.n&&c.t!==false?`<td class="num">${fmt(rs.reduce((a,r)=>a+(r[c.k]||0),0))}</td>`:'<td></td>')).join('')+'</tr>'
+    :`<tr><td colspan="${cols.length}" class="empty">No data.</td></tr>`;
+  return `<div class="de-stat"><h4>${title}</h4><div class="table-wrap" style="max-height:260px;overflow:auto"><table><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div></div>`;
+}
+function deRenderStats(){
+  const el=byId('de-stats');if(!el)return;
+  const fb=deBatches.filter(deInMonth),rec=id=>records.find(r=>r.id===id),sumQ=b=>(b.nursery_dist_items||[]).reduce((a,x)=>a+x.qty,0),nb=b=>(b.nursery_dist_beneficiary||[]).length;
+  const batchRows=fb.map(b=>({name:'#'+b.batch_id,month:deMonthLabel(deIso(b.from_date).slice(0,7)),seedlings:b.seedlings_distributed||0,bens:nb(b),sel:sumQ(b)}));
+  const mm={};deBatches.forEach(b=>{const m=deIso(b.from_date).slice(0,7),o=mm[m]=mm[m]||{m,batches:0,seedlings:0,bens:0,sel:0};o.batches++;o.seedlings+=b.seedlings_distributed||0;o.bens+=nb(b);o.sel+=sumQ(b);});
+  const sp={},nu={};
+  fb.forEach(b=>{
+    deLines(b).forEach(l=>{const k=l.nursery||'—',o=nu[k]=nu[k]||{name:k,planned:0,sel:0,bs:new Set()};o.planned+=Number(l.seedlings)||0;o.bs.add(b.batch_id);});
+    (b.nursery_dist_items||[]).forEach(it=>{
+      const r=rec(it.master_id),sn=r?(r.species||'—'):'Unknown',nn_=r?(r.nursery||'—'):'Unknown';
+      const a=sp[sn]=sp[sn]||{name:sn,sel:0,bs:new Set()};a.sel+=it.qty;a.bs.add(b.batch_id);
+      const c=nu[nn_]=nu[nn_]||{name:nn_,planned:0,sel:0,bs:new Set()};c.sel+=it.qty;c.bs.add(b.batch_id);});
+  });
+  const bt={};fb.forEach(b=>{const ks=deBtypeKeys(b);(ks.length?ks:['Not specified']).forEach(k=>{const o=bt[k]=bt[k]||{name:k,batches:0,bens:0,seedlings:0,sel:0};o.batches++;o.bens+=nb(b);o.seedlings+=b.seedlings_distributed||0;o.sel+=sumQ(b);});});
+  const benRows=[];fb.forEach(b=>(b.nursery_dist_beneficiary||[]).forEach(x=>benRows.push({name:'#'+x.beneficiary_id+' – '+(x.ben_name||''),batch:'#'+b.batch_id,req:x.ben_distributed_no||0,sq:x.sanction_qnty||0,sel:(b.nursery_dist_items||[]).filter(it=>it.beneficiary_id===x.beneficiary_id).reduce((a,it)=>a+it.qty,0)})));
+  const fin=o=>Object.values(o).map(x=>Object.assign({},x,{batches:x.bs.size}));
+  el.innerHTML=
+    deStatTable('batch','📦 Batch wise',[{k:'name',label:'Batch'},{k:'month',label:'Month'},{k:'seedlings',label:'Seedlings Distributed',n:1},{k:'bens',label:'Beneficiaries',n:1},{k:'sel',label:'Selected (Step 2)',n:1}],batchRows)
+   +deStatTable('month','📅 Month wise',[{k:'m',label:'Month',f:r=>deMonthLabel(r.m)},{k:'batches',label:'Batches',n:1},{k:'seedlings',label:'Seedlings Distributed',n:1},{k:'bens',label:'Beneficiaries',n:1},{k:'sel',label:'Selected (Step 2)',n:1}],Object.values(mm),r=>r.m===deMonth)
+   +deStatTable('species','🌿 Species wise',[{k:'name',label:'Species'},{k:'sel',label:'Seedlings Selected',n:1},{k:'batches',label:'Batches',n:1,t:false}],fin(sp))
+   +deStatTable('nursery','🏭 Nursery wise',[{k:'name',label:'Nursery'},{k:'planned',label:'Seedlings Distributed (batch lines)',n:1},{k:'sel',label:'Seedlings Selected',n:1},{k:'batches',label:'Batches',n:1,t:false}],fin(nu))
+   +deStatTable('btype','👥 Beneficiary type wise <span style="font-weight:400;color:#888">(a batch with several types is counted under each)</span>',[{k:'name',label:'Beneficiary Type'},{k:'batches',label:'Batches',n:1,t:false},{k:'bens',label:'Beneficiaries',n:1,t:false},{k:'seedlings',label:'Seedlings Distributed',n:1,t:false},{k:'sel',label:'Selected (Step 2)',n:1,t:false}],Object.values(bt))
+   +deStatTable('ben','👤 Beneficiary wise',[{k:'name',label:'Beneficiary'},{k:'batch',label:'Batch'},{k:'req',label:'Seedlings Required',n:1},{k:'sq',label:'Sanction Qty',n:1},{k:'sel',label:'Selected (Step 2)',n:1}],benRows);
+}
+function deRenderBatches(){
+  deRenderStats();
+  const q=(byId('db-search').value||'').toLowerCase(),tb=byId('db-tbody');
+  const data=deBatches.filter(b=>deInMonth(b)&&(!q||String(b.batch_id).includes(q)||deLines(b).flatMap(l=>[l.nursery,l.scheme]).some(v=>String(v||'').toLowerCase().includes(q))||(b.nursery_dist_beneficiary||[]).some(x=>[x.ben_name,x.ben_mobile_no,x.sanction_id,x.village_hab,x.aadhar_no].some(v=>String(v||'').toLowerCase().includes(q)))));
+  if(!data.length){tb.innerHTML='<tr><td colspan="10" class="empty">No distribution batches. Click “New Batch”.</td></tr>';return;}
+  const rowOf=b=>{
+    const alloc=(b.nursery_dist_items||[]).reduce((a,x)=>a+x.qty,0),nb=(b.nursery_dist_beneficiary||[]).length;
+    return `<tr><td><strong>#${b.batch_id}</strong></td><td>${esc(deIso(b.from_date))}</td><td>${esc(deIso(b.to_date))}</td><td>${esc(deBtypeLabel(b))}</td><td style="font-size:12px">${deLines(b).map(l=>esc(l.nursery)).join('<br>')||'—'}</td><td style="font-size:12px">${deLines(b).map(l=>esc(l.scheme)).join('<br>')||'—'}</td><td class="num">${fmt(b.seedlings_distributed)}</td><td class="num">${nb} / ${b.beneficiaries_count}</td><td class="num">${fmt(alloc)}</td>
+      <td style="white-space:nowrap"><button class="abtn ao" style="padding:3px 10px;font-size:12px" onclick="deViewBatch(${b.batch_id})">View</button> <button class="abtn ab" style="padding:3px 10px;font-size:12px" onclick="deEditBatch(${b.batch_id})">Edit</button> <button class="abtn ao" style="padding:3px 10px;font-size:12px" onclick="deEditBatch(${b.batch_id},true)">Beneficiaries</button> <button class="abtn ag" style="padding:3px 10px;font-size:12px" onclick="deGoSeed(${b.batch_id})">Seedlings →</button>${currentRole==='admin'?` <button class="abtn ar" style="padding:3px 10px;font-size:12px" onclick="deDelBatch(${b.batch_id})">Delete</button>`:''}</td></tr>`;};
+  tb.innerHTML=deGroupRows(data,rowOf,10,b=>deIso(b.from_date).slice(0,7));
+}
+function deGoSeed(id){deEnsureMonth(id);deBatchId=String(id);deShow(2);dsPick(String(id));}
+function deViewBatch(id){
+  const b=deBatches.find(x=>x.batch_id===id);if(!b)return;
+  const tbl=(head,rows)=>rows.length?'<div class="table-wrap"><table><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+(c===''||c==null?'—':esc(c))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p class="note">None recorded.</p>';
+  const H=t=>'<h4 style="color:#2d6a2d;margin:14px 0 6px">'+t+'</h4>';
+  const bens=(b.nursery_dist_beneficiary||[]).slice().sort((x,y)=>x.beneficiary_id-y.beneficiary_id);
+  const items=(b.nursery_dist_items||[]).map(it=>{const r=records.find(x=>x.id===it.master_id);return [it.beneficiary_id?'#'+it.beneficiary_id:'—',it.master_id,r?r.species:'',r?r.nursery:'',r?r.scheme:'',r?r.bagSize:'',it.qty];});
+  byId('modal-body').style.maxWidth='1000px';
+  byId('modal-body').innerHTML='<h3 style="color:#2d6a2d">Batch #'+b.batch_id+'</h3><p style="font-size:13px;margin:6px 0">'+esc(deIso(b.from_date))+' to '+esc(deIso(b.to_date))+' | '+esc(deBtypeLabel(b))+' | Seedlings: <strong>'+fmt(b.seedlings_distributed)+'</strong> | Beneficiaries planned: <strong>'+b.beneficiaries_count+'</strong></p>'
+   +H('Nursery / Scheme lines')+tbl(['#','Nursery','Scheme','Seedlings Distributed','Beneficiaries'],deLines(b).map((l,i)=>[i+1,l.nursery,l.scheme,l.seedlings,l.count]))
+   +H('Beneficiaries')+tbl(['ID','Name','Mobile','Aadhar','Req. Mode','Documents','Planting Type','Area','Seedlings','Date','Mandal','Village'],bens.map(r=>[r.beneficiary_id,r.ben_name,r.ben_mobile_no,r.aadhar_no,r.req_mode,(r.documents||[]).join(', '),r.planting_type,(r.area==null?'':r.area+' '+(r.area_unit||'')),r.ben_distributed_no,deIso(r.ben_dist_dt),r.mandal,r.village_hab]))
+   +H('Sanction Details')+tbl(['Ben. ID','Sanction ID','Scheme','Date','By','For','Qty','Exempted','Free','Cost','Rate (₹)'],bens.map(r=>[r.beneficiary_id,r.sanction_id,r.sanction_scheme,deIso(r.sanction_dt),r.sanction_by,r.sanctioned_for,r.sanction_qnty,(r.sanction_exempted?'Yes – '+(r.sanction_exempt_note||''):'No'),r.sanction_free_no,r.sanction_cost_no,r.sanction_rate]))
+   +H('Seedlings (Step 2)')+tbl(['Beneficiary','Stock ID','Species','Nursery','Scheme','Bag Size','Qty'],items)
+   +'<div style="text-align:right;margin-top:12px"><button class="abtn ao" onclick="closeModal()">Close</button></div>';
+  byId('modal').style.display='flex';
+}
+async function deDelBatch(id){
+  const b=deBatches.find(x=>x.batch_id===id);if(!b)return;
+  if(!confirm('Delete batch #'+id+' with all its beneficiaries, seedling selection and planting records? Selected seedlings will be returned to stock.'))return;
+  const ids=(b.nursery_dist_beneficiary||[]).map(x=>x.beneficiary_id);let paths=[];
+  if(ids.length){const {data}=await sb.from('nursery_dist_planting').select('pre_photo_path,post_photo_path').in('beneficiary_id',ids);paths=(data||[]).flatMap(x=>[x.pre_photo_path,x.post_photo_path]).filter(Boolean);}
+  const {error}=await sb.rpc('nursery_delete_batch',{p_batch_id:id});
+  if(error){alert('Could not delete: '+error.message);return;}
+  if(paths.length)await sb.storage.from('nursery-photos').remove(paths);
+  if(String(deBatchId)===String(id))deBatchId='';
+  await loadSheetData();await deLoadAll();deRenderBatches();
+}
+/* resolved enquiry → new beneficiary card */
+function applyEnquiry(id){
+  const sel=byId('de-enquiry');if(!id)return;
+  if(!deForm){alert('Click “New Batch” (or Edit a batch) first.');sel.value='';return;}
+  const e=resolvedEnq.find(x=>String(x.id)===String(id));if(!e){sel.value='';return;}
+  const tot=(e.nursery_enquiry_items||[]).reduce((a,x)=>a+x.qty,0),b=deBlankBen();
+  b.ben_name=e.name||'';b.ben_mobile_no=e.mobile||'';b.village_hab=e.village||'';b.ben_distributed_no=tot||'';
+  if(deForm.bens.length===1&&!deForm.bens[0].beneficiary_id&&!String(deForm.bens[0].ben_name).trim()&&!deForm.bens[0].ben_mobile_no)deForm.bens[0]=Object.assign(b,{sanction_id:deForm.bens[0].sanction_id});
+  else deForm.bens.push(b);
+  sel.value='';deRenderBens();
 }
 
-function updateSeedlingQty(id,val,maxBal){
-  const qty=parseInt(val)||0;
-  if(qty>maxBal){
-    alert('Quantity cannot exceed balance: '+maxBal);
-    document.getElementById('dqty-'+id).value=maxBal;
-    if(selectedSeedlings[id])selectedSeedlings[id].qty=maxBal;
-  }else if(selectedSeedlings[id]){
-    selectedSeedlings[id].qty=qty;
-  }
-  updateSelectionSummary();
-}
+/* ───────── SCREEN 2 : select seedlings for a batch, tagged to a beneficiary ───────── */
+let deBenId='';   // active group: beneficiary_id as a string; '' = not tagged to anyone
+const dsBatch=()=>deBatches.find(x=>String(x.batch_id)===String(deBatchId));
+const dsBenList=()=>{const b=dsBatch();return b?(b.nursery_dist_beneficiary||[]).slice().sort((x,y)=>x.beneficiary_id-y.beneficiary_id):[];};
+const dsGrp=it=>it.beneficiary_id==null?'':String(it.beneficiary_id);
+const dsAlloc=g=>((dsBatch()||{}).nursery_dist_items||[]).filter(it=>dsGrp(it)===String(g)).reduce((a,x)=>a+x.qty,0);
+const dsBatchAlloc=()=>((dsBatch()||{}).nursery_dist_items||[]).reduce((a,x)=>a+x.qty,0);
+const dsActiveBen=()=>dsBenList().find(r=>String(r.beneficiary_id)===String(deBenId));
+const dsEff=x=>x.sanction_qnty!=null?x.sanction_qnty:x.ben_distributed_no;
+const dsNeed=()=>{const x=dsActiveBen();return x?dsEff(x):0;};
+const dsDirty=()=>JSON.stringify(Object.entries(deSel).filter(e=>e[1]>0).sort())!==JSON.stringify(Object.entries(deOrig).sort());
 
-function updateSelectionSummary(){
-  const keys=Object.keys(selectedSeedlings);
-  const el=document.getElementById('de-selection-summary');
-  if(!keys.length){el.style.display='none';return;}
-  const totalQty=keys.reduce((a,k)=>a+(selectedSeedlings[k].qty||0),0);
-  const rows=keys.map(k=>`${selectedSeedlings[k].record.species} (${selectedSeedlings[k].record.nursery}): <strong>${selectedSeedlings[k].qty}</strong>`).join(' &nbsp;|&nbsp; ');
-  const sq=parseInt(document.getElementById('de-sanction_qnty').value)||0;
-  const warn=sq>0&&totalQty>sq?`<br><span style="color:#c62828;font-weight:600">⚠️ Exceeds Sanction Quantity (${sq}) by ${totalQty-sq}</span>`:'';
-  el.innerHTML=`✅ Selected ${keys.length} seedling type(s) | Total Qty: <strong>${totalQty}</strong><br><span style="font-size:12px">${rows}</span>${warn}`;
+function dsFillBatches(){
+  const el=byId('ds-batch');
+  if(deBatchId&&!deBatches.some(b=>String(b.batch_id)===String(deBatchId)&&deInMonth(b)))deBatchId='';
+  const g={};deBatches.filter(deInMonth).forEach(b=>{const m=deIso(b.from_date).slice(0,7);(g[m]=g[m]||[]).push(b);});
+  el.innerHTML='<option value="">-- Select Batch ID --</option>'+Object.keys(g).sort().reverse().map(m=>`<optgroup label="${esc(deMonthLabel(m))}">`+g[m].map(b=>`<option value="${b.batch_id}"${String(b.batch_id)===String(deBatchId)?' selected':''}>Batch #${b.batch_id} · ${esc(deIso(b.from_date))} to ${esc(deIso(b.to_date))} · ${esc(deNurseries(b).join(', '))} · ${esc(deSchemes(b).join(', '))} · ${fmt(b.seedlings_distributed)} seedlings</option>`).join('')+'</optgroup>').join('');
+}
+let dsSpSel=new Set(),dsAuto=new Set(),dsNote='';
+const dsSchemeVal=()=>{const x=dsActiveBen();return x&&x.sanction_scheme?x.sanction_scheme:byId('ds-f-scheme').value;};
+function dsPool(){const b=dsBatch(),ns=b?deNurseries(b):[];return ns.length?records.filter(r=>ns.includes(r.nursery)):records;}
+function dsFilt(){dsFillFilters();dsRender();}
+function dsFillFilters(){
+  const b=dsBatch(),lines=b?deLines(b):[],pool=dsPool();
+  const setOpts=(id,vals,label)=>{const el=byId(id),cur=el.value;vals=[...new Set(vals.filter(Boolean))].sort();el.innerHTML='<option value="">-- All '+label+' --</option>'+vals.map(v=>`<option${v===cur?' selected':''}>${esc(v)}</option>`).join('');};
+  setOpts('ds-f-nursery',b&&lines.length?lines.map(l=>l.nursery):records.map(r=>r.nursery),'Nurseries');
+  const nur=byId('ds-f-nursery').value;
+  setOpts('ds-f-scheme',b&&lines.length?lines.filter(l=>!nur||l.nursery===nur).map(l=>l.scheme):records.filter(r=>!nur||r.nursery===nur).map(r=>r.scheme),'Schemes');
+  const act=dsActiveBen(),se=byId('ds-f-scheme');
+  if(act&&act.sanction_scheme){se.innerHTML='<option selected>'+esc(act.sanction_scheme)+'</option>';se.disabled=true;se.title='Fixed to the beneficiary’s sanction scheme';}
+  else{se.disabled=false;se.title='';}
+  setOpts('ds-f-district',pool.map(r=>r.district),'Districts');setOpts('ds-f-mandal',pool.map(r=>r.mandal),'Mandals');
+  dsFillSpecies();
+}
+function dsFillSpecies(){
+  const nur=byId('ds-f-nursery').value,sch=dsSchemeVal();
+  const sp=[...new Set(dsPool().filter(r=>(!nur||r.nursery===nur)&&(!sch||r.scheme===sch)).map(r=>r.species).filter(Boolean))].sort();
+  [...dsSpSel].forEach(x=>{if(!sp.includes(x))dsSpSel.delete(x);});
+  byId('ds-f-species').innerHTML=sp.map(x=>`<label><input type="checkbox" value="${esc(x)}"${dsSpSel.has(x)?' checked':''} onchange="dsSpToggle(this)">${esc(x)}</label>`).join('')+'<div style="border-top:1px solid #d4e8d4;margin-top:4px;padding-top:4px"><button type="button" class="btn-link" onclick="dsSpClear()">Clear selection</button></div>';
+  dsSpSum();
+}
+function dsSpSum(){byId('ds-sp-sum').textContent=dsSpSel.size?dsSpSel.size+' species selected ▾':'All species ▾';}
+function dsSpToggle(cb){
+  if(cb.checked){dsSpSel.add(cb.value);dsAutoSelect(cb.value);}
+  else{dsSpSel.delete(cb.value);dsAutoDeselect(cb.value);}
+  dsSpSum();dsRender();
+}
+function dsAutoSelect(sp){
+  if(!deBatchId)return;
+  const lim=dsLimit();let skipped=0,added=0;
+  dsFiltered().filter(r=>r.species===sp&&!deSel[r.id]).forEach(r=>{
+    const left=lim>0?lim-dsTotal():Infinity;
+    if(left<1){skipped++;return;}
+    if(deBal(r)<1)return;
+    deSel[r.id]=1;dsAuto.add(r.id);added++;   // starts at 1; change it as needed
+  });
+  dsNote=skipped?skipped+' stock row(s) of '+sp+' were not selected because the limit ('+fmt(lim)+') is already reached.':'';
+}
+function dsAutoDeselect(sp){
+  [...dsAuto].forEach(id=>{const r=records.find(x=>x.id===id);if(r&&r.species===sp){delete deSel[id];dsAuto.delete(id);}});
+  dsNote='';
+}
+function dsSpClear(){dsSpSel.clear();[...dsAuto].forEach(id=>delete deSel[id]);dsAuto.clear();dsNote='';dsFillSpecies();dsRender();}
+function dsPick(id){
+  deBatchId=id;const b=dsBatch(),bens=dsBenList();
+  deBenId=bens.length?String(bens[0].beneficiary_id):'';
+  if(b){dsSpSel.clear();dsFillFilters();const ns=deNurseries(b),ss=deSchemes(b);byId('ds-f-nursery').value=ns.length===1?ns[0]:'';dsFillFilters();byId('ds-f-scheme').value=ss.length===1?ss[0]:'';dsFillFilters();}
+  dsLoadGroup();
+}
+function dsLoadGroup(){
+  deOrig={};deSel={};dsAuto=new Set();dsNote='';const b=dsBatch();
+  if(b)(b.nursery_dist_items||[]).forEach(it=>{if(dsGrp(it)===String(deBenId)){deOrig[it.master_id]=it.qty;deSel[it.master_id]=it.qty;}});
+  deErr('ds-error','');dsFillFilters();dsInfo();dsRenderBens();dsRender();dsSaved();
+}
+function dsReset(){dsLoadGroup();}
+function dsSelBen(g){
+  if(String(g)===String(deBenId))return;
+  if(dsDirty()&&!confirm('The unsaved selection for the current beneficiary will be lost. Continue?'))return;
+  deBenId=String(g);byId('ds-f-scheme').disabled=false;byId('ds-f-scheme').value='';dsLoadGroup();
+  byId('ds-tbody').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function dsInfo(){
+  const el=byId('ds-info'),b=dsBatch();
+  if(!b){el.style.display='none';return;}
+  el.innerHTML='📦 <strong>Batch #'+b.batch_id+'</strong> | '+esc(deIso(b.from_date))+' to '+esc(deIso(b.to_date))+' | '+esc(deBtypeLabel(b))+' | '+esc(deNurseries(b).join(', ')||'—')+' / '+esc(deSchemes(b).join(', ')||'—')+' | Seedlings to distribute: <strong>'+fmt(b.seedlings_distributed)+'</strong> | Allocated so far: <strong>'+fmt(dsBatchAlloc())+'</strong>'
+    +((deBenId===''||dsAlloc('')>0)?'<br>'+(deBenId===''?'<span style="background:#c8e6c9;padding:1px 6px;border-radius:4px">':'')+'👤 '+(deBenId===''?'Selecting for ':'')+'<strong>Unassigned (no beneficiary)</strong> | Saved: <strong>'+fmt(dsAlloc(''))+'</strong>'+(deBenId===''?'</span>':''):'')
+    +dsBenList().map(x=>{const act=String(x.beneficiary_id)===String(deBenId),t='👤 '+(act?'Selecting for ':'')+'<strong>#'+x.beneficiary_id+' – '+esc(x.ben_name)+'</strong> (Sanction '+esc(x.sanction_id||'—')+(x.sanction_scheme?' · '+esc(x.sanction_scheme):'')+') | No. of Seedlings: <strong>'+fmt(x.ben_distributed_no)+'</strong> | Sanction Qty: <strong>'+fmt(dsEff(x))+'</strong>'+(x.sanction_exempted?' <em>(exempted: '+esc(x.sanction_exempt_note||'')+')</em>':'')+' | Saved: <strong>'+fmt(dsAlloc(String(x.beneficiary_id)))+'</strong>';
+      return '<br>'+(act?'<span style="background:#c8e6c9;padding:1px 6px;border-radius:4px">'+t+'</span>':t);}).join('');
   el.style.display='block';
 }
+function dsRenderBens(){
+  const el=byId('ds-bens'),b=dsBatch();
+  if(!b){el.innerHTML='';return;}
+  const bens=dsBenList(),untag=dsAlloc('');
+  if(!bens.length){el.innerHTML='<p class="note">This batch has no beneficiaries yet, so seedlings are saved against the batch only. Add beneficiaries in step 1 (“Beneficiaries” button) to tag seedlings to each of them.</p>';return;}
+  const row=(g,label,san,need,sch,seeds)=>{const al=dsAlloc(g),act=String(g)===String(deBenId);
+    return `<tr style="${act?'background:#e8f5e9;font-weight:600':''}"><td>${g===''?'—':'#'+g}</td><td>${esc(label)}</td><td>${esc(san)||'—'}</td><td>${esc(sch)||'—'}</td><td class="num">${seeds==null?'—':fmt(seeds)}</td><td class="num">${need==null?'—':fmt(need)}</td><td class="num">${fmt(al)}</td><td class="num" style="color:${need!=null&&al>=need?'#2d6a2d':'#e65100'}">${need==null?'—':fmt(need-al)}</td><td>${act?'✔ Selected':`<button class="abtn ab" style="padding:3px 10px;font-size:12px" onclick="dsSelBen('${g}')">Select</button>`}</td></tr>`;};
+  el.innerHTML='<table><thead><tr><th>Ben. ID</th><th>Beneficiary</th><th>Sanction ID</th><th>Sanction Scheme</th><th>No. of Seedlings</th><th>Sanction Qty (limit)</th><th>Allocated</th><th>Remaining</th><th>Tag seedlings</th></tr></thead><tbody>'
+    +bens.map(r=>row(String(r.beneficiary_id),r.ben_name,r.sanction_id,dsEff(r),r.sanction_scheme,r.ben_distributed_no)).join('')
+    +row('','Unassigned (no beneficiary)','',null)+'</tbody></table><p class="note" style="margin-top:6px">Choose “Unassigned” to select seedlings before any beneficiary is known; later use <strong>Reallocate</strong> in the saved list below to move them to a beneficiary.</p>';
+}
+function dsFiltered(){
+  const v=id=>byId(id).value,b0=dsBatch(),ns=b0?deNurseries(b0):[];
+  return records.filter(r=>(deBal(r)>0||deSel[r.id])&&(!ns.length||ns.includes(r.nursery)||deSel[r.id])&&(!dsSchemeVal()||r.scheme===dsSchemeVal())&&(!v('ds-f-district')||r.district===v('ds-f-district'))&&(!v('ds-f-mandal')||r.mandal===v('ds-f-mandal'))&&(!v('ds-f-nursery')||r.nursery===v('ds-f-nursery'))&&(!dsSpSel.size||dsSpSel.has(r.species)));
+}
+function dsRender(){
+  const tb=byId('ds-tbody');
+  if(!deBatchId){tb.innerHTML='<tr><td colspan="10" class="empty">Select a Batch ID to choose seedlings.</td></tr>';byId('ds-summary').style.display='none';return;}
+  const data=dsFiltered();
+  if(!data.length){tb.innerHTML='<tr><td colspan="10" class="empty">No seedlings in stock for this selection.</td></tr>';dsSummary();return;}
+  tb.innerHTML=data.map(r=>{const b=deBal(r),q=deSel[r.id]||'';
+    return `<tr id="dsr-${r.id}" style="${q?'background:#e8f5e9':''}"><td><input type="checkbox" ${q?'checked':''} onchange="dsTog(${r.id},this)"></td><td>${r.id}</td><td>${esc(r.district)}</td><td>${esc(r.mandal)}</td><td>${esc(r.nursery)}</td><td>${esc(r.scheme)}</td><td>${esc(r.species)}</td><td>${esc(r.bagSize)||'—'}</td><td class="num" style="color:#1565c0">${fmt(b)}</td>
+      <td><input type="number" id="dsq-${r.id}" min="1" max="${b}" value="${q}" placeholder="0" style="width:90px;padding:4px 6px;border:1px solid #b5d4b5;border-radius:4px;font-size:13px" onchange="dsQty(${r.id},this.value)"></td></tr>`;}).join('');
+  dsSummary();
+}
+function dsRowUi(id){
+  const q=deSel[id]||0,row=byId('dsr-'+id);if(!row)return;
+  row.style.background=q?'#e8f5e9':'';row.querySelector('input[type=checkbox]').checked=!!q;byId('dsq-'+id).value=q||'';
+}
+function dsTotal(){return Object.values(deSel).reduce((a,q)=>a+(q||0),0);}
+function dsLimit(){const b=dsBatch();return deBenId!==''?dsNeed():(b?b.seedlings_distributed:0);}
+function dsTog(id,cb){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  if(cb.checked){if(deBal(r)<1){cb.checked=false;return;}deSel[id]=1;}   // a newly selected row starts at 1; change it as needed
+  else{delete deSel[id];dsAuto.delete(id);}
+  dsRowUi(id);dsSummary();
+}
+function dsQty(id,val){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  let q=parseInt(val)||0;const b=deBal(r);
+  if(q>b){alert('Quantity cannot exceed the available balance: '+b);q=b;}
+  if(q<1)delete deSel[id];else deSel[id]=q;
+  dsRowUi(id);dsSummary();
+}
+function dsSummary(){
+  const el=byId('ds-summary'),keys=Object.keys(deSel).filter(k=>deSel[k]>0);
+  if(!deBatchId||!keys.length){el.style.display='none';return;}
+  const tot=dsTotal(),b=dsBatch(),lim=dsLimit(),batchTot=dsBatchAlloc()-dsAlloc(deBenId)+tot;let warn='';
+  if(lim>0&&tot>lim)warn+=`<br><span style="color:#c62828;font-weight:600">⚠️ Exceeds ${deBenId!==''?'the beneficiary’s sanction quantity':'the batch total'} (${fmt(lim)}) by ${fmt(tot-lim)}</span>`;
+  if(b&&b.seedlings_distributed>0&&batchTot>b.seedlings_distributed)warn+=`<br><span style="color:#c62828;font-weight:600">⚠️ Batch total would be ${fmt(batchTot)}, above ${fmt(b.seedlings_distributed)}</span>`;
+  if(dsNote)warn+='<br><span style="color:#e65100">ℹ️ '+esc(dsNote)+'</span>';
+  el.innerHTML='✅ '+keys.length+' seedling type(s) | Total Qty: <strong>'+fmt(tot)+'</strong>'+(lim?' of '+fmt(lim):'')+warn;
+  el.style.display='block';
+}
+async function dsSave(){
+  if(!(await hasSession()))return;deErr('ds-error','');
+  if(!deBatchId)return deErr('ds-error','Select a Batch ID first.');
+  const b=dsBatch(),tot=dsTotal(),lim=dsLimit();
+  if(lim>0&&tot>lim)return deErr('ds-error','Selected seedlings ('+tot+') exceed '+(deBenId!==''?'the beneficiary’s sanction quantity':'the batch total')+' ('+lim+').');
+  const batchTot=dsBatchAlloc()-dsAlloc(deBenId)+tot;
+  if(b&&b.seedlings_distributed>0&&batchTot>b.seedlings_distributed)return deErr('ds-error','Batch total would be '+batchTot+', above the batch total of '+b.seedlings_distributed+'.');
+  const items=Object.entries(deSel).filter(([k,q])=>q>0).map(([k,q])=>({master_id:Number(k),qty:q}));
+  if(!items.length&&Object.keys(deOrig).length&&!confirm('No seedlings selected. This will clear the saved seedlings for this beneficiary and return them to stock. Continue?'))return;
+  byId('ds-success').textContent='✅ Seedling selection saved and stock updated.';
+  await dsRpc(items);
+}
+async function dsRpc(items,ben){
+  const g=ben===undefined?deBenId:ben;
+  const {error}=await sb.rpc('nursery_save_ben_items',{p_batch_id:Number(deBatchId),p_beneficiary_id:g===''?null:Number(g),p_items:items});
+  if(error){deErr('ds-error','Could not save: '+error.message);return false;}
+  await dsRefresh();deOk('ds-success');return true;
+}
+async function dsRefresh(){
+  const keep=deBenId;await loadSheetData();await deLoadAll();dsFillBatches();
+  deBenId=keep;dsLoadGroup();
+}
+function dsSaved(){
+  const tb=byId('ds-saved-tbody'),b=dsBatch();
+  if(!b){tb.innerHTML='<tr><td colspan="7" class="empty">Select a Batch ID.</td></tr>';return;}
+  const items=b.nursery_dist_items||[];
+  if(!items.length){tb.innerHTML='<tr><td colspan="7" class="empty">No seedlings saved for this batch yet.</td></tr>';return;}
+  const groups=[...dsBenList().map(x=>({id:String(x.beneficiary_id),label:'#'+x.beneficiary_id+' – '+x.ben_name+(x.sanction_id?' ('+x.sanction_id+')':''),need:x.ben_distributed_no})),...(items.some(it=>dsGrp(it)==='')?[{id:'',label:'Unassigned (no beneficiary)',need:null}]:[])];
+  let html='',grand=0;
+  groups.forEach(g=>{
+    const its=items.filter(it=>dsGrp(it)===g.id);if(!its.length)return;
+    const tot=its.reduce((a,x)=>a+x.qty,0);grand+=tot;
+    html+=`<tr style="background:#e8f5e9;font-weight:600"><td colspan="7">👤 ${esc(g.label)} — ${fmt(tot)}${g.need!=null?' of '+fmt(g.need):''} seedlings</td></tr>`;
+    html+=its.map(it=>{const r=records.find(x=>x.id===it.master_id);
+      return `<tr><td>${it.master_id}</td><td>${r?esc(r.nursery):'—'}</td><td>${r?esc(r.scheme):'—'}</td><td>${r?esc(r.species):'—'}</td><td>${r?esc(r.bagSize)||'—':'—'}</td><td class="num">${fmt(it.qty)}</td>
+        <td style="white-space:nowrap"><button class="abtn ab" style="padding:3px 10px;font-size:12px" onclick="dsEditLine('${g.id}',${it.master_id})">Edit</button> <button class="abtn ar" style="padding:3px 10px;font-size:12px" onclick="dsDelLine('${g.id}',${it.master_id})">Delete</button>${dsBenList().length?` <button class="abtn ao" style="padding:3px 10px;font-size:12px" onclick="dsRealloc('${g.id}',${it.master_id})">Reallocate</button>`:''}</td></tr>`;}).join('');
+  });
+  tb.innerHTML=html+`<tr><td colspan="5" style="font-weight:700">Batch Total</td><td class="num" style="font-weight:700">${fmt(grand)}</td><td></td></tr>`;
+}
+function dsEditLine(g,mid){
+  if(String(g)!==String(deBenId)){
+    if(dsDirty()&&!confirm('The unsaved selection for the current beneficiary will be lost. Continue?'))return;
+    deBenId=String(g);dsLoadGroup();
+  }
+  ['ds-f-scheme','ds-f-district','ds-f-mandal','ds-f-nursery'].forEach(i=>byId(i).value='');dsSpClear();
+  dsRender();const el=byId('dsq-'+mid);
+  if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.focus();el.select();}
+}
+async function dsDelLine(g,mid){
+  if(!confirm('Remove this seedling line? The quantity is returned to stock.'))return;
+  const b=dsBatch();if(!b)return;
+  const items=(b.nursery_dist_items||[]).filter(x=>dsGrp(x)===String(g)&&x.master_id!==mid).map(x=>({master_id:x.master_id,qty:x.qty}));
+  await dsRpc(items,String(g));
+}
 
-function getGeoLocation(){
+function dsRealloc(g,mid){
+  const b=dsBatch();if(!b)return;
+  const it=(b.nursery_dist_items||[]).find(x=>dsGrp(x)===String(g)&&x.master_id===mid);if(!it)return;
+  if(dsDirty()&&!confirm('Unsaved seedling changes will be lost when you reallocate. Continue?'))return;
+  const r=records.find(x=>x.id===mid);
+  const opts=dsBenList().filter(x=>String(x.beneficiary_id)!==String(g)).map(x=>{const rem=dsEff(x)-dsAlloc(String(x.beneficiary_id));
+      return `<option value="${x.beneficiary_id}"${rem<=0?' disabled':''}>#${x.beneficiary_id} – ${esc(x.ben_name)} (sanction qty left: ${fmt(Math.max(rem,0))})</option>`;})
+    .concat(String(g)!==''?['<option value="u">Unassigned (no beneficiary)</option>']:[]);
+  byId('modal-body').innerHTML='<h3 style="color:#2d6a2d;margin-bottom:8px">🔁 Reallocate seedlings</h3><p style="font-size:13px;margin-bottom:10px">Batch #'+b.batch_id+' · '+esc(r?r.species:'Stock '+mid)+' ('+esc(r?r.nursery:'')+') · currently <strong>'+fmt(it.qty)+'</strong> '+(String(g)===''?'unassigned':'with beneficiary #'+esc(g))+'</p>'
+   +'<div class="form-grid"><div class="fg" style="grid-column:1/-1"><label>Move to *</label><select id="dsr-to"><option value="">-- Select --</option>'+opts.join('')+'</select></div>'
+   +'<div class="fg"><label>Quantity *</label><input id="dsr-qty" type="number" min="1" max="'+it.qty+'" value="'+it.qty+'"></div></div>'
+   +'<div id="dsr-err" class="de-err" style="display:none"></div>'
+   +'<div style="text-align:right;margin-top:12px"><button class="abtn ag" id="dsr-go" onclick="dsDoRealloc(\''+g+'\','+mid+','+it.qty+')">✔ Reallocate</button> <button class="abtn ao" onclick="closeModal()">Cancel</button></div>';
+  byId('modal').style.display='flex';
+}
+async function dsDoRealloc(g,mid,max){
+  const to=byId('dsr-to').value,q=Number(byId('dsr-qty').value),er=m=>{const e=byId('dsr-err');e.textContent=m;e.style.display='block';};
+  if(!to)return er('Select who to move the seedlings to.');
+  if(!Number.isInteger(q)||q<1||q>max)return er('Quantity must be a whole number between 1 and '+max+'.');
+  if(!(await hasSession()))return;
+  const btn=byId('dsr-go');btn.disabled=true;
+  const {error}=await sb.rpc('nursery_realloc_item',{p_batch_id:Number(deBatchId),p_master_id:mid,p_from:g===''?null:Number(g),p_to:to==='u'?null:Number(to),p_qty:q});
+  btn.disabled=false;
+  if(error)return er('Could not reallocate: '+error.message);
+  closeModal();
+  const keep=deBenId;await loadSheetData();await deLoadAll();dsFillBatches();deBenId=keep;dsLoadGroup();
+  byId('ds-success').textContent='✅ Seedlings reallocated.';deOk('ds-success');
+}
+
+/* ───────── SCREEN 3 : planting details per beneficiary ───────── */
+function dpFillBens(){
+  const el=byId('dp-ben'),cur=el.value,g={};
+  deAllBens().filter(x=>!deMonth||deBatchMonth(x.batch_id)===deMonth).forEach(x=>{const m=deBatchMonth(x.batch_id);(g[m]=g[m]||[]).push(x);});
+  el.innerHTML='<option value="">-- Select Beneficiary ID --</option>'+Object.keys(g).sort().reverse().map(m=>`<optgroup label="${esc(deMonthLabel(m))}">`+g[m].sort((a,b)=>b.beneficiary_id-a.beneficiary_id).map(x=>`<option value="${x.beneficiary_id}"${String(x.beneficiary_id)===cur?' selected':''}>#${x.beneficiary_id} – ${esc(x.ben_name)} (${esc(x.ben_mobile_no)}) · Batch #${x.batch_id}</option>`).join('')+'</optgroup>').join('');
+}
+function dpCtx(){
+  const bid=dpEdit?dpEdit.beneficiary_id:Number(byId('dp-ben').value);if(!bid)return null;
+  const ben=deAllBens().find(x=>x.beneficiary_id===bid);if(!ben)return null;
+  const batch=deBatches.find(x=>x.batch_id===ben.batch_id)||{};
+  const mine=(batch.nursery_dist_items||[]).filter(it=>it.beneficiary_id===bid),by={};
+  mine.forEach(it=>{by[it.master_id]=(by[it.master_id]||0)+it.qty;});
+  const rows=Object.keys(by).map(k=>{
+    const mid=Number(k),r=records.find(x=>x.id===mid);
+    const planted=dePlant.filter(p=>p.beneficiary_id===bid&&p.master_id===mid&&!(dpEdit&&p.planting_id===dpEdit.planting_id)).reduce((a,p)=>a+(p.seedlings_planted||0),0);
+    return {master_id:mid,species:r?r.species:'Stock #'+mid,nursery:r?r.nursery:'',bag:r?r.bagSize:'',allot:by[k],planted,balance:by[k]-planted};
+  }).sort((a,b)=>String(a.species).localeCompare(String(b.species)));
+  return {bid,ben,rows,allot:rows.reduce((a,r)=>a+r.allot,0),planted:rows.reduce((a,r)=>a+r.planted,0)};
+}
+function dpAllot(){
+  const c=dpCtx(),el=byId('dp-allot'),sp=byId('dp-species'),qty=byId('dp-qty'),keep=sp.value;
+  if(!c){el.innerHTML='';sp.innerHTML='<option value="">-- Select a beneficiary first --</option>';qty.value='';byId('dp-qty-hint').textContent='';return;}
+  const b=c.ben;
+  el.innerHTML='<div class="de-info">👤 <strong>#'+b.beneficiary_id+' – '+esc(b.ben_name)+'</strong> · Batch #'+b.batch_id+' | No. of Seedlings: <strong>'+fmt(b.ben_distributed_no)+'</strong> | Sanction Qty: <strong>'+fmt(b.sanction_qnty==null?b.ben_distributed_no:b.sanction_qnty)+'</strong> | Allotted: <strong>'+fmt(c.allot)+'</strong> | Planted: <strong>'+fmt(c.planted)+'</strong> | Balance: <strong>'+fmt(c.allot-c.planted)+'</strong></div>'
+   +(c.rows.length?'<div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>Allotted Species</th><th>Nursery</th><th>Bag Size</th><th>Allotted</th><th>Planted</th><th>Balance</th></tr></thead><tbody>'+c.rows.map(r=>`<tr><td>${esc(r.species)}</td><td>${esc(r.nursery)}</td><td>${esc(r.bag)||'—'}</td><td class="num">${fmt(r.allot)}</td><td class="num">${fmt(r.planted)}</td><td class="num" style="color:${r.balance>0?'#1565c0':'#2d6a2d'}">${fmt(r.balance)}</td></tr>`).join('')+'</tbody></table></div>'
+     :'<p class="note" style="margin-top:8px">No seedlings are allotted to this beneficiary yet. Select seedlings for them in step 2 first.</p>');
+  sp.innerHTML='<option value="">-- Select species --</option>'+c.rows.map(r=>`<option value="${r.master_id}"${r.balance<=0?' disabled':''}>${esc(r.species)}${r.nursery?' ('+esc(r.nursery)+(r.bag?' · '+esc(r.bag):'')+')':''} – balance ${fmt(r.balance)}</option>`).join('');
+  if(keep&&c.rows.some(r=>String(r.master_id)===keep&&(r.balance>0||(dpEdit&&dpEdit.master_id===r.master_id))))sp.value=keep;
+  dpSpPick();
+}
+function dpSpPick(){
+  const c=dpCtx(),sp=byId('dp-species'),qty=byId('dp-qty'),h=byId('dp-qty-hint');
+  const r=c&&sp.value?c.rows.find(x=>String(x.master_id)===sp.value):null;
+  if(!r){qty.removeAttribute('max');qty.placeholder='pick a species first';h.textContent='';return;}
+  qty.max=r.balance;qty.placeholder='max '+r.balance;h.textContent='Allotted '+fmt(r.allot)+' · already planted '+fmt(r.planted)+' · can plant up to '+fmt(r.balance);
+}
+function dpGeo(){
   if(!navigator.geolocation){alert('Geolocation not supported.');return;}
-  navigator.geolocation.getCurrentPosition(
-    pos=>{
-      document.getElementById('de-geo_lat').value=pos.coords.latitude.toFixed(6);
-      document.getElementById('de-geo_long').value=pos.coords.longitude.toFixed(6);
-    },
-    err=>alert('Could not get location: '+err.message),
-    {enableHighAccuracy:true,timeout:10000}
-  );
+  navigator.geolocation.getCurrentPosition(pos=>{byId('dp-lat').value=pos.coords.latitude.toFixed(6);byId('dp-long').value=pos.coords.longitude.toFixed(6);},err=>alert('Could not get location: '+err.message),{enableHighAccuracy:true,timeout:10000});
 }
-
-function previewPhoto(input,thumbId){
-  const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const thumb=document.getElementById(thumbId);
-    thumb.src=e.target.result;thumb.style.display='block';
-    if(thumbId==='pre-thumb')prePhotoB64=e.target.result;
-    else postPhotoB64=e.target.result;
-  };
-  reader.readAsDataURL(file);
+function dpPrev(input,thumbId){
+  const f=input.files[0],t=byId(thumbId);if(!f){return;}
+  const rd=new FileReader();rd.onload=e=>{t.src=e.target.result;t.style.display='block';};rd.readAsDataURL(f);
 }
-
-async function submitDistribution(){
-  // Validate
-  const req={'de-sanction_id':'Sanction ID','de-ben_name':'Beneficiary Name','de-ben_Mobile_no':'Mobile No.','de-ben_Distributed_no':'No. of Seedlings','de-ben_Dist_Dt':'Distribution Date'};
-  for(const [id,label] of Object.entries(req)){
-    if(!document.getElementById(id).value.trim()){showDistError('Please fill: '+label);return;}
+async function dpSave(again){
+  if(!(await hasSession()))return;deErr('dp-error','');
+  const bid=dpEdit?dpEdit.beneficiary_id:Number(byId('dp-ben').value);
+  if(!bid)return deErr('dp-error','Select a Beneficiary ID.');
+  const c=dpCtx(),spv=byId('dp-species').value,qv=byId('dp-qty').value.trim(),legacy=!!(dpEdit&&!dpEdit.master_id&&!spv&&qv==='');
+  let spRow=null,qn=null;
+  if(!legacy){
+    if(!c||!c.rows.length)return deErr('dp-error','No seedlings are allotted to this beneficiary yet. Select seedlings for them in step 2 first.');
+    if(!spv)return deErr('dp-error','Select the species that was planted.');
+    spRow=c.rows.find(x=>String(x.master_id)===spv);if(!spRow)return deErr('dp-error','That species is not allotted to this beneficiary.');
+    qn=Number(qv);
+    if(qv===''||!Number.isInteger(qn)||qn<1)return deErr('dp-error','Enter the No. of Seedlings Planted (a whole number, 1 or more).');
+    if(qn>spRow.balance)return deErr('dp-error','Only '+spRow.balance+' seedlings of '+spRow.species+' are left to plant (allotted '+spRow.allot+', already planted '+spRow.planted+').');
   }
-  const mobile=document.getElementById('de-ben_Mobile_no').value.trim();
-  if(!/^\d{10}$/.test(mobile)){showDistError('Enter a valid 10-digit mobile number.');return;}
-  const selKeys=Object.keys(selectedSeedlings);
-  if(!selKeys.length){showDistError('Please select at least one seedling row from the table.');return;}
-  if(!currentUser){showDistError('Please sign in as staff to submit.');return;}
-  const sanQty=parseInt(document.getElementById('de-sanction_qnty').value)||0;
-  if(sanQty>0){
-    const benNo=parseInt(document.getElementById('de-ben_Distributed_no').value)||0;
-    const lineTot=selKeys.reduce((a,k)=>a+(selectedSeedlings[k].qty||0),0);
-    if(benNo>sanQty){showDistError('No. of Seedlings to Distribute ('+benNo+') cannot exceed the Sanction Quantity ('+sanQty+').');return;}
-    if(lineTot>sanQty){showDistError('Total selected seedlings ('+lineTot+') cannot exceed the Sanction Quantity ('+sanQty+').');return;}
-  }
-
-  const v=id=>document.getElementById(id).value.trim();
-  const sanctionId=v('de-sanction_id');
-  document.getElementById('de-error').style.display='none';
-  const btn=document.querySelector('#dist-entry-view .ag');
-  btn.textContent='⏳ Submitting...';btn.disabled=true;
+  const lat=byId('dp-lat').value,lng=byId('dp-long').value;
+  if(lat!==''&&Math.abs(Number(lat))>90)return deErr('dp-error','Latitude must be between -90 and 90.');
+  if(lng!==''&&Math.abs(Number(lng))>180)return deErr('dp-error','Longitude must be between -180 and 180.');
+  const la=byId('dp-land').value.trim(),lu=byId('dp-land-unit').value;
+  if(la!==''&&(!(Number(la)>=0)))return deErr('dp-error','Land Area must be a number, 0 or more.');
+  if(la!==''&&!lu)return deErr('dp-error','Select the unit (acre / Ha) for the Land Area.');
+  const btn=byId('dp-save-btn');btn.disabled=true;btn.textContent='Saving…';
   const uploaded=[];
   try{
-    const upload=async(inputId,tag)=>{
-      const f=document.getElementById(inputId).files[0];if(!f)return '';
+    const up=async(inputId,tag)=>{
+      const f=byId(inputId).files[0];if(!f)return null;
       const ext=(f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
-      const path=sanctionId.replace(/[^A-Za-z0-9_-]/g,'_')+'/'+Date.now()+'-'+tag+'.'+ext;
+      const path='planting/'+bid+'/'+Date.now()+'-'+tag+'.'+ext;
       const {error}=await sb.storage.from('nursery-photos').upload(path,f,{contentType:f.type});
       if(error)throw new Error('Photo upload failed: '+error.message);
       uploaded.push(path);return path;
     };
-    const prePath=await upload('de-Pre_photo','pre');
-    const postPath=await upload('de-Post_photo','post');
-    const {error}=await sb.rpc(editingDist?'nursery_update_distribution':'nursery_submit_distribution',{p:{
-      sanction_id:sanctionId,sanction_scheme:v('de-sanction_Scheme'),sanction_dt:v('de-sanction_dt'),sanction_by:v('de-sanction_by'),
-      sanction_qnty:v('de-sanction_qnty'),sanction_free_no:v('de-sanction_free_no'),sanction_cost_no:v('de-sanction_cost_no'),sanction_rate:v('de-sanction_rate'),
-      ben_name:v('de-ben_name'),ben_mobile_no:mobile,ben_email_id:v('de-ben_email_id'),ben_distributed_no:v('de-ben_Distributed_no'),ben_dist_dt:v('de-ben_Dist_Dt'),
-      planted_dt:v('de-Planted_dt'),mandal:v('de-Mandal'),gramapanchayat:v('de-Gramapanchayat'),village_hab:v('de-Village_hab'),
-      geo_lat:v('de-geo_lat'),geo_long:v('de-geo_long'),pre_photo_path:prePath,post_photo_path:postPath,
-      items:selKeys.map(k=>({master_id:selectedSeedlings[k].record.id,qty:selectedSeedlings[k].qty}))
-    }});
+    const pre=await up('dp-pre','pre'),post=await up('dp-post','post');
+    const row={beneficiary_id:bid,planted_dt:sv(byId('dp-planted').value),geo_lat:nn(lat),geo_long:nn(lng),land_area:la===''?null:Number(la),land_unit:la===''?null:lu,survey_no:sv(byId('dp-survey').value),passbook_no:sv(byId('dp-passbook').value)};
+    if(!legacy){row.master_id=spRow.master_id;row.species=spRow.species;row.seedlings_planted=qn;}
+    if(pre)row.pre_photo_path=pre;if(post)row.post_photo_path=post;
+    const q=dpEdit?sb.from('nursery_dist_planting').update({...row,updated_at:new Date().toISOString()}).eq('planting_id',dpEdit.planting_id):sb.from('nursery_dist_planting').insert(row);
+    const {data,error}=await q.select('planting_id');
     if(error)throw error;
-    document.getElementById('de-success').style.display='block';
-    setTimeout(()=>document.getElementById('de-success').style.display='none',5000);
-    clearDistForm();
-    loadSheetData();loadDistRecords();
+    if(!data||!data.length)throw new Error('Not saved: please sign out and sign in again.');
+    const old=[];if(dpEdit){if(pre&&dpEdit.pre_photo_path)old.push(dpEdit.pre_photo_path);if(post&&dpEdit.post_photo_path)old.push(dpEdit.post_photo_path);}
+    if(old.length)await sb.storage.from('nursery-photos').remove(old);
+    dpClear();await deLoadAll();dpFillBens();
+    if(again===true){byId('dp-ben').value=String(bid);dpAllot();}
+    dpRender();deOk('dp-success');
   }catch(e){
     if(uploaded.length)await sb.storage.from('nursery-photos').remove(uploaded);
-    const msg=e&&e.code==='23514'&&/sanction/i.test(e.message||'')?e.message:e&&e.code==='23505'?'Sanction ID "'+sanctionId+'" already exists.':(e&&e.message)||'Unknown error';
-    showDistError('Error: '+msg);
-  }finally{
-    btn.textContent=editingDist?'💾 Update Distribution':'✅ Submit Distribution';btn.disabled=false;
+    deErr('dp-error','Could not save: '+(e.message||e));
+  }finally{btn.disabled=false;btn.textContent='💾 Save Planting Details';}
+}
+function dpClear(){
+  dpEdit=null;
+  ['dp-planted','dp-lat','dp-long','dp-pre','dp-post','dp-land','dp-land-unit','dp-survey','dp-passbook'].forEach(i=>byId(i).value='');
+  ['dp-pre-thumb','dp-post-thumb'].forEach(i=>{const t=byId(i);t.src='';t.style.display='none';});
+  const s=byId('dp-ben');s.disabled=false;s.value='';
+  byId('dp-form-title').textContent='🌿 Add Planting Details';byId('dp-cancel-btn').style.display='none';deErr('dp-error','');
+  byId('dp-again-btn').style.display='';dpAllot();
+}
+async function dpEditRow(id){
+  const p=dePlant.find(x=>x.planting_id===id);if(!p)return;
+  dpClear();dpEdit=p;{const bb=deAllBens().find(x=>x.beneficiary_id===p.beneficiary_id);if(bb)deEnsureMonth(bb.batch_id);}dpFillBens();
+  const s=byId('dp-ben');s.value=String(p.beneficiary_id);s.disabled=true;
+  dpAllot();if(p.master_id){byId('dp-species').value=String(p.master_id);dpSpPick();byId('dp-qty').value=p.seedlings_planted==null?'':p.seedlings_planted;}
+  byId('dp-again-btn').style.display='none';
+  byId('dp-land').value=p.land_area==null?'':p.land_area;byId('dp-land-unit').value=p.land_unit||'';byId('dp-survey').value=p.survey_no||'';byId('dp-passbook').value=p.passbook_no||'';byId('dp-planted').value=deIso(p.planted_dt);byId('dp-lat').value=p.geo_lat==null?'':p.geo_lat;byId('dp-long').value=p.geo_long==null?'':p.geo_long;
+  byId('dp-form-title').textContent='✏️ Edit Planting Details #'+id;byId('dp-cancel-btn').style.display='inline-block';
+  byId('dp-form-title').scrollIntoView({behavior:'smooth',block:'start'});
+  for(const [k,t] of [['pre_photo_path','dp-pre-thumb'],['post_photo_path','dp-post-thumb']]){
+    if(!p[k])continue;const {data}=await sb.storage.from('nursery-photos').createSignedUrl(p[k],300);
+    if(data){const im=byId(t);im.src=data.signedUrl;im.style.display='block';}
   }
 }
-
-function showDistError(msg){
-  const el=document.getElementById('de-error');el.textContent=msg;el.style.display='block';
-  el.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-
-function clearDistForm(){
-  resetDistEdit();
-  ['de-sanction_id','de-sanction_Scheme','de-sanction_dt','de-sanction_by','de-sanction_qnty',
-   'de-sanction_free_no','de-sanction_cost_no','de-sanction_rate','de-ben_name','de-ben_Mobile_no',
-   'de-ben_email_id','de-ben_Distributed_no','de-ben_Dist_Dt','de-Planted_dt','de-Mandal',
-   'de-Gramapanchayat','de-Village_hab','de-geo_lat','de-geo_long','de-Pre_photo','de-Post_photo'
-  ].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  ['pre-thumb','post-thumb'].forEach(id=>{const el=document.getElementById(id);if(el){el.src='';el.style.display='none';}});
-  prePhotoB64='';postPhotoB64='';
-  selectedSeedlings={};
-  document.getElementById('de-selection-summary').style.display='none';
-  document.getElementById('de-error').style.display='none';
-  renderDistTable();
-}
-
-
-/* ── DISTRIBUTION RECORDS CRUD ── */
-let distRecs=[],editingDist=null;
-function effBal(r){return r.available-r.distributed+(editingDist?(editingDist.orig[r.id]||0):0);}
-function resetDistEdit(){
-  editingDist=null;
-  const qe=byId('de-enquiry');if(qe)qe.value='';
-  const sid=byId('de-sanction_id');if(sid)sid.readOnly=false;
-  const b=document.querySelector('#dist-entry-view .ag');if(b)b.textContent='✅ Submit Distribution';
-  const bn=byId('de-edit-banner');if(bn)bn.style.display='none';
-}
-async function loadDistRecords(){
-  const {data,error}=await sb.from('nursery_dist_details').select('*, nursery_ntransaction(master_id,distributed)').order('created_at',{ascending:false});
-  if(error){byId('dr-tbody').innerHTML='<tr><td colspan="8" class="empty">Could not load: '+esc(error.message)+'</td></tr>';return;}
-  distRecs=data;renderDistRecs();
-}
-const lineTxt=l=>{const r=records.find(x=>x.id===l.master_id);return (r?esc(r.species)+' ('+esc(r.nursery)+', '+esc(r.bagSize)+')':'#'+l.master_id)+': '+l.distributed;};
-function renderDistRecs(){
-  const q=(byId('dr-search').value||'').toLowerCase();
-  const data=distRecs.filter(d=>!q||[d.sanction_id,d.ben_name,d.ben_mobile_no].some(v=>String(v||'').toLowerCase().includes(q)));
-  const tb=byId('dr-tbody');
-  if(!data.length){tb.innerHTML='<tr><td colspan="8" class="empty">No distribution records.</td></tr>';return;}
-  tb.innerHTML=data.map(d=>{const ls=d.nursery_ntransaction||[],tot=ls.reduce((a,l)=>a+l.distributed,0),sid=esc(d.sanction_id).replace(/'/g,'&#39;');
-    return `<tr><td>${esc(d.sanction_id)}</td><td>${esc(d.ben_name)}</td><td>${esc(d.ben_mobile_no)}</td><td>${esc(d.ben_dist_dt)}</td><td>${esc(d.mandal)||'—'}</td><td style="font-size:12px">${ls.map(lineTxt).join('<br>')}</td><td class="num">${fmt(tot)}</td><td style="white-space:nowrap"><button class="abtn ao" style="padding:3px 10px;font-size:12px" onclick="viewDist('${sid}')">View</button> <button class="abtn ab" style="padding:3px 10px;font-size:12px" onclick="editDist('${sid}')">Edit</button>${currentRole==='admin'?` <button class="abtn ar" style="padding:3px 10px;font-size:12px" onclick="delDist('${sid}')">Delete</button>`:''}</td></tr>`;}).join('');
-}
-function closeModal(){byId('modal').style.display='none';byId('modal-body').style.maxWidth='760px';}
-async function viewDist(sid){
-  const d=distRecs.find(x=>x.sanction_id===sid);if(!d)return;
-  const F=[['Sanction ID','sanction_id'],['Scheme','sanction_scheme'],['Sanction Date','sanction_dt'],['Sanctioned By','sanction_by'],['Sanction Qty','sanction_qnty'],['Free No.','sanction_free_no'],['Cost No.','sanction_cost_no'],['Rate (₹)','sanction_rate'],['Beneficiary','ben_name'],['Mobile','ben_mobile_no'],['Email','ben_email_id'],['Seedlings','ben_distributed_no'],['Distribution Date','ben_dist_dt'],['Planted Date','planted_dt'],['Mandal','mandal'],['Gramapanchayat','gramapanchayat'],['Village/Habitation','village_hab'],['Latitude','geo_lat'],['Longitude','geo_long']];
-  let h='<h3 style="color:#2d6a2d;margin-bottom:10px">Distribution '+esc(d.sanction_id)+'</h3><div class="form-grid">'+F.map(([l,k])=>'<div class="fg"><label>'+l+'</label><div style="font-size:13px">'+(d[k]==null||d[k]===''?'—':esc(d[k]))+'</div></div>').join('')+'</div><p style="margin:12px 0 4px;font-weight:600;font-size:13px">Seedlings</p><div style="font-size:13px">'+(d.nursery_ntransaction||[]).map(lineTxt).join('<br>')+'</div><div id="vd-photos" style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap"></div><div style="text-align:right;margin-top:12px"><button class="abtn ao" onclick="closeModal()">Close</button></div>';
-  byId('modal-body').innerHTML=h;byId('modal').style.display='flex';
-  for(const [k,lab] of [['pre_photo_path','Pre photo'],['post_photo_path','Post photo']]){
-    if(!d[k])continue;
-    const {data}=await sb.storage.from('nursery-photos').createSignedUrl(d[k],300);
-    if(data)byId('vd-photos').insertAdjacentHTML('beforeend','<div style="font-size:12px">'+lab+'<br><img src="'+data.signedUrl+'" style="max-width:240px;max-height:180px;border-radius:6px;border:1px solid #d4e8d4"></div>');
-  }
-}
-function editDist(sid){
-  const d=distRecs.find(x=>x.sanction_id===sid);if(!d)return;
-  clearDistForm();
-  const map={'de-sanction_id':'sanction_id','de-sanction_Scheme':'sanction_scheme','de-sanction_dt':'sanction_dt','de-sanction_by':'sanction_by','de-sanction_qnty':'sanction_qnty','de-sanction_free_no':'sanction_free_no','de-sanction_cost_no':'sanction_cost_no','de-sanction_rate':'sanction_rate','de-ben_name':'ben_name','de-ben_Mobile_no':'ben_mobile_no','de-ben_email_id':'ben_email_id','de-ben_Distributed_no':'ben_distributed_no','de-ben_Dist_Dt':'ben_dist_dt','de-Planted_dt':'planted_dt','de-Mandal':'mandal','de-Gramapanchayat':'gramapanchayat','de-Village_hab':'village_hab','de-geo_lat':'geo_lat','de-geo_long':'geo_long'};
-  Object.entries(map).forEach(([id,k])=>byId(id).value=d[k]==null?'':d[k]);
-  const orig={};selectedSeedlings={};
-  (d.nursery_ntransaction||[]).forEach(l=>{const r=records.find(x=>x.id===l.master_id);if(r){orig[r.id]=l.distributed;selectedSeedlings[r.id]={record:r,qty:l.distributed};}});
-  editingDist={sid,orig};
-  byId('de-sanction_id').readOnly=true;
-  document.querySelector('#dist-entry-view .ag').textContent='💾 Update Distribution';
-  const bn=byId('de-edit-banner');bn.innerHTML='✏️ Editing distribution <strong>'+esc(sid)+'</strong>. Re-select seedlings if needed (new photos replace the old ones). <button class="abtn ao" style="margin-left:8px;padding:3px 10px;font-size:12px" onclick="clearDistForm()">Cancel Edit</button>';bn.style.display='block';
-  renderDistTable();updateSelectionSummary();
-  bn.scrollIntoView({behavior:'smooth',block:'start'});
-}
-async function delDist(sid){
-  if(!confirm('Delete distribution '+sid+'? The seedlings will be returned to stock.'))return;
-  const d=distRecs.find(x=>x.sanction_id===sid);
-  const {error}=await sb.rpc('nursery_delete_distribution',{p_sanction_id:sid});
+async function dpDelete(id){
+  const p=dePlant.find(x=>x.planting_id===id);if(!p)return;
+  if(!confirm('Delete planting record #'+id+'?'))return;
+  const {data,error}=await sb.from('nursery_dist_planting').delete().eq('planting_id',id).select('planting_id');
   if(error){alert('Could not delete: '+error.message);return;}
-  const paths=[d&&d.pre_photo_path,d&&d.post_photo_path].filter(Boolean);
+  if(!data||!data.length){alert('Nothing deleted: only a signed-in admin can delete records.');return;}
+  const paths=[p.pre_photo_path,p.post_photo_path].filter(Boolean);
   if(paths.length)await sb.storage.from('nursery-photos').remove(paths);
-  loadSheetData();loadDistRecords();
+  await deLoadAll();dpRender();
+}
+async function dpView(id){
+  const p=dePlant.find(x=>x.planting_id===id);if(!p)return;
+  const b=deAllBens().find(x=>x.beneficiary_id===p.beneficiary_id);
+  byId('modal-body').innerHTML='<h3 style="color:#2d6a2d;margin-bottom:10px">Planting #'+p.planting_id+'</h3><div class="form-grid">'
+   +[['Beneficiary',b?'#'+b.beneficiary_id+' – '+b.ben_name:p.beneficiary_id],['Batch',b?'#'+b.batch_id:'—'],['Species',p.species||'—'],['Seedlings Planted',p.seedlings_planted==null?'—':p.seedlings_planted],['Land Area',p.land_area==null?'—':p.land_area+' '+(p.land_unit||'')],['Survey No.',p.survey_no||'—'],['Pass Book No.',p.passbook_no||'—'],['Planted Date',deIso(p.planted_dt)||'—'],['Latitude',p.geo_lat==null?'—':p.geo_lat],['Longitude',p.geo_long==null?'—':p.geo_long]].map(([l,v])=>'<div class="fg"><label>'+l+'</label><div style="font-size:13px">'+esc(v)+'</div></div>').join('')
+   +'</div><div id="dp-v-photos" style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap"></div><div style="text-align:right;margin-top:12px"><button class="abtn ao" onclick="closeModal()">Close</button></div>';
+  byId('modal').style.display='flex';
+  for(const [k,lab] of [['pre_photo_path','Pre photo'],['post_photo_path','Post photo']]){
+    if(!p[k])continue;const {data}=await sb.storage.from('nursery-photos').createSignedUrl(p[k],300);
+    if(data)byId('dp-v-photos').insertAdjacentHTML('beforeend','<div style="font-size:12px">'+lab+'<br><img src="'+esc(data.signedUrl)+'" style="max-width:240px;max-height:180px;border-radius:6px;border:1px solid #d4e8d4"></div>');
+  }
+}
+function dpRender(){
+  const q=(byId('dp-search').value||'').toLowerCase(),tb=byId('dp-tbody'),bens=deAllBens();
+  const data=dePlant.filter(p=>{const b=bens.find(x=>x.beneficiary_id===p.beneficiary_id);return (!deMonth||deBatchMonth(b&&b.batch_id)===deMonth)&&(!q||[p.beneficiary_id,p.species,b&&b.ben_name,b&&b.batch_id,b&&b.ben_mobile_no].some(v=>String(v==null?'':v).toLowerCase().includes(q)));});
+  if(!data.length){tb.innerHTML='<tr><td colspan="13" class="empty">No planting records.</td></tr>';return;}
+  const rowOf=p=>{const b=bens.find(x=>x.beneficiary_id===p.beneficiary_id);
+    return `<tr><td>${p.planting_id}</td><td>${b?'#'+b.beneficiary_id+' – '+esc(b.ben_name):'#'+p.beneficiary_id}</td><td>${b?'#'+b.batch_id:'—'}</td><td>${esc(p.species)||'—'}</td><td class="num">${p.seedlings_planted==null?'—':fmt(p.seedlings_planted)}</td><td>${p.land_area==null?'—':esc(p.land_area+' '+(p.land_unit||''))}</td><td>${esc(p.survey_no)||'—'}</td><td>${esc(p.passbook_no)||'—'}</td><td>${esc(deIso(p.planted_dt))||'—'}</td><td>${p.geo_lat==null?'—':esc(p.geo_lat)}</td><td>${p.geo_long==null?'—':esc(p.geo_long)}</td><td>${(p.pre_photo_path?'Pre ':'')+(p.post_photo_path?'Post':'')||'—'}</td>
+      <td style="white-space:nowrap"><button class="abtn ao" style="padding:3px 10px;font-size:12px" onclick="dpView(${p.planting_id})">View</button> <button class="abtn ab" style="padding:3px 10px;font-size:12px" onclick="dpEditRow(${p.planting_id})">Edit</button>${currentRole==='admin'?` <button class="abtn ar" style="padding:3px 10px;font-size:12px" onclick="dpDelete(${p.planting_id})">Delete</button>`:''}</td></tr>`;};
+  tb.innerHTML=deGroupRows(data,rowOf,13,p=>{const b=bens.find(x=>x.beneficiary_id===p.beneficiary_id);return deBatchMonth(b&&b.batch_id);});
 }
 
 /* ── REPORTS ── */
-const RPT_DIMS=[['district','District'],['mandal','Mandal'],['division','Division'],['range','Range'],['nursery','Nursery'],['scheme','Scheme'],['species','Species'],['bagSize','Bag Size'],['distDate','Date']];
+const RPT_DIMS=[['district','District'],['mandal','Mandal'],['division','Division'],['range','Range'],['nursery','Nursery'],['scheme','Scheme'],['species','Species'],['bagSize','Bag Size'],['distDate','Date of Raising']];
 const RPT_MEAS=[['available','Available'],['distributed','Distributed'],['balance','Balance']];
 let rptHead=[],rptRows=[],rptTitle='report';
 const rv=(r,k)=>k==='balance'?r.available-r.distributed:r[k];
@@ -1192,29 +1954,6 @@ async function loadResolvedEnquiries(){
   sel.innerHTML='<option value="">-- Select resolved enquiry --</option>';
   data.forEach(e=>{const tot=(e.nursery_enquiry_items||[]).reduce((a,x)=>a+x.qty,0);const o=document.createElement('option');o.value=e.id;o.textContent=e.name+' — '+e.mobile+(e.village?' — '+e.village:'')+(tot?' ('+tot+' seedlings)':'');if(String(e.id)===cur)o.selected=true;sel.appendChild(o);});
 }
-function applyEnquiry(id){
-  if(!id)return;
-  if(editingDist){alert('Finish or cancel the edit before choosing an enquiry.');byId('de-enquiry').value='';return;}
-  const e=resolvedEnq.find(x=>String(x.id)===String(id));if(!e)return;
-  byId('de-ben_name').value=e.name||'';
-  byId('de-ben_Mobile_no').value=e.mobile||'';
-  byId('de-Village_hab').value=e.village||'';
-  selectedSeedlings={};let tot=0,skipped=0;
-  (e.nursery_enquiry_items||[]).forEach(it=>{
-    const r=records.find(x=>x.id===it.stock_id);if(!r){skipped++;return;}
-    const q=Math.min(it.qty,effBal(r));
-    if(q<1){skipped++;return;}
-    if(q<it.qty)skipped++;
-    selectedSeedlings[r.id]={record:r,qty:q};tot+=q;
-  });
-  if(tot)byId('de-ben_Distributed_no').value=tot;
-  const first=Object.values(selectedSeedlings)[0];
-  if(first){if(!byId('de-sanction_Scheme').value)byId('de-sanction_Scheme').value=first.record.scheme||'';if(!byId('de-Mandal').value)byId('de-Mandal').value=first.record.mandal||'';}
-  renderDistTable();updateSelectionSummary();
-  if(skipped)showDistError('Note: some requested seedlings are out of stock or reduced to the available balance. Please review the selection.');
-  else byId('de-error').style.display='none';
-}
-
 /* ── CONTACTS (CRUD) ── */
 let contacts=[],editingContactId=null;
 const isStaff=()=>currentRole==='admin'||currentRole==='staff';
@@ -1296,8 +2035,9 @@ function clearContactForm(){
 }
 
 /* ── ADMIN ADD-RECORD DROPDOWNS ── */
-const ADMIN_COMBOS=[['a-district','district'],['a-mandal','mandal'],['a-division','division'],['a-range','range'],['a-nursery','nursery'],['a-scheme','scheme'],['a-species','species'],['a-bagsize','bagSize']];
+const ADMIN_COMBOS=[['a-district','district'],['a-mandal','mandal'],['a-division','division'],['a-range','range'],['a-nursery','nursery'],['a-scheme','scheme'],['a-bagsize','bagSize']];
 function populateAdminCombos(){
+  if(typeof aFillSpecies==='function'){aFillSpecies();if(byId('a-raised').value==='Replacement')aFillRepl();}
   ADMIN_COMBOS.forEach(([id,key])=>{
     const el=byId(id);if(!el)return;
     const cur=comboVal(id),sel=el.value;

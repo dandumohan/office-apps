@@ -1561,12 +1561,15 @@
           </div>
           <div class="field-row">
             <label>Qtr</label>
-            <select id="bud_qtr">
-              <option value="Q1">Q1</option>
-              <option value="Q2">Q2</option>
-              <option value="Q3">Q3</option>
-              <option value="Q4">Q4</option>
-            </select>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <select id="bud_qtr">
+                <option value="Q1">Q1</option>
+                <option value="Q2">Q2</option>
+                <option value="Q3">Q3</option>
+                <option value="Q4">Q4</option>
+              </select>
+              <button type="button" class="icon-btn" title="Add / remove / reorder Qtr values" onclick="openQtrManager()">&#9881;</button>
+            </div>
           </div>
           <div class="field-row">
             <label>Amt</label>
@@ -2807,7 +2810,7 @@
     expenditure: d => { const o = { adv_token_no: S_(d.adv_token_no), amount: N_(d.amount), dt: D_(d.dt), scheme: S_(d.scheme), hoa: S_(d.hoa) }; if (d.task_esti_no) o.task_esti_no = S_(d.task_esti_no); if (I_(d.est_slno) !== null) o.est_slno = I_(d.est_slno); return o; },
     adjustment: d => ({ adv_token_no: S_(d.adv_token_no), adj_token_no: S_(d.adj_token_no), adj_amt: N_(d.adj_amt), adj_date: D_(d.adj_date), scheme: S_(d.scheme), hoa: S_(d.hoa) }),
     estimate: d => ({ esti_no: S_(d.esti_no), scheme: S_(d.scheme), esti_description: S_(d.description), est_cost: N_(d.est_cost), est_date: D_(d.est_date), status: S_(d.status), est_closed_status: d.closed_status ? 'Yes' : 'No', remarks: S_(d.remarks) }),
-    apo: d => { const a = N_(d.apo_approved_amt), r = N_(d.budget_released_so_far); return { year: I_(d.year), scheme: S_(d.scheme), apo_approved_amt: a, budget_released_so_far: r, balance_budget_to_be_received: a - r, approved_dt: D_(d.approved_dt), approval_reference: S_(d.approval_reference) }; },
+    apo: d => { const a = N_(d.apo_approved_amt), r = N_(d.budget_released_so_far); return { year: I_(d.year), scheme: S_(d.scheme), apo_approved_amt: a, budget_released_so_far: r, approved_dt: D_(d.approved_dt), approval_reference: S_(d.approval_reference) }; },
     budget: d => ({ year: I_(d.year), scheme: S_(d.scheme), hoa: S_(d.hoa), qtr: S_(d.qtr), amt: N_(d.amt), dt: D_(d.dt) }),
     personnel: d => ({ employee_name: T_(d.employee_name), hrms_id: T_(d.hrms_id), cfms_id: T_(d.cfms_id), gender: S_(d.gender), date_of_birth: T_(d.date_of_birth), joining_service_date: T_(d.joining_service_date), joining_service_cadre: S_(d.joining_service_cadre), caste: S_(d.caste), marital_status: S_(d.marital_status), permanent_address: S_(d.permanent_address), communication_address: S_(d.communication_address), native_state: S_(d.native_state), native_district: S_(d.native_district), joining_station_name: S_(d.joining_station_name), joining_station_cadre: S_(d.joining_station_cadre), joining_station_date: T_(d.joining_station_date), relieving_station_name: S_(d.relieving_station_name), relieving_station_cadre: S_(d.relieving_station_cadre), relieving_station_date: T_(d.relieving_station_date) }),
     personnelEvent: d => ({ personnel_id: I_(d.personnel_id), event_type: T_(d.event_type), event_date: T_(d.event_date), from_value: S_(d.from_value), to_value: S_(d.to_value), reference_no: S_(d.reference_no), details: S_(d.details), remarks: S_(d.remarks) }),
@@ -3163,6 +3166,19 @@
     if (cur) ck_(await db().from('voucher_settings').update(o).eq('id', cur.id));
     else ck_(await db().from('voucher_settings').insert(Object.assign({ id: 1 }, o)));
     return { success: true };
+  };
+
+  /* ---------- Budget Qtr list (managed from the Budget tab, stored in app_settings) ---------- */
+  API_.getQtrOptions = async () => {
+    let a = await getSetting_('budget_qtr_list');
+    if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { a = null; } }
+    return Array.isArray(a) && a.length ? a.map(String) : ['Q1', 'Q2', 'Q3', 'Q4'];
+  };
+  API_.saveQtrOptions = async list => {
+    const a = Array.from(new Set((list || []).map(x => T_(x)).filter(Boolean)));
+    if (!a.length) return { success: false, message: 'Keep at least one Qtr value.' };
+    await setSetting_('budget_qtr_list', JSON.stringify(a));
+    return { success: true, list: a };
   };
 
   /* ---------- Fund application ---------- */
@@ -4188,7 +4204,7 @@
   secR_('Vehicle Events', ['getVehicleEventsData']); secW_('Vehicle Events', 'A', ['addVehicleEvent']); secW_('Vehicle Events', 'E', ['updateVehicleEvent']); secW_('Vehicle Events', 'D', ['deleteVehicleEvent']);
   secR_('Procurement', ['getProcurementData']); secW_('Procurement', 'A', ['addProcurement']); secW_('Procurement', 'E', ['updateProcurement']); secW_('Procurement', 'D', ['deleteProcurement']);
   secR_('Services', ['getServicesData']); secW_('Services', 'A', ['addService']); secW_('Services', 'E', ['updateService']); secW_('Services', 'D', ['deleteService']);
-  secR_('Budget', ['getBudgetData']); secW_('Budget', 'A', ['addBudget']); secW_('Budget', 'E', ['updateBudget']); secW_('Budget', 'D', ['deleteBudget']);
+  secR_('Budget', ['getBudgetData']); secR_(null, ['getQtrOptions']); secW_('Budget', 'A', ['addBudget']); secW_('Budget', 'E', ['updateBudget', 'saveQtrOptions']); secW_('Budget', 'D', ['deleteBudget']);
   secR_('Tokens (Advance)', ['getAdvanceData', 'getAdjustmentData']); secW_('Tokens (Advance)', 'A', ['addAdvance', 'addAdjustment']); secW_('Tokens (Advance)', 'E', ['updateAdvance']); secW_('Tokens (Advance)', 'D', ['deleteAdvance']);
   secR_('Estimate Tasks', ['getEstiTaskData', 'getEstiTaskDataForFundApplication']); secW_('Estimate Tasks', 'A', ['addEstiTask']); secW_('Estimate Tasks', 'E', ['updateEstiTask']); secW_('Estimate Tasks', 'D', ['deleteEstiTask']);
   secR_('Vouchers', ['getVoucherData']); secW_('Vouchers', 'A', ['addVoucherDetail', 'saveVoucherPlan']); secW_('Vouchers', 'E', ['updateVoucherDetail', 'saveVoucherSettings']); secW_('Vouchers', 'D', ['deleteVoucherDetail']);
@@ -6501,6 +6517,7 @@
       loadedTabs.estimate = true;
       populateAdvTransIdDropdown();
       loadFaStatus(applyEstimateFilters);
+      loadQtrOptions();
       clearEstimateForm();
       refreshAdvanceTable();
     }).getEstimateData();
@@ -7913,7 +7930,7 @@
       const apoAmt = apoCache.filter(a => String(a.Scheme || 'Unspecified') === scheme).reduce((s, a) => s + (Number(a.APO_Approved_Amt) || 0), 0);
       const relByQ = {}; let totRel = 0;
       budgetCache.filter(b => String(b.Scheme || 'Unspecified') === scheme).forEach(b => { const q = String(b.Qtr || '').trim() || 'Other'; relByQ[q] = (relByQ[q] || 0) + (Number(b.Amt) || 0); totRel += Number(b.Amt) || 0; });
-      const relRows = Object.keys(relByQ).sort().map(q => `${ntEsc_(q)} | <b>${nf(relByQ[q])}</b>`);
+      const relRows = Object.keys(relByQ).sort((x, y) => { const a = budgetQtrList.indexOf(x), b = budgetQtrList.indexOf(y); return (a < 0 ? 999 : a) - (b < 0 ? 999 : b) || x.localeCompare(y); }).map(q => `${ntEsc_(q)} | <b>${nf(relByQ[q])}</b>`);
       const expByM = {};
       items.forEach(r => getEstimateExpenditureEntries(r.Esti_no).forEach(e => { const d = new Date(e.Dt); if (isNaN(d)) return; const k = d.getFullYear() * 100 + d.getMonth(); (expByM[k] = expByM[k] || { l: d.toLocaleString('default', { month: 'short', year: 'numeric' }), t: 0 }).t += Number(e.Amount) || 0; }));
       const expRows = Object.keys(expByM).sort((a, b) => a - b).map(k => `${expByM[k].l} | <b>${nf(expByM[k].t)}</b>`);
@@ -11388,6 +11405,12 @@
     refreshAutosize();
   }
 
+  function apoFail_(err) {
+    const msg = (err && err.message) || String(err || 'Unknown error');
+    console.error('APO action failed:', err);
+    setStatus('apo_status', 'Not saved: ' + msg, true);
+    showNotice({ type: 'error', title: 'APO not saved', message: msg });
+  }
   function saveApo() {
     const id = document.getElementById('apo_id').dataset.id;
     const data = {
@@ -11407,14 +11430,14 @@
         if (!res || !res.success) { setStatus('apo_status', (res && res.message) || 'Unable to update. Please try again.', true); return; }
         setStatus('apo_status', 'Updated.');
         refreshApoTable(true);
-      }).updateApo(data);
+      }).withFailureHandler(apoFail_).updateApo(data);
     } else {
       gsr().withSuccessHandler(res => {
         if (!res || !res.success) { setStatus('apo_status', (res && res.message) || 'Unable to save. Please try again.', true); return; }
         setStatus('apo_status', 'Saved.');
         clearApoForm();
         refreshApoTable(true);
-      }).addApo(data);
+      }).withFailureHandler(apoFail_).addApo(data);
     }
   }
 
@@ -11427,7 +11450,7 @@
       setStatus('apo_status', 'Deleted.');
       clearApoForm();
       refreshApoTable(true);
-    }).deleteApo(id);
+    }).withFailureHandler(apoFail_).deleteApo(id);
   }
 
   /* ---------- BUDGET ---------- */
@@ -11654,6 +11677,62 @@
     }).getBudgetData();
   }
 
+  let budgetQtrList = ['Q1', 'Q2', 'Q3', 'Q4'], qtrEdit = [];
+  const qtrOpts_ = (list, withAll) => (withAll ? '<option value="">All</option>' : '') + list.map(q => '<option value="' + ntEsc_(q) + '">' + ntEsc_(q) + '</option>').join('');
+  async function loadQtrOptions() {
+    try { const l = await gsrCall('getQtrOptions'); if (Array.isArray(l) && l.length) budgetQtrList = l; } catch (e) { }
+    applyQtrOptions();
+  }
+  function applyQtrOptions() {
+    document.querySelectorAll('select[id^="bud_filter_qtr"]').forEach(s => { const cur = s.value; s.innerHTML = qtrOpts_(budgetQtrList, true); s.value = cur; });
+    const f = document.getElementById('bud_qtr'); if (f) { const cur = f.value; f.innerHTML = qtrOpts_(budgetQtrList, false); setBudQtr_(cur || budgetQtrList[0]); }
+  }
+  function setBudQtr_(v) {
+    const s = document.getElementById('bud_qtr'); if (!s) return;
+    if (v && budgetQtrList.indexOf(v) === -1 && !Array.from(s.options).some(o => o.value === v)) s.insertAdjacentHTML('beforeend', '<option value="' + ntEsc_(v) + '">' + ntEsc_(v) + '</option>');
+    s.value = v;
+  }
+  function openQtrManager() {
+    qtrEdit = budgetQtrList.slice();
+    const old = document.getElementById('qtr_mgr_modal'); if (old) old.remove();
+    const m = document.createElement('div'); m.id = 'qtr_mgr_modal'; m.className = 'fa-mgr-overlay';
+    m.innerHTML = '<div class="fa-mgr" style="width:420px;"><div class="scheme-card-title" style="margin-bottom:4px;">Qtr values</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">These values appear in the Budget form and the Qtr filters. Removing a value does not change existing records that already use it.</div><div id="qtr_mgr_body"></div></div>';
+    m.addEventListener('mousedown', e => { if (e.target === m) m.remove(); });
+    m.addEventListener('click', qtrMgrClick);
+    document.body.appendChild(m);
+    qtrMgrRender();
+  }
+  function qtrMgrRender() {
+    const b = document.getElementById('qtr_mgr_body'); if (!b) return;
+    b.innerHTML = '<table class="grid"><tbody>' + qtrEdit.map((q, i) => '<tr><td>' + ntEsc_(q) + '</td><td style="text-align:right;white-space:nowrap;"><button class="icon-btn" data-q="up" data-i="' + i + '" title="Move up">&#9650;</button><button class="icon-btn" data-q="down" data-i="' + i + '" title="Move down">&#9660;</button><button class="icon-btn" data-q="del" data-i="' + i + '" title="Remove">&#10005;</button></td></tr>').join('') + '</tbody></table>' +
+      '<div class="btn-row" style="margin-top:8px;"><input type="text" id="qtr_new" placeholder="New value, e.g. Q5 or Annual" style="flex:1;"><button class="action" data-q="add">Add</button></div>' +
+      '<div class="status" id="qtr_mgr_msg"></div><div class="btn-row"><button class="action primary" data-q="save">Save</button><button class="action" data-q="close">Cancel</button></div>';
+  }
+  async function qtrMgrClick(e) {
+    const b = e.target.closest('[data-q]'); if (!b) return;
+    const a = b.dataset.q, i = Number(b.dataset.i), msg = t => { const el = document.getElementById('qtr_mgr_msg'); if (el) { el.className = 'status err'; el.textContent = t; } };
+    if (a === 'close') { document.getElementById('qtr_mgr_modal').remove(); return; }
+    if (a === 'up' && i > 0) { qtrEdit.splice(i - 1, 0, qtrEdit.splice(i, 1)[0]); qtrMgrRender(); return; }
+    if (a === 'down' && i < qtrEdit.length - 1) { qtrEdit.splice(i + 1, 0, qtrEdit.splice(i, 1)[0]); qtrMgrRender(); return; }
+    if (a === 'del') { qtrEdit.splice(i, 1); qtrMgrRender(); return; }
+    if (a === 'add') {
+      const v = (document.getElementById('qtr_new').value || '').trim();
+      if (!v) return;
+      if (qtrEdit.some(q => q.toLowerCase() === v.toLowerCase())) { msg('"' + v + '" is already in the list.'); return; }
+      qtrEdit.push(v); qtrMgrRender(); return;
+    }
+    if (a === 'save') {
+      try {
+        const res = await gsrCall('saveQtrOptions', qtrEdit);
+        if (res && res.__denied) { msg(res.message); return; }
+        if (!res || res.success === false) { msg((res && res.message) || 'Unable to save.'); return; }
+        budgetQtrList = res.list; applyQtrOptions();
+        document.getElementById('qtr_mgr_modal').remove();
+        setStatus('bud_status', 'Qtr list saved.');
+      } catch (err) { msg(err.message || String(err)); }
+    }
+  }
+
   function loadBudgetIntoForm(r) {
     const idEl = document.getElementById('bud_id');
     idEl.value = r.Budget_id;
@@ -11661,7 +11740,7 @@
     document.getElementById('bud_year').value = r.Year;
     document.getElementById('bud_scheme').value = r.Scheme;
     document.getElementById('bud_hoa').value = r.Hoa;
-    document.getElementById('bud_qtr').value = r.Qtr;
+    setBudQtr_(r.Qtr);
     document.getElementById('bud_amt').value = r.Amt;
     document.getElementById('bud_dt').value = r.Dt;
     refreshAutosize();
@@ -11675,7 +11754,7 @@
     document.getElementById('bud_year').value = '';
     document.getElementById('bud_scheme').value = '';
     document.getElementById('bud_hoa').value = '';
-    document.getElementById('bud_qtr').value = 'Q1';
+    setBudQtr_(budgetQtrList[0] || '');
     document.getElementById('bud_amt').value = 0;
     document.getElementById('bud_dt').value = '';
     refreshAutosize();

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plant Spacing Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#F1F4EC;--panel:#fff;--ink:#1B2B22;--muted:#5E6F63;--line:#D5DCCD;--green:#2F6B4A;--green-d:#214D35;--wheat:#E2B33B;--danger:#B3372B;--soft:#E7EDDF}
+@media(prefers-color-scheme:dark){:root{--bg:#141C17;--panel:#1C2620;--ink:#E7EDE2;--muted:#9AAA9E;--line:#2F3D34;--green:#6FBF8C;--green-d:#8AD1A3;--wheat:#E2B33B;--danger:#E8776B;--soft:#243029}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',sans-serif}
+header{padding:28px 20px 8px;max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+h1{margin:0;font-size:clamp(26px,4vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1.05}
+.sub{color:var(--muted);margin:6px 0 0;max-width:62ch}
+main{max-width:1100px;margin:0 auto;padding:12px 20px 60px}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin:10px 0 14px}
+.tab{border:0;background:none;color:var(--muted);font:inherit;font-weight:600;padding:10px 14px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--wheat)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+input,select,button{font:inherit;color:var(--ink)}
+input,select{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+.bar input[type=search]{flex:1 1 220px}
+button.b{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600}
+button.b.p{background:var(--green);border-color:var(--green);color:#fff}
+button.b.d{color:var(--danger)}
+button:focus-visible,input:focus-visible,select:focus-visible,.tab:focus-visible{outline:3px solid var(--wheat);outline-offset:1px}
+.count{color:var(--muted);margin-left:auto}
+.wrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:68vh}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{position:sticky;top:0;background:var(--soft);text-align:left;font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:hover td{background:color-mix(in srgb,var(--soft) 55%,transparent)}
+.cat{color:var(--muted);font-size:13px}
+.sp{display:flex;align-items:center;gap:10px;white-space:nowrap}
+.sp svg{flex:none}
+.note{color:var(--muted);font-size:12px;margin-left:4px}
+.act{white-space:nowrap;text-align:right}
+.act button{border:0;background:none;cursor:pointer;color:var(--green);font-weight:600;padding:4px 6px}
+.act button.d{color:var(--danger)}
+.empty{padding:36px;text-align:center;color:var(--muted)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);padding:20px;width:min(560px,94vw)}
+dialog::backdrop{background:rgba(10,20,14,.5)}
+dialog h2{margin:0 0 12px;font-size:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.grid label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted)}
+.grid label.w{grid-column:1/-1}
+.grid input{color:var(--ink);font-size:15px}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.msg{min-height:20px;margin-top:8px;font-size:13px}
+.msg.err{color:var(--danger)}.msg.ok{color:var(--green)}
+.banner{background:var(--soft);border:1px solid var(--line);border-left:4px solid var(--wheat);border-radius:8px;padding:10px 14px;margin:8px 0 12px;font-size:14px}
+.foot{color:var(--muted);font-size:12.5px;margin-top:12px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Plant spacing reference</h1>
+    <p class="sub">Crop and tree spacing with the number of plants per hectare and acre, plus bund planting along field edges.</p>
+  </div>
+  <div><span id="who" class="cat"></span> <button class="b" id="authBtn">Sign in to edit</button></div>
+</header>
+<main>
+  <div id="banner"></div>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="plants" aria-selected="true">Crop &amp; plant spacing</button>
+    <button class="tab" role="tab" data-tab="bund" aria-selected="false">Bund planting</button>
+  </div>
+  <div class="bar">
+    <input type="search" id="q" placeholder="Search crop or species" aria-label="Search">
+    <select id="cat" aria-label="Category"></select>
+    <button class="b p" id="addBtn" hidden>Add row</button>
+    <button class="b" id="csvBtn">Download CSV</button>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+  <p class="foot">Indicative theoretical populations. Check your local package of practices and approved departmental specifications before planting.</p>
+</main>
+
+<dialog id="dlg"><form method="dialog" id="form"><h2 id="dlgTitle"></h2><div class="grid" id="fields"></div><div class="msg" id="dlgMsg"></div>
+  <div class="row"><button type="button" class="b" id="calcBtn" hidden>Calculate counts from spacing</button><button type="button" class="b" id="cancelBtn">Cancel</button><button type="submit" class="b p">Save changes</button></div></form></dialog>
+<dialog id="authDlg"><form method="dialog" id="authForm"><h2>Sign in to edit</h2>
+  <div class="grid"><label class="w">Email<input type="email" id="em" required autocomplete="username"></label><label class="w">Password<input type="password" id="pw" required autocomplete="current-password"></label></div>
+  <div class="msg" id="authMsg"></div><div class="row"><button type="button" class="b" id="authCancel">Cancel</button><button type="submit" class="b p">Sign in</button></div></form></dialog>
+
+<script>
+/* 1. Paste your project values (Supabase > Project Settings > API). The anon key is safe in a web page: row-level security limits what it can do. */
+const SUPABASE_URL = 'https://ewnrcnfyiulrjritaeam.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3bnJjbmZ5aXVscmpyaXRhZWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTEwMDYsImV4cCI6MjEwNzc2NzAwNn0.rbJNPpBgS4k2uKxM9Igk6S7rN_FL3gZcoJu-8jkgeD8';
+
+const fmt = n => n == null ? '' : Number(n).toLocaleString('en-IN');
+const rng = (a, b, u) => (Number(a) === Number(b) ? fmt(a) : fmt(a) + '–' + fmt(b)) + (u || '');
+const sp = n => Number(n).toString();
+function lattice(r, p) {
+  const ratio = Math.min(2.2, Math.max(.35, r / p)), dx = 9, dy = Math.max(4, Math.min(11, 7 * ratio));
+  let d = ''; for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) d += `<circle cx="${5 + i * dx}" cy="${5 + j * dy}" r="2" />`;
+  return `<svg width="38" height="${10 + 2 * dy}" aria-hidden="true" fill="var(--green)">${d}</svg>`;
+}
+const TABS = {
+  plants: {
+    table: 'plant_spacing', title: 'crop or plant row',
+    head: [['Category'], ['Crop / species'], ['Spacing (m × m)'], ['Plants per ha', 'n'], ['Plants per acre', 'n']],
+    cells: r => [`<span class="cat">${esc(r.category)}</span>`, esc(r.species), `<span class="sp">${lattice(r.row_spacing_m, r.plant_spacing_m)}${sp(r.row_spacing_m)} × ${sp(r.plant_spacing_m)}</span>`, fmt(r.plants_per_ha), fmt(r.plants_per_acre) + (r.count_note ? `<span class="note">${esc(r.count_note)}</span>` : '')],
+    fields: [['category', 'Category', 'text', 'w'], ['species', 'Crop / species', 'text', 'w'], ['row_spacing_m', 'Row spacing (m)', 'number'], ['plant_spacing_m', 'Plant spacing (m)', 'number'], ['plants_per_ha', 'Plants per ha', 'number'], ['plants_per_acre', 'Plants per acre', 'number'], ['count_note', 'Count note (hills, setts, clumps)', 'text', 'w']],
+    csv: ['category', 'species', 'row_spacing_m', 'plant_spacing_m', 'plants_per_ha', 'plants_per_acre', 'count_note'], defaults: {}
+  },
+  bund: {
+    table: 'bund_spacing', title: 'bund planting row',
+    head: [['Category'], ['Species'], ['Bund spacing', 'n'], ['Plants per 100 m', 'n'], ['Plants per km', 'n']],
+    cells: r => [`<span class="cat">${esc(r.category)}</span>`, esc(r.species), rng(r.spacing_min_m, r.spacing_max_m, ' m'), rng(r.plants_100m_min, r.plants_100m_max), rng(r.plants_km_min, r.plants_km_max)],
+    fields: [['category', 'Category', 'text', 'w'], ['species', 'Species', 'text', 'w'], ['spacing_min_m', 'Spacing min (m)', 'number'], ['spacing_max_m', 'Spacing max (m)', 'number'], ['plants_100m_min', 'Plants per 100 m, min', 'number'], ['plants_100m_max', 'Plants per 100 m, max', 'number'], ['plants_km_min', 'Plants per km, min', 'number'], ['plants_km_max', 'Plants per km, max', 'number']],
+    csv: ['category', 'species', 'spacing_min_m', 'spacing_max_m', 'plants_100m_min', 'plants_100m_max', 'plants_km_min', 'plants_km_max']
+  }
+};
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+const $ = id => document.getElementById(id);
+const configured = !SUPABASE_URL.includes('YOUR-PROJECT');
+const db = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+let tab = 'plants', data = { plants: [], bund: [] }, canEdit = false, editing = null;
+
+async function load(t) {
+  if (!db) return;
+  const { data: rows, error } = await db.from(TABS[t].table).select('*').order('category').order('species').order('id').limit(2000);
+  if (error) { $('banner').innerHTML = `<div class="banner">Could not load data: ${esc(error.message)}. Check that you ran supabase_setup.sql.</div>`; return; }
+  data[t] = rows; if (t === tab) render();
+}
+function render() {
+  const T = TABS[tab], q = $('q').value.trim().toLowerCase(), c = $('cat').value;
+  const cats = [...new Set(data[tab].map(r => r.category))].sort();
+  if ($('cat').dataset.tab !== tab) { $('cat').innerHTML = '<option value="">All categories</option>' + cats.map(x => `<option>${esc(x)}</option>`).join(''); $('cat').dataset.tab = tab; }
+  const rows = data[tab].filter(r => (!c || r.category === c) && (!q || (r.species + ' ' + r.category).toLowerCase().includes(q)));
+  $('thead').innerHTML = '<tr>' + T.head.map(h => `<th class="${h[1] || ''}">${h[0]}</th>`).join('') + (canEdit ? '<th></th>' : '') + '</tr>';
+  $('tbody').innerHTML = rows.length ? rows.map(r => '<tr>' + T.cells(r).map((x, i) => `<td class="${T.head[i][1] || ''}">${x}</td>`).join('') + (canEdit ? `<td class="act"><button data-e="${r.id}">Edit</button><button class="d" data-d="${r.id}">Delete</button></td>` : '') + '</tr>').join('')
+    : `<tr><td class="empty" colspan="6">${configured ? 'No rows match. Clear the search or choose another category.' : 'Add your Supabase URL and anon key at the top of this file to load data.'}</td></tr>`;
+  $('count').textContent = rows.length + ' of ' + data[tab].length + ' rows';
+  $('addBtn').hidden = !canEdit;
+}
+function openForm(row) {
+  const T = TABS[tab]; editing = row || null;
+  $('dlgTitle').textContent = (row ? 'Edit ' : 'Add ') + T.title;
+  $('fields').innerHTML = T.fields.map(f => `<label class="${f[3] || ''}">${f[1]}<input name="${f[0]}" type="${f[2]}" ${f[2] === 'number' ? 'step="any" min="0"' : ''} ${f[0] === 'count_note' ? '' : 'required'} value="${esc(row ? row[f[0]] : '')}" ${f[0] === 'category' ? 'list="catList"' : ''}></label>`).join('') + `<datalist id="catList">${[...new Set(data[tab].map(r => r.category))].map(x => `<option value="${esc(x)}">`).join('')}</datalist>`;
+  $('calcBtn').hidden = tab !== 'plants'; $('dlgMsg').textContent = ''; $('dlg').showModal();
+}
+function calc() {
+  const f = $('form'), r = +f.row_spacing_m.value, p = +f.plant_spacing_m.value;
+  if (!(r > 0 && p > 0)) { $('dlgMsg').className = 'msg err'; $('dlgMsg').textContent = 'Enter row and plant spacing first.'; return; }
+  f.plants_per_ha.value = Math.round(10000 / (r * p)); f.plants_per_acre.value = Math.round(10000 / (r * p) * 0.404686);
+}
+$('form').addEventListener('submit', async e => {
+  e.preventDefault(); const T = TABS[tab], body = {};
+  T.fields.forEach(f => { const v = $('form')[f[0]].value.trim(); body[f[0]] = f[2] === 'number' ? Number(v) : (v || null); });
+  const q = editing ? db.from(T.table).update(body).eq('id', editing.id) : db.from(T.table).insert(body);
+  const { error } = await q;
+  if (error) { $('dlgMsg').className = 'msg err'; $('dlgMsg').textContent = 'Not saved: ' + error.message; return; }
+  $('dlg').close(); load(tab);
+});
+$('tbody').addEventListener('click', async e => {
+  const id = e.target.dataset.e || e.target.dataset.d; if (!id) return;
+  const row = data[tab].find(r => String(r.id) === id);
+  if (e.target.dataset.e) return openForm(row);
+  if (!confirm('Delete ' + row.species + ' (' + row.category + ')? This cannot be undone.')) return;
+  const { error } = await db.from(TABS[tab].table).delete().eq('id', row.id);
+  if (error) alert('Not deleted: ' + error.message); else load(tab);
+});
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+  tab = b.dataset.tab; document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === b)); $('cat').dataset.tab = ''; $('q').value = ''; render(); if (!data[tab].length) load(tab);
+}));
+$('q').addEventListener('input', render); $('cat').addEventListener('change', render);
+$('addBtn').onclick = () => openForm(null); $('cancelBtn').onclick = () => $('dlg').close(); $('calcBtn').onclick = calc;
+$('csvBtn').onclick = () => {
+  const cols = TABS[tab].csv, q = $('q').value.trim().toLowerCase(), c = $('cat').value;
+  const rows = data[tab].filter(r => (!c || r.category === c) && (!q || (r.species + ' ' + r.category).toLowerCase().includes(q)));
+  const cell = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const blob = new Blob([[cols.join(',')].concat(rows.map(r => cols.map(k => cell(r[k])).join(','))).join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = TABS[tab].table + '.csv'; a.click();
+};
+$('authBtn').onclick = async () => { if (canEdit) { await db.auth.signOut(); } else { $('authMsg').textContent = ''; $('authDlg').showModal(); } };
+$('authCancel').onclick = () => $('authDlg').close();
+$('authForm').addEventListener('submit', async e => {
+  e.preventDefault(); const { error } = await db.auth.signInWithPassword({ email: $('em').value, password: $('pw').value });
+  if (error) { $('authMsg').className = 'msg err'; $('authMsg').textContent = error.message; } else $('authDlg').close();
+});
+function setUser(s) { canEdit = !!s; $('who').textContent = s ? s.user.email : ''; $('authBtn').textContent = s ? 'Sign out' : 'Sign in to edit'; render(); }
+if (db) { db.auth.getSession().then(r => setUser(r.data.session)); db.auth.onAuthStateChange((_e, s) => setUser(s)); load('plants'); load('bund'); }
+else { $('banner').innerHTML = '<div class="banner">Not connected yet. Paste your Supabase URL and anon key at the top of the script in this file, then reload.</div>'; $('authBtn').hidden = true; render(); }
+</script>
+</body>
+</html>

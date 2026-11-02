@@ -161,6 +161,7 @@ const ICONS={
   nursery:'<path d="M12 21v-8"/><path d="M12 13c0-4-3-6-7-6 0 4 3 6 7 6z"/><path d="M12 15c0-3 2-5 6-5 0 3-2 5-6 5z"/>',
   reports:'<path d="M4 20h16M7 20v-7M12 20V6M17 20v-10"/>',
   monthly:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M8 14h3M8 17h6"/>',
+  spacing:'<path d="M4 4v16h16"/><circle cx="9" cy="9" r="1.4"/><circle cx="15" cy="9" r="1.4"/><circle cx="9" cy="15" r="1.4"/><circle cx="15" cy="15" r="1.4"/>',
   kanban:'<rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/>'
 };
 const GROUPS=[
@@ -174,7 +175,8 @@ const GROUPS=[
   ]},
   {title:'Field and nursery', apps:[
     {id:'plantation', name:'Plantation tracker', sub:'Plantation records', path:'Mplantation.html', desc:'Plantation records.'},
-    {id:'nursery', name:'Seedling portal', sub:'Nursery stock and enquiries', path:'Mnursery.html', desc:'Nursery enquiries, stock and transactions.'}
+    {id:'nursery', name:'Seedling portal', sub:'Nursery stock and enquiries', path:'Mnursery.html', desc:'Nursery enquiries, stock and transactions.'},
+    {id:'spacing', name:'Plant spacing', sub:'Crop and tree spacing', path:'plant_spacing.html', desc:'Row and plant spacing with plants per hectare and acre for crops, trees and bund planting. Sign in only to edit.'}
   ]},
   {title:'Reports and tasks', apps:[
     {id:'reports', name:'Mreports', sub:'Accounts reports (PDF)', path:'Macc_rpt.html', desc:'Generate accounts reports as PDF.'},
@@ -281,6 +283,7 @@ if(want&&find(want)) openApp(want);
 <li><a href="Mproceedings.html">Proceedings builder</a></li>
 <li><a href="Mplantation.html">Plantation tracker</a></li>
 <li><a href="Mnursery.html">Seedling portal</a></li>
+<li><a href="plant_spacing.html">Plant spacing</a></li>
 <li><a href="Macc_rpt.html">Mreports</a></li>
 <li><a href="Reports_Generator.html">Reports generator</a></li>
 <li><a href="Mkanban.html">Kanban board</a></li></ul></main>

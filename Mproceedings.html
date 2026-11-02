@@ -94,6 +94,25 @@
   .warn-box{ background:#fff6e0; color:#6b4a0b; border:1px solid #f0dca3; }
   @media (prefers-color-scheme: dark){ .warn-box{ background:#3a2e12; color:#f5e3c2; border-color:#5a4720; } }
   .divider{ border-top:1px solid var(--line); }
+
+  /* ---- preview modal ---- */
+  #previewOverlay{ position:fixed; inset:0; z-index:1000; background:rgba(15,23,20,.62); display:none; }
+  #previewOverlay.open{ display:flex; align-items:stretch; justify-content:center; padding:1.25rem; }
+  .pv-panel{ background:var(--paper); color:var(--ink); width:100%; max-width:60rem; border-radius:12px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.35); }
+  .pv-head{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; flex-wrap:wrap; padding:.8rem 1.1rem; border-bottom:1px solid var(--line); background:var(--card); }
+  .pv-body{ overflow:auto; padding:1.25rem; flex:1; }
+  .pv-issues{ background:#fff6e0; color:#6b4a0b; border:1px solid #f0dca3; border-radius:8px; padding:.6rem .9rem; font-size:.82rem; margin-bottom:1rem; }
+  .pv-label{ font-size:.75rem; color:var(--muted); margin:1.1rem 0 .35rem; display:flex; justify-content:space-between; gap:.5rem; flex-wrap:wrap; }
+  .pv-label .warn{ color:#9a5b00; font-weight:600; }
+  .pv-page{ background:#fff; color:#000; font-family:Verdana, Geneva, sans-serif; font-size:13.5px; line-height:1.45; padding:2.2rem 2.4rem; border:1px solid #d5d9d6; box-shadow:0 2px 10px rgba(0,0,0,.12); }
+  .pv-page p{ margin:0 0 .55rem; }
+  .pv-page .c{ text-align:center; } .pv-page .j{ text-align:justify; } .pv-page .b{ font-weight:700; }
+  .pv-page .ind{ text-indent:2.2rem; }
+  .pv-page table{ border-collapse:collapse; width:100%; margin:.6rem 0; }
+  .pv-page td, .pv-page th{ border:1px solid #000; padding:.3rem .45rem; vertical-align:middle; font-size:12.5px; }
+  .pv-page th{ font-weight:400; text-align:center; }
+  .pv-page .sig{ margin-left:52%; text-align:center; font-weight:700; }
+  .pv-page .miss{ background:#ffe08a; color:#6b3a00; padding:0 .25rem; border-radius:3px; font-weight:600; }
 </style>
 </head>
 <body class="min-h-screen">
@@ -323,7 +342,7 @@ create policy "authenticated delete" on manual_fa_rows
       <table class="items w-full">
         <thead style="position:sticky;top:0;z-index:1;">
           <tr>
-            <th></th><th>Batch</th><th>Esti No</th><th>Token</th><th>Scheme</th><th>VSS</th><th>Amount</th><th>FA Date</th><th>Paras &amp; \u2018To\u2019 list</th>
+            <th></th><th>Batch</th><th>Esti No</th><th>Token</th><th>Scheme</th><th>VSS</th><th>Account No</th><th>HOA</th><th>Amount</th><th>FA Date</th><th>Paras &amp; \u2018To\u2019 list</th>
           </tr>
         </thead>
         <tbody id="itemsBody"></tbody>
@@ -357,6 +376,7 @@ create policy "authenticated delete" on manual_fa_rows
     </div>
     <p class="help mb-4">Each selected proceeding becomes one page in a single <span class="mono">.docx</span>. CAMPA NPV cases use the CAMPA paragraphs and distribution list; all others use the standard ones.</p>
     <div class="flex items-center gap-3">
+      <button id="previewBtn" class="btn-ghost px-6 py-3 text-sm" disabled>Preview</button>
       <button id="generateBtn" class="btn-primary px-6 py-3 text-sm" disabled>↓ Generate Proceedings.docx</button>
       <span id="genStatus" class="text-sm"></span>
     </div>
@@ -1015,6 +1035,8 @@ let previousRawKeys = new Set();
 let rawItems = [];
 let selectedKeys = new Set();
 let paraOverrides = {}; // itemKey -> "nonCampa" | "campa" (absent/"auto" = decide from scheme)
+let hoaOverrides = {};  // itemKey -> Head of Account typed/picked in Review for rows with no HOA
+let acctOverrides = {}; // itemKey -> { account_no, vss_name, bank, branch } picked in Review for rows with no account/VSS
 
 let supabaseClient = null;
 let supabaseConfigured = false;
@@ -1155,7 +1177,7 @@ function getFiltered() {
   return rawItems.filter(it =>
     (!batch || it.batch.toLowerCase().includes(batch)) &&
     (!esti || it.esti_no.toLowerCase().includes(esti)) &&
-    (!scheme || it.scheme === scheme) &&
+    (!scheme || String(it.scheme || "").trim().toLowerCase() === scheme.toLowerCase()) &&
     (!token || it.token_no.toLowerCase().includes(token))
   );
 }
@@ -1163,20 +1185,112 @@ function getFiltered() {
 function populateSchemeFilter() {
   const sel = $("fScheme");
   const current = sel.value;
-  const schemes = Array.from(new Set(rawItems.map(it => it.scheme).filter(Boolean))).sort();
+  // one entry per scheme, ignoring stray spaces / letter-case differences
+  const seen = new Map();
+  rawItems.forEach(it => {
+    const v = String(it.scheme || "").trim();
+    if (v && !seen.has(v.toLowerCase())) seen.set(v.toLowerCase(), v);
+  });
+  const schemes = Array.from(seen.values()).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
   sel.innerHTML = '<option value="">All schemes</option>' +
     schemes.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
   if (schemes.includes(current)) sel.value = current;
 }
 
+// Fills in Account / VSS / bank / branch picked in the Review table, but only
+// where the data itself left them empty (real values are never overwritten).
+// HOA memory: the HOA you pick for a scheme is remembered (in this browser) and
+// reused for every other row of that scheme that has no HOA of its own.
+const HOA_MEM_KEY = "proc_scheme_hoa";
+function loadHoaMem() { try { return JSON.parse(localStorage.getItem(HOA_MEM_KEY)) || {}; } catch (e) { return {}; } }
+function rememberHoa(scheme, hoa) {
+  const k = String(scheme || "").trim().toLowerCase(); if (!k) return;
+  const m = loadHoaMem(); if (hoa) m[k] = hoa; else delete m[k];
+  try { localStorage.setItem(HOA_MEM_KEY, JSON.stringify(m)); } catch (e) {}
+}
+function schemeDefaultHoa(scheme) { return loadHoaMem()[String(scheme || "").trim().toLowerCase()] || ""; }
+
+// HOAs already known for a scheme, from the Advance / Estimate data
+function hoasForScheme(scheme) {
+  const k = String(scheme || "").trim().toLowerCase();
+  const out = new Set();
+  [...currentAdv(), ...currentEst()].forEach(r => {
+    const h = col(r, "Hoa");
+    if (h && String(col(r, "Scheme") || "").trim().toLowerCase() === k) out.add(h);
+  });
+  return Array.from(out).sort();
+}
+function allKnownHoas() {
+  const out = new Set([...currentAdv().map(r => col(r, "Hoa")), ...currentEst().map(r => col(r, "Hoa")),
+    ...rawItems.map(i => i.hoa), ...Object.values(loadHoaMem())].filter(Boolean));
+  return Array.from(out).sort();
+}
+function reviewHoaOptions(scheme, selected) {
+  const mine = hoasForScheme(scheme);
+  const others = allKnownHoas().filter(h => !mine.includes(h));
+  const opt = h => `<option value="${escapeHtml(h)}" ${h === selected ? "selected" : ""}>${escapeHtml(h)}</option>`;
+  const hasSel = selected && !mine.includes(selected) && !others.includes(selected);
+  return '<option value="">Select HOA\u2026</option>'
+    + (mine.length ? `<optgroup label="Used for this scheme">${mine.map(opt).join("")}</optgroup>` : "")
+    + (others.length ? `<optgroup label="Other HOAs">${others.map(opt).join("")}</optgroup>` : "")
+    + (hasSel ? opt(selected) : "")
+    + '<option value="__new__">+ Type a new HOA\u2026</option>';
+}
+
+function applyAcct(it) {
+  const o = acctOverrides[itemKey(it)] || {};
+  const h = hoaOverrides[itemKey(it)] || schemeDefaultHoa(it.scheme);
+  if (!Object.keys(o).length && !h) return it;
+  return {
+    ...it,
+    hoa: it.hoa || h,
+    account_no: it.account_no || o.account_no || "",
+    vss_name: it.vss_name || o.vss_name || "",
+    bank: it.bank || o.bank || "",
+    branch: it.branch || o.branch || "",
+  };
+}
+
+function reviewAcctOptions(selected) {
+  const rows = currentWa().map(r => ({ acc: col(r, "Account_No"), vss: col(r, "Name_of_Account") })).filter(o => o.acc);
+  return '<option value="">Select account\u2026</option>' + rows.map(o =>
+    `<option value="${escapeHtml(o.acc)}" ${o.acc === selected ? "selected" : ""}>${escapeHtml(o.acc)}${o.vss ? " \u2014 " + escapeHtml(o.vss) : ""}</option>`
+  ).join("");
+}
+
+function reviewVssOptions(selected) {
+  const names = Array.from(new Set(currentWa().map(r => col(r, "Name_of_Account")).filter(Boolean))).sort();
+  return '<option value="">Select VSS\u2026</option>' + names.map(v =>
+    `<option value="${escapeHtml(v)}" ${v === selected ? "selected" : ""}>${escapeHtml(v)}</option>`
+  ).join("");
+}
+
+function setAcctOverride(key, waRow) {
+  if (!waRow) { delete acctOverrides[key]; return; }
+  acctOverrides[key] = {
+    account_no: col(waRow, "Account_No"), vss_name: col(waRow, "Name_of_Account"),
+    bank: col(waRow, "Bank"), branch: col(waRow, "Branch"),
+  };
+}
+
 function renderItemsTable() {
+  populateSchemeFilter(); // always rebuilt from the rows actually in the table, so it can't go stale
   const list = getFiltered();
   const body = $("itemsBody");
   body.innerHTML = "";
   $("noItemsMsg").classList.toggle("hidden", list.length !== 0);
-  for (const it of list) {
-    const key = itemKey(it);
+  for (const raw of list) {
+    const it = applyAcct(raw);
+    const key = itemKey(raw);
     const ov = paraOverrides[key] || "auto";
+    const ao = acctOverrides[key] || {};
+    const sel = 'class="text-xs" style="padding:.2rem .3rem;max-width:14rem;"';
+    const vssCell = raw.vss_name ? escapeHtml(raw.vss_name)
+      : `<select class="rv-vss" ${sel} title="VSS is empty \u2014 pick one">${reviewVssOptions(ao.vss_name)}</select>`;
+    const hoaCell = raw.hoa ? escapeHtml(raw.hoa)
+      : `<select class="rv-hoa text-xs" style="padding:.2rem .3rem;max-width:14rem;" title="HOA is empty \u2014 pick one for this scheme">${reviewHoaOptions(raw.scheme, hoaOverrides[key] || schemeDefaultHoa(raw.scheme))}</select>`;
+    const accCell = raw.account_no ? escapeHtml(raw.account_no)
+      : `<select class="rv-acc" ${sel} title="Account No is empty \u2014 pick one">${reviewAcctOptions(ao.account_no)}</select>`;
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><input type="checkbox" ${selectedKeys.has(key) ? "checked" : ""}></td>
@@ -1184,7 +1298,9 @@ function renderItemsTable() {
       <td class="mono">${escapeHtml(it.esti_no)}</td>
       <td class="mono">${escapeHtml(it.token_no || "\u2014")}</td>
       <td>${schemeBadge(it.scheme)}</td>
-      <td>${escapeHtml(it.vss_name || "\u2014")}</td>
+      <td>${vssCell}</td>
+      <td class="mono">${accCell}</td>
+      <td class="mono">${hoaCell}</td>
       <td class="mono">\u20b9${escapeHtml(fmtInr(it.amount))}</td>
       <td>${escapeHtml(it.fa_date || "\u2014")}</td>
       <td>
@@ -1197,6 +1313,23 @@ function renderItemsTable() {
     tr.querySelector("input").onchange = (e) => {
       if (e.target.checked) selectedKeys.add(key); else selectedKeys.delete(key);
       updateSelectionSummary();
+    };
+    const hoaSel = tr.querySelector(".rv-hoa");
+    if (hoaSel) hoaSel.onchange = (e) => {
+      let v = e.target.value;
+      if (v === "__new__") v = (prompt("Enter the Head of Account for " + (raw.scheme || "this scheme") + ":") || "").trim();
+      if (v) hoaOverrides[key] = v; else delete hoaOverrides[key];
+      rememberHoa(raw.scheme, v);   // reuse for the other rows of this scheme
+      renderItemsTable();
+    };
+    const accSel = tr.querySelector(".rv-acc"), vssSel = tr.querySelector(".rv-vss");
+    if (accSel) accSel.onchange = (e) => {
+      setAcctOverride(key, currentWa().find(r => col(r, "Account_No") === e.target.value));
+      renderItemsTable();
+    };
+    if (vssSel) vssSel.onchange = (e) => {
+      setAcctOverride(key, currentWa().find(r => col(r, "Name_of_Account") === e.target.value));
+      renderItemsTable();
     };
     tr.querySelector(".para-override").onchange = (e) => {
       if (e.target.value === "auto") delete paraOverrides[key];
@@ -1214,6 +1347,7 @@ function updateSelectionSummary() {
     ? `${selectedItems.length} selected \u2014 \u20b9${fmtInr(total)} total`
     : "Nothing selected yet";
   $("generateBtn").disabled = selectedItems.length === 0;
+  const pb = $("previewBtn"); if (pb) pb.disabled = selectedItems.length === 0;
 }
 
 // ---- workbook loading --------------------------------------------------------
@@ -1760,10 +1894,130 @@ async function saveFile(filename, blob) {
   return "saved";
 }
 
+// ---- preview ---------------------------------------------------------------
+// On-screen approximation of each page, built from the same data, templates and
+// scheme rules as the .docx, so you can check names, HOA, account and amounts
+// before saving. Word's exact spacing and fonts may differ slightly.
+function pvMark(text) {
+  return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\^(.+?)\^/g, "<sup>$1</sup>");
+}
+function pvVal(v, label, missing) {
+  if (v) return escapeHtml(v);
+  missing.push(label);
+  return `<span class="miss">${escapeHtml(label)} missing</span>`;
+}
+
+function previewPageHtml(item, n, total) {
+  const { ctx, amountTxt } = buildContext(item, cfg);
+  const missing = [];
+  const campa = item.paraOverride === "campa" ? true
+    : item.paraOverride === "nonCampa" ? false
+    : (item.scheme || "").trim().toUpperCase().includes("CAMPA");
+  const refList = campa ? cfg.ref_2 : cfg.ref;
+
+  const now = new Date();
+  let pd = cfg.progs_date || `Dt.    .${pad2(now.getMonth() + 1)}.${now.getFullYear()}`;
+  if (cfg.progs_date && !pd.toLowerCase().startsWith("dt")) pd = "Dt. " + pd;
+
+  const P = (t, cls) => `<p class="${cls || "j"}">${pvMark(t)}</p>`;
+  // HOA / VSS are baked into the text, so flag them when empty
+  if (!item.hoa) missing.push("HOA");
+  if (!item.vss_name) missing.push("VSS");
+
+  const bank = item.bank ? item.bank + "," : "";
+  const fundTbl = `<table>
+    <tr><th>Sl. No</th><th>Name of the Range/VSS</th><th>SO No</th><th>Name of the Work/Component</th><th>Name of the Bank &amp; Branch</th><th>Account No</th><th>Amount now released</th></tr>
+    <tr class="b c"><td>1.</td><td>${escapeHtml(item.range)}/ ${escapeHtml(vssShortName(item.vss_name))}<br>VSS</td><td>${escapeHtml(item.so_no)}</td>
+      <td style="font-weight:400;font-family:Calibri,Arial,sans-serif;">${escapeHtml(item.work || "")}</td>
+      <td>${item.bank || item.branch ? escapeHtml(bank) + "<br>" + escapeHtml(item.branch || "") : '<span class="miss">Bank missing</span>'}</td>
+      <td>${pvVal(item.account_no, "Account No", missing)}</td><td>${escapeHtml(amountTxt)}</td></tr>
+    <tr class="b"><td></td><td></td><td></td><td>TOTAL :</td><td></td><td></td><td class="c">${escapeHtml(amountTxt)}</td></tr>
+  </table>`;
+  if (!item.work) missing.push("Work description");
+  if (!item.bank && !item.branch) missing.push("Bank/Branch");
+  if (!(item.amount > 0)) missing.push("Amount");
+
+  const amountLine = `<p class="b">Rs. ${escapeHtml(amountTxt)}/- (${escapeHtml(amountInWords(item.amount))})</p>`;
+  let body;
+  if (campa) {
+    body = P(fmtTpl(cfg.para_4, ctx), "j ind") + P(fmtTpl(cfg.para_2, ctx), "j ind") + fundTbl + amountLine + P(fmtTpl(cfg.para_5, ctx), "j ind");
+  } else {
+    body = P(fmtTpl(cfg.para_1, ctx), "j ind") + P(fmtTpl(cfg.para_2, ctx), "j ind") + fundTbl + amountLine;
+  }
+  const sig = cfg.signature.map(l => `<p class="sig" style="margin-bottom:0">${pvMark(fmtTpl(l, ctx))}</p>`).join("");
+  const toHead = campa ? cfg.to_heading_2 : cfg.to_heading;
+  const toLines = (campa ? cfg.to_lines_2 : cfg.to_lines).map(l => P(fmtTpl(l, ctx))).join("");
+
+  const html = `<div class="pv-page">
+    <p class="c b">${pvMark(cfg.office_title)}</p>
+    <p class="c b" style="margin-bottom:0">${pvMark(cfg.present_line)}</p>
+    <p class="c b">${pvMark(cfg.designation_line)}</p>
+    <p class="b" style="text-decoration:underline;margin-top:.8rem;">Progs.No${escapeHtml(cfg.progs_no)},<br>${escapeHtml(pd)}</p>
+    <table style="margin-top:.8rem"><tr><td style="width:7%">Sub:</td><td class="j">${pvMark(fmtTpl(cfg.subject, ctx))}</td></tr>
+      <tr><td>Ref:</td><td class="j">${refList.map(l => `<div>${pvMark(fmtTpl(l, ctx))}</div>`).join("")}</td></tr></table>
+    <p class="c" style="letter-spacing:.6rem;color:#555">\u2756 \u2756 \u2756</p>
+    ${body}
+    <div style="margin:2rem 0 1.2rem">${sig}</div>
+    <p class="b">${pvMark(toHead)}</p>${toLines}
+  </div>`;
+  const label = `<div class="pv-label"><span>Page ${n} of ${total} \u2014 ${escapeHtml(item.esti_no)}${item.token_no ? " / " + escapeHtml(item.token_no) : ""} \u2014 ${escapeHtml(item.scheme || "no scheme")} (${campa ? "CAMPA" : "standard"} text)</span>`
+    + (missing.length ? `<span class="warn">\u26a0 Missing: ${escapeHtml(Array.from(new Set(missing)).join(", "))}</span>` : "") + `</div>`;
+  return { html: label + html, missing: Array.from(new Set(missing)) };
+}
+
+function ensurePreviewOverlay() {
+  let ov = $("previewOverlay");
+  if (ov) return ov;
+  ov = document.createElement("div");
+  ov.id = "previewOverlay";
+  ov.innerHTML = `<div class="pv-panel" role="dialog" aria-modal="true" aria-label="Preview of proceedings">
+    <div class="pv-head">
+      <strong class="serif" id="pvTitle">Preview</strong>
+      <div class="flex gap-2">
+        <button type="button" id="pvClose" class="btn-ghost px-4 py-2 text-sm">Back to edit</button>
+        <button type="button" id="pvGenerate" class="btn-primary px-4 py-2 text-sm">\u2193 Generate Proceedings.docx</button>
+      </div>
+    </div>
+    <div class="pv-body" id="pvBody"></div>
+  </div>`;
+  document.body.appendChild(ov);
+  const close = () => { ov.classList.remove("open"); document.body.style.overflow = ""; };
+  $("pvClose").onclick = close;
+  ov.addEventListener("mousedown", (e) => { if (e.target === ov) close(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && ov.classList.contains("open")) close(); });
+  $("pvGenerate").onclick = () => { close(); onGenerate(); };
+  return ov;
+}
+
+function onPreview() {
+  const items = rawItems
+    .filter(it => selectedKeys.has(itemKey(it)))
+    .map(it => ({ ...applyAcct(it), paraOverride: paraOverrides[itemKey(it)] || "auto" }));
+  if (!items.length) return;
+  const ov = ensurePreviewOverlay();
+  let pages = [], withIssues = 0;
+  try {
+    pages = items.map((it, i) => previewPageHtml(it, i + 1, items.length));
+  } catch (err) {
+    console.error(err);
+    $("pvBody").innerHTML = `<div class="pv-issues">Couldn't build the preview: ${escapeHtml(err.message || String(err))}</div>`;
+    ov.classList.add("open"); return;
+  }
+  pages.forEach(p => { if (p.missing.length) withIssues++; });
+  $("pvTitle").textContent = `Preview \u2014 ${items.length} proceeding${items.length === 1 ? "" : "s"}`;
+  $("pvBody").innerHTML =
+    (withIssues ? `<div class="pv-issues"><strong>${withIssues} of ${items.length}</strong> page(s) have missing details (highlighted in yellow). You can generate anyway, or go back and fill them in the Review table.</div>` : "")
+    + `<p class="help" style="margin:0 0 .25rem">On-screen approximation \u2014 Word's exact fonts and spacing may differ slightly.</p>`
+    + pages.map(p => p.html).join("");
+  $("pvBody").scrollTop = 0;
+  document.body.style.overflow = "hidden";
+  ov.classList.add("open");
+}
+
 async function onGenerate() {
   const items = rawItems
     .filter(it => selectedKeys.has(itemKey(it)))
-    .map(it => ({ ...it, paraOverride: paraOverrides[itemKey(it)] || "auto" }));
+    .map(it => ({ ...applyAcct(it), paraOverride: paraOverrides[itemKey(it)] || "auto" }));
   if (!items.length) return;
   const btn = $("generateBtn");
   btn.disabled = true;
@@ -1874,6 +2128,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   $("generateBtn").onclick = onGenerate;
+  $("previewBtn").onclick = onPreview;
 });
 
 </script>

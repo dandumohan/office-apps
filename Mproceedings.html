@@ -442,7 +442,7 @@ create policy "authenticated update" on proceedings_config
       <table class="items w-full">
         <thead style="position:sticky;top:0;z-index:1;">
           <tr>
-            <th></th><th>Batch</th><th>Esti No</th><th>Token</th><th>Scheme</th><th>VSS</th><th>Account No</th><th>HOA</th><th>Range</th><th>Amount</th><th>FA Date</th><th>Paras &amp; \u2018To\u2019 list</th>
+            <th></th><th>Batch</th><th>Esti No</th><th>Token</th><th>Scheme</th><th>VSS</th><th>Account No</th><th>HOA</th><th>Range <button type="button" id="rangeAllBtn" title="Set one Range name for every selected proceeding" style="text-transform:none;letter-spacing:0;font-weight:600;font-size:.7rem;color:var(--forest);border:1px solid var(--line);border-radius:.4rem;padding:.05rem .4rem;margin-left:.3rem;background:var(--card);">Set all</button></th><th>Amount</th><th>FA Date</th><th>Paras &amp; \u2018To\u2019 list</th>
           </tr>
         </thead>
         <tbody id="itemsBody"></tbody>
@@ -1494,6 +1494,19 @@ function refreshBulk() {
     + '<option value="new">+ Add new VSS\u2026</option>';
   if (prev && sel.querySelector(`option[value="${prev}"]`)) sel.value = prev;
 }
+// Same Range for every selected proceeding
+function applyRangeToSelected(v) {
+  const msg = $("bulkMsg");
+  const items = rawItems.filter(it => selectedKeys.has(itemKey(it)));
+  if (!items.length) { msg.innerHTML = '<span style="color:var(--danger)">Select at least one proceeding first.</span>'; return; }
+  items.forEach(it => {
+    const k = itemKey(it);
+    if (!v || v === String(it.range || "")) delete rangeOverrides[k]; else rangeOverrides[k] = v;
+  });
+  renderItemsTable();
+  msg.innerHTML = `<span style="color:var(--ok)">Range \u201c${escapeHtml(v || "(default)")}\u201d applied to ${items.length} proceeding${items.length === 1 ? "" : "s"} \u2713</span>`;
+}
+
 function applyBulk() {
   const msg = $("bulkMsg");
   const items = rawItems.filter(it => selectedKeys.has(itemKey(it)));
@@ -1628,7 +1641,13 @@ function renderItemsTable() {
         const r0 = rawItems.find(x => itemKey(x) === k);
         if (!r0 || v === String(r0.range || "")) delete rangeOverrides[k]; else rangeOverrides[k] = v;
       });
-      if (targets.length > 1) renderItemsTable();   // refresh the other rows' boxes
+      if (targets.length > 1) { renderItemsTable(); return; }   // refresh the other rows' boxes
+      // Only this row changed: offer to copy it to the other selected rows
+      if (selectedKeys.has(key) && selectedKeys.size > 1) {
+        const msg = $("bulkMsg");
+        msg.innerHTML = `Range set for this row only. <button type="button" id="rangeOfferBtn" style="color:var(--forest);font-weight:600;text-decoration:underline;">Apply \u201c${escapeHtml(v)}\u201d to all ${selectedKeys.size} selected</button>`;
+        $("rangeOfferBtn").onclick = () => applyRangeToSelected(v);
+      }
     };
     const hoaSel = tr.querySelector(".rv-hoa");
     if (hoaSel) hoaSel.onchange = (e) => {
@@ -2483,6 +2502,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("previewBtn").onclick = onPreview;
   setupActionBar();
   $("bulkApply").onclick = applyBulk;
+  $("rangeAllBtn").onclick = () => {
+    const n = rawItems.filter(it => selectedKeys.has(itemKey(it))).length;
+    if (!n) { $("bulkMsg").innerHTML = '<span style="color:var(--danger)">Select at least one proceeding first.</span>'; return; }
+    const first = rawItems.find(it => selectedKeys.has(itemKey(it)));
+    const v = prompt(`Range name for all ${n} selected proceeding${n === 1 ? "" : "s"}:`, (applyAcct(first).range || "").trim());
+    if (v === null) return;
+    applyRangeToSelected(v.trim());
+  };
   $("bulkAcc").onchange = (e) => { if (e.target.value === "new") openNewVssDialog(null); };
   $("itemsBody").addEventListener("input", markNeeds);
   $("itemsBody").addEventListener("change", markNeeds);

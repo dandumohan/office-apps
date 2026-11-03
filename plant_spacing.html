@@ -16,8 +16,8 @@ header{padding:28px 20px 8px;max-width:1100px;margin:0 auto;display:flex;flex-wr
 h1{margin:0;font-size:clamp(26px,4vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1.05}
 .sub{color:var(--muted);margin:6px 0 0;max-width:62ch}
 main{max-width:1100px;margin:0 auto;padding:12px 20px 60px}
-.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin:10px 0 14px}
-.tab{border:0;background:none;color:var(--muted);font:inherit;font-weight:600;padding:10px 14px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin:10px 0 14px;overflow-x:auto}
+.tab{flex:none;white-space:nowrap;border:0;background:none;color:var(--muted);font:inherit;font-weight:600;padding:10px 14px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
 .tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--wheat)}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
 input,select,button{font:inherit;color:var(--ink)}
@@ -49,6 +49,9 @@ dialog h2{margin:0 0 12px;font-size:20px}
 .grid label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted)}
 .grid label.w{grid-column:1/-1}
 .grid input{color:var(--ink);font-size:15px}
+.grid textarea{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:15px;color:var(--ink);resize:vertical;min-height:140px}
+.ctext{white-space:pre-line;max-width:84ch}
+.sec{display:block;margin-bottom:2px;color:var(--green-d)}
 .row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
 .msg{min-height:20px;margin-top:8px;font-size:13px}
 .msg.err{color:var(--danger)}.msg.ok{color:var(--green)}
@@ -61,15 +64,16 @@ dialog h2{margin:0 0 12px;font-size:20px}
 <header>
   <div>
     <h1>Plant spacing reference</h1>
-    <p class="sub">Crop and tree spacing with the number of plants per hectare and acre, plus bund planting along field edges.</p>
+    <p class="sub">Crop and tree spacing with plants per hectare and acre, bund planting along field edges, and the FSR 2026-27 special conditions.</p>
   </div>
   <div><span id="who" class="cat"></span> <button class="b" id="authBtn">Sign in to edit</button></div>
 </header>
 <main>
   <div id="banner"></div>
-  <div class="tabs" role="tablist">
+  <div class="tabs" role="tablist" id="tabs">
     <button class="tab" role="tab" data-tab="plants" aria-selected="true">Crop &amp; plant spacing</button>
     <button class="tab" role="tab" data-tab="bund" aria-selected="false">Bund planting</button>
+    <button class="tab" role="tab" data-tab="cond" aria-selected="false">Special conditions (FSR 2026-27)</button>
   </div>
   <div class="bar">
     <input type="search" id="q" placeholder="Search crop or species" aria-label="Search">
@@ -79,7 +83,7 @@ dialog h2{margin:0 0 12px;font-size:20px}
     <span class="count" id="count"></span>
   </div>
   <div class="wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
-  <p class="foot">Indicative theoretical populations. Check your local package of practices and approved departmental specifications before planting.</p>
+  <p class="foot" id="foot">Indicative theoretical populations. Check your local package of practices and approved departmental specifications before planting.</p>
 </main>
 
 <dialog id="dlg"><form method="dialog" id="form"><h2 id="dlgTitle"></h2><div class="grid" id="fields"></div><div class="msg" id="dlgMsg"></div>
@@ -103,37 +107,67 @@ function lattice(r, p) {
 }
 const TABS = {
   plants: {
-    table: 'plant_spacing', title: 'crop or plant row',
+    table: 'plant_spacing', title: 'crop or plant row', order: ['category', 'species', 'id'], catKey: 'category', catLabel: 'All categories', ph: 'Search crop or species', search: r => r.species + ' ' + r.category, label: r => r.species + ' (' + r.category + ')',
     head: [['Category'], ['Crop / species'], ['Spacing (m × m)'], ['Plants per ha', 'n'], ['Plants per acre', 'n']],
     cells: r => [`<span class="cat">${esc(r.category)}</span>`, esc(r.species), `<span class="sp">${lattice(r.row_spacing_m, r.plant_spacing_m)}${sp(r.row_spacing_m)} × ${sp(r.plant_spacing_m)}</span>`, fmt(r.plants_per_ha), fmt(r.plants_per_acre) + (r.count_note ? `<span class="note">${esc(r.count_note)}</span>` : '')],
-    fields: [['category', 'Category', 'text', 'w'], ['species', 'Crop / species', 'text', 'w'], ['row_spacing_m', 'Row spacing (m)', 'number'], ['plant_spacing_m', 'Plant spacing (m)', 'number'], ['plants_per_ha', 'Plants per ha', 'number'], ['plants_per_acre', 'Plants per acre', 'number'], ['count_note', 'Count note (hills, setts, clumps)', 'text', 'w']],
+    fields: [['category', 'Category', 'text', 'w'], ['species', 'Crop / species', 'text', 'w'], ['row_spacing_m', 'Row spacing (m)', 'number'], ['plant_spacing_m', 'Plant spacing (m)', 'number'], ['plants_per_ha', 'Plants per ha', 'number'], ['plants_per_acre', 'Plants per acre', 'number'], ['count_note', 'Count note (hills, setts, clumps)', 'text', 'w', 'opt']],
     csv: ['category', 'species', 'row_spacing_m', 'plant_spacing_m', 'plants_per_ha', 'plants_per_acre', 'count_note'], defaults: {}
   },
   bund: {
-    table: 'bund_spacing', title: 'bund planting row',
+    table: 'bund_spacing', title: 'bund planting row', order: ['category', 'species', 'id'], catKey: 'category', catLabel: 'All categories', ph: 'Search species', search: r => r.species + ' ' + r.category, label: r => r.species + ' (' + r.category + ')',
     head: [['Category'], ['Species'], ['Bund spacing', 'n'], ['Plants per 100 m', 'n'], ['Plants per km', 'n']],
     cells: r => [`<span class="cat">${esc(r.category)}</span>`, esc(r.species), rng(r.spacing_min_m, r.spacing_max_m, ' m'), rng(r.plants_100m_min, r.plants_100m_max), rng(r.plants_km_min, r.plants_km_max)],
     fields: [['category', 'Category', 'text', 'w'], ['species', 'Species', 'text', 'w'], ['spacing_min_m', 'Spacing min (m)', 'number'], ['spacing_max_m', 'Spacing max (m)', 'number'], ['plants_100m_min', 'Plants per 100 m, min', 'number'], ['plants_100m_max', 'Plants per 100 m, max', 'number'], ['plants_km_min', 'Plants per km, min', 'number'], ['plants_km_max', 'Plants per km, max', 'number']],
     csv: ['category', 'species', 'spacing_min_m', 'spacing_max_m', 'plants_100m_min', 'plants_100m_max', 'plants_km_min', 'plants_km_max']
+  },
+  cond: {
+    table: 'fsr_special_conditions', title: 'special condition', order: ['cond_no', 'id'], catKey: 'section_heading', catLabel: 'All sections', ph: 'Search the condition text or number',
+    search: r => r.condition + ' ' + (r.section_heading || '') + ' ' + r.cond_no, label: r => 'Condition ' + r.cond_no,
+    foot: 'Source: Forest Schedule of Rates 2026-27, Ananthapuramu Circle (Zone-IV), Special Conditions. Where a condition and the FSR rates differ, report it to the Chief Conservator of Forests / Conservator of Forests (condition 7).',
+    head: [['Chapter'], ['No.', 'n'], ['Condition']],
+    cells: r => [`<span class="cat">${esc(r.chapter)}</span>`, r.cond_no, (r.section_heading ? `<b class="sec">${esc(r.section_heading)}</b>` : '') + `<div class="ctext">${esc(r.condition)}</div>`],
+    fields: [['chapter', 'Chapter', 'text', 'w'], ['section_heading', 'Section heading (optional)', 'text', 'w', 'opt'], ['cond_no', 'Condition no.', 'number'], ['condition', 'Condition', 'textarea', 'w']],
+    csv: ['chapter', 'section_heading', 'cond_no', 'condition']
   }
 };
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 const $ = id => document.getElementById(id);
 const configured = !SUPABASE_URL.includes('YOUR-PROJECT');
 const db = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-let tab = 'plants', data = { plants: [], bund: [] }, canEdit = false, editing = null;
+let tab = 'plants', data = { plants: [], bund: [], cond: [] }, canEdit = false, editing = null;
+/* FSR 2026-27 workbook sheets: one tab each, built from this list. Column types: t text, x long text, n number, i integer. */
+const FSR = [{"id": "office", "table": "fsr_office_field_support", "name": "Office & field support", "filter": "part", "cols": [["chapter", "Chapter", "t"], ["part", "Part", "t"], ["ref", "Ref", "t"], ["item", "Item / provision", "x"], ["allowed_limit", "Allowed / limit", "t"]]}, {"id": "wage", "table": "fsr_wage_fuel_rates", "name": "Wage & fuel rates", "filter": "component", "cols": [["chapter", "Chapter", "t"], ["component", "Component", "t"], ["sl_no", "Sl. No", "i"], ["item", "District / item", "x"], ["rate_2024_25", "2024-25", "n"], ["rate_2025_26", "2025-26", "n"], ["pct_increase", "% increase 2026-27", "t"]]}, {"id": "adopt", "table": "fsr_adoption", "name": "FSR adoption", "filter": "circle", "cols": [["chapter", "Chapter", "t"], ["sl_no", "S. No", "t"], ["circle", "Name of the Circle", "t"], ["division", "Name of the Division", "t"], ["range_name", "Name of the Range", "t"], ["fsr_adopted", "FSR to be adopted", "x"]]}, {"id": "calendar", "table": "fsr_calendar", "name": "Calendar of operations", "filter": "section", "cols": [["chapter", "Chapter", "t"], ["section", "Section", "t"], ["sub_section", "Sub-section", "t"], ["sl_no", "Sl. No", "t"], ["item", "Item of work", "x"], ["months", "Month(s) to be completed", "t"]]}, {"id": "convert", "table": "fsr_conversions", "name": "Conversion tables", "filter": "type", "cols": [["chapter", "Chapter", "t"], ["type", "Type", "t"], ["from_unit", "From", "t"], ["equals", "Equals", "t"], ["remarks", "Remarks", "t"]]}, {"id": "espace", "table": "fsr_espacement", "name": "Espacement & formulas", "filter": "type", "cols": [["chapter", "Chapter", "t"], ["type", "Type", "t"], ["espacement", "Espacement (m)", "t"], ["plants_or_formula", "No. of plants per ha / formula", "x"]]}, {"id": "polypots", "table": "fsr_poly_pots", "name": "Poly pots", "filter": null, "cols": [["chapter", "Chapter", "t"], ["sl_no", "Sl. No", "t"], ["size", "Size of poly pot / note", "x"], ["gauge", "Gauge", "t"], ["pots_per_kg", "Poly pots per 1 kg", "t"], ["weight_per_1000", "Weight of 1000 poly pots", "t"], ["volume_per_1000", "Volume of 1000 poly pots", "t"]]}, {"id": "survey", "table": "fsr_survey_area", "name": "Survey & area", "filter": null, "cols": [["chapter", "Chapter", "t"], ["sl_no", "S. No", "t"], ["british_scale", "British scale", "t"], ["scale_units", "Scale in units (inches)", "t"], ["area_acres", "Area in acres (per 1 sq. inch)", "t"], ["metric_scales", "Metric scales & units (as printed)", "t"]]}, {"id": "primary", "table": "fsr_primary_beds", "name": "Primary beds norms", "filter": null, "cols": [["chapter", "Chapter", "t"], ["sl_no", "Sl. No", "t"], ["species", "Species", "t"], ["seeds_per_kg", "Seeds per kg", "t"], ["germination", "Germination %", "t"], ["sowing_rate", "Sowing rate per bed (kg)", "t"], ["seedlings_expected", "Seedlings expected per bed", "t"], ["espacement", "Espacement (m)", "t"], ["seedlings_required", "Seedlings required", "t"], ["beds", "No. of beds", "t"]]}, {"id": "soil", "table": "fsr_soil_for_bags", "name": "Soil for bags", "filter": null, "cols": [["chapter", "Chapter", "t"], ["sl_no", "S. No", "t"], ["width_in", "Bag width (in)", "n"], ["height_in", "Bag height (in)", "n"], ["cuft_per_1000", "Cubic feet per 1000 bags", "n"], ["width_cm", "Bag width (cm)", "n"], ["height_cm", "Bag height (cm)", "n"], ["m3_per_1000", "Cubic metres per 1000 bags", "n"]]}, {"id": "bags", "table": "fsr_bags_per_bed", "name": "Bags per bed", "filter": null, "cols": [["chapter", "Chapter", "t"], ["sl_no", "S. No", "t"], ["bag_size", "Bag size", "t"], ["bags_per_bed", "Bags per standard bed", "i"]]}, {"id": "seeds", "table": "fsr_seed_collection", "name": "Seed collection", "filter": null, "cols": [["chapter", "Chapter", "t"], ["sl_no", "S. No", "i"], ["species", "Species", "t"], ["seeds_per_kg", "Seeds per kg", "n"], ["germination_pct", "Germination %", "n"], ["seedlings_per_kg", "Seedlings per kg of seed", "n"], ["viability", "Viability of seed", "t"], ["collection_season", "Collection season", "t"]]}];
+FSR.forEach(s => {
+  const num = c => c[2] === 'n' || c[2] === 'i';
+  data[s.id] = [];
+  TABS[s.id] = { table: s.table, title: s.name.toLowerCase() + ' row', order: ['id'], catKey: s.filter, catLabel: 'All ' + (s.filter || '').replace('_', ' ') + 's', ph: 'Search ' + s.name.toLowerCase(),
+    foot: 'Source: Forest Schedule of Rates 2026-27, Ananthapuramu Circle (Zone-IV), Special Conditions. Values are as printed in the source.',
+    search: r => s.cols.map(c => r[c[0]]).join(' '), label: r => s.name + ' row ' + r.id,
+    head: s.cols.map(c => [c[1], num(c) ? 'n' : '']),
+    cells: r => s.cols.map(c => c[0] === 'chapter' ? `<span class="cat">${esc(r.chapter)}</span>` : c[2] === 'x' ? `<div class="ctext">${esc(r[c[0]])}</div>` : num(c) ? fmt(r[c[0]]) : esc(r[c[0]])),
+    fields: s.cols.map(c => [c[0], c[1], c[2] === 'x' ? 'textarea' : num(c) ? 'number' : 'text', c[2] === 'x' || c[0] === 'chapter' ? 'w' : '', 'opt']),
+    csv: s.cols.map(c => c[0]) };
+  document.getElementById('tabs').insertAdjacentHTML('beforeend', `<button class="tab" role="tab" data-tab="${s.id}" aria-selected="false">${esc(s.name)}</button>`);
+});
 
 async function load(t) {
   if (!db) return;
-  const { data: rows, error } = await db.from(TABS[t].table).select('*').order('category').order('species').order('id').limit(2000);
-  if (error) { $('banner').innerHTML = `<div class="banner">Could not load data: ${esc(error.message)}. Check that you ran supabase_setup.sql.</div>`; return; }
+  let qy = db.from(TABS[t].table).select('*'); TABS[t].order.forEach(k => { qy = qy.order(k); });
+  const { data: rows, error } = await qy.limit(2000);
+  if (error) { $('banner').innerHTML = `<div class="banner">Could not load data: ${esc(error.message)}. Check that you ran the setup SQL for this tab (supabase_setup.sql, supabase_special_conditions.sql).</div>`; return; }
   data[t] = rows; if (t === tab) render();
 }
-function render() {
+function visible() {
   const T = TABS[tab], q = $('q').value.trim().toLowerCase(), c = $('cat').value;
-  const cats = [...new Set(data[tab].map(r => r.category))].sort();
-  if ($('cat').dataset.tab !== tab) { $('cat').innerHTML = '<option value="">All categories</option>' + cats.map(x => `<option>${esc(x)}</option>`).join(''); $('cat').dataset.tab = tab; }
-  const rows = data[tab].filter(r => (!c || r.category === c) && (!q || (r.species + ' ' + r.category).toLowerCase().includes(q)));
+  return data[tab].filter(r => (!c || r[T.catKey] === c) && (!q || T.search(r).toLowerCase().includes(q)));
+}
+function render() {
+  const T = TABS[tab];
+  const cats = T.catKey ? [...new Set(data[tab].map(r => r[T.catKey]).filter(Boolean))].sort() : [];
+  $('cat').hidden = !T.catKey;
+  if ($('cat').dataset.tab !== tab) { $('cat').innerHTML = `<option value="">${T.catLabel}</option>` + cats.map(x => `<option>${esc(x)}</option>`).join(''); $('cat').dataset.tab = tab; }
+  $('q').placeholder = T.ph; $('foot').textContent = T.foot || 'Indicative theoretical populations. Check your local package of practices and approved departmental specifications before planting.';
+  const rows = visible();
   $('thead').innerHTML = '<tr>' + T.head.map(h => `<th class="${h[1] || ''}">${h[0]}</th>`).join('') + (canEdit ? '<th></th>' : '') + '</tr>';
   $('tbody').innerHTML = rows.length ? rows.map(r => '<tr>' + T.cells(r).map((x, i) => `<td class="${T.head[i][1] || ''}">${x}</td>`).join('') + (canEdit ? `<td class="act"><button data-e="${r.id}">Edit</button><button class="d" data-d="${r.id}">Delete</button></td>` : '') + '</tr>').join('')
     : `<tr><td class="empty" colspan="6">${configured ? 'No rows match. Clear the search or choose another category.' : 'Add your Supabase URL and anon key at the top of this file to load data.'}</td></tr>`;
@@ -143,7 +177,9 @@ function render() {
 function openForm(row) {
   const T = TABS[tab]; editing = row || null;
   $('dlgTitle').textContent = (row ? 'Edit ' : 'Add ') + T.title;
-  $('fields').innerHTML = T.fields.map(f => `<label class="${f[3] || ''}">${f[1]}<input name="${f[0]}" type="${f[2]}" ${f[2] === 'number' ? 'step="any" min="0"' : ''} ${f[0] === 'count_note' ? '' : 'required'} value="${esc(row ? row[f[0]] : '')}" ${f[0] === 'category' ? 'list="catList"' : ''}></label>`).join('') + `<datalist id="catList">${[...new Set(data[tab].map(r => r.category))].map(x => `<option value="${esc(x)}">`).join('')}</datalist>`;
+  $('fields').innerHTML = T.fields.map(f => `<label class="${f[3] || ''}">${f[1]}` + (f[2] === 'textarea' ? `<textarea name="${f[0]}" rows="9" ${f[4] ? '' : 'required'}>${esc(row ? row[f[0]] : '')}</textarea>` : `<input name="${f[0]}" type="${f[2]}" ${f[2] === 'number' ? 'step="any" min="0"' : ''} ${f[4] ? '' : 'required'} value="${esc(row ? row[f[0]] : '')}" ${f[0] === T.catKey ? 'list="catList"' : ''}>`) + '</label>').join('') + `<datalist id="catList">${[...new Set(data[tab].map(r => r[T.catKey]).filter(Boolean))].map(x => `<option value="${esc(x)}">`).join('')}</datalist>`;
+  if (!row && T.fields.some(f => f[0] === 'chapter') && tab !== 'cond' && data[tab][0]) $('form').chapter.value = data[tab][0].chapter;
+  if (!row && tab === 'cond') { $('form').chapter.value = 'Special Conditions'; $('form').cond_no.value = Math.max(0, ...data.cond.map(r => r.cond_no)) + 1; }
   $('calcBtn').hidden = tab !== 'plants'; $('dlgMsg').textContent = ''; $('dlg').showModal();
 }
 function calc() {
@@ -153,7 +189,7 @@ function calc() {
 }
 $('form').addEventListener('submit', async e => {
   e.preventDefault(); const T = TABS[tab], body = {};
-  T.fields.forEach(f => { const v = $('form')[f[0]].value.trim(); body[f[0]] = f[2] === 'number' ? Number(v) : (v || null); });
+  T.fields.forEach(f => { const v = $('form')[f[0]].value.trim(); body[f[0]] = f[2] === 'number' ? (v === '' ? null : Number(v)) : (v || null); });
   const q = editing ? db.from(T.table).update(body).eq('id', editing.id) : db.from(T.table).insert(body);
   const { error } = await q;
   if (error) { $('dlgMsg').className = 'msg err'; $('dlgMsg').textContent = 'Not saved: ' + error.message; return; }
@@ -163,7 +199,7 @@ $('tbody').addEventListener('click', async e => {
   const id = e.target.dataset.e || e.target.dataset.d; if (!id) return;
   const row = data[tab].find(r => String(r.id) === id);
   if (e.target.dataset.e) return openForm(row);
-  if (!confirm('Delete ' + row.species + ' (' + row.category + ')? This cannot be undone.')) return;
+  if (!confirm('Delete ' + TABS[tab].label(row) + '? This cannot be undone.')) return;
   const { error } = await db.from(TABS[tab].table).delete().eq('id', row.id);
   if (error) alert('Not deleted: ' + error.message); else load(tab);
 });
@@ -173,8 +209,7 @@ document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () =>
 $('q').addEventListener('input', render); $('cat').addEventListener('change', render);
 $('addBtn').onclick = () => openForm(null); $('cancelBtn').onclick = () => $('dlg').close(); $('calcBtn').onclick = calc;
 $('csvBtn').onclick = () => {
-  const cols = TABS[tab].csv, q = $('q').value.trim().toLowerCase(), c = $('cat').value;
-  const rows = data[tab].filter(r => (!c || r.category === c) && (!q || (r.species + ' ' + r.category).toLowerCase().includes(q)));
+  const cols = TABS[tab].csv, rows = visible();
   const cell = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
   const blob = new Blob([[cols.join(',')].concat(rows.map(r => cols.map(k => cell(r[k])).join(','))).join('\n')], { type: 'text/csv' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = TABS[tab].table + '.csv'; a.click();
@@ -186,7 +221,7 @@ $('authForm').addEventListener('submit', async e => {
   if (error) { $('authMsg').className = 'msg err'; $('authMsg').textContent = error.message; } else $('authDlg').close();
 });
 function setUser(s) { canEdit = !!s; $('who').textContent = s ? s.user.email : ''; $('authBtn').textContent = s ? 'Sign out' : 'Sign in to edit'; render(); }
-if (db) { db.auth.getSession().then(r => setUser(r.data.session)); db.auth.onAuthStateChange((_e, s) => setUser(s)); load('plants'); load('bund'); }
+if (db) { db.auth.getSession().then(r => setUser(r.data.session)); db.auth.onAuthStateChange((_e, s) => setUser(s)); load('plants'); load('bund'); load('cond'); }
 else { $('banner').innerHTML = '<div class="banner">Not connected yet. Paste your Supabase URL and anon key at the top of the script in this file, then reload.</div>'; $('authBtn').hidden = true; render(); }
 </script>
 </body>

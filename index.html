@@ -162,12 +162,14 @@ const ICONS={
   reports:'<path d="M4 20h16M7 20v-7M12 20V6M17 20v-10"/>',
   monthly:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M8 14h3M8 17h6"/>',
   spacing:'<path d="M4 4v16h16"/><circle cx="9" cy="9" r="1.4"/><circle cx="15" cy="9" r="1.4"/><circle cx="9" cy="15" r="1.4"/><circle cx="15" cy="15" r="1.4"/>',
+  expense:'<path d="M3 7a2 2 0 0 1 2-2h12v4"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2z"/><path d="M16 14.5h.01"/>',
   kanban:'<rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/>'
 };
 const GROUPS=[
   {title:'Accounts and estimates', apps:[
     {id:'tokens', name:'Token dashboard', sub:'Tokens, budget, vouchers', path:'Mtokenboard.html', desc:'Tokens, budget, APOs, estimates, vouchers, Mbook, withdrawals, nursery, personnel, vehicle and procurement in one place.'},
-    {id:'fsr', name:'FSR estimate entry', sub:'Estimates from FSR items', path:'Mestimate.html', desc:'Prepare estimates from FSR items, with task rates and amounts. Sign in with your token dashboard email and password.'}
+    {id:'fsr', name:'FSR estimate entry', sub:'Estimates from FSR items', path:'Mestimate.html', desc:'Prepare estimates from FSR items, with task rates and amounts. Sign in with your token dashboard email and password.'},
+    {id:'expense', name:'Expense & cash tracker', sub:'Expenses, income and cash', path:'ExpenseTracker.html', desc:'Record expense batches and items, income and cash balances, with stats by date, category and month.'}
   ]},
   {title:'Records and proceedings', apps:[
     {id:'dms', name:'Document management', sub:'Files and letters', path:'Mfile.html', desc:'File numbers, letters and addresses.'},
@@ -279,6 +281,7 @@ if(want&&find(want)) openApp(want);
 <main><h2>Applications</h2><ul>
 <li><a href="Mtokenboard.html">Token dashboard</a></li>
 <li><a href="Mestimate.html">FSR estimate entry</a></li>
+<li><a href="ExpenseTracker.html">Expense &amp; cash tracker</a></li>
 <li><a href="Mfile.html">Document management</a></li>
 <li><a href="Mproceedings.html">Proceedings builder</a></li>
 <li><a href="Mplantation.html">Plantation tracker</a></li>

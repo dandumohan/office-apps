@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expense & Cash Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#f3f5f1;--card:#fff;--ink:#1d2a24;--mute:#66756d;--line:#d9e0da;--accent:#1f6f54;--accent-ink:#fff;--err:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#121815;--card:#1b241f;--ink:#e6eee9;--mute:#93a49a;--line:#2e3b34;--accent:#4cc79b;--accent-ink:#06261a;--err:#ff8a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Source Sans 3","Segoe UI",system-ui,sans-serif}
+main{max-width:880px;margin:0 auto;padding:20px 14px 60px}
+h1{font:600 26px/1.2 Georgia,"Times New Roman",serif;margin:6px 0 18px}
+h2{font:600 18px/1.3 Georgia,serif;margin:0 0 12px}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label{display:block;font-size:13px;color:var(--mute);margin-bottom:3px}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{padding:9px 16px;border:0;border-radius:6px;background:var(--accent);color:var(--accent-ink);font:600 15px inherit;cursor:pointer}
+button.ghost{background:transparent;color:var(--err);padding:2px 6px;font-weight:400}
+.row{margin-top:14px;display:flex;gap:10px;align-items:center}
+.wrap{overflow-x:auto;margin-top:16px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:500}
+td.n,th.n{text-align:right}
+.den{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:6px}.den div{display:flex;align-items:center;gap:6px}.den span{min-width:44px;font-weight:600}.den input{width:64px}.den output{margin-left:auto;color:var(--mute);font-size:13px}.tot{margin-top:8px;font-weight:600}
+button.alt{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+summary{cursor:pointer;font:600 18px Georgia,serif}.calc{max-width:320px;margin-top:12px}.calc input{font-size:20px;text-align:right}.calc .row{flex-wrap:wrap;margin-top:10px}.res{text-align:right;color:var(--mute);min-height:24px;margin:4px 0 8px}.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.keys button{background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:12px 0;font-size:17px}.keys button.eq{grid-column:1/-1;background:var(--accent);color:var(--accent-ink);border:0}
+.stats{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:14px;background:var(--bg)}
+.stats>summary{cursor:pointer;font-weight:600;font-size:14px}.stats[open]>summary{margin-bottom:10px}.chips small{display:block;font-size:11px;font-weight:400}
+.chips{display:flex;flex-wrap:wrap;gap:6px 22px;margin-bottom:8px}.chips div{font-size:12px;color:var(--mute)}.chips b{display:block;font-size:18px;color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.tabs button{padding:4px 10px;font-size:13px;font-weight:400;background:transparent;color:var(--ink);border:1px solid var(--line)}.tabs button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.br{display:grid;grid-template-columns:96px 1fr 96px;align-items:center;gap:8px;font-size:13px;margin:3px 0}.br span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.br i{display:block;height:8px;background:var(--accent);border-radius:4px;min-width:2px}.br b{text-align:right;font-weight:500}
+button.edit{color:var(--accent)}
+.tools button{padding:2px 6px;font-size:12px;font-weight:400;background:transparent;color:var(--mute);border:0;text-decoration:underline}
+.bcard{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:10px}.bhead{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:14px}.bhead .sp{flex:1}.bcard .wrap{margin-top:6px}
+h3{font:600 15px/1.3 system-ui,sans-serif;color:var(--mute);margin:20px 0 10px}
+#msg{min-height:20px;font-size:14px}
+.hide{display:none}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}.top button{padding:6px 12px;font-size:14px}
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px 14px}#login.hide{display:none}
+.lbox{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px}
+.lbox h1{margin:0 0 4px}.lbox p{margin:0 0 16px;color:var(--mute)}.lbox .f{margin-bottom:12px}.lbox button[type=submit]{width:100%;margin-top:4px}
+.lbox .sw{margin-top:12px;text-align:center;font-size:14px;color:var(--mute)}.lbox .sw a{color:var(--accent);cursor:pointer;text-decoration:underline}
+#lmsg{min-height:20px;margin-top:10px;font-size:14px;text-align:center}
+</style>
+</head>
+<body>
+<div id="login" class="hide">
+  <form class="lbox" id="loginForm" autocomplete="on">
+    <h1>Expense & Cash Tracker</h1>
+    <p id="lsub">Sign in to continue</p>
+    <div id="cfg" class="hide">
+      <div class="f"><label for="lUrl">Supabase project URL</label><input id="lUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></div>
+      <div class="f"><label for="lKey">Supabase anon key</label><input id="lKey" type="password" autocomplete="off"></div>
+    </div>
+    <div class="f"><label for="lEmail">Email</label><input id="lEmail" type="email" autocomplete="username" required></div>
+    <div class="f"><label for="lPass">Password</label><input id="lPass" type="password" autocomplete="current-password" minlength="6" required></div>
+    <button type="submit" id="lBtn">Sign in</button>
+    <div class="sw"><span id="lSwText">No account?</span> <a id="lSw" role="button" tabindex="0">Create one</a></div>
+    <div id="lmsg" role="status"></div>
+  </form>
+</div>
+<main id="app" class="hide">
+<div class="top"><h1>Expense & Cash Tracker</h1><button id="logout" class="alt">Log out</button></div>
+<div id="msg" role="status"></div>
+
+<section><details id="calcSec"><summary>Calculator</summary>
+  <div class="calc"><input id="calcIn" inputmode="decimal" autocomplete="off" placeholder="e.g. 250*3+40">
+    <div class="res" id="calcOut" aria-live="polite"></div><div class="keys" id="keys"></div>
+    <div class="row"><button id="useCash" class="alt">Use in cash amount</button><button id="useExp" class="alt">Use in expense amount</button></div></div>
+</details></section>
+
+<section id="expSec">
+  <details id="expDet"><summary>Expense</summary>
+  <details class="stats" id="expStats"></details>
+
+  <h3>1 · New batch</h3>
+  <div class="grid">
+    <div><label for="bDate">Date</label><input type="date" id="bDate"></div>
+    <div><label for="bNo">Batch no (auto)</label><input id="bNo" readonly></div>
+    <div><label for="bAmt">Amount spent</label><input type="number" id="bAmt" min="0" step="any"></div>
+    <div><label for="bPay">Payment mode</label><select id="bPay"><option>Cash</option><option>UPI app</option><option>Cheque</option></select></div>
+  </div>
+  <div class="row"><button id="saveBatch">Save batch</button></div>
+  <div class="tot" id="dayHdr"></div>
+  <div class="wrap"><table id="dayTbl"></table></div>
+
+  <h3>2 · Batch details (add now or any time later)</h3>
+  <div class="grid">
+    <div><label for="fDate">Find batches by date (optional)</label><input type="date" id="fDate"></div>
+    <div><label for="eBatch">Batch</label><select id="eBatch"></select></div>
+    <div><label for="eSpent">Amount spent</label><input type="number" id="eSpent" min="0" step="any"></div>
+    <div><label for="eMode">Payment mode</label><select id="eMode"><option value="">Not set</option><option>Cash</option><option>UPI app</option><option>Cheque</option></select></div>
+    <div style="align-self:end;display:flex;gap:8px;flex-wrap:wrap"><button id="updAmt" class="alt">Update batch</button><button id="delBatch" class="alt" style="color:var(--err);border-color:var(--err)">Delete batch</button></div>
+  </div>
+  <div class="tot" id="batchSum"></div>
+  <div class="grid" style="margin-top:12px">
+    <div><label for="eCat">Category</label><select id="eCat"></select>
+      <input id="eCatNew" class="hide" placeholder="New category" style="margin-top:6px"><div class="tools" id="catTools"></div></div>
+    <div><label for="eItem">Item</label><select id="eItem"></select>
+      <input id="eItemNew" class="hide" placeholder="New item" style="margin-top:6px"></div>
+    <div><label for="eQty">Qty</label><input type="number" id="eQty" min="0" step="any" value="1"></div>
+    <div><label for="eUnit">Unit</label><input id="eUnit" list="units" placeholder="kg, L, pcs"><datalist id="units"><option>kg</option><option>g</option><option>L</option><option>ml</option><option>pcs</option><option>dozen</option><option>packet</option><option>box</option></datalist></div>
+    <div><label for="eAmt">Amount</label><input type="number" id="eAmt" min="0" step="any"></div>
+  </div>
+  <div class="row"><button id="saveExp">Add item to batch</button><button id="cancelExp" class="alt hide">Cancel edit</button></div>
+  <div class="wrap"><table id="expTbl"></table></div>
+
+  <h3>3 · Browse batches and their items</h3>
+  <div class="grid">
+    <div><label for="brMonth">Month</label><select id="brMonth"></select></div>
+    <div><label for="brDate">Date</label><select id="brDate"></select></div>
+  </div>
+  <div class="tot" id="brSum"></div>
+  <div id="browse"></div>
+</details>
+</section>
+
+<section id="incSec">
+  <details id="incDet"><summary>Income</summary>
+  <details class="stats" id="incStats"></details>
+  <div class="grid">
+    <div><label for="iDate">Date</label><input type="date" id="iDate"></div>
+    <div><label for="iSrc">Source</label><select id="iSrc"></select>
+      <input id="iSrcNew" class="hide" placeholder="New source" style="margin-top:6px"><div class="tools" id="srcTools"></div></div>
+    <div><label for="iDesc">Description</label><input id="iDesc"></div>
+    <div><label for="iAmt">Amount</label><input type="number" id="iAmt" min="0" step="any"></div>
+    <div><label for="iMode">Received by</label>
+      <select id="iMode"><option>Cash</option><option>UPI app</option><option>Cheque</option></select></div>
+  </div>
+  <div class="row"><button id="saveInc">Save income</button><button id="cancelInc" class="alt hide">Cancel edit</button></div>
+  <div class="wrap"><table id="incTbl"></table></div>
+  <button id="moreInc" class="alt hide" style="margin-top:10px"></button>
+</details>
+</section>
+
+<section id="cashSec">
+  <details id="cashDet"><summary>Cash</summary>
+  <details class="stats" id="cashStats"></details>
+  <div class="grid">
+    <div><label for="kind">Cash type</label>
+      <select id="kind"><option value="">Select…</option></select></div>
+  </div>
+  <div class="grid" id="cashFields" style="margin-top:12px"></div>
+  <div id="denBox" class="hide" style="margin-top:14px"></div>
+  <div class="row hide" id="cashBtn"><button id="addMore" class="alt hide">Add another</button><button id="cancelCash" class="alt hide">Cancel edit</button><button id="saveCash">Save cash entry</button></div>
+  <div class="wrap"><table id="pendTbl"></table></div>
+  <div class="wrap"><table id="cashTbl"></table></div>
+  <button id="moreCash" class="alt hide" style="margin-top:10px"></button>
+</details>
+</section>
+</main>
+
+<script>
+// Paste your project values here, or leave blank to be asked once (saved in this browser).
+const SUPABASE_URL = 'https://ewnrcnfyiulrjritaeam.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3bnJjbmZ5aXVscmpyaXRhZWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTEwMDYsImV4cCI6MjEwNzc2NzAwNn0.rbJNPpBgS4k2uKxM9Igk6S7rN_FL3gZcoJu-8jkgeD8';
+
+const NEW = '__new__';
+let url = SUPABASE_URL || localStorage.getItem('sb_url') || '';
+let key = SUPABASE_KEY || localStorage.getItem('sb_key') || '';
+let db = null;   // created in boot() once the project URL and key are known
+
+// One structure for every cash type: common fields + extra fields that go into the `details` JSON column.
+const COMMON = [['entry_date','Date','date'],['description','Description','text'],['amount','Amount','number']];
+const KINDS = {
+  in_hand:  {label:'In Hand',   extra:[]},
+  bank:     {label:'In Bank',   extra:[['bank_details','Bank details','text'],['account_no','Account no','text']]},
+  bonds:    {label:'Bonds',     extra:[['bond_name','Bond name / issuer','text'],['bond_no','Bond / certificate no','text'],['interest_rate','Interest rate %','number'],['maturity_date','Maturity date','date']]},
+  insurance:{label:'Insurance', extra:[['insurer','Insurer','text'],['policy_no','Policy no','text'],['maturity_date','Maturity date','date']]},
+  deposits: {label:'Deposits',  extra:[['bank_details','Bank details','text'],['deposit_no','Deposit / account no','text'],['interest_rate','Interest rate %','number'],['maturity_date','Maturity date','date']]}
+};
+
+const $ = id => document.getElementById(id);
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+const say = (t, bad) => { const m = $('msg'); m.textContent = t; m.style.color = bad ? 'var(--err)' : 'var(--accent)'; };
+const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t ?? v; return o; };
+const cell = (tr, t, cls) => { const c = tr.insertCell(); c.textContent = t ?? ''; if (cls) c.className = cls; return c; };
+
+/* ---------- Shared helpers ---------- */
+const inr = n => { n = Number(n || 0); return (n < 0 ? '-' : '') + '₹' + Math.abs(n).toLocaleString('en-IN', {maximumFractionDigits: 2}); };
+const byDateDesc = (a, b) => b.entry_date.localeCompare(a.entry_date) || b.id - a.id;
+async function fetchAll(table) {          // pages past Supabase's 1000-row limit
+  let all = [];
+  for (let from = 0; from < 20000; from += 1000) {
+    const {data, error} = await db.from(table).select('*').order('id', {ascending: false}).range(from, from + 999);
+    if (error) return {error};
+    all = all.concat(data);
+    if (data.length < 1000) break;
+  }
+  return {data: all};
+}
+const showAll = {cash: false, inc: false};
+function actBtns(tr, onEdit, onDel, editLabel = 'Edit') {
+  const c = tr.insertCell();
+  [[editLabel, onEdit, 'ghost edit'], ['Delete', onDel, 'ghost']].forEach(([t, f, cls]) => {
+    const b = document.createElement('button'); b.className = cls; b.textContent = t; b.onclick = f; c.append(b);
+  });
+}
+function setSel(selId, newId, val) {      // pick an existing option, or fall back to "add new" with the value typed in
+  const sel = $(selId);
+  if ([...sel.options].some(o => o.value === val)) { sel.value = val; $(newId).value = ''; }
+  else { sel.value = NEW; $(newId).value = val || ''; }
+}
+function nameTools(selId, boxId, table, refTable, refField, label, reload) {   // rename / delete a dropdown value
+  const mk = (t, f) => { const b = document.createElement('button'); b.textContent = t; b.onclick = f; $(boxId).append(b); };
+  mk('Rename', async () => {
+    const old = $(selId).value; if (old === NEW) return;
+    const nn = (prompt('Rename ' + label, old) || '').trim(); if (!nn || nn === old) return;
+    let r = await db.from(table).update({name: nn}).eq('name', old);
+    if (r.error) return say('Could not rename: ' + r.error.message, true);
+    r = await db.from(refTable).update({[refField]: nn}).eq(refField, old);
+    if (r.error) return say('Could not update entries: ' + r.error.message, true);
+    say(label + ' renamed.'); reload(nn);
+  });
+  mk('Delete', async () => {
+    const old = $(selId).value; if (old === NEW) return;
+    if (!confirm('Delete ' + label + ' "' + old + '"? Existing entries keep the name.')) return;
+    const r = await db.from(table).delete().eq('name', old);
+    if (r.error) return say('Could not delete: ' + r.error.message, true);
+    say(label + ' deleted.'); reload();
+  });
+}
+const statTab = {}, statMonth = {};
+const mlabel = k => new Date(k + '-01T00:00').toLocaleDateString('en-IN', {month: 'short', year: 'numeric'});
+// totalRows: [{d: 'YYYY-MM-DD', a: amount}] drives So far / Today / This month / By date / By month.
+// catRows:   [{c: label, a: amount}] drives the category tab.
+// modeRows:  optional [{d, m: payment mode, a}] adds a 'By payment mode' tab with an all-months / single-month filter.
+function renderStats(boxId, L, totalRows, catRows, extra = [], early = [], modeRows = null) {
+  const box = $(boxId), tab = statTab[boxId] || 'date', td = today(), tm = td.slice(0, 7);
+  const sum = rows => rows.reduce((a, r) => a + Number(r.a || 0), 0);
+  const group = (rows, key) => { const m = {}; rows.forEach(r => { const k = key(r); m[k] = (m[k] || 0) + Number(r.a || 0); }); return Object.entries(m); };
+  const el = (tag, txt, cls) => { const e = document.createElement(tag); if (txt != null) e.textContent = txt; if (cls) e.className = cls; return e; };
+  box.innerHTML = '';
+  const items = [[L.total, sum(totalRows)], ...early,
+    ['Today', sum(totalRows.filter(r => r.d === td))], ['This month', sum(totalRows.filter(r => (r.d || '').slice(0, 7) === tm))], ...extra];
+  box.append(el('summary', 'Stats · ' + [L.total, ...early.map(e => e[0]), ...extra.map(e => e[0])].map(k => { const it = items.find(x => x[0] === k); return k + ' ' + inr(it[1]); }).join(' · ')));
+  const chips = el('div', null, 'chips');
+  items.forEach(([k, v, note]) => { const d = el('div', k); d.append(el('b', inr(v))); if (note) d.append(el('small', note)); chips.append(d); });
+  box.append(chips);
+  const tabs = el('div', null, 'tabs');
+  [['date', 'By date'], ['cat', L.cat], ['month', 'By month'], ...(modeRows ? [['mode', 'By payment mode']] : [])].forEach(([id, name]) => {
+    const b = el('button', name, id === tab ? 'on' : ''); b.onclick = () => { statTab[boxId] = id; renderStats(boxId, L, totalRows, catRows, extra, early, modeRows); }; tabs.append(b);
+  });
+  box.append(tabs);
+  let mf = '', mrows = [];
+  if (tab === 'mode' && modeRows) {          // month filter: all months, or one month
+    const months = [...new Set(modeRows.map(r => (r.d || '').slice(0, 7)).filter(Boolean))].sort().reverse();
+    mf = months.includes(statMonth[boxId]) ? statMonth[boxId] : '';
+    const sel = document.createElement('select'); sel.style.cssText = 'width:auto;margin-bottom:8px'; sel.setAttribute('aria-label', 'Month filter');
+    sel.append(opt('', 'All months'), ...months.map(m => opt(m, mlabel(m))));
+    sel.value = mf;
+    sel.onchange = () => { statMonth[boxId] = sel.value; renderStats(boxId, L, totalRows, catRows, extra, early, modeRows); };
+    box.append(sel);
+    mrows = modeRows.filter(r => !mf || (r.d || '').slice(0, 7) === mf);
+  }
+  const list = tab === 'mode' ? group(mrows, r => r.m || 'Not set').sort((a, b) => b[1] - a[1])
+    : tab === 'cat' ? group(catRows, r => r.c || '—').sort((a, b) => b[1] - a[1])
+    : tab === 'month' ? group(totalRows, r => (r.d || '').slice(0, 7)).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 12)
+    : group(totalRows, r => r.d).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 10);
+  if (!list.length) box.append(el('div', 'No data yet.', 'br'));
+  const max = Math.max(1, ...list.map(x => x[1]));
+  list.forEach(([k, v]) => {
+    const r = el('div', null, 'br'), i = el('i');
+    i.style.width = (v / max * 100) + '%';
+    r.append(el('span', tab === 'month' ? new Date(k + '-01T00:00').toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : k), i, el('b', inr(v)));
+    box.append(r);
+  });
+  if (tab === 'mode') box.append(el('div', 'Total ' + inr(sum(mrows)) + ' · ' + (mf ? mlabel(mf) : 'all months'), 'tot'));
+}
+
+/* ---------- Cash ---------- */
+for (const k in KINDS) $('kind').append(opt(k, KINDS[k].label));
+
+function fieldHTML(f) {
+  const [id, label, type] = f;
+  return `<div><label for="c_${id}">${label}</label><input id="c_${id}" type="${type}"${type==='number'?' step="any"':''}></div>`;
+}
+const DEN = [500,200,100,50,20,10,5,2,1];
+const queue = [];   // cash entries waiting to be saved together
+
+function renderFields() {
+  const k = $('kind').value;
+  $('cashFields').innerHTML = k ? [...COMMON, ...KINDS[k].extra].map(fieldHTML).join('') : '';
+  if (k) $('c_entry_date').value = today();
+  const show = k === 'in_hand', b = $('denBox');
+  b.classList.toggle('hide', !show);
+  b.innerHTML = show ? '<label>Denominations (count of each note / coin)</label><div class="den">' +
+    DEN.map(n => `<div><span>₹${n}</span>×<input type="number" min="0" id="d_${n}"><output id="o_${n}">0</output></div>`).join('') +
+    '</div><div class="tot">Total: ₹<span id="denTot">0</span></div>' : '';
+  b.oninput = calcDen;
+}
+function calcDen() {
+  let t = 0, any = false;
+  DEN.forEach(n => { const c = parseInt($('d_'+n).value) || 0; $('o_'+n).textContent = c * n; t += c * n; if (c) any = true; });
+  $('denTot').textContent = t;
+  if (any) $('c_amount').value = t;
+}
+let editCashId = null;
+function syncCashButtons() {
+  const k = $('kind').value, ed = editCashId !== null;
+  $('cashBtn').classList.toggle('hide', !k && !queue.length);
+  $('addMore').classList.toggle('hide', ed || !k || k === 'in_hand');
+  $('cancelCash').classList.toggle('hide', !ed);
+  $('saveCash').textContent = ed ? 'Update entry' : (k === 'in_hand' || (!queue.length && !k)) ? 'Save cash entry' : 'Save all';
+}
+function startEditCash(r) {
+  if (!KINDS[r.kind]) return;
+  editCashId = r.id; $('kind').value = r.kind; $('kind').disabled = true; renderFields();
+  const dt = r.details || {};
+  $('c_entry_date').value = r.entry_date; $('c_description').value = r.description || '';
+  for (const [id] of KINDS[r.kind].extra) $('c_' + id).value = dt[id] ?? '';
+  if (r.kind === 'in_hand') { DEN.forEach(n => $('d_' + n).value = (dt.denominations || {})[n] || ''); calcDen(); }
+  $('c_amount').value = r.amount;
+  syncCashButtons(); $('cashSec').scrollIntoView({behavior: 'smooth'});
+}
+function endEditCash() { editCashId = null; $('kind').disabled = false; $('kind').value = ''; renderFields(); syncCashButtons(); }
+$('kind').onchange = () => { renderFields(); syncCashButtons(); };
+
+function readCash() {
+  const k = $('kind').value;
+  if (!k) return null;
+  const row = {kind: k, entry_date: $('c_entry_date').value, description: $('c_description').value.trim(),
+               amount: parseFloat($('c_amount').value), details: {}};
+  if (!row.entry_date || isNaN(row.amount)) return null;
+  for (const [id,,type] of KINDS[k].extra) {
+    const v = $('c_'+id).value.trim();
+    if (v) row.details[id] = type === 'number' ? parseFloat(v) : v;
+  }
+  if (k === 'in_hand') {
+    const d = {};
+    DEN.forEach(n => { const c = parseInt($('d_'+n).value); if (c > 0) d[n] = c; });
+    if (Object.keys(d).length) row.details.denominations = d;
+  }
+  return row;
+}
+function renderQueue() {
+  const t = $('pendTbl'); t.innerHTML = '';
+  if (!queue.length) return;
+  t.createTHead().insertRow().innerHTML = '<th colspan="5">Waiting to save</th>';
+  queue.forEach((r, i) => {
+    const tr = t.insertRow();
+    cell(tr, r.entry_date); cell(tr, KINDS[r.kind].label); cell(tr, r.description); cell(tr, r.amount, 'n');
+    const b = document.createElement('button'); b.className = 'ghost'; b.textContent = 'Remove';
+    b.onclick = () => { queue.splice(i, 1); renderQueue(); syncCashButtons(); };
+    tr.insertCell().append(b);
+  });
+}
+$('addMore').onclick = () => {
+  const row = readCash();
+  if (!row) return say('Enter a date and an amount before adding another.', true);
+  queue.push(row); renderQueue(); renderFields(); syncCashButtons();
+  say('Added to the list. Fill in the next one.');
+};
+$('saveCash').onclick = async () => {
+  if (editCashId !== null) {
+    const cur = readCash();
+    if (!cur) return say('Enter a date and an amount.', true);
+    const {error} = await db.from('cash_entries').update(cur).eq('id', editCashId);
+    if (error) return say('Could not update: ' + error.message, true);
+    say('Cash entry updated.'); endEditCash(); loadCash(); return;
+  }
+  const rows = [...queue], cur = readCash();
+  const k = $('kind').value;
+  const typed = k && ['description','amount'].some(f => $('c_'+f).value.trim());
+  if (cur) rows.push(cur);
+  else if (typed || (k === 'in_hand' && !rows.length)) return say('Enter a date and an amount.', true);
+  if (!rows.length) return say('Nothing to save yet.', true);
+  const {error} = await db.from('cash_entries').insert(rows);
+  if (error) return say('Could not save: ' + error.message, true);
+  say(rows.length + (rows.length > 1 ? ' cash entries saved.' : ' cash entry saved.'));
+  queue.length = 0; renderQueue(); renderFields(); syncCashButtons();
+  loadCash();
+};
+const fmtDetail = ([a, b]) => a === 'denominations'
+  ? 'notes: ' + Object.entries(b).map(([n, c]) => n + '×' + c).join(', ')
+  : a.replace(/_/g, ' ') + ': ' + b;
+let cashRows = [], incRows = [];
+function drawCashStats() {
+  const tot = (rows, f, k = 'amount') => rows.filter(f).reduce((a, r) => a + Number(r[k] || 0), 0);
+  const inHand = tot(cashRows, r => r.kind === 'in_hand'), inBank = tot(cashRows, r => r.kind === 'bank');
+  const incCash = tot(incRows, r => r.received_mode === 'Cash'), incOther = tot(incRows, r => r.received_mode !== 'Cash');
+  const paidCash = tot(batchRows, r => r.payment_mode === 'Cash', 'amount_spent');
+  const paidBank = tot(batchRows, r => r.payment_mode === 'UPI app' || r.payment_mode === 'Cheque', 'amount_spent');
+  const handNow = inHand + incCash - paidCash, bankNow = inBank + incOther - paidBank;
+  renderStats('cashStats', {total: 'Total so far', cat: 'By type'},
+    cashRows.map(r => ({d: r.entry_date, a: r.amount})),
+    cashRows.map(r => ({c: KINDS[r.kind] ? KINDS[r.kind].label : r.kind, a: r.amount})),
+    [['Current cash in hand', handNow, inr(inHand) + ' in hand + ' + inr(incCash) + ' cash income − ' + inr(paidCash) + ' cash expenses (batches)'],
+     ['Current cash in bank', bankNow, inr(inBank) + ' in bank + ' + inr(incOther) + ' non-cash income − ' + inr(paidBank) + ' UPI / cheque expenses (batches)']],
+    [['Current balance', handNow + bankNow, 'cash in hand + cash in bank']]);
+}
+async function loadCash() {
+  const res = await fetchAll('cash_entries'), t = $('cashTbl'); t.innerHTML = '';
+  if (res.error) return say('Could not load cash entries: ' + res.error.message, true);
+  const all = res.data.sort(byDateDesc), data = showAll.cash ? all : all.slice(0, 15);
+  $('moreCash').classList.toggle('hide', all.length <= 15); $('moreCash').textContent = showAll.cash ? 'Show latest 15' : 'Show all (' + all.length + ')';
+  cashRows = all; drawCashStats();
+  if (!data.length) return;
+  t.createTHead().insertRow().innerHTML = '<th>Date</th><th>Type</th><th>Description</th><th class="n">Amount</th><th>Details</th><th></th>';
+  for (const r of data) {
+    const tr = t.insertRow();
+    cell(tr, r.entry_date); cell(tr, KINDS[r.kind]?.label || r.kind); cell(tr, r.description);
+    cell(tr, r.amount, 'n');
+    cell(tr, Object.entries(r.details || {}).map(fmtDetail).join(', '));
+    actBtns(tr, () => startEditCash(r), async () => {
+      if (confirm('Delete this entry?')) { await db.from('cash_entries').delete().eq('id', r.id); if (editCashId === r.id) endEditCash(); loadCash(); }
+    });
+  }
+}
+
+/* ---------- Expense ---------- */
+let batchRows = [], expRows = [], items = {}, lastUnit = {}, curBatch = '';
+const bno = (d, n) => d.replace(/-/g, '') + '-' + String(n).padStart(2, '0');
+const nextSeq = rows => rows.reduce((m, r) => Math.max(m, parseInt(r.batch_no.split('-')[1]) || 0), 0) + 1;
+
+// Step 1: batch header (date, auto batch no, amount spent)
+async function refreshNextNo() {
+  const d = $('bDate').value;
+  if (!d) { $('bNo').value = ''; return; }
+  const {data} = await db.from('expense_batches').select('batch_no').eq('batch_date', d);
+  $('bNo').value = bno(d, nextSeq(data || []));
+}
+async function createBatch(d, spent, mode) {
+  for (let i = 0; i < 3; i++) {     // retry if two devices grab the same number
+    const {data} = await db.from('expense_batches').select('batch_no').eq('batch_date', d);
+    const bn = bno(d, nextSeq(data || []));
+    const {error} = await db.from('expense_batches').insert({batch_date: d, batch_no: bn, amount_spent: spent, payment_mode: mode});
+    if (!error) return bn;
+    if (error.code !== '23505') { say('Could not create batch: ' + error.message, true); return null; }
+  }
+  say('Could not create a batch number. Try again.', true); return null;
+}
+$('saveBatch').onclick = async () => {
+  const d = $('bDate').value, amt = parseFloat($('bAmt').value);
+  if (!d || isNaN(amt)) return say('Enter the date and the amount spent for the batch.', true);
+  const bn = await createBatch(d, amt, $('bPay').value);
+  if (!bn) return;
+  say('Batch ' + bn + ' saved. Add its details below, now or later.');
+  $('bAmt').value = ''; $('fDate').value = '';
+  await loadBatches(bn);
+  refreshNextNo();
+  $('eCat').focus();
+};
+
+function openBatch(b) { $('fDate').value = ''; fillBatchSelect(b.batch_no); $('eBatch').scrollIntoView({behavior: 'smooth', block: 'center'}); }
+
+// Step 3: pick a month (or all), then a date, and see every batch with all its items
+let brMonth = null, brDate = '';
+function renderBrowse() {
+  const months = [...new Set(batchRows.map(b => b.batch_date.slice(0, 7)))].sort().reverse();
+  if (brMonth === null) brMonth = months.includes(today().slice(0, 7)) ? today().slice(0, 7) : (months[0] || '');
+  if (brMonth && !months.includes(brMonth)) brMonth = '';
+  const ms = $('brMonth'); ms.innerHTML = '';
+  ms.append(opt('', 'All months'), ...months.map(m => opt(m, mlabel(m)))); ms.value = brMonth;
+  const inMonth = batchRows.filter(b => !brMonth || b.batch_date.startsWith(brMonth));
+  const dates = [...new Set(inMonth.map(b => b.batch_date))].sort().reverse();
+  if (brDate && !dates.includes(brDate)) brDate = '';
+  const ds = $('brDate'); ds.innerHTML = '';
+  ds.append(opt('', 'All dates' + (brMonth ? ' in ' + mlabel(brMonth) : '')), ...dates.map(dt => opt(dt, dt + ' (' + inMonth.filter(b => b.batch_date === dt).length + (inMonth.filter(b => b.batch_date === dt).length === 1 ? ' batch)' : ' batches)')))); ds.value = brDate;
+  const list = inMonth.filter(b => !brDate || b.batch_date === brDate)
+    .sort((a, b) => b.batch_date.localeCompare(a.batch_date) || a.batch_no.localeCompare(b.batch_no));
+  const itemsOf = b => expRows.filter(r => r.batch_no === b.batch_no);
+  const sum = rows => rows.reduce((a, r) => a + Number(r.amount ?? r.amount_spent ?? 0), 0);
+  $('brSum').textContent = list.length + (list.length === 1 ? ' batch' : ' batches') + ' · Spent ' + inr(sum(list)) + ' · Items entered ' + inr(sum(list.flatMap(itemsOf)));
+  const box = $('browse'); box.innerHTML = '';
+  for (const b of list) {
+    const its = itemsOf(b), it = sum(its), card = document.createElement('div'); card.className = 'bcard';
+    const head = document.createElement('div'); head.className = 'bhead';
+    const t = document.createElement('span');
+    t.textContent = b.batch_date + ' · ' + b.batch_no + ' · ' + (b.payment_mode || 'mode not set') + ' · Spent ' + inr(b.amount_spent) + ' · Items ' + inr(it) + ' · Left ' + inr(b.amount_spent - it);
+    t.style.fontWeight = '600';
+    const sp = document.createElement('span'); sp.className = 'sp';
+    head.append(t, sp);
+    [['Open', () => openBatch(b), 'ghost edit'], ['Delete', () => deleteBatch(b), 'ghost']].forEach(([n, f, c]) => { const x = document.createElement('button'); x.className = c; x.textContent = n; x.onclick = f; head.append(x); });
+    card.append(head);
+    if (its.length) {
+      const w = document.createElement('div'); w.className = 'wrap'; const tb = document.createElement('table'); w.append(tb); card.append(w);
+      tb.createTHead().insertRow().innerHTML = '<th>Category</th><th>Item</th><th class="n">Qty</th><th>Unit</th><th class="n">Amount</th>';
+      its.slice().sort((a, c) => a.id - c.id).forEach(r => { const tr = tb.insertRow(); cell(tr, r.category); cell(tr, r.item); cell(tr, r.qty, 'n'); cell(tr, r.unit); cell(tr, r.amount, 'n'); });
+    } else { const n = document.createElement('div'); n.style.cssText = 'color:var(--mute);font-size:13px;margin-top:4px'; n.textContent = 'No items added yet.'; card.append(n); }
+    box.append(card);
+  }
+  if (!list.length) { const n = document.createElement('div'); n.style.cssText = 'color:var(--mute);margin-top:8px'; n.textContent = 'No batches for this selection.'; box.append(n); }
+}
+$('brMonth').onchange = () => { brMonth = $('brMonth').value; brDate = ''; renderBrowse(); };
+$('brDate').onchange = () => { brDate = $('brDate').value; renderBrowse(); };
+
+function renderDayBatches() {
+  const d = $('bDate').value, t = $('dayTbl'); t.innerHTML = '';
+  const rows = batchRows.filter(b => b.batch_date === d).sort((a, b) => a.batch_no.localeCompare(b.batch_no));
+  const itemsOf = b => expRows.filter(r => r.batch_no === b.batch_no).reduce((a, r) => a + Number(r.amount), 0);
+  $('dayHdr').textContent = d ? 'Batches on ' + d + ': ' + rows.length + (rows.length ? ' · Total spent ' + inr(rows.reduce((a, b) => a + Number(b.amount_spent || 0), 0)) : '') : '';
+  if (!rows.length) return;
+  t.createTHead().insertRow().innerHTML = '<th>Date</th><th>Batch no</th><th>Payment</th><th class="n">Amount spent</th><th class="n">Items entered</th><th class="n">Left</th><th></th>';
+  for (const b of rows) {
+    const tr = t.insertRow(), it = itemsOf(b);
+    cell(tr, b.batch_date); cell(tr, b.batch_no); cell(tr, b.payment_mode || 'not set'); cell(tr, b.amount_spent, 'n'); cell(tr, it, 'n'); cell(tr, Math.round((b.amount_spent - it) * 100) / 100, 'n');
+    actBtns(tr, () => openBatch(b), () => deleteBatch(b), 'Open');
+  }
+}
+
+// Step 2: details for any saved batch
+const curB = () => batchRows.find(b => b.batch_no === $('eBatch').value);
+function fillBatchSelect(keep) {
+  const f = $('fDate').value, sel = $('eBatch');
+  const list = batchRows.filter(b => !f || b.batch_date === f);
+  sel.innerHTML = '';
+  list.forEach(b => sel.append(opt(b.batch_no, b.batch_no + ' · ' + inr(b.amount_spent) + ' · ' + (b.payment_mode || 'mode not set'))));
+  if (!list.length) sel.append(opt('', f ? 'No batches on this date' : 'No batches yet'));
+  const pick = keep || curBatch;
+  sel.value = list.some(b => b.batch_no === pick) ? pick : (list[0] ? list[0].batch_no : '');
+  syncBatch();
+}
+function syncBatch() {
+  endEditExp();
+  const b = curB();
+  curBatch = b ? b.batch_no : '';
+  $('eSpent').value = b && b.amount_spent != null ? b.amount_spent : '';
+  $('eMode').value = b && b.payment_mode ? b.payment_mode : '';
+  showBatchSum(); renderItems();
+}
+function showBatchSum() {
+  const b = curB();
+  if (!b) { $('batchSum').textContent = 'Save a batch above, then pick it here to add items.'; return; }
+  const sum = expRows.filter(r => r.batch_no === b.batch_no).reduce((a, r) => a + Number(r.amount), 0);
+  $('batchSum').textContent = b.batch_date + ' · ' + (b.payment_mode || 'payment mode not set') + ' · Items entered: ' + inr(sum) + ' of ' + inr(b.amount_spent) + ' · Left: ' + inr(b.amount_spent - sum);
+}
+async function deleteBatch(b) {
+  const n = expRows.filter(r => r.batch_no === b.batch_no).length;
+  if (!confirm('Delete batch ' + b.batch_no + (n ? ' and its ' + n + ' item(s)?' : '?'))) return;
+  let r = await db.from('expenses').delete().eq('batch_no', b.batch_no);
+  if (r.error) return say('Could not delete items: ' + r.error.message, true);
+  r = await db.from('expense_batches').delete().eq('batch_no', b.batch_no);
+  if (r.error) return say('Could not delete batch: ' + r.error.message, true);
+  say('Batch ' + b.batch_no + ' deleted.'); curBatch = '';
+  await loadExpenses(); await loadBatches(); refreshNextNo();
+}
+$('delBatch').onclick = () => { const b = curB(); if (!b) return say('Pick a batch first.', true); deleteBatch(b); };
+$('updAmt').onclick = async () => {
+  const b = curB(), amt = parseFloat($('eSpent').value);
+  if (!b || isNaN(amt)) return say('Pick a batch and enter the amount.', true);
+  const {error} = await db.from('expense_batches').update({amount_spent: amt, payment_mode: $('eMode').value || null}).eq('batch_no', b.batch_no);
+  if (error) return say('Could not update: ' + error.message, true);
+  say('Batch updated.');
+  loadBatches(b.batch_no);
+};
+
+function fillSelect(sel, values, addLabel, keep) {
+  sel.innerHTML = '';
+  values.forEach(v => sel.append(opt(v)));
+  sel.append(opt(NEW, addLabel));
+  if (keep && values.includes(keep)) sel.value = keep;
+}
+async function loadCategories(keep) {
+  const {data, error} = await db.from('categories').select('name').order('name');
+  if (error) return say('Could not load categories: ' + error.message, true);
+  fillSelect($('eCat'), data.map(r => r.name), '➕ Add new category…', keep);
+  syncCat();
+}
+function syncCat() {
+  const isNew = $('eCat').value === NEW;
+  $('eCatNew').classList.toggle('hide', !isNew); $('catTools').classList.toggle('hide', isNew);
+  const list = isNew ? [] : (items[$('eCat').value] || []);
+  fillSelect($('eItem'), list, '➕ Add new item…');
+  if (!list.length) $('eItem').value = NEW;
+  syncItem();
+}
+function syncItem() {
+  $('eItemNew').classList.toggle('hide', $('eItem').value !== NEW);
+  $('eUnit').value = lastUnit[$('eCat').value + '|' + $('eItem').value] || '';
+}
+$('eCat').onchange = syncCat;
+$('eItem').onchange = syncItem;
+
+function drawExpStats() {
+  renderStats('expStats', {total: 'Spent so far', cat: 'By category'},
+    batchRows.map(b => ({d: b.batch_date, a: b.amount_spent})), expRows.map(r => ({c: r.category, a: r.amount})),
+    [], [], batchRows.map(b => ({d: b.batch_date, m: b.payment_mode, a: b.amount_spent})));
+}
+async function loadBatches(keep) {
+  const res = await fetchAll('expense_batches');
+  if (res.error) return say('Could not load batches: ' + res.error.message, true);
+  batchRows = res.data.sort((a, b) => b.batch_date.localeCompare(a.batch_date) || b.batch_no.localeCompare(a.batch_no));
+  fillBatchSelect(keep); drawExpStats(); drawCashStats(); renderDayBatches(); renderBrowse();
+}
+async function loadExpenses() {
+  const res = await fetchAll('expenses');
+  if (res.error) return say('Could not load expenses: ' + res.error.message, true);
+  expRows = res.data.sort(byDateDesc);
+  const count = {}; lastUnit = {};
+  expRows.forEach(r => {
+    (count[r.category] ??= {})[r.item] = (count[r.category][r.item] || 0) + 1;
+    const k = r.category + '|' + r.item; if (r.unit && !(k in lastUnit)) lastUnit[k] = r.unit;
+  });
+  items = {};
+  for (const c in count) items[c] = Object.keys(count[c]).sort((a, b) => count[c][b] - count[c][a]);
+  syncCat(); showBatchSum(); renderItems(); drawExpStats(); drawCashStats(); renderDayBatches(); renderBrowse();
+}
+function renderItems() {
+  const t = $('expTbl'); t.innerHTML = '';
+  const rows = expRows.filter(r => r.batch_no === curBatch);
+  if (!rows.length) return;
+  t.createTHead().insertRow().innerHTML = '<th>Category</th><th>Item</th><th class="n">Qty</th><th>Unit</th><th class="n">Amount</th><th></th>';
+  for (const r of rows) {
+    const tr = t.insertRow();
+    cell(tr, r.category); cell(tr, r.item); cell(tr, r.qty, 'n'); cell(tr, r.unit); cell(tr, r.amount, 'n');
+    actBtns(tr, () => startEditExp(r), async () => {
+      if (confirm('Delete this item?')) { await db.from('expenses').delete().eq('id', r.id); if (editExpId === r.id) endEditExp(); loadExpenses(); }
+    });
+  }
+}
+let editExpId = null;
+function startEditExp(r) {
+  editExpId = r.id;
+  setSel('eCat', 'eCatNew', r.category); syncCat();
+  setSel('eItem', 'eItemNew', r.item); syncItem();
+  $('eUnit').value = r.unit || ''; $('eQty').value = r.qty; $('eAmt').value = r.amount;
+  $('saveExp').textContent = 'Update item'; $('cancelExp').classList.remove('hide');
+  $('eCat').scrollIntoView({behavior: 'smooth', block: 'center'});
+}
+function endEditExp() {
+  editExpId = null; $('saveExp').textContent = 'Add item to batch'; $('cancelExp').classList.add('hide');
+  $('eAmt').value = ''; $('eQty').value = 1; $('eCatNew').value = ''; $('eItemNew').value = '';
+}
+$('saveExp').onclick = async () => {
+  const b = curB();
+  if (!b) return say('Save a batch first, then pick it to add items.', true);
+  const isNewCat = $('eCat').value === NEW;
+  const cat = isNewCat ? $('eCatNew').value.trim() : $('eCat').value;
+  const item = $('eItem').value === NEW ? $('eItemNew').value.trim() : $('eItem').value;
+  const row = {entry_date: b.batch_date, batch_no: b.batch_no, category: cat, item, qty: parseFloat($('eQty').value),
+               unit: $('eUnit').value.trim() || null, amount: parseFloat($('eAmt').value)};
+  if (!cat || !item || isNaN(row.qty) || isNaN(row.amount)) return say('Fill in category, item, qty and amount.', true);
+  if (isNewCat) {
+    const r = await db.from('categories').upsert({name: cat}, {onConflict: 'name'});
+    if (r.error) return say('Could not save category: ' + r.error.message, true);
+  }
+  const {error} = editExpId !== null ? await db.from('expenses').update(row).eq('id', editExpId) : await db.from('expenses').insert(row);
+  if (error) return say('Could not save: ' + error.message, true);
+  say(editExpId !== null ? 'Item updated.' : 'Item added to ' + b.batch_no + '.');
+  endEditExp();
+  await loadCategories(cat);
+  await loadExpenses();
+};
+
+/* ---------- Income ---------- */
+async function loadSources(keep) {
+  const {data, error} = await db.from('income_sources').select('name').order('name');
+  if (error) return say('Could not load income sources: ' + error.message, true);
+  fillSelect($('iSrc'), data.map(r => r.name), '➕ Add new source…', keep);
+  syncSrc();
+}
+function syncSrc() { const n = $('iSrc').value === NEW; $('iSrcNew').classList.toggle('hide', !n); $('srcTools').classList.toggle('hide', n); }
+$('iSrc').onchange = syncSrc;
+let editIncId = null;
+function startEditInc(r) {
+  editIncId = r.id; $('iDate').value = r.entry_date; setSel('iSrc', 'iSrcNew', r.source); syncSrc();
+  $('iDesc').value = r.description || ''; $('iAmt').value = r.amount; $('iMode').value = r.received_mode;
+  $('saveInc').textContent = 'Update income'; $('cancelInc').classList.remove('hide');
+  $('incSec').scrollIntoView({behavior: 'smooth'});
+}
+function endEditInc() {
+  editIncId = null; $('saveInc').textContent = 'Save income'; $('cancelInc').classList.add('hide');
+  $('iAmt').value = ''; $('iDesc').value = ''; $('iSrcNew').value = '';
+}
+async function loadIncome() {
+  const res = await fetchAll('incomes'), t = $('incTbl'); t.innerHTML = '';
+  if (res.error) return say('Could not load income: ' + res.error.message, true);
+  const all = res.data.sort(byDateDesc), data = showAll.inc ? all : all.slice(0, 15);
+  $('moreInc').classList.toggle('hide', all.length <= 15); $('moreInc').textContent = showAll.inc ? 'Show latest 15' : 'Show all (' + all.length + ')';
+  incRows = all; drawCashStats();
+  renderStats('incStats', {total: 'Received so far', cat: 'By source'}, all.map(r => ({d: r.entry_date, a: r.amount})), all.map(r => ({c: r.source, a: r.amount})));
+  if (!data.length) return;
+  t.createTHead().insertRow().innerHTML = '<th>Date</th><th>Source</th><th>Description</th><th class="n">Amount</th><th>Received by</th><th></th>';
+  for (const r of data) {
+    const tr = t.insertRow();
+    cell(tr, r.entry_date); cell(tr, r.source); cell(tr, r.description); cell(tr, r.amount, 'n'); cell(tr, r.received_mode);
+    actBtns(tr, () => startEditInc(r), async () => {
+      if (confirm('Delete this income entry?')) { await db.from('incomes').delete().eq('id', r.id); if (editIncId === r.id) endEditInc(); loadIncome(); }
+    });
+  }
+}
+$('saveInc').onclick = async () => {
+  const isNew = $('iSrc').value === NEW;
+  const src = isNew ? $('iSrcNew').value.trim() : $('iSrc').value;
+  const row = {entry_date: $('iDate').value, source: src, description: $('iDesc').value.trim(),
+               amount: parseFloat($('iAmt').value), received_mode: $('iMode').value};
+  if (!row.entry_date || !src || isNaN(row.amount)) return say('Fill in date, source and amount.', true);
+  if (isNew) {
+    const r = await db.from('income_sources').upsert({name: src}, {onConflict: 'name'});
+    if (r.error) return say('Could not save source: ' + r.error.message, true);
+  }
+  const {error} = editIncId !== null ? await db.from('incomes').update(row).eq('id', editIncId) : await db.from('incomes').insert(row);
+  if (error) return say('Could not save: ' + error.message, true);
+  say(editIncId !== null ? 'Income updated.' : 'Income saved.');
+  endEditInc();
+  await loadSources(src); loadIncome();
+};
+
+/* ---------- Calculator ---------- */
+function evalExpr(src) {
+  const s = src.replace(/\s/g, '').replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+  const t = s.match(/\d*\.?\d+|[-+*\/()%]/g) || [];
+  if (!s || t.join('') !== s) throw 0;
+  let i = 0;
+  const post = v => { while (t[i] === '%') { i++; v /= 100; } return v; };
+  const prim = () => {
+    const x = t[i++];
+    if (x === '(') { const v = add(); if (t[i++] !== ')') throw 0; return post(v); }
+    if (x === '-') return -prim();
+    if (x === '+') return prim();
+    if (x === undefined || isNaN(x)) throw 0;
+    return post(+x);
+  };
+  const mul = () => { let v = prim(); while (t[i] === '*' || t[i] === '/') { const o = t[i++], r = prim(); v = o === '*' ? v * r : v / r; } return v; };
+  const add = () => { let v = mul(); while (t[i] === '+' || t[i] === '-') { const o = t[i++], r = mul(); v = o === '+' ? v + r : v - r; } return v; };
+  const v = add();
+  if (i < t.length || !isFinite(v)) throw 0;
+  return Math.round(v * 1e10) / 1e10;
+}
+const cIn = $('calcIn'), cOut = $('calcOut');
+function preview() { try { cOut.textContent = '= ' + evalExpr(cIn.value); } catch { cOut.textContent = cIn.value ? '…' : ''; } }
+function equals() { try { cIn.value = evalExpr(cIn.value); cOut.textContent = ''; } catch { cOut.textContent = 'Check the expression'; } }
+[['C','⌫','(',')'],['7','8','9','÷'],['4','5','6','×'],['1','2','3','−'],['0','.','%','+']].flat().forEach(k => {
+  const b = document.createElement('button'); b.textContent = k;
+  b.onclick = () => { if (k === 'C') cIn.value = ''; else if (k === '⌫') cIn.value = cIn.value.slice(0, -1); else cIn.value += k; preview(); cIn.focus(); };
+  $('keys').append(b);
+});
+const eq = document.createElement('button'); eq.textContent = '='; eq.className = 'eq'; eq.onclick = equals; $('keys').append(eq);
+cIn.oninput = preview;
+cIn.onkeydown = e => { if (e.key === 'Enter') equals(); };
+function useResult(id, what) {
+  const el = $(id);
+  if (!el) return say('Choose a cash type first.', true);
+  try { el.value = evalExpr(cIn.value); say('Result put in the ' + what + ' amount.'); } catch { say('Calculate a valid number first.', true); }
+}
+$('useCash').onclick = () => useResult('c_amount', 'cash');
+$('useExp').onclick = () => useResult('eAmt', 'expense');
+
+$('bDate').onchange = () => { refreshNextNo(); renderDayBatches(); }; $('eBatch').onchange = syncBatch; $('fDate').onchange = () => fillBatchSelect();
+$('cancelExp').onclick = endEditExp; $('cancelInc').onclick = endEditInc; $('cancelCash').onclick = endEditCash;
+$('moreCash').onclick = () => { showAll.cash = !showAll.cash; loadCash(); };
+$('moreInc').onclick = () => { showAll.inc = !showAll.inc; loadIncome(); };
+nameTools('eCat', 'catTools', 'categories', 'expenses', 'category', 'category', async k => { await loadCategories(k); await loadExpenses(); });
+nameTools('iSrc', 'srcTools', 'income_sources', 'incomes', 'source', 'source', k => { loadSources(k); loadIncome(); });
+
+/* ---------- Login (Supabase Auth: email + password) ---------- */
+let started = false, signUpMode = false;
+function startApp() {
+  if (started) return; started = true;
+  $('bDate').value = today(); $('iDate').value = today(); refreshNextNo();
+  loadCategories().then(loadExpenses); loadBatches(); loadSources(); loadIncome();
+  loadCash();
+}
+const lsay = (t, bad) => { const m = $('lmsg'); m.textContent = t; m.style.color = bad ? 'var(--err)' : 'var(--accent)'; };
+function makeClient() {
+  db = supabase.createClient(url, key);
+  db.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT' && started) location.reload(); });
+}
+function showLogin() {
+  $('app').classList.add('hide'); $('login').classList.remove('hide');
+  $('cfg').classList.toggle('hide', !!(SUPABASE_URL && SUPABASE_KEY) || !!(url && key));
+  if (!$('cfg').classList.contains('hide')) { $('lUrl').value = url; $('lKey').value = key; }
+  $('lEmail').focus();
+}
+function enterApp() { $('login').classList.add('hide'); $('app').classList.remove('hide'); startApp(); }
+function setMode(up) {
+  signUpMode = up;
+  $('lsub').textContent = up ? 'Create your account' : 'Sign in to continue';
+  $('lBtn').textContent = up ? 'Create account' : 'Sign in';
+  $('lSwText').textContent = up ? 'Already have an account?' : 'No account?';
+  $('lSw').textContent = up ? 'Sign in' : 'Create one';
+  $('lPass').autocomplete = up ? 'new-password' : 'current-password';
+  lsay('');
+}
+$('lSw').onclick = () => setMode(!signUpMode);
+$('lSw').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMode(!signUpMode); } };
+$('loginForm').onsubmit = async e => {
+  e.preventDefault();
+  if (!$('cfg').classList.contains('hide')) {
+    url = $('lUrl').value.trim().replace(/\/+$/, ''); key = $('lKey').value.trim();
+    if (!url || !key) return lsay('Enter the project URL and anon key.', true);
+    localStorage.setItem('sb_url', url); localStorage.setItem('sb_key', key); db = null;
+  }
+  if (!db) { try { makeClient(); } catch (err) { return lsay('Invalid Supabase URL or key.', true); } }
+  const email = $('lEmail').value.trim(), password = $('lPass').value;
+  $('lBtn').disabled = true; lsay(signUpMode ? 'Creating account…' : 'Signing in…');
+  const {data, error} = signUpMode ? await db.auth.signUp({email, password}) : await db.auth.signInWithPassword({email, password});
+  $('lBtn').disabled = false;
+  if (error) return lsay(error.message, true);
+  if (!data.session) return lsay('Account created. Check your email to confirm it, then sign in.');
+  $('lPass').value = ''; enterApp();
+};
+$('logout').onclick = async () => { await db.auth.signOut(); location.reload(); };
+(async function boot() {
+  if (url && key) {
+    try { makeClient(); const {data} = await db.auth.getSession(); if (data.session) return enterApp(); } catch (err) {}
+  }
+  showLogin();
+})();
+</script>
+</body>
+</html>

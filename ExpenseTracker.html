@@ -44,8 +44,16 @@ section>details[open]>summary{border-bottom:1px solid var(--line)}
 section>details>*:not(summary){margin-left:18px;margin-right:18px}
 section>details>summary+*{margin-top:16px}
 section>details>*:last-child{margin-bottom:18px}
-.ss{flex:1 1 260px;font-size:13px;font-weight:400;letter-spacing:0;color:var(--mute);line-height:1.45}
-.ss .hi,.ss .lo{font-weight:550}.ss .hi{color:var(--hi)}.ss .lo{color:var(--lo)}
+.shead{display:flex;align-items:center;gap:10px;padding:15px 18px 12px 44px;position:relative;cursor:pointer;user-select:none;font-size:16px;font-weight:650;letter-spacing:-.01em}
+.shead::before{content:"";position:absolute;left:19px;top:50%;width:7px;height:7px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:translateY(-70%) rotate(-45deg);transition:transform .15s}
+section.open>.shead::before{transform:translateY(-70%) rotate(45deg)}
+.shead::after{content:"Add & manage entries";margin-left:auto;font-size:12px;font-weight:500;letter-spacing:0;color:var(--mute)}
+section.open>.shead::after{content:"Hide entries"}
+.shead:hover{background:var(--bg)}
+.shead:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+section>.stats{margin:4px 18px 18px}
+.sbody{padding:18px;border-top:1px solid var(--line)}
+.sbody>h3:first-child{margin-top:0;padding-top:0;border-top:0}
 h3{font:600 11.5px/1.3 var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin-top:24px;margin-bottom:12px;padding-top:18px;border-top:1px solid var(--line)}
 .stats+h3{margin-top:12px}
 
@@ -143,7 +151,7 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 #loginErr{min-height:20px;margin-top:12px;font-size:13px;color:var(--err)}
 
 @media (min-width:700px){.grid>div:has(#eBatch){grid-column:span 2}}
-@media (max-width:640px){#who{display:none}.brand b{white-space:nowrap;font-size:14.5px}.appbar button.alt{white-space:nowrap}.chips{grid-template-columns:repeat(2,1fr);gap:8px}.chips>div{padding:10px 11px}.chips b{font-size:17px}main{padding:14px 10px 90px}section>details>*:not(summary){margin-left:14px;margin-right:14px}.brand small{display:none}.ss{flex-basis:100%}}
+@media (max-width:640px){.shead::after{content:"Entries"}section.open>.shead::after{content:"Hide"}section>.stats{margin:4px 14px 16px}.sbody{padding:14px}#who{display:none}.brand b{white-space:nowrap;font-size:14.5px}.appbar button.alt{white-space:nowrap}.chips{grid-template-columns:repeat(2,1fr);gap:8px}.chips>div{padding:10px 11px}.chips b{font-size:17px}main{padding:14px 10px 90px}section>details>*:not(summary){margin-left:14px;margin-right:14px}.brand small{display:none}}
 </style>
 </head>
 <body>
@@ -178,8 +186,9 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 </details></section>
 
 <section id="expSec">
-  <details id="expDet"><summary>Expense <span class="ss" id="expSS"></span></summary>
+  <div class="shead" id="expHead" role="button" tabindex="0" aria-expanded="false" aria-controls="expBody">Expense</div>
   <div class="stats" id="expStats"></div>
+  <div class="sbody hide" id="expBody">
 
   <h3>1 · New batch</h3>
   <div class="grid">
@@ -221,12 +230,13 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
   </div>
   <div class="tot" id="brSum"></div>
   <div id="browse"></div>
-</details>
+</div>
 </section>
 
 <section id="incSec">
-  <details id="incDet"><summary>Income <span class="ss" id="incSS"></span></summary>
+  <div class="shead" id="incHead" role="button" tabindex="0" aria-expanded="false" aria-controls="incBody">Income</div>
   <div class="stats" id="incStats"></div>
+  <div class="sbody hide" id="incBody">
   <h3>New income entry</h3>
   <div class="grid">
     <div><label for="iDate">Date</label><input type="date" id="iDate"></div>
@@ -240,12 +250,13 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
   <div class="row"><button id="saveInc">Save income</button><button id="cancelInc" class="alt hide">Cancel edit</button></div>
   <div class="wrap"><table id="incTbl"></table></div>
   <button id="moreInc" class="alt hide" style="margin-top:10px"></button>
-</details>
+</div>
 </section>
 
 <section id="cashSec">
-  <details id="cashDet"><summary>Cash <span class="ss" id="cashSS"></span></summary>
+  <div class="shead" id="cashHead" role="button" tabindex="0" aria-expanded="false" aria-controls="cashBody">Cash</div>
   <div class="stats" id="cashStats"></div>
+  <div class="sbody hide" id="cashBody">
   <h3>New cash entry</h3>
   <div class="grid">
     <div><label for="kind">Cash type</label>
@@ -257,15 +268,15 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
   <div class="wrap"><table id="pendTbl"></table></div>
   <div class="wrap"><table id="cashTbl"></table></div>
   <button id="moreCash" class="alt hide" style="margin-top:10px"></button>
-</details>
+</div>
 </section>
 </main>
 </div>
 
 <script>
 // Paste your project values here, or leave blank to be asked once (saved in this browser).
-const SUPABASE_URL = 'https://ewnrcnfyiulrjritaeam.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3bnJjbmZ5aXVscmpyaXRhZWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTEwMDYsImV4cCI6MjEwNzc2NzAwNn0.rbJNPpBgS4k2uKxM9Igk6S7rN_FL3gZcoJu-8jkgeD8';
+const SUPABASE_URL = '';
+const SUPABASE_KEY = '';
 
 const NEW = '__new__';
 const url = SUPABASE_URL || localStorage.getItem('sb_url') || prompt('Supabase project URL');
@@ -346,15 +357,6 @@ function renderStats(boxId, L, totalRows, catRows, extra = [], early = [], modeR
   box.innerHTML = '';
   const items = [[L.total, sum(totalRows)], ...early,
     ['Today', sum(totalRows.filter(r => r.d === td))], ['This month', sum(totalRows.filter(r => (r.d || '').slice(0, 7) === tm))], ...extra];
-  const ss = $(boxId.replace('Stats', 'SS'));   // shown beside the section name, even when collapsed
-  if (ss) {
-    ss.textContent = '';
-    [L.total, ...early.map(e => e[0]), ...extra.map(e => e[0])].forEach((k, i) => {
-      const it = items.find(x => x[0] === k);
-      if (i) ss.append(' · ');
-      ss.append(el('span', k + (it[4] ? ' ' + it[4] : '') + ' ' + inr(it[1]), it[3] || ''));
-    });
-  }
   const chips = el('div', null, 'chips');
   items.forEach(([k, v, note, cls]) => { const d = el('div', k, cls || ''); d.append(el('b', inr(v))); if (note) d.append(el('small', note)); chips.append(d); });
   box.append(chips);
@@ -876,6 +878,14 @@ $('moreCash').onclick = () => { showAll.cash = !showAll.cash; loadCash(); };
 $('moreInc').onclick = () => { showAll.inc = !showAll.inc; loadIncome(); };
 nameTools('eCat', 'catTools', 'categories', 'expenses', 'category', 'category', async k => { await loadCategories(k); await loadExpenses(); });
 nameTools('iSrc', 'srcTools', 'income_sources', 'incomes', 'source', 'source', k => { loadSources(k); loadIncome(); });
+
+/* ---------- Section toggles (collapsed by default; stats stay visible) ---------- */
+['exp', 'inc', 'cash'].forEach(k => {
+  const head = $(k + 'Head'), body = $(k + 'Body');
+  const toggle = () => { const open = !body.classList.toggle('hide'); head.setAttribute('aria-expanded', open); head.parentElement.classList.toggle('open', open); };
+  head.onclick = toggle;
+  head.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
+});
 
 /* ---------- Login ---------- */
 let started = false;

@@ -44,14 +44,15 @@ section>details[open]>summary{border-bottom:1px solid var(--line)}
 section>details>*:not(summary){margin-left:18px;margin-right:18px}
 section>details>summary+*{margin-top:16px}
 section>details>*:last-child{margin-bottom:18px}
-.shead{display:flex;align-items:center;gap:10px;padding:15px 18px 12px 44px;position:relative;cursor:pointer;user-select:none;font-size:16px;font-weight:650;letter-spacing:-.01em}
+.shead{display:flex;align-items:center;gap:10px;padding:15px 18px 15px 44px;position:relative;cursor:pointer;user-select:none;font-size:16px;font-weight:650;letter-spacing:-.01em}
 .shead::before{content:"";position:absolute;left:19px;top:50%;width:7px;height:7px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:translateY(-70%) rotate(-45deg);transition:transform .15s}
 section.open>.shead::before{transform:translateY(-70%) rotate(45deg)}
 .shead::after{content:"Add & manage entries";margin-left:auto;font-size:12px;font-weight:500;letter-spacing:0;color:var(--mute)}
 section.open>.shead::after{content:"Hide entries"}
 .shead:hover{background:var(--bg)}
 .shead:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-section>.stats{margin:4px 18px 18px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 18px 6px;margin-bottom:16px}
+.panel h2{margin:0 0 12px;font-size:16px;font-weight:650;letter-spacing:-.01em}
 .sbody{padding:18px;border-top:1px solid var(--line)}
 .sbody>h3:first-child{margin-top:0;padding-top:0;border-top:0}
 h3{font:600 11.5px/1.3 var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin-top:24px;margin-bottom:12px;padding-top:18px;border-top:1px solid var(--line)}
@@ -151,7 +152,7 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 #loginErr{min-height:20px;margin-top:12px;font-size:13px;color:var(--err)}
 
 @media (min-width:700px){.grid>div:has(#eBatch){grid-column:span 2}}
-@media (max-width:640px){.shead::after{content:"Entries"}section.open>.shead::after{content:"Hide"}section>.stats{margin:4px 14px 16px}.sbody{padding:14px}#who{display:none}.brand b{white-space:nowrap;font-size:14.5px}.appbar button.alt{white-space:nowrap}.chips{grid-template-columns:repeat(2,1fr);gap:8px}.chips>div{padding:10px 11px}.chips b{font-size:17px}main{padding:14px 10px 90px}section>details>*:not(summary){margin-left:14px;margin-right:14px}.brand small{display:none}}
+@media (max-width:640px){.shead::after{content:"Entries"}section.open>.shead::after{content:"Hide"}.panel{padding:14px 14px 4px}.sbody{padding:14px}#who{display:none}.brand b{white-space:nowrap;font-size:14.5px}.appbar button.alt{white-space:nowrap}.chips{grid-template-columns:repeat(2,1fr);gap:8px}.chips>div{padding:10px 11px}.chips b{font-size:17px}main{padding:14px 10px 90px}section>details>*:not(summary){margin-left:14px;margin-right:14px}.brand small{display:none}}
 </style>
 </head>
 <body>
@@ -178,6 +179,11 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 </div></header>
 <div id="msg" role="status" aria-live="polite"></div>
 <main>
+<div class="dash">
+  <div class="panel"><h2>Income</h2><div class="stats" id="incStats"></div></div>
+  <div class="panel"><h2>Expense</h2><div class="stats" id="expStats"></div></div>
+  <div class="panel"><h2>Cash</h2><div class="stats" id="cashStats"></div></div>
+</div>
 
 <section><details id="calcSec"><summary>Calculator</summary>
   <div class="calc"><input id="calcIn" inputmode="decimal" autocomplete="off" placeholder="e.g. 250*3+40">
@@ -185,9 +191,27 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
     <div class="row"><button id="useCash" class="alt">Use in cash amount</button><button id="useExp" class="alt">Use in expense amount</button></div></div>
 </details></section>
 
+<section id="incSec">
+  <div class="shead" id="incHead" role="button" tabindex="0" aria-expanded="false" aria-controls="incBody">Income</div>
+  <div class="sbody hide" id="incBody">
+  <h3>New income entry</h3>
+  <div class="grid">
+    <div><label for="iDate">Date</label><input type="date" id="iDate"></div>
+    <div><label for="iSrc">Source</label><select id="iSrc"></select>
+      <input id="iSrcNew" class="hide" placeholder="New source" style="margin-top:6px"><div class="tools" id="srcTools"></div></div>
+    <div><label for="iDesc">Description</label><input id="iDesc"></div>
+    <div><label for="iAmt">Amount</label><input type="number" id="iAmt" min="0" step="any"></div>
+    <div><label for="iMode">Received by</label>
+      <select id="iMode"><option>Cash</option><option>UPI app</option><option>Cheque</option></select></div>
+  </div>
+  <div class="row"><button id="saveInc">Save income</button><button id="cancelInc" class="alt hide">Cancel edit</button></div>
+  <div class="wrap"><table id="incTbl"></table></div>
+  <button id="moreInc" class="alt hide" style="margin-top:10px"></button>
+</div>
+</section>
+
 <section id="expSec">
   <div class="shead" id="expHead" role="button" tabindex="0" aria-expanded="false" aria-controls="expBody">Expense</div>
-  <div class="stats" id="expStats"></div>
   <div class="sbody hide" id="expBody">
 
   <h3>1 · New batch</h3>
@@ -233,29 +257,8 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 </div>
 </section>
 
-<section id="incSec">
-  <div class="shead" id="incHead" role="button" tabindex="0" aria-expanded="false" aria-controls="incBody">Income</div>
-  <div class="stats" id="incStats"></div>
-  <div class="sbody hide" id="incBody">
-  <h3>New income entry</h3>
-  <div class="grid">
-    <div><label for="iDate">Date</label><input type="date" id="iDate"></div>
-    <div><label for="iSrc">Source</label><select id="iSrc"></select>
-      <input id="iSrcNew" class="hide" placeholder="New source" style="margin-top:6px"><div class="tools" id="srcTools"></div></div>
-    <div><label for="iDesc">Description</label><input id="iDesc"></div>
-    <div><label for="iAmt">Amount</label><input type="number" id="iAmt" min="0" step="any"></div>
-    <div><label for="iMode">Received by</label>
-      <select id="iMode"><option>Cash</option><option>UPI app</option><option>Cheque</option></select></div>
-  </div>
-  <div class="row"><button id="saveInc">Save income</button><button id="cancelInc" class="alt hide">Cancel edit</button></div>
-  <div class="wrap"><table id="incTbl"></table></div>
-  <button id="moreInc" class="alt hide" style="margin-top:10px"></button>
-</div>
-</section>
-
 <section id="cashSec">
   <div class="shead" id="cashHead" role="button" tabindex="0" aria-expanded="false" aria-controls="cashBody">Cash</div>
-  <div class="stats" id="cashStats"></div>
   <div class="sbody hide" id="cashBody">
   <h3>New cash entry</h3>
   <div class="grid">

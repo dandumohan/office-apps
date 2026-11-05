@@ -100,6 +100,9 @@ section.panel.dropzone{outline:2px dashed var(--accent);outline-offset:-2px}
 section.panel.dropzone #lineBody .empty{background:var(--accent-soft)}
 .nowrap{white-space:nowrap}
 .note{font-size:12px;color:var(--warn)}
+.totbar{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding:12px 14px;border-top:1px solid var(--line)}
+.totbar .chip{max-width:none;white-space:nowrap;font-size:13px}
+.totbar .chip.big{font-size:14px;font-weight:600;border-color:var(--accent)}
 .total{display:flex;justify-content:flex-end;gap:16px;padding:12px 14px;font-weight:600;border-top:1px solid var(--line)}
 .total span:last-child{font-variant-numeric:tabular-nums;font-family:var(--mono)}
 .msg{padding:9px 12px;border-radius:5px;margin-top:14px;display:none}
@@ -253,7 +256,13 @@ section.panel.dropzone #lineBody .empty{background:var(--accent-soft)}
       <div class="scroll"><table>
         <thead><tr><th>#</th><th>FSR Code</th><th>Task</th><th class="num">Qty</th><th>Unit</th><th class="num">Rate</th><th class="num">Per</th><th class="num">Duration</th><th class="num">Amount</th><th></th></tr></thead>
         <tbody id="lineBody"></tbody></table></div>
-      <div class="total"><span>Total</span><span id="grand">0.00</span></div>
+      <div class="totbar" id="totBar" aria-live="polite">
+        <span class="chip big"><b>Total Estimate Cost</b> <span id="grandCount">(0 tasks)</span>: <span id="grand">0</span></span>
+        <span class="chip" id="chipMat">Material (0 tasks): 0</span>
+        <span class="chip" id="chipWage">Wage (0 tasks): 0</span>
+        <span class="chip" id="chipWard">Watch &amp; Ward (0 tasks): 0</span>
+        <span class="chip" id="chipCont">Contingency (0 tasks): 0</span>
+      </div>
       <div class="foot">
         <button class="btn" id="clearBtn" type="button">Clear</button>
         <button class="btn primary" id="prevBtn" type="button">Preview</button>
@@ -731,6 +740,22 @@ function renderFsr(){
 /* compulsory tasks: whenever a task under the key below is picked, the listed codes are added too (once) */
 /* default rate / quantity filled when the task is added (the rate only when the FSR has none; the user can still edit both) */
 const TASK_DEFAULTS={'01-06-015':{rate:565,qty:234}};
+/* 01-06-014: its amount is a percentage of the estimate cost.
+   10% when the estimate has 01-05 tasks, else 5% when it has 01-06 tasks (01-06-014 and 01-06-015 themselves do not decide this).
+   Cost = total amount of every line except 01-06-014 and 01-06-015. Quantity is 1; the rate is worked out so that amount = percentage x cost. */
+const PCT_TASK={code:'01-06-014',rules:[['01-05',10],['01-06',5]],ignore:['01-06-014','01-06-015']};
+function pctUpdate(){
+  const i=cur.lines.findIndex(l=>codeEq(l.code,PCT_TASK.code)); if(i<0) return -1;
+  const l=cur.lines[i]; if(l.pctManual) return -1;
+  const deciding=cur.lines.filter(x=>!PCT_TASK.ignore.some(c=>codeEq(x.code,c)));
+  const rule=PCT_TASK.rules.find(r=>deciding.some(x=>codeMatch(r[0],x.code))); if(!rule) return -1;
+  const cost=cur.lines.reduce((t,x)=>t+(PCT_TASK.ignore.some(c=>codeEq(x.code,c))?0:(Number(x.amount)||0)),0);   // 01-06-014 and 01-06-015 are not part of the cost
+  const dur=Number(l.duration)>0?Number(l.duration):1, per=Number(l.per)>0?Number(l.per):1;
+  const rate=Math.round(cost*rule[1]/100*per/dur*100)/100;
+  const before=l.rate+'|'+l.qty+'|'+l.amount;
+  l.qty='1'; l.rate=rate; l.rateText=''; l.pct=rule[1]; l.dq=true; l.nq=false; l.amount=calc(l);
+  return before===(l.rate+'|'+l.qty+'|'+l.amount)?-1:i;
+}
 const COMPULSORY={'01-05':['01-06-14','01-06-15']};
 let compBatch=false;     // true while the AI panel adds many lines; it adds the compulsory tasks itself at the end
 const codeEq=(a,b)=>{ const x=codeSegs(a), y=codeSegs(b); return x.length===y.length&&x.every((v,i)=>v===y[i]); };
@@ -805,6 +830,7 @@ function composeTask(it){
 
 /* ---------- picked lines ---------- */
 function renderLines(){
+  try{ pctUpdate(); }catch(_){}
   $('lineBody').innerHTML=cur.lines.length?cur.lines.map((l,i)=>{
     const needRate=!(Number(l.rate)>0);
     const cu=!!l.custom;
@@ -823,10 +849,42 @@ function renderLines(){
   const missing=cur.lines.filter(l=>!(Number(l.rate)>0)).length;
   $('lineNote').textContent=missing?missing+' line(s) have no numeric rate in the FSR. Enter the rate to get an amount.':'';
 }
-function updateTotals(){ const t=cur.lines.reduce((s,l)=>s+l.amount,0); $('grand').textContent=fmt0(t); $('fAmt').value=fmt0(t); }
+/* Cost chips. A task is counted once, in this order: Watch & Ward (by code), Wage (by words in the task), Material (by words in the task).
+   Contingency = Total estimate cost - (Material + Wage + Watch & Ward), i.e. everything else, including 01-06-014. */
+const COST_RULES={
+  ward:{codes:['01-06-015']},
+  wage:{res:[/\bfilling\b[\s\S]*\b(bags?|pots?|polybags?|polythene)\b|\b(bags?|pots?|polybags?)\b[\s\S]*\bfilling\b/,/\bsow(ing|n)?\b/,/prick/,/\bwater(ing|ed)?\b/,/\bweed/,/\bshift/,/\bapplications?\b/,/site\s+prep|prepar\w*\s+of\s+(the\s+)?site/]},
+  material:{res:[/\bseeds?\b/,/\bplants?\b/,/red\s*soil/,/cow\s*dung/,/fertili[sz]ers?/,/\btransport/]}
+};
+function costGroup(l){
+  if(COST_RULES.ward.codes.some(c=>codeMatch(c,l.code))) return 'ward';
+  if(codeEq(l.code,PCT_TASK.code)) return '';
+  const t=String(l.task||'').toLowerCase();
+  if(COST_RULES.wage.res.some(r=>r.test(t))) return 'wage';
+  if(COST_RULES.material.res.some(r=>r.test(t))) return 'material';
+  return '';
+}
+function costChips(lines){
+  const g={material:{n:0,v:0},wage:{n:0,v:0},ward:{n:0,v:0}}; let t=0;
+  lines.forEach(l=>{ const a=Number(l.amount)||0; t+=a; const k=costGroup(l); if(k){ g[k].n++; g[k].v+=a; } });
+  const used=g.material.n+g.wage.n+g.ward.n;
+  g.cont={n:lines.length-used,v:t-(g.material.v+g.wage.v+g.ward.v)};
+  return {t,n:lines.length,g};
+}
+function updateTotals(){
+  const c=costChips(cur.lines), t=c.t; $('grand').textContent=fmt0(t); $('fAmt').value=fmt0(t);
+  $('grandCount').textContent='('+c.n+' task'+(c.n===1?'':'s')+')';
+  const pl=cur.lines.find(l=>codeEq(l.code,PCT_TASK.code)&&l.pct);
+  [['chipMat','Material',c.g.material],['chipWage','Wage',c.g.wage],['chipWard','Watch & Ward',c.g.ward],['chipCont','Contingency',c.g.cont]].forEach(([id,label,x])=>{
+    const share=t>0?(Math.round(x.v/t*1000)/10)+'%':'0%';
+    $(id).textContent=label+' ('+x.n+' task'+(x.n===1?'':'s')+'): '+fmt0(x.v)+' · '+(id==='chipCont'&&pl?pl.pct+'% of cost':share);
+  });
+}
 $('lineBody').oninput=e=>{
   const f=e.target.dataset.f; if(!f) return; const i=+e.target.dataset.i, l=cur.lines[i];
-  l[f]=e.target.value; if(f==='qty') l.nq=false; if(['code','task','unit'].includes(f)) return; l.amount=calc(l); $('amt'+i).textContent=fmt0(l.amount); e.target.classList.remove('bad'); updateTotals();
+  l[f]=e.target.value; if(f==='qty') l.nq=false; if(['code','task','unit'].includes(f)) return; if(codeEq(l.code,PCT_TASK.code)&&(f==='rate'||f==='qty')) l.pctManual=true; l.amount=calc(l); $('amt'+i).textContent=fmt0(l.amount); e.target.classList.remove('bad');
+  const j=(codeEq(l.code,PCT_TASK.code)?-1:pctUpdate()); if(j>=0){ const q=document.querySelector('[data-f="qty"][data-i="'+j+'"]'), r=document.querySelector('[data-f="rate"][data-i="'+j+'"]'); if(q) q.value=cur.lines[j].qty; if(r){ r.value=cur.lines[j].rate; r.classList.remove('bad'); } const a=$('amt'+j); if(a) a.textContent=fmt0(cur.lines[j].amount); }
+  updateTotals();
 };
 function moveLine(from,to){ if(to<0||to>=cur.lines.length||from===to) return; const [l]=cur.lines.splice(from,1); cur.lines.splice(to,0,l); renderLines(); }
 let dragFrom=null;

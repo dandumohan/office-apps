@@ -4,69 +4,172 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Expense & Cash Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0f2a43">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
-:root{--bg:#f3f5f1;--card:#fff;--ink:#1d2a24;--mute:#66756d;--line:#d9e0da;--accent:#1f6f54;--accent-ink:#fff;--err:#b3261e}
-@media (prefers-color-scheme:dark){:root{--bg:#121815;--card:#1b241f;--ink:#e6eee9;--mute:#93a49a;--line:#2e3b34;--accent:#4cc79b;--accent-ink:#06261a;--err:#ff8a80}}
+:root{color-scheme:light dark;--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+--bg:#f3f5f9;--card:#fff;--ink:#0f1b2d;--mute:#5b6b7f;--line:#e2e8f0;--accent:#0f766e;--accent-ink:#fff;--accent-soft:#e3f3f0;
+--err:#b42318;--hi:#c62828;--lo:#1d4ed8;--bar:#0f2a43;--shadow:0 1px 2px rgba(15,27,45,.05),0 4px 14px rgba(15,27,45,.06)}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#121c2e;--ink:#e7edf6;--mute:#93a4ba;--line:#243452;--accent:#2dd4bf;--accent-ink:#042f2e;--accent-soft:#12302f;
+--err:#ff8a80;--hi:#ff8a80;--lo:#8ab4ff;--bar:#0a1628;--shadow:0 1px 2px rgba(0,0,0,.45)}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Source Sans 3","Segoe UI",system-ui,sans-serif}
-main{max-width:880px;margin:0 auto;padding:20px 14px 60px}
-h1{font:600 26px/1.2 Georgia,"Times New Roman",serif;margin:6px 0 18px}
-h2{font:600 18px/1.3 Georgia,serif;margin:0 0 12px}
-section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:18px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
-label{display:block;font-size:13px;color:var(--mute);margin-bottom:3px}
-input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
-input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-button{padding:9px 16px;border:0;border-radius:6px;background:var(--accent);color:var(--accent-ink);font:600 15px inherit;cursor:pointer}
-button.ghost{background:transparent;color:var(--err);padding:2px 6px;font-weight:400}
-.row{margin-top:14px;display:flex;gap:10px;align-items:center}
-.wrap{overflow-x:auto;margin-top:16px}
-table{border-collapse:collapse;width:100%;font-size:14px}
-th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
-th{color:var(--mute);font-weight:500}
-td.n,th.n{text-align:right}
-.den{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:6px}.den div{display:flex;align-items:center;gap:6px}.den span{min-width:44px;font-weight:600}.den input{width:64px}.den output{margin-left:auto;color:var(--mute);font-size:13px}.tot{margin-top:8px;font-weight:600}
-button.alt{background:transparent;color:var(--accent);border:1px solid var(--accent)}
-summary{cursor:pointer;font:600 18px Georgia,serif}.calc{max-width:320px;margin-top:12px}.calc input{font-size:20px;text-align:right}.calc .row{flex-wrap:wrap;margin-top:10px}.res{text-align:right;color:var(--mute);min-height:24px;margin:4px 0 8px}.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.keys button{background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:12px 0;font-size:17px}.keys button.eq{grid-column:1/-1;background:var(--accent);color:var(--accent-ink);border:0}
-.stats{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:14px;background:var(--bg)}
-.stats>summary{cursor:pointer;font-weight:600;font-size:14px}.stats[open]>summary{margin-bottom:10px}.chips small{display:block;font-size:11px;font-weight:400}
-.chips{display:flex;flex-wrap:wrap;gap:6px 22px;margin-bottom:8px}.chips div{font-size:12px;color:var(--mute)}.chips b{display:block;font-size:18px;color:var(--ink)}
-.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.tabs button{padding:4px 10px;font-size:13px;font-weight:400;background:transparent;color:var(--ink);border:1px solid var(--line)}.tabs button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.br{display:grid;grid-template-columns:96px 1fr 96px;align-items:center;gap:8px;font-size:13px;margin:3px 0}.br span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.br i{display:block;height:8px;background:var(--accent);border-radius:4px;min-width:2px}.br b{text-align:right;font-weight:500}
-button.edit{color:var(--accent)}
-.tools button{padding:2px 6px;font-size:12px;font-weight:400;background:transparent;color:var(--mute);border:0;text-decoration:underline}
-.bcard{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:10px}.bhead{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:14px}.bhead .sp{flex:1}.bcard .wrap{margin-top:6px}
-h3{font:600 15px/1.3 system-ui,sans-serif;color:var(--mute);margin:20px 0 10px}
-#msg{min-height:20px;font-size:14px}
-.hide{display:none}
-.top{display:flex;justify-content:space-between;align-items:center;gap:10px}.top button{padding:6px 12px;font-size:14px}
-#login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px 14px}#login.hide{display:none}
-.lbox{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px}
-.lbox h1{margin:0 0 4px}.lbox p{margin:0 0 16px;color:var(--mute)}.lbox .f{margin-bottom:12px}.lbox button[type=submit]{width:100%;margin-top:4px}
-.lbox .sw{margin-top:12px;text-align:center;font-size:14px;color:var(--mute)}.lbox .sw a{color:var(--accent);cursor:pointer;text-decoration:underline}
-#lmsg{min-height:20px;margin-top:10px;font-size:14px;text-align:center}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+.hide{display:none!important}
+
+/* app bar */
+.appbar{background:var(--bar);color:#fff;position:sticky;top:0;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.14)}
+.appbar .in{max-width:960px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:18px;flex:none}
+.brand b{display:block;font-size:15.5px;font-weight:650;letter-spacing:-.01em;line-height:1.2}
+.brand small{display:block;font-size:11.5px;color:#9fb3c8;line-height:1.2}
+.who{display:flex;align-items:center;gap:12px;font-size:13px;color:#c5d3e2}
+#who{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.appbar button.alt{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:6px 13px}
+.appbar button.alt:hover{background:rgba(255,255,255,.12)}
+main{max-width:960px;margin:0 auto;padding:20px 16px 90px}
+
+/* sections (collapsible cards) */
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+section>details>summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:15px 18px 15px 44px;position:relative;cursor:pointer;list-style:none;user-select:none;font-size:16px;font-weight:650;letter-spacing:-.01em}
+section>details>summary::-webkit-details-marker{display:none}
+section>details>summary::before{content:"";position:absolute;left:19px;top:25px;width:7px;height:7px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:translateY(-70%) rotate(-45deg);transition:transform .15s}
+section>details[open]>summary::before{transform:translateY(-70%) rotate(45deg)}
+section>details>summary:hover{background:var(--bg)}
+section>details[open]>summary{border-bottom:1px solid var(--line)}
+section>details>*:not(summary){margin-left:18px;margin-right:18px}
+section>details>summary+*{margin-top:16px}
+section>details>*:last-child{margin-bottom:18px}
+.ss{flex:1 1 260px;font-size:13px;font-weight:400;letter-spacing:0;color:var(--mute);line-height:1.45}
+.ss .hi,.ss .lo{font-weight:550}.ss .hi{color:var(--hi)}.ss .lo{color:var(--lo)}
+h3{font:600 11.5px/1.3 var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin-top:24px;margin-bottom:12px;padding-top:18px;border-top:1px solid var(--line)}
+.stats+h3{margin-top:12px}
+
+/* forms */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:14px}
+label{display:block;font-size:12px;font-weight:500;color:var(--mute);margin-bottom:5px}
+input,select{width:100%;height:38px;padding:0 11px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:14px var(--font)}
+input[readonly]{background:var(--bg);color:var(--mute)}
+input::placeholder{color:color-mix(in srgb,var(--mute) 70%,transparent)}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{margin-top:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+/* buttons */
+button{font:600 14px var(--font);padding:9px 18px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);cursor:pointer;box-shadow:0 1px 2px rgba(15,27,45,.14);transition:filter .12s,transform .05s,background .12s}
+button:hover{filter:brightness(.93)}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.55;cursor:default}
+button.alt{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:none;font-weight:550}
+button.alt:hover{background:var(--bg);filter:none}
+button.ghost{background:transparent;color:var(--err);padding:3px 9px;font-size:13px;font-weight:550;box-shadow:none}
+button.ghost:hover{background:color-mix(in srgb,var(--err) 10%,transparent);filter:none}
+button.ghost.edit{color:var(--accent)}
+button.ghost.edit:hover{background:var(--accent-soft)}
+.tools{margin-top:3px}
+.tools button{padding:2px 6px;font-size:12px;font-weight:500;background:transparent;color:var(--mute);box-shadow:none;text-decoration:underline}
+
+/* info lines */
+.tot{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:14px;font-size:13px;font-weight:550}
+.tot:empty{display:none}
+#denBox .tot{margin-top:10px}
+.stats .tot{margin-top:4px}
+
+/* tables */
+.wrap{overflow-x:auto;margin-top:14px;border:1px solid var(--line);border-radius:10px}
+.wrap:has(>table:empty){display:none}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);text-align:left;padding:9px 12px;background:var(--bg);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--line)}
+td:first-child,td:last-child,td.n{white-space:nowrap}
+tr:last-child td{border-bottom:0}
+tr:hover td{background:var(--bg)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+
+/* stats */
+.stats{margin-bottom:4px}
+.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px}
+.chips>div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:12px;font-weight:500;color:var(--mute)}
+.chips b{display:block;margin-top:2px;font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums}
+.chips small{display:block;margin-top:3px;font-size:11px;font-weight:400;line-height:1.35;color:var(--mute)}
+.chips .hi,.chips .lo{border-left:4px solid}
+.chips .hi{color:var(--hi);border-left-color:var(--hi)}.chips .hi b{color:var(--hi)}
+.chips .lo{color:var(--lo);border-left-color:var(--lo)}.chips .lo b{color:var(--lo)}
+.tabs{display:flex;flex-wrap:nowrap;width:fit-content;max-width:100%;overflow-x:auto;gap:3px;padding:3px;margin-bottom:12px;background:var(--bg);border:1px solid var(--line);border-radius:10px}
+.tabs button{flex:none;white-space:nowrap;padding:5px 12px;font-size:13px;font-weight:500;background:transparent;color:var(--mute);border-radius:7px;box-shadow:none}
+.tabs button:hover{filter:none;color:var(--ink)}
+.tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(15,27,45,.18)}
+.br{display:grid;grid-template-columns:minmax(80px,140px) 1fr minmax(72px,104px);align-items:center;gap:10px;margin:7px 0;font-size:13px}
+.br span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.br i{display:block;height:8px;min-width:3px;border-radius:99px;background:var(--accent)}
+.br b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* calculator + denominations */
+.calc{max-width:340px}
+.calc input{height:48px;font-size:22px;text-align:right;font-variant-numeric:tabular-nums}
+.res{text-align:right;color:var(--mute);min-height:22px;margin:6px 2px 10px;font-size:13px}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.keys button{background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:12px 0;font-size:17px;font-weight:500;box-shadow:none}
+.keys button.eq{grid-column:1/-1;background:var(--accent);color:var(--accent-ink);border:0;font-weight:700}
+.den{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.den div{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px}
+.den span{min-width:44px;font-weight:600}
+.den input{width:64px;height:32px;padding:0 8px}
+.den output{margin-left:auto;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+
+/* browse cards */
+.bcard{margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.bhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13.5px}
+.bhead .sp{flex:1}
+.bcard .wrap{margin-top:10px}
+
+/* toast */
+#msg{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:50;max-width:min(92vw,560px);padding:11px 16px;border-radius:10px;background:var(--ink);color:var(--card);font-size:13.5px;font-weight:500;border-left:4px solid var(--accent);box-shadow:0 10px 30px rgba(0,0,0,.28)}
+#msg.bad{border-left-color:var(--err)}
+#msg:empty{display:none}
+
+/* login */
+#loginBox{min-height:100vh;display:grid;place-items:center;padding:24px 16px;background:radial-gradient(900px 420px at 50% -8%,color-mix(in srgb,var(--accent) 16%,transparent),transparent),var(--bg)}
+.login{width:100%;max-width:400px;padding:30px 28px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 14px 44px rgba(15,27,45,.14)}
+.login .logo{width:46px;height:46px;border-radius:13px;font-size:23px}
+.login h1{margin:16px 0 4px;font-size:22px;font-weight:700;letter-spacing:-.02em}
+.sub{margin:0 0 22px;color:var(--mute)}
+#lBtn{width:100%;height:42px;margin-top:2px}
+#kind{max-width:340px}
+#loginErr{min-height:20px;margin-top:12px;font-size:13px;color:var(--err)}
+
+@media (min-width:700px){.grid>div:has(#eBatch){grid-column:span 2}}
+@media (max-width:640px){#who{display:none}.brand b{white-space:nowrap;font-size:14.5px}.appbar button.alt{white-space:nowrap}.chips{grid-template-columns:repeat(2,1fr);gap:8px}.chips>div{padding:10px 11px}.chips b{font-size:17px}main{padding:14px 10px 90px}section>details>*:not(summary){margin-left:14px;margin-right:14px}.brand small{display:none}.ss{flex-basis:100%}}
 </style>
 </head>
 <body>
-<div id="login" class="hide">
-  <form class="lbox" id="loginForm" autocomplete="on">
+<div id="loginBox" class="hide">
+  <div class="login">
+    <span class="logo">₹</span>
     <h1>Expense & Cash Tracker</h1>
-    <p id="lsub">Sign in to continue</p>
-    <div id="cfg" class="hide">
-      <div class="f"><label for="lUrl">Supabase project URL</label><input id="lUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></div>
-      <div class="f"><label for="lKey">Supabase anon key</label><input id="lKey" type="password" autocomplete="off"></div>
-    </div>
-    <div class="f"><label for="lEmail">Email</label><input id="lEmail" type="email" autocomplete="username" required></div>
-    <div class="f"><label for="lPass">Password</label><input id="lPass" type="password" autocomplete="current-password" minlength="6" required></div>
-    <button type="submit" id="lBtn">Sign in</button>
-    <div class="sw"><span id="lSwText">No account?</span> <a id="lSw" role="button" tabindex="0">Create one</a></div>
-    <div id="lmsg" role="status"></div>
-  </form>
+    <p class="sub">Sign in to continue</p>
+    <form id="loginForm">
+      <label for="lEmail">Email</label>
+      <input id="lEmail" type="email" autocomplete="username" required>
+      <label for="lPass" style="margin-top:12px">Password</label>
+      <input id="lPass" type="password" autocomplete="current-password" required>
+      <div class="row"><button id="lBtn" type="submit">Sign in</button></div>
+      <div id="loginErr" role="alert"></div>
+    </form>
+  </div>
 </div>
-<main id="app" class="hide">
-<div class="top"><h1>Expense & Cash Tracker</h1><button id="logout" class="alt">Log out</button></div>
-<div id="msg" role="status"></div>
+
+<div id="app" class="hide">
+<header class="appbar"><div class="in">
+  <div class="brand"><span class="logo">₹</span><div><b>Expense & Cash Tracker</b><small>Personal finance</small></div></div>
+  <div class="who"><span id="who"></span><button id="logout" class="alt">Sign out</button></div>
+</div></header>
+<div id="msg" role="status" aria-live="polite"></div>
+<main>
 
 <section><details id="calcSec"><summary>Calculator</summary>
   <div class="calc"><input id="calcIn" inputmode="decimal" autocomplete="off" placeholder="e.g. 250*3+40">
@@ -75,8 +178,8 @@ h3{font:600 15px/1.3 system-ui,sans-serif;color:var(--mute);margin:20px 0 10px}
 </details></section>
 
 <section id="expSec">
-  <details id="expDet"><summary>Expense</summary>
-  <details class="stats" id="expStats"></details>
+  <details id="expDet"><summary>Expense <span class="ss" id="expSS"></span></summary>
+  <div class="stats" id="expStats"></div>
 
   <h3>1 · New batch</h3>
   <div class="grid">
@@ -92,12 +195,14 @@ h3{font:600 15px/1.3 system-ui,sans-serif;color:var(--mute);margin:20px 0 10px}
   <h3>2 · Batch details (add now or any time later)</h3>
   <div class="grid">
     <div><label for="fDate">Find batches by date (optional)</label><input type="date" id="fDate"></div>
+    <div><label for="fNo">Filter by batch no (optional)</label><input id="fNo" list="bnoList" placeholder="e.g. 20261104-02" autocomplete="off"><datalist id="bnoList"></datalist></div>
     <div><label for="eBatch">Batch</label><select id="eBatch"></select></div>
     <div><label for="eSpent">Amount spent</label><input type="number" id="eSpent" min="0" step="any"></div>
     <div><label for="eMode">Payment mode</label><select id="eMode"><option value="">Not set</option><option>Cash</option><option>UPI app</option><option>Cheque</option></select></div>
     <div style="align-self:end;display:flex;gap:8px;flex-wrap:wrap"><button id="updAmt" class="alt">Update batch</button><button id="delBatch" class="alt" style="color:var(--err);border-color:var(--err)">Delete batch</button></div>
   </div>
   <div class="tot" id="batchSum"></div>
+  <div class="wrap"><table id="expTbl"></table></div>
   <div class="grid" style="margin-top:12px">
     <div><label for="eCat">Category</label><select id="eCat"></select>
       <input id="eCatNew" class="hide" placeholder="New category" style="margin-top:6px"><div class="tools" id="catTools"></div></div>
@@ -108,12 +213,11 @@ h3{font:600 15px/1.3 system-ui,sans-serif;color:var(--mute);margin:20px 0 10px}
     <div><label for="eAmt">Amount</label><input type="number" id="eAmt" min="0" step="any"></div>
   </div>
   <div class="row"><button id="saveExp">Add item to batch</button><button id="cancelExp" class="alt hide">Cancel edit</button></div>
-  <div class="wrap"><table id="expTbl"></table></div>
-
   <h3>3 · Browse batches and their items</h3>
   <div class="grid">
     <div><label for="brMonth">Month</label><select id="brMonth"></select></div>
     <div><label for="brDate">Date</label><select id="brDate"></select></div>
+    <div><label for="brNo">Batch no (optional)</label><input id="brNo" list="bnoList" placeholder="e.g. 20261104-02" autocomplete="off"></div>
   </div>
   <div class="tot" id="brSum"></div>
   <div id="browse"></div>
@@ -121,8 +225,9 @@ h3{font:600 15px/1.3 system-ui,sans-serif;color:var(--mute);margin:20px 0 10px}
 </section>
 
 <section id="incSec">
-  <details id="incDet"><summary>Income</summary>
-  <details class="stats" id="incStats"></details>
+  <details id="incDet"><summary>Income <span class="ss" id="incSS"></span></summary>
+  <div class="stats" id="incStats"></div>
+  <h3>New income entry</h3>
   <div class="grid">
     <div><label for="iDate">Date</label><input type="date" id="iDate"></div>
     <div><label for="iSrc">Source</label><select id="iSrc"></select>
@@ -139,8 +244,9 @@ h3{font:600 15px/1.3 system-ui,sans-serif;color:var(--mute);margin:20px 0 10px}
 </section>
 
 <section id="cashSec">
-  <details id="cashDet"><summary>Cash</summary>
-  <details class="stats" id="cashStats"></details>
+  <details id="cashDet"><summary>Cash <span class="ss" id="cashSS"></span></summary>
+  <div class="stats" id="cashStats"></div>
+  <h3>New cash entry</h3>
   <div class="grid">
     <div><label for="kind">Cash type</label>
       <select id="kind"><option value="">Select…</option></select></div>
@@ -154,16 +260,18 @@ h3{font:600 15px/1.3 system-ui,sans-serif;color:var(--mute);margin:20px 0 10px}
 </details>
 </section>
 </main>
+</div>
 
 <script>
 // Paste your project values here, or leave blank to be asked once (saved in this browser).
-const SUPABASE_URL = 'https://ewnrcnfyiulrjritaeam.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3bnJjbmZ5aXVscmpyaXRhZWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTEwMDYsImV4cCI6MjEwNzc2NzAwNn0.rbJNPpBgS4k2uKxM9Igk6S7rN_FL3gZcoJu-8jkgeD8';
+const SUPABASE_URL = '';
+const SUPABASE_KEY = '';
 
 const NEW = '__new__';
-let url = SUPABASE_URL || localStorage.getItem('sb_url') || '';
-let key = SUPABASE_KEY || localStorage.getItem('sb_key') || '';
-let db = null;   // created in boot() once the project URL and key are known
+const url = SUPABASE_URL || localStorage.getItem('sb_url') || prompt('Supabase project URL');
+const key = SUPABASE_KEY || localStorage.getItem('sb_key') || prompt('Supabase anon key');
+if (url && key) { localStorage.setItem('sb_url', url); localStorage.setItem('sb_key', key); }
+const db = supabase.createClient(url, key);
 
 // One structure for every cash type: common fields + extra fields that go into the `details` JSON column.
 const COMMON = [['entry_date','Date','date'],['description','Description','text'],['amount','Amount','number']];
@@ -177,9 +285,9 @@ const KINDS = {
 
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
-const say = (t, bad) => { const m = $('msg'); m.textContent = t; m.style.color = bad ? 'var(--err)' : 'var(--accent)'; };
+const say = (t, bad) => { const m = $('msg'); m.textContent = t; m.className = bad ? 'bad' : ''; clearTimeout(m.t); m.t = setTimeout(() => { m.textContent = ''; }, bad ? 9000 : 4500); };
 const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t ?? v; return o; };
-const cell = (tr, t, cls) => { const c = tr.insertCell(); c.textContent = t ?? ''; if (cls) c.className = cls; return c; };
+const cell = (tr, t, cls) => { const c = tr.insertCell(); c.textContent = cls === 'n' && t !== '' && t != null && !isNaN(t) ? Number(t).toLocaleString('en-IN', {maximumFractionDigits: 3}) : (t ?? ''); if (cls) c.className = cls; return c; };
 
 /* ---------- Shared helpers ---------- */
 const inr = n => { n = Number(n || 0); return (n < 0 ? '-' : '') + '₹' + Math.abs(n).toLocaleString('en-IN', {maximumFractionDigits: 2}); };
@@ -238,9 +346,17 @@ function renderStats(boxId, L, totalRows, catRows, extra = [], early = [], modeR
   box.innerHTML = '';
   const items = [[L.total, sum(totalRows)], ...early,
     ['Today', sum(totalRows.filter(r => r.d === td))], ['This month', sum(totalRows.filter(r => (r.d || '').slice(0, 7) === tm))], ...extra];
-  box.append(el('summary', 'Stats · ' + [L.total, ...early.map(e => e[0]), ...extra.map(e => e[0])].map(k => { const it = items.find(x => x[0] === k); return k + ' ' + inr(it[1]); }).join(' · ')));
+  const ss = $(boxId.replace('Stats', 'SS'));   // shown beside the section name, even when collapsed
+  if (ss) {
+    ss.textContent = '';
+    [L.total, ...early.map(e => e[0]), ...extra.map(e => e[0])].forEach((k, i) => {
+      const it = items.find(x => x[0] === k);
+      if (i) ss.append(' · ');
+      ss.append(el('span', k + (it[4] ? ' ' + it[4] : '') + ' ' + inr(it[1]), it[3] || ''));
+    });
+  }
   const chips = el('div', null, 'chips');
-  items.forEach(([k, v, note]) => { const d = el('div', k); d.append(el('b', inr(v))); if (note) d.append(el('small', note)); chips.append(d); });
+  items.forEach(([k, v, note, cls]) => { const d = el('div', k, cls || ''); d.append(el('b', inr(v))); if (note) d.append(el('small', note)); chips.append(d); });
   box.append(chips);
   const tabs = el('div', null, 'tabs');
   [['date', 'By date'], ['cat', L.cat], ['month', 'By month'], ...(modeRows ? [['mode', 'By payment mode']] : [])].forEach(([id, name]) => {
@@ -441,13 +557,13 @@ $('saveBatch').onclick = async () => {
   const bn = await createBatch(d, amt, $('bPay').value);
   if (!bn) return;
   say('Batch ' + bn + ' saved. Add its details below, now or later.');
-  $('bAmt').value = ''; $('fDate').value = '';
+  $('bAmt').value = ''; $('fDate').value = ''; $('fNo').value = '';
   await loadBatches(bn);
   refreshNextNo();
   $('eCat').focus();
 };
 
-function openBatch(b) { $('fDate').value = ''; fillBatchSelect(b.batch_no); $('eBatch').scrollIntoView({behavior: 'smooth', block: 'center'}); }
+function openBatch(b) { $('fDate').value = ''; $('fNo').value = ''; fillBatchSelect(b.batch_no); $('eBatch').scrollIntoView({behavior: 'smooth', block: 'center'}); }
 
 // Step 3: pick a month (or all), then a date, and see every batch with all its items
 let brMonth = null, brDate = '';
@@ -462,7 +578,8 @@ function renderBrowse() {
   if (brDate && !dates.includes(brDate)) brDate = '';
   const ds = $('brDate'); ds.innerHTML = '';
   ds.append(opt('', 'All dates' + (brMonth ? ' in ' + mlabel(brMonth) : '')), ...dates.map(dt => opt(dt, dt + ' (' + inMonth.filter(b => b.batch_date === dt).length + (inMonth.filter(b => b.batch_date === dt).length === 1 ? ' batch)' : ' batches)')))); ds.value = brDate;
-  const list = inMonth.filter(b => !brDate || b.batch_date === brDate)
+  const bn = $('brNo').value.trim().toLowerCase();
+  const list = inMonth.filter(b => (!brDate || b.batch_date === brDate) && (!bn || b.batch_no.toLowerCase().includes(bn)))
     .sort((a, b) => b.batch_date.localeCompare(a.batch_date) || a.batch_no.localeCompare(b.batch_no));
   const itemsOf = b => expRows.filter(r => r.batch_no === b.batch_no);
   const sum = rows => rows.reduce((a, r) => a + Number(r.amount ?? r.amount_spent ?? 0), 0);
@@ -507,11 +624,11 @@ function renderDayBatches() {
 // Step 2: details for any saved batch
 const curB = () => batchRows.find(b => b.batch_no === $('eBatch').value);
 function fillBatchSelect(keep) {
-  const f = $('fDate').value, sel = $('eBatch');
-  const list = batchRows.filter(b => !f || b.batch_date === f);
+  const f = $('fDate').value, n = $('fNo').value.trim().toLowerCase(), sel = $('eBatch');
+  const list = batchRows.filter(b => (!f || b.batch_date === f) && (!n || b.batch_no.toLowerCase().includes(n)));
   sel.innerHTML = '';
   list.forEach(b => sel.append(opt(b.batch_no, b.batch_no + ' · ' + inr(b.amount_spent) + ' · ' + (b.payment_mode || 'mode not set'))));
-  if (!list.length) sel.append(opt('', f ? 'No batches on this date' : 'No batches yet'));
+  if (!list.length) sel.append(opt('', f || n ? 'No matching batches' : 'No batches yet'));
   const pick = keep || curBatch;
   sel.value = list.some(b => b.batch_no === pick) ? pick : (list[0] ? list[0].batch_no : '');
   syncBatch();
@@ -577,15 +694,26 @@ function syncItem() {
 $('eCat').onchange = syncCat;
 $('eItem').onchange = syncItem;
 
+function itemExtremes() {      // highest and least spend per item (category + item), over all entries
+  const m = {};
+  expRows.forEach(r => { const k = r.category + '|' + r.item; (m[k] ??= {c: r.category, i: r.item, a: 0, n: 0}); m[k].a += Number(r.amount || 0); m[k].n++; });
+  const list = Object.values(m).sort((x, y) => y.a - x.a);
+  if (!list.length) return [];
+  const mk = (label, o, cls) => [label, o.a, o.i + ' (' + o.c + ') · ' + o.n + (o.n === 1 ? ' entry' : ' entries'), cls, o.i];
+  const out = [mk('Highest expenditure item', list[0], 'hi')];
+  if (list.length > 1) out.push(mk('Least expenditure item', list[list.length - 1], 'lo'));
+  return out;
+}
 function drawExpStats() {
   renderStats('expStats', {total: 'Spent so far', cat: 'By category'},
     batchRows.map(b => ({d: b.batch_date, a: b.amount_spent})), expRows.map(r => ({c: r.category, a: r.amount})),
-    [], [], batchRows.map(b => ({d: b.batch_date, m: b.payment_mode, a: b.amount_spent})));
+    itemExtremes(), [], batchRows.map(b => ({d: b.batch_date, m: b.payment_mode, a: b.amount_spent})));
 }
 async function loadBatches(keep) {
   const res = await fetchAll('expense_batches');
   if (res.error) return say('Could not load batches: ' + res.error.message, true);
   batchRows = res.data.sort((a, b) => b.batch_date.localeCompare(a.batch_date) || b.batch_no.localeCompare(a.batch_no));
+  $('bnoList').replaceChildren(...batchRows.map(b => opt(b.batch_no)));
   fillBatchSelect(keep); drawExpStats(); drawCashStats(); renderDayBatches(); renderBrowse();
 }
 async function loadExpenses() {
@@ -742,67 +870,38 @@ function useResult(id, what) {
 $('useCash').onclick = () => useResult('c_amount', 'cash');
 $('useExp').onclick = () => useResult('eAmt', 'expense');
 
-$('bDate').onchange = () => { refreshNextNo(); renderDayBatches(); }; $('eBatch').onchange = syncBatch; $('fDate').onchange = () => fillBatchSelect();
+$('bDate').onchange = () => { refreshNextNo(); renderDayBatches(); }; $('eBatch').onchange = syncBatch; $('fDate').onchange = () => fillBatchSelect(); $('fNo').oninput = () => fillBatchSelect(); $('brNo').oninput = renderBrowse;
 $('cancelExp').onclick = endEditExp; $('cancelInc').onclick = endEditInc; $('cancelCash').onclick = endEditCash;
 $('moreCash').onclick = () => { showAll.cash = !showAll.cash; loadCash(); };
 $('moreInc').onclick = () => { showAll.inc = !showAll.inc; loadIncome(); };
 nameTools('eCat', 'catTools', 'categories', 'expenses', 'category', 'category', async k => { await loadCategories(k); await loadExpenses(); });
 nameTools('iSrc', 'srcTools', 'income_sources', 'incomes', 'source', 'source', k => { loadSources(k); loadIncome(); });
 
-/* ---------- Login (Supabase Auth: email + password) ---------- */
-let started = false, signUpMode = false;
-function startApp() {
-  if (started) return; started = true;
+/* ---------- Login ---------- */
+let started = false;
+function loadAll() {
   $('bDate').value = today(); $('iDate').value = today(); refreshNextNo();
-  loadCategories().then(loadExpenses); loadBatches(); loadSources(); loadIncome();
-  loadCash();
+  loadCategories().then(loadExpenses); loadBatches(); loadSources(); loadIncome(); loadCash();
 }
-const lsay = (t, bad) => { const m = $('lmsg'); m.textContent = t; m.style.color = bad ? 'var(--err)' : 'var(--accent)'; };
-function makeClient() {
-  db = supabase.createClient(url, key);
-  db.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT' && started) location.reload(); });
-}
-function showLogin() {
-  $('app').classList.add('hide'); $('login').classList.remove('hide');
-  $('cfg').classList.toggle('hide', !!(SUPABASE_URL && SUPABASE_KEY) || !!(url && key));
-  if (!$('cfg').classList.contains('hide')) { $('lUrl').value = url; $('lKey').value = key; }
-  $('lEmail').focus();
-}
-function enterApp() { $('login').classList.add('hide'); $('app').classList.remove('hide'); startApp(); }
-function setMode(up) {
-  signUpMode = up;
-  $('lsub').textContent = up ? 'Create your account' : 'Sign in to continue';
-  $('lBtn').textContent = up ? 'Create account' : 'Sign in';
-  $('lSwText').textContent = up ? 'Already have an account?' : 'No account?';
-  $('lSw').textContent = up ? 'Sign in' : 'Create one';
-  $('lPass').autocomplete = up ? 'new-password' : 'current-password';
-  lsay('');
-}
-$('lSw').onclick = () => setMode(!signUpMode);
-$('lSw').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMode(!signUpMode); } };
 $('loginForm').onsubmit = async e => {
   e.preventDefault();
-  if (!$('cfg').classList.contains('hide')) {
-    url = $('lUrl').value.trim().replace(/\/+$/, ''); key = $('lKey').value.trim();
-    if (!url || !key) return lsay('Enter the project URL and anon key.', true);
-    localStorage.setItem('sb_url', url); localStorage.setItem('sb_key', key); db = null;
-  }
-  if (!db) { try { makeClient(); } catch (err) { return lsay('Invalid Supabase URL or key.', true); } }
-  const email = $('lEmail').value.trim(), password = $('lPass').value;
-  $('lBtn').disabled = true; lsay(signUpMode ? 'Creating account…' : 'Signing in…');
-  const {data, error} = signUpMode ? await db.auth.signUp({email, password}) : await db.auth.signInWithPassword({email, password});
+  $('loginErr').textContent = ''; $('lBtn').disabled = true;
+  const {error} = await db.auth.signInWithPassword({email: $('lEmail').value.trim(), password: $('lPass').value});
   $('lBtn').disabled = false;
-  if (error) return lsay(error.message, true);
-  if (!data.session) return lsay('Account created. Check your email to confirm it, then sign in.');
-  $('lPass').value = ''; enterApp();
+  if (error) $('loginErr').textContent = error.message;
 };
-$('logout').onclick = async () => { await db.auth.signOut(); location.reload(); };
-(async function boot() {
-  if (url && key) {
-    try { makeClient(); const {data} = await db.auth.getSession(); if (data.session) return enterApp(); } catch (err) {}
-  }
-  showLogin();
-})();
+$('logout').onclick = () => db.auth.signOut();
+db.auth.onAuthStateChange((event, session) => {
+  setTimeout(() => {      // deferred: supabase-js advises against awaiting its calls inside this callback
+    if (session) {
+      $('who').textContent = session.user.email || '';
+      if (!started) { started = true; $('loginBox').classList.add('hide'); $('app').classList.remove('hide'); $('lPass').value = ''; loadAll(); }
+    } else {
+      started = false; $('app').classList.add('hide'); $('loginBox').classList.remove('hide');
+      batchRows = []; expRows = []; cashRows = []; incRows = []; $('msg').textContent = '';
+    }
+  }, 0);
+});
 </script>
 </body>
 </html>

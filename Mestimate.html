@@ -223,6 +223,19 @@ section.panel.dropzone #lineBody .empty{background:var(--accent-soft)}
       </div>
     </section>
 
+    <section class="panel" id="nurPanel" hidden>
+      <header><h2>Nursery bags, beds and poly pots</h2><span class="note">Chapter 01: bag size gives beds (fsr_bags_per_bed); poly pot size gives weight (fsr_poly_pots).</span></header>
+      <div class="ai-body">
+        <div class="ai-row">
+          <label for="nurSize">Bag size</label><select id="nurSize"></select>
+          <label for="nurPot">Poly pot size</label><select id="nurPot"></select>
+          <label for="nurBags">No. of bags / pots (seedlings)</label><input id="nurBags" inputmode="numeric" placeholder="e.g. 20000" style="width:130px">
+          <button class="btn" id="nurApply" type="button">Apply to nursery tasks</button>
+        </div>
+        <div class="ai-status" id="nurInfo" role="status"></div>
+      </div>
+    </section>
+
     <section class="panel" id="aiPanel">
       <header><h2>AI estimate agent</h2><span class="note">Describe the work. The agent picks FSR items and quantities; rates come from the FSR.</span></header>
       <div class="ai-body">
@@ -324,6 +337,10 @@ window.FSR_CONFIG={ url:'https://ewnrcnfyiulrjritaeam.supabase.co', anonKey:'eyJ
 (function(){
 const $=id=>document.getElementById(id);
 const CHAP={'01':'Chapter I: Nurseries','02':'Chapter II: Plantations','03':'Chapter III: Departmental Extraction Works','04':'Chapter IV: Research Items','05':'Chapter V: Miscellaneous Items'};
+const NURERR={};          // errors from reading fsr_bags_per_bed / fsr_poly_pots
+let POTRAW=[];
+let POTS=[];            // fsr_poly_pots rows {size, w} (w = weight per 1000)
+let BAGS=[];            // fsr_bags_per_bed rows {size, perBed}
 let items=[];           // FSR rows
 let masters=[];         // {no,type,desc,year,chapter}
 let tasks=[];           // {no,slno,task,code,qty,unit,rate,per,amount}
@@ -364,7 +381,7 @@ function makeDb(){
     async restore(){ const p=await profile(); if(p&&p.status==='Active'&&!p.locked) return p; if(p) await sb.auth.signOut(); return null; },
     async signIn(u,pw){ const d=await fn('auth-login',{user_name:u,password:pw}); ok(await sb.auth.setSession(d.session)); const p=await profile(); if(!p) throw new Error('No profile for this account.'); return p; },
     async signOut(){ try{ await sb.rpc('log_logout'); }catch(_){} await sb.auth.signOut(); },
-    async loadAll(){ const [items,org,vss,schemes,estimates,tasks]=await Promise.all([all('fsr_items'),all('org_units'),all('vss'),all('schemes'),all('estimates'),all('estimate_tasks')]); return {items,org,vss,schemes,estimates,tasks}; },
+    async loadAll(){ const [items,org,vss,schemes,estimates,tasks,bags,pots]=await Promise.all([all('fsr_items'),all('org_units'),all('vss'),all('schemes'),all('estimates'),all('estimate_tasks'),all('fsr_bags_per_bed','bag_size').catch(e=>{ NURERR.bags=e.message||String(e); return []; }),all('fsr_poly_pots','size').catch(e=>{ NURERR.pots=e.message||String(e); return []; })]); return {items,org,vss,schemes,estimates,tasks,bags,pots}; },
     async loadEstimates(){ const [estimates,tasks]=await Promise.all([all('estimates'),all('estimate_tasks')]); return {estimates,tasks}; },
     async loadMasters(){ const [org,vss,schemes]=await Promise.all([all('org_units'),all('vss'),all('schemes')]); return {org,vss,schemes}; },
     async saveEstimate(id,m,t){ return ok(await sb.rpc('save_estimate',{p_id:id,m,t})); },
@@ -467,7 +484,7 @@ function makeTokenDb(){
       if(pb){ await sb.auth.signOut(); loginLog(id,S(pr.data.name),'Login','Blocked',pb); throw new Error(pb); }
       const u=mapProfile(pr.data); loginLog(who.identity||id,who.name,'Login','Success',''); return u; },
     async signOut(){ if(who.identity) loginLog(who.identity,who.name,'Logout','Success',''); who={identity:'',name:''}; await sb.auth.signOut(); },
-    async loadAll(){ try{ const r=await Promise.all([all('fsr_items','id'),masters(),loadEst()]); return Object.assign({items:r[0]},r[1],r[2]); }
+    async loadAll(){ try{ const r=await Promise.all([all('fsr_items','id'),masters(),loadEst(),all('fsr_bags_per_bed').catch(e=>{ NURERR.bags=e.message||String(e); return []; }),all('fsr_poly_pots').catch(e=>{ NURERR.pots=e.message||String(e); return []; })]); return Object.assign({items:r[0],bags:r[3],pots:r[4]},r[1],r[2]); }
       catch(e){ throw new Error(/does not exist|schema cache|relation|column/i.test(e.message||'')?e.message+' \u2014 run fsr_integration.sql in this Supabase project first.':(e.message||String(e))); } },
     loadEstimates:loadEst, loadMasters:masters,
     async saveEstimate(id,m,t){ const r=ok(await sb.rpc('save_fsr_estimate',{p_id:id,m,t})); actLog(id?'Updated estimate':'Added estimate',m.esti_type+' '+m.esti_no+'/'+m.year); return r; },
@@ -526,6 +543,12 @@ async function loadAll(){
   const d=await db.loadAll();
   items=d.items.map(r=>({code:r.code,sub:r.subheading||'',desc:r.description||'',rate:r.rate!=null?Number(r.rate):(r.rate_text||''),unit:r.unit||''}));
   ORG=d.org; VSSR=d.vss; SCH=d.schemes; mapEstimates(d);
+  BAGS=(d.bags||[]).map(r=>({size:String(r.bag_size==null?'':r.bag_size).trim(),perBed:Number(r.bags_per_bed)})).filter(b=>b.size&&b.perBed>0);
+  /* weight_per_1000 is text (for example "5.5 kg" or "12.50"): take the first number in it; a value written in grams is converted to kg */
+  const potNum=t=>{ const str=String(t==null?'':t).replace(/,/g,''), m=str.match(/\d+(?:\.\d+)?/); if(!m) return 0; let n=parseFloat(m[0]); if(/\d\s*(gm|gms|gram|grams|g)\b/i.test(str)&&!/kg|kilo/i.test(str)) n/=1000; return n; };
+  POTRAW=d.pots||[];
+  const col=(r,n)=>{ const k=Object.keys(r).find(x=>x.toLowerCase()===n); return k?r[k]:undefined; };
+  POTS=POTRAW.map(r=>{ const sz=col(r,'size'), w=col(r,'weight_per_1000'); return {size:String(sz==null?'':sz).trim(),w:potNum(w),wtxt:String(w==null?'':w).trim()}; }).filter(x=>x.size);
 }
 const tsFmt=t=>{ const d=new Date(t); if(isNaN(d)) return String(t||''); const z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+' '+z(d.getHours())+':'+z(d.getMinutes())+':'+z(d.getSeconds()); };
 
@@ -685,12 +708,13 @@ function lRender(){
 /* ---------- chapters + FSR picker ---------- */
 function buildChapters(){
   const codes=[...new Set(items.map(i=>i.code.slice(0,2)))].sort();
-  $('fChap').innerHTML=codes.map(c=>'<option value="'+c+'">'+c+' – '+esc((CHAP[c]||'Chapter '+c).replace(/^Chapter [IVX]+: /,''))+'</option>').join('');
+  $('fChap').innerHTML=codes.map(c=>'<option value="'+c+'">'+c+' – '+esc((CHAP[c]||'Chapter '+c).replace(/^Chapter [IVX]+: /,''))+'</option>').join(''); try{ nurUi(); }catch(_){}
 }
 const sel=new Set();
 function selUi(){ const n=sel.size,b=$('addSel'); b.textContent='Add selected ('+n+')'; b.disabled=!n; }
 let subSel='', subChap='';
 function renderFsr(){
+  if(typeof nurUi==='function') nurUi();
   const ch=$('fChap').value, q=$('q').value.trim().toLowerCase();
   const picked=new Map(); cur.lines.forEach(l=>picked.set(l.code,(picked.get(l.code)||0)+1));
   const NOSUB='(No sub-heading)', subOf=i=>cleanSub(i.sub)||NOSUB;
@@ -704,9 +728,27 @@ function renderFsr(){
   $('cnt').textContent=rows.length+' items'; selUi();
   $('fsrBody').innerHTML=rows.map(i=>'<tr class="'+(picked.has(i.code)?'picked':'')+'" draggable="true" data-drag="'+i.code+'" title="Drag to Picked tasks"><td><input type="checkbox" data-sel="'+i.code+'" aria-label="Select '+i.code+'"'+(sel.has(i.code)?' checked':'')+'></td><td class="code">'+i.code+'</td><td>'+esc(i.desc)+'</td><td><button class="btn small" type="button" data-pick="'+i.code+'">'+(picked.has(i.code)?'Pick again ('+picked.get(i.code)+')':'Pick')+'</button></td></tr>').join('')||'<tr><td colspan="4" class="empty">No items match.</td></tr>';
 }
-function addItem(it){
+/* compulsory tasks: whenever a task under the key below is picked, the listed codes are added too (once) */
+/* default rate / quantity filled when the task is added (the rate only when the FSR has none; the user can still edit both) */
+const TASK_DEFAULTS={'01-06-015':{rate:565,qty:234}};
+const COMPULSORY={'01-05':['01-06-14','01-06-15']};
+let compBatch=false;     // true while the AI panel adds many lines; it adds the compulsory tasks itself at the end
+const codeEq=(a,b)=>{ const x=codeSegs(a), y=codeSegs(b); return x.length===y.length&&x.every((v,i)=>v===y[i]); };
+function compulsoryFor(code){ const out=[]; Object.keys(COMPULSORY).forEach(k=>{ if(codeMatch(k,code)) COMPULSORY[k].forEach(c=>{ if(!out.includes(c)) out.push(c); }); }); return out; }
+function ensureCompulsory(code){
+  const miss=[];
+  compulsoryFor(code).forEach(c=>{ if(cur.lines.some(l=>codeEq(l.code,c))) return; const it=items.find(i=>codeEq(i.code,c)); if(it) addItem(it,true); else miss.push(c); });
+  if(miss.length) $('lineNote').textContent='Compulsory task(s) not found in the FSR: '+miss.join(', ');
+  return miss;
+}
+function addItem(it,internal){
   const u=splitUnit(it.unit), num=typeof it.rate==='number';
-  cur.lines.push({code:it.code,task:composeTask(it),qty:'',unit:u.unit,per:u.per,duration:1,rate:num?it.rate:'',rateText:num?'':String(it.rate||'No rate in FSR'),amount:0});
+  const l={code:it.code,task:composeTask(it),qty:'',unit:u.unit,per:u.per,duration:1,rate:num?it.rate:'',rateText:num?'':String(it.rate||'No rate in FSR'),amount:0};
+  cur.lines.push(l);
+  if(it.code.startsWith('01-')&&typeof nurCalc==='function') nurSet(l,true);
+  const dk=Object.keys(TASK_DEFAULTS).find(k=>codeEq(k,it.code));
+  if(dk){ const d=TASK_DEFAULTS[dk]; if(!(Number(l.rate)>0)){ l.rate=d.rate; l.rateText=''; } if(d.qty){ l.qty=String(d.qty); l.nq=false; l.dq=true; } l.amount=calc(l); }
+  if(!internal&&!compBatch) ensureCompulsory(it.code);
 }
 function focusQty(i){ const q=document.querySelector('[data-f=qty][data-i="'+i+'"]'); if(q){ q.scrollIntoView({block:'center'}); q.focus({preventScroll:true}); } }
 $('fsrBody').onclick=e=>{
@@ -784,7 +826,7 @@ function renderLines(){
 function updateTotals(){ const t=cur.lines.reduce((s,l)=>s+l.amount,0); $('grand').textContent=fmt0(t); $('fAmt').value=fmt0(t); }
 $('lineBody').oninput=e=>{
   const f=e.target.dataset.f; if(!f) return; const i=+e.target.dataset.i, l=cur.lines[i];
-  l[f]=e.target.value; if(['code','task','unit'].includes(f)) return; l.amount=calc(l); $('amt'+i).textContent=fmt0(l.amount); e.target.classList.remove('bad'); updateTotals();
+  l[f]=e.target.value; if(f==='qty') l.nq=false; if(['code','task','unit'].includes(f)) return; l.amount=calc(l); $('amt'+i).textContent=fmt0(l.amount); e.target.classList.remove('bad'); updateTotals();
 };
 function moveLine(from,to){ if(to<0||to>=cur.lines.length||from===to) return; const [l]=cur.lines.splice(from,1); cur.lines.splice(to,0,l); renderLines(); }
 let dragFrom=null;
@@ -903,6 +945,7 @@ function openEstimate(k){
   cascade(0,[ci,m.division,m.range,m.beat,m.vss],true);
   $('fType').value=m.type; if(m.scheme) setSel('fScheme',m.scheme); setSel('fYear',m.year); $('fNo').value=m.no; $('fDesc').value=m.desc;
   if([...$('fChap').options].some(o=>o.value===m.chapter)) $('fChap').value=m.chapter;
+  try{ nurUi(); }catch(_){}
   $('modeTitle').textContent='Edit estimate '+estiLabel(m); $('modeNote').textContent='';
   hush(); renderLines(); renderFsr(); renderList(); setFsr(!cur.lines.length);
 }
@@ -960,17 +1003,130 @@ $('pvSave').onclick=async()=>{
   renderList(); say('Estimate '+estiLabel({type,no,year})+' saved ('+cur.lines.length+' task'+(cur.lines.length===1?'':'s')+').');
 };
 
+/* ---------- nursery: bag size -> beds, poly pot size -> weight ---------- */
+const isNur=()=>$('fChap').value==='01';
+const nurN=()=>Math.round(Number(String($('nurBags').value).replace(/,/g,'')))||0;
+function nurCalc(){            // beds from fsr_bags_per_bed
+  const b=BAGS.find(x=>x.size===$('nurSize').value), bags=nurN();
+  if(!b||!(bags>0)) return null;
+  return {size:b.size,perBed:b.perBed,bags,beds:Math.round(bags/b.perBed*100)/100}   // 2 digits after the decimal, not rounded up to a whole bed;
+}
+function potCalc(){            // weight from fsr_poly_pots: weight_per_1000 x pots / 1000
+  const x=POTS.find(v=>v.size===$('nurPot').value), n=nurN();
+  if(!x||!(n>0)) return null;
+  return {size:x.size,weightPer1000:x.w,pots:n,weight:Math.round(x.w*n/1000*100)/100};
+}
+/* quantity for a nursery line from its unit and name:
+   poly pot / poly bag task in kg -> weight; per bed -> beds; bags / seedlings / Nos -> number of bags; anything else is left for the user */
+/* FSR codes whose quantity is always the calculated poly pot weight (add more codes here if needed) */
+const POT_WEIGHT_CODES=['01-05-003'];
+function nurQty(l){
+  if(!isNur()) return 0;
+  const u=String(l.unit||'').toLowerCase(), t=String(l.task||'').toLowerCase();
+  const pc=potCalc(), c=nurCalc();
+  if(pc&&POT_WEIGHT_CODES.includes(String(l.code||'').trim())) return pc.weight;
+  if(pc&&/\b(kg|kgs|kilogram)/.test(u)&&/poly\s*-?\s*(thene|pot|bag)|polypot|polybag/.test(t)) return pc.weight;
+  if(c&&/\bbeds?\b/.test(u)) return c.beds;
+  if(c&&/bag|seedling|plant|\bnos?\b/.test(u)) return c.bags;
+  return 0;
+}
+function nurSet(l,force){
+  if(l.dq) return false;                 // task has its own default quantity
+  if(!force&&!l.nq) return false;
+  const q=nurQty(l); if(!(q>0)) return false;
+  l.qty=String(q); l.nq=true; l.amount=calc(l); return true;
+}
+function nurFill(sel,rows,label){
+  const keep=sel.value; sel.innerHTML=rows.length?rows.map(r=>'<option value="'+esc(r.size)+'">'+esc(r.size)+'</option>').join(''):'<option value="">'+label+'</option>';
+  if(keep&&rows.some(r=>r.size===keep)) sel.value=keep;
+}
+function nurUi(){
+  const show=isNur(); $('nurPanel').hidden=!show; if(!show) return;
+  nurFill($('nurSize'),BAGS,'(no rows in fsr_bags_per_bed)'); nurFill($('nurPot'),POTS,'(no rows in fsr_poly_pots)');
+  const c=nurCalc(), pc=potCalc(), b=BAGS.find(x=>x.size===$('nurSize').value), x=POTS.find(v=>v.size===$('nurPot').value), parts=[];
+  if(c) parts.push('Bag size '+c.size+': '+c.perBed+' bags per bed, so '+c.bags+' bags need '+c.beds+' bed(s).'); else if(b) parts.push('Bag size '+b.size+': '+b.perBed+' bags per bed.');
+  if(pc) parts.push('Poly pot size '+pc.size+': weight_per_1000 "'+x.wtxt+'" (value used '+pc.weightPer1000+'), so '+pc.pots+' pots weigh '+pc.weight+'.'); else if(x) parts.push('Poly pot size '+x.size+': weight_per_1000 "'+x.wtxt+'" (value used '+x.w+').');
+  if(!POTS.length){
+    if(NURERR.pots) parts.push('fsr_poly_pots could not be read: '+NURERR.pots);
+    else if(POTRAW.length) parts.push('fsr_poly_pots has '+POTRAW.length+' row(s) but no readable "size" column. Columns found: '+Object.keys(POTRAW[0]).join(', ')+'.');
+    else parts.push('fsr_poly_pots returned no rows. Check the table has data and that this user is allowed to read it (row-level security).');
+  } else if(x&&!(x.w>0)) parts.push('Poly pot size '+x.size+' has no readable weight_per_1000 value.');
+  if(!BAGS.length&&NURERR.bags) parts.push('fsr_bags_per_bed could not be read: '+NURERR.bags);
+  if(!nurN()) parts.push('Enter the number of bags / pots to fill in quantities.');
+  $('nurInfo').textContent=parts.join(' ');
+}
+function nurRefresh(force){ nurUi(); let n=0; cur.lines.forEach(l=>{ if(nurSet(l,force)) n++; }); renderLines(); renderFsr(); return n; }
+$('nurSize').onchange=()=>nurRefresh(false);
+$('nurPot').onchange=()=>nurRefresh(false);
+$('nurBags').oninput=()=>nurRefresh(false);
+$('nurApply').onclick=()=>{ if(!nurCalc()&&!potCalc()){ $('nurInfo').textContent='Choose a bag size or poly pot size and enter the number of bags / pots first.'; return; } const n=nurRefresh(true); $('nurInfo').textContent+=' '+n+' line(s) updated.'; };
+
 /* ---------- AI estimate agent ---------- */
 /* The browser never holds the agent ID or API key: it calls the Edge Function "fsr-agent" (see supabase/functions/fsr-agent),
    which holds them as secrets. The agent only chooses FSR codes + quantities; rate, per, unit and amount come from the FSR table here. */
 const AI_STOP=new Set('the a an of and or for to in on at by with from per is are be as this that it its all any into using use work works item items cost estimate prepare make raise plant planting pick select code codes starting under quantity qty each'.split(' '));
 /* codes typed like 01-11 or 01-11-03: EVERY FSR item under that code is added by the page itself (exact match, no AI choice) */
 function aiPrefixes(text){ return [...new Set(String(text).match(/\b\d{2}(?:-\d{1,3}){1,3}\b/g)||[])]; }
+/* bag / pot size variants: the same task can exist once per size (e.g. "... of size 6x9"). */
+const codeSegs=c=>String(c||'').trim().split(/[-.]/).map(x=>parseInt(x,10));
+function codeMatch(prefix,code){ const p=codeSegs(prefix), c=codeSegs(code); return p.length>0&&p.length<=c.length&&p.every((v,i)=>v===c[i]); }
+const sizeNorm=t=>String(t==null?'':t).toLowerCase().replace(/(\d)\s*(?:cm|mm|inches|inch|in)\b/g,'$1').replace(/[×*]/g,'x').replace(/[^a-z0-9.]/g,'');
+/* a size written two ways, e.g. 10 cm x 17.5 cm (4"X7"), matches a description that uses either way */
+function sizeAlts(size){ const t=String(size==null?'':size), alts=[t.replace(/\([^)]*\)/g,' ')]; (t.match(/\(([^)]*)\)/g)||[]).forEach(x=>alts.push(x.slice(1,-1))); alts.push(t);
+  return [...new Set(alts.map(sizeNorm).filter(x=>x.length>=3))]; }
+function sizeIn(hay,size){ return sizeAlts(size).some(n=>{ let i=hay.indexOf(n);
+  while(i!==-1){ const pv=hay[i-1], nx=hay[i+n.length]; if(!(pv&&/[0-9.]/.test(pv))&&!(nx&&/[0-9]/.test(nx))) return true; i=hay.indexOf(n,i+1); } return false; }); }
+function sizePairs(text){
+  const out=[], re=/(\d+(?:\.\d+)?)\s*(?:cm|mm|inches|inch|in|"|\u201d|\u2033|'')?\s*[x\u00d7*]\s*(\d+(?:\.\d+)?)/gi; let m;
+  const t=String(text==null?'':text);
+  while((m=re.exec(t))){ const a=parseFloat(m[1]), b=parseFloat(m[2]); if(a>0&&b>0&&a<=60&&b<=60) out.push(a+'x'+b); }
+  return out;
+}
+function aiKnownSizes(){ return [...new Set(BAGS.map(b=>b.size).concat(POTS.map(x=>x.size)))].filter(x=>sizeAlts(x).length); }
+function aiSizeFromText(text){
+  const h=sizeNorm(text); let best='';
+  aiKnownSizes().forEach(z=>{ if(sizeIn(h,z)&&sizeNorm(z).length>sizeNorm(best).length) best=z; });
+  if(best) return best;
+  const m=String(text).match(/\b(?:bag|pot|poly\s*pot|polybag)?\s*size\s*(?:of|=|:)?\s*([0-9][0-9a-z.\s×x*"']*?)(?=\s*(?:,|;|\band\b|\bduration\b|\bqty\b|\bquantity\b|$))/i);
+  return m?m[1].trim():'';
+}
 function aiForced(text){
-  const pre=aiPrefixes(text); if(!pre.length) return [];
-  return items.filter(it=>pre.some(x=>it.code===x||it.code.startsWith(x+'-')||it.code.startsWith(x+'.')));
+  const pre=aiPrefixes(text); if(!pre.length) return {list:[],size:'',dropped:0,total:0};
+  const all=items.filter(it=>pre.some(x=>codeMatch(x,it.code)));
+  /* size from the request, else the Bag size chosen in the nursery panel */
+  let size=aiSizeFromText(text), fromPanel=false;
+  if(!size&&isNur()&&$('nurSize').value){ size=$('nurSize').value; fromPanel=true; }
+  if(!size) return {list:all,size:'',dropped:0,total:all.length};
+  const known=aiKnownSizes(); if(!known.some(z=>sizeAlts(z).some(a=>sizeAlts(size).includes(a)))) known.push(size);
+  /* the requested size as comparable pairs: from its alternatives (10x17.5, 4x7), either order */
+  const want=new Set(); sizeAlts(size).concat(sizePairs(size)).forEach(a=>{ want.add(a); const m=/^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$/.exec(a); if(m) want.add(m[2]+'x'+m[1]); });
+  const list=all.filter(it=>{ const txt=composeTask(it)+' '+it.desc+' '+it.sub, h=sizeNorm(txt), ms=known.filter(z=>sizeIn(h,z)), pr=sizePairs(txt);
+    if(!ms.length&&!pr.length) return true;                       // no size in the text: a generic task
+    return ms.some(z=>sizeAlts(z).some(a=>want.has(a)))||pr.some(x=>want.has(x)); });
+  return {list,size,fromPanel,dropped:all.length-list.length,total:all.length,sample:all.slice(0,3).map(x=>(String(x.sub||'').trim()?String(x.sub).trim().slice(0,70)+' / ':'')+String(x.desc||'').trim().slice(0,90)).join('  |  ')};
 }
 /* "quantity 1000 each" / "qty 500" typed in the request: used for forced items the agent gave no quantity for */
+/* durations typed in the request:
+   "watering duration 3, weeding duration 2, shifting duration 2"  -> by task keyword (also "duration 3 for watering")
+   "duration 3" on its own                                          -> every added task without a keyword rule */
+function aiStem(w){ w=w.toLowerCase(); return w.length>4?w.replace(/(ing|es|s)$/,''):w; }
+function aiDurations(text){
+  const out={global:0,rules:[]};
+  String(text).split(/[,;\n]|\band\b/i).forEach(seg=>{
+    const m=seg.match(/(.*?)\bduration\b\s*(?:of|=|:)?\s*(\d+(?:\.\d+)?)(?:\s*(?:for|to|on)\s+(.+))?/i); if(!m) return;
+    const n=Number(m[2]); if(!(n>0)) return;
+    const codes=String(m[3]||m[1]).match(/\b\d{2}(?:-\d{1,3}){1,3}\b/g)||[];
+    if(codes.length){ codes.forEach(c=>out.rules.push({code:c,kw:[],n})); return; }
+    const kw=String(m[3]||m[1]).toLowerCase().replace(/\b\d[\d\-.]*\b/g,' ').replace(/[^a-z ]+/g,' ').split(/\s+/).filter(w=>w.length>2&&!AI_STOP.has(w)).map(aiStem);
+    if(kw.length) out.rules.push({kw,n}); else out.global=n;
+  });
+  return out;
+}
+function aiRuleDur(rules,task,code){
+  const t=String(task||'').toLowerCase(), cd=String(code||''); let best=null;
+  rules.forEach(r=>{ if(r.code){ if(codeMatch(r.code,cd)) best={kw:[],n:r.n,top:true}; return; } if(best&&best.top) return; if(r.kw.every(k=>t.includes(k))&&(!best||r.kw.length>best.kw.length)) best=r; });
+  return best?best.n:0;
+}
 function aiLocalQty(text){ const m=String(text).match(/\b(?:qty|quantity)\s*(?:of|=|:)?\s*(\d+(?:\.\d+)?)/i); return m?Number(m[1]):0; }
 const aiRow=it=>({code:it.code,description:composeTask(it).slice(0,160),unit:it.unit,rate:typeof it.rate==='number'?it.rate:null});
 function aiCandidates(text,limit,forced){
@@ -985,8 +1141,9 @@ async function aiGenerate(){
   const text=$('aiText').value.trim();
   if(!text){ aiStatus('Describe the work first.',true); return; }
   if(!can('write')&&!can('update')){ aiStatus('You do not have permission to create or change estimates.',true); return; }
-  const pre=aiPrefixes(text), forced=aiForced(text);
-  if(pre.length&&!forced.length){ aiStatus('No FSR items start with '+pre.join(', ')+'. Check the code.',true); return; }
+  const pre=aiPrefixes(text), fo=aiForced(text), forced=fo.list;
+  if(pre.length&&!forced.length){ aiStatus(fo.total?(fo.total+' FSR item(s) found under '+pre.join(', ')+', but none mention size '+fo.size+'. First items: "'+fo.sample+'". Write the size the way the descriptions do, or leave the size out.'):'No FSR items start with '+pre.join(', ')+'. Check the code.',true); return; }
+  if(fo.size){ const same=(a,b)=>sizeAlts(a).some(x=>sizeAlts(b).includes(x)); const hit=BAGS.find(b=>same(b.size,fo.size)); if(hit&&isNur()) $('nurSize').value=hit.size; const ph=POTS.find(x=>same(x.size,fo.size)); if(ph&&isNur()) $('nurPot').value=ph.size; nurUi(); }
   const cands=aiCandidates(text,100,forced);
   if(!cands.length){ aiStatus('No FSR items matched those words. Add more detail (for example "pit digging 45 cm" or "seedlings in polybags").',true); return; }
   const cfg=window.FSR_CONFIG||{}, url=cfg.agentUrl||(cfg.url+'/functions/v1/fsr-agent');
@@ -995,28 +1152,38 @@ async function aiGenerate(){
   try{
     const token=db.accessToken?await db.accessToken():'';
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','apikey':cfg.anonKey,'Authorization':'Bearer '+(token||cfg.anonKey)},
-      body:JSON.stringify({request:text,candidates:cands,context:{type:$('fType').value,year:$('fYear').value,scheme:$('fScheme').value}})});
+      body:JSON.stringify({request:text,candidates:cands,context:{type:$('fType').value,year:$('fYear').value,scheme:$('fScheme').value,nursery:isNur()?{beds:nurCalc(),polyPots:potCalc()}:null}})});
     const j=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(j.error||('Agent request failed ('+r.status+').'));
     d=j;
   }catch(e){ agentErr=e.message||String(e); }
   try{
     if(agentErr&&!forced.length){ aiStatus(agentErr,true); return; }
-    const byCode=new Map(items.map(i=>[i.code,i])), aq=new Map((d.lines||[]).map(x=>[String(x.code||'').trim(),Number(x.qty)||0]));
+    const byCode=new Map(items.map(i=>[i.code,i])), aq=new Map((d.lines||[]).map(x=>[String(x.code||'').trim(),Number(x.qty)||0])), dq=new Map((d.lines||[]).map(x=>[String(x.code||'').trim(),Number(x.duration)||0])), durs=aiDurations(text), ld=durs.global;
     const lq=aiLocalQty(text), added=[], skipped=[], seen=new Set();
+    compBatch=true;
     if($('aiReplace').checked) cur.lines=[]; else cur.lines.forEach(l=>seen.add(l.code));
-    const put=(it,q)=>{ if(seen.has(it.code)) return; seen.add(it.code); addItem(it); const l=cur.lines[cur.lines.length-1]; if(q>0) l.qty=String(q); l.amount=calc(l); l.ai=true; added.push(it.code); };
-    forced.forEach(it=>put(it,aq.get(it.code)||lq));                    // every item under the typed code, in FSR order
-    (d.lines||[]).forEach(x=>{ const c=String(x.code||'').trim(), it=byCode.get(c); if(!it){ skipped.push(c||'?'); return; } if(pre.length) return; put(it,Number(x.qty)||lq); });   // with a typed code, only that code's items are added
+    const put=(it,q,du)=>{ if(seen.has(it.code)) return; seen.add(it.code); addItem(it); const l=cur.lines[cur.lines.length-1]; if(q>0&&!l.nq&&!l.dq) l.qty=String(q); const rd=aiRuleDur(durs.rules,l.task,l.code), dd=rd||du; if(dd>0) l.duration=String(dd); l.amount=calc(l); l.ai=true; added.push(it.code); };
+    forced.forEach(it=>put(it,aq.get(it.code)||lq,dq.get(it.code)||ld));                    // every item under the typed code, in FSR order
+    (d.lines||[]).forEach(x=>{ const c=String(x.code||'').trim(), it=byCode.get(c); if(!it){ skipped.push(c||'?'); return; } if(pre.length) return; put(it,Number(x.qty)||lq,Number(x.duration)||ld); });   // with a typed code, only that code's items are added
+    /* compulsory tasks for every code that was added (e.g. 01-05-xxx -> 01-06-14, 01-06-15) */
+    const compAdded=[], compMiss=[];
+    [...new Set(added.flatMap(c=>compulsoryFor(c)))].forEach(c=>{
+      const it=items.find(i=>codeEq(i.code,c)); if(!it){ compMiss.push(c); return; }
+      if(seen.has(it.code)||cur.lines.some(l=>codeEq(l.code,c))) return;
+      put(it,aq.get(c)||lq,dq.get(c)||ld); compAdded.push(it.code); });
     if(d.description&&!$('fDesc').value.trim()) $('fDesc').value=String(d.description).slice(0,500);
     renderLines(); renderFsr(); setFsr(false);
     let msg=added.length?added.length+' task(s) added'+(forced.length?' ('+forced.length+' under '+pre.join(', ')+')':'')+'. Check each quantity and rate before saving.':'Nothing new was added (the items may already be picked).';
     const noq=cur.lines.filter(l=>l.ai&&!(Number(l.qty)>0)).length; if(noq) msg+=' '+noq+' line(s) have no quantity: enter it, or write "quantity 1000 each" in the request.';
+    if(compAdded.length) msg+=' Compulsory task(s) added: '+compAdded.join(', ')+'.';
+    if(compMiss.length) msg+=' Compulsory task(s) not found in the FSR: '+compMiss.join(', ')+'.';
+    if(fo.size) msg+=' Size '+fo.size+(fo.fromPanel?' (from the Bag size dropdown)':'')+': '+(fo.dropped?fo.dropped+' task variant(s) for other sizes were skipped.':'no size was found in the task text, so nothing was filtered. First items: "'+fo.sample+'".');
     if(agentErr) msg+=' The AI agent could not be reached ('+agentErr+'), so only the exact code items were added.';
     if(skipped.length) msg+=' Ignored unknown codes: '+skipped.join(', ')+'.';
     aiStatus(msg,!added.length);
   }catch(e){ aiStatus(e.message||String(e),true); }
-  finally{ $('aiGo').disabled=false; }
+  finally{ compBatch=false; $('aiGo').disabled=false; }
 }
 $('aiGo').onclick=aiGenerate;
 

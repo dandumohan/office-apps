@@ -141,6 +141,14 @@ section.panel.dropzone #lineBody .empty{background:var(--accent-soft)}
 .chapfoot td{font-weight:600;border-top:2px solid var(--line)}
 #chapBody td.task{max-width:340px;font-size:13px}
 .welcome h2{color:var(--fg);font-size:18px;margin-bottom:6px}
+
+/* ---- AI estimate agent ---- */
+.ai-body{display:flex;flex-direction:column;gap:8px;padding:12px 14px}
+.ai-body textarea{min-height:84px;width:100%}
+.ai-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ai-status{font-size:13px;color:var(--muted)}
+.ai-status.bad{color:var(--bad)}
+.badge.ai{background:var(--accent-soft)}
 </style>
 
 </head>
@@ -212,6 +220,18 @@ section.panel.dropzone #lineBody .empty{background:var(--accent-soft)}
         <div class="f"><label for="fChap">Chapter</label><select id="fChap"></select></div>
         <div class="f wide"><label for="fDesc">Esti_description</label><textarea id="fDesc"></textarea></div>
         <div class="f"><label for="fAmt">Amount (rounded)</label><input id="fAmt" readonly value="0"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="aiPanel">
+      <header><h2>AI estimate agent</h2><span class="note">Describe the work. The agent picks FSR items and quantities; rates come from the FSR.</span></header>
+      <div class="ai-body">
+        <textarea id="aiText" aria-label="Describe the work" placeholder="e.g. Raise 20,000 teak seedlings in the nursery and plant 10 ha with pit digging, planting and 2 weedings."></textarea>
+        <div class="ai-row">
+          <button class="btn primary" id="aiGo" type="button">Generate estimate</button>
+          <label class="ai-row"><input type="checkbox" id="aiReplace"> Replace existing picked tasks</label>
+          <span class="ai-status" id="aiStatus" role="status"></span>
+        </div>
       </div>
     </section>
 
@@ -340,6 +360,7 @@ function makeDb(){
   const profile=async()=>{ const {data:{session}}=await sb.auth.getSession(); if(!session) return null; return ok(await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle()); };
   return {
     profile,
+    async accessToken(){ const {data:{session}}=await sb.auth.getSession(); return session?session.access_token:''; },
     async restore(){ const p=await profile(); if(p&&p.status==='Active'&&!p.locked) return p; if(p) await sb.auth.signOut(); return null; },
     async signIn(u,pw){ const d=await fn('auth-login',{user_name:u,password:pw}); ok(await sb.auth.setSession(d.session)); const p=await profile(); if(!p) throw new Error('No profile for this account.'); return p; },
     async signOut(){ try{ await sb.rpc('log_logout'); }catch(_){} await sb.auth.signOut(); },
@@ -938,6 +959,66 @@ $('pvSave').onclick=async()=>{
   cur.mode='edit'; cur.key=k; $('modeTitle').textContent='Edit estimate '+estiLabel({type,no,year});
   renderList(); say('Estimate '+estiLabel({type,no,year})+' saved ('+cur.lines.length+' task'+(cur.lines.length===1?'':'s')+').');
 };
+
+/* ---------- AI estimate agent ---------- */
+/* The browser never holds the agent ID or API key: it calls the Edge Function "fsr-agent" (see supabase/functions/fsr-agent),
+   which holds them as secrets. The agent only chooses FSR codes + quantities; rate, per, unit and amount come from the FSR table here. */
+const AI_STOP=new Set('the a an of and or for to in on at by with from per is are be as this that it its all any into using use work works item items cost estimate prepare make raise plant planting pick select code codes starting under quantity qty each'.split(' '));
+/* codes typed like 01-11 or 01-11-03: EVERY FSR item under that code is added by the page itself (exact match, no AI choice) */
+function aiPrefixes(text){ return [...new Set(String(text).match(/\b\d{2}(?:-\d{1,3}){1,3}\b/g)||[])]; }
+function aiForced(text){
+  const pre=aiPrefixes(text); if(!pre.length) return [];
+  return items.filter(it=>pre.some(x=>it.code===x||it.code.startsWith(x+'-')||it.code.startsWith(x+'.')));
+}
+/* "quantity 1000 each" / "qty 500" typed in the request: used for forced items the agent gave no quantity for */
+function aiLocalQty(text){ const m=String(text).match(/\b(?:qty|quantity)\s*(?:of|=|:)?\s*(\d+(?:\.\d+)?)/i); return m?Number(m[1]):0; }
+const aiRow=it=>({code:it.code,description:composeTask(it).slice(0,160),unit:it.unit,rate:typeof it.rate==='number'?it.rate:null});
+function aiCandidates(text,limit,forced){
+  const fset=new Set(forced.map(i=>i.code));
+  const words=[...new Set(String(text).toLowerCase().replace(/[^a-z0-9 ]+/g,' ').split(/\s+/).filter(w=>w.length>2&&!AI_STOP.has(w)))];
+  const scored=words.length?items.map(it=>{ const hay=(it.code+' '+it.sub+' '+it.desc).toLowerCase(); let sc=0; words.forEach(w=>{ if(hay.includes(w)) sc+=1+(w.length>5?.5:0); }); return {it,sc}; })
+    .filter(x=>x.sc>0&&!fset.has(x.it.code)).sort((a,b)=>b.sc-a.sc).slice(0,Math.max(0,limit-Math.min(forced.length,100))):[];
+  return forced.slice(0,100).map(aiRow).concat(scored.map(x=>aiRow(x.it)));
+}
+function aiStatus(t,bad){ const e=$('aiStatus'); e.textContent=t||''; e.className='ai-status'+(bad?' bad':''); }
+async function aiGenerate(){
+  const text=$('aiText').value.trim();
+  if(!text){ aiStatus('Describe the work first.',true); return; }
+  if(!can('write')&&!can('update')){ aiStatus('You do not have permission to create or change estimates.',true); return; }
+  const pre=aiPrefixes(text), forced=aiForced(text);
+  if(pre.length&&!forced.length){ aiStatus('No FSR items start with '+pre.join(', ')+'. Check the code.',true); return; }
+  const cands=aiCandidates(text,100,forced);
+  if(!cands.length){ aiStatus('No FSR items matched those words. Add more detail (for example "pit digging 45 cm" or "seedlings in polybags").',true); return; }
+  const cfg=window.FSR_CONFIG||{}, url=cfg.agentUrl||(cfg.url+'/functions/v1/fsr-agent');
+  $('aiGo').disabled=true; aiStatus('Agent is preparing the estimate…');
+  let d={lines:[]}, agentErr='';
+  try{
+    const token=db.accessToken?await db.accessToken():'';
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','apikey':cfg.anonKey,'Authorization':'Bearer '+(token||cfg.anonKey)},
+      body:JSON.stringify({request:text,candidates:cands,context:{type:$('fType').value,year:$('fYear').value,scheme:$('fScheme').value}})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.error||('Agent request failed ('+r.status+').'));
+    d=j;
+  }catch(e){ agentErr=e.message||String(e); }
+  try{
+    if(agentErr&&!forced.length){ aiStatus(agentErr,true); return; }
+    const byCode=new Map(items.map(i=>[i.code,i])), aq=new Map((d.lines||[]).map(x=>[String(x.code||'').trim(),Number(x.qty)||0]));
+    const lq=aiLocalQty(text), added=[], skipped=[], seen=new Set();
+    if($('aiReplace').checked) cur.lines=[]; else cur.lines.forEach(l=>seen.add(l.code));
+    const put=(it,q)=>{ if(seen.has(it.code)) return; seen.add(it.code); addItem(it); const l=cur.lines[cur.lines.length-1]; if(q>0) l.qty=String(q); l.amount=calc(l); l.ai=true; added.push(it.code); };
+    forced.forEach(it=>put(it,aq.get(it.code)||lq));                    // every item under the typed code, in FSR order
+    (d.lines||[]).forEach(x=>{ const c=String(x.code||'').trim(), it=byCode.get(c); if(!it){ skipped.push(c||'?'); return; } if(pre.length) return; put(it,Number(x.qty)||lq); });   // with a typed code, only that code's items are added
+    if(d.description&&!$('fDesc').value.trim()) $('fDesc').value=String(d.description).slice(0,500);
+    renderLines(); renderFsr(); setFsr(false);
+    let msg=added.length?added.length+' task(s) added'+(forced.length?' ('+forced.length+' under '+pre.join(', ')+')':'')+'. Check each quantity and rate before saving.':'Nothing new was added (the items may already be picked).';
+    const noq=cur.lines.filter(l=>l.ai&&!(Number(l.qty)>0)).length; if(noq) msg+=' '+noq+' line(s) have no quantity: enter it, or write "quantity 1000 each" in the request.';
+    if(agentErr) msg+=' The AI agent could not be reached ('+agentErr+'), so only the exact code items were added.';
+    if(skipped.length) msg+=' Ignored unknown codes: '+skipped.join(', ')+'.';
+    aiStatus(msg,!added.length);
+  }catch(e){ aiStatus(e.message||String(e),true); }
+  finally{ $('aiGo').disabled=false; }
+}
+$('aiGo').onclick=aiGenerate;
 
 /* ---------- reports ---------- */
 const RF=[['rCircle','circle'],['rScheme','scheme'],['rYear','year'],['rType','type'],['rDiv','division'],['rRange','range'],['rBeat','beat'],['rVss','vss'],['rNo','no']];

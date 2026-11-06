@@ -3,1378 +3,918 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FSR Estimate Entry</title>
+<title>Expense & Cash Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0f2a43">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
-/* Layout: sticky top bar, estimate list on the left, editor (form, FSR picker, picked lines) on the right; stacks on phones */
-:root{
-  --bg:#f3f4ef; --surface:#ffffff; --surface2:#eef0e8; --fg:#1d2420; --muted:#5d675f; --line:#d5d9cd;
-  --accent:#1f5d3a; --accent-fg:#ffffff; --accent-soft:#dcebe1; --warn:#9a5b00; --warn-soft:#fbefd5; --bad:#a3322a; --bad-soft:#f8e1de;
-  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
-}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#121712; --surface:#1a211b; --surface2:#222b23; --fg:#e6ebe4; --muted:#9aa69b;
-  --line:#344036; --accent:#6dbf8b; --accent-fg:#0d1a11; --accent-soft:#233a2b; --warn:#e3b45e; --warn-soft:#3a2f17; --bad:#ec8b82; --bad-soft:#3d1f1c; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#121712; --surface:#1a211b; --surface2:#222b23; --fg:#e6ebe4; --muted:#9aa69b;
-  --line:#344036; --accent:#6dbf8b; --accent-fg:#0d1a11; --accent-soft:#233a2b; --warn:#e3b45e; --warn-soft:#3a2f17; --bad:#ec8b82; --bad-soft:#3d1f1c; color-scheme:dark}
+:root{color-scheme:light dark;--font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+--bg:#f3f5f9;--card:#fff;--ink:#0f1b2d;--mute:#5b6b7f;--line:#e2e8f0;--accent:#0f766e;--accent-ink:#fff;--accent-soft:#e3f3f0;
+--err:#b42318;--hi:#c62828;--lo:#1d4ed8;--bar:#0f2a43;--shadow:0 1px 2px rgba(15,27,45,.05),0 4px 14px rgba(15,27,45,.06)}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#121c2e;--ink:#e7edf6;--mute:#93a4ba;--line:#243452;--accent:#2dd4bf;--accent-ink:#042f2e;--accent-soft:#12302f;
+--err:#ff8a80;--hi:#ff8a80;--lo:#8ab4ff;--bar:#0a1628;--shadow:0 1px 2px rgba(0,0,0,.45)}}
 *{box-sizing:border-box}
-[hidden]{display:none!important}
-html,body{height:auto}
-body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--sans);padding-inline:16px;padding-block:0 32px}
-h1,h2,h3{margin:0;text-wrap:balance}
-button,input,select,textarea{font:inherit;color:inherit}
-.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding-block:12px;border-bottom:1px solid var(--line);margin-inline:-16px;padding-inline:16px}
-.bar h1{font-size:18px;font-weight:600}
-.bar .sub{color:var(--muted);font-size:12px}
-.bar .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.chip{font-family:var(--mono);font-size:12px;padding:4px 8px;border:1px solid var(--line);background:var(--surface);border-radius:4px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chip.dirty{border-color:var(--warn);color:var(--warn)}
-.btn{border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:5px;cursor:pointer;font-weight:500}
-.btn:hover{background:var(--surface2)}
-.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
-.btn.primary:hover{filter:brightness(1.08)}
-.btn.danger{color:var(--bad);border-color:var(--bad)}
-.btn.small{padding:3px 8px;font-size:12px}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.layout{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;padding-top:18px;align-items:start}
-.layout>aside{position:sticky;top:calc(74px + env(safe-area-inset-top,0px))}
-@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}.layout>aside{position:static;order:2}}
-#estList{max-height:190px;overflow:auto}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;min-width:0}
-.panel>header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
-.panel>header h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
-.panel .body{padding:14px}
-.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
-.est{display:flex;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);align-items:center}
-.est:last-child{border-bottom:0}
-.est.active{background:var(--accent-soft)}
-.est b{font-family:var(--mono);font-weight:500}
-.est small{display:block;color:var(--muted)}
-.est .row-actions{display:flex;gap:6px;flex-shrink:0}
-.empty{padding:22px 14px;color:var(--muted)}
-.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.f{display:flex;flex-direction:column;gap:4px;min-width:0}
-.f.wide{grid-column:1/-1}
-.f label{font-size:12px;color:var(--muted);font-family:var(--mono)}
-.f input,.f select,.f textarea{border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:7px 8px;width:100%}
-.f textarea{resize:vertical;min-height:54px}
-.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
-.subdd{position:relative;flex:1 1 100%;min-width:0}
-.subbtn{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;width:100%;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:6px 8px;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
-.subbtn:hover{background:var(--surface2)}
-.sublist{position:absolute;left:0;top:calc(100% + 4px);z-index:15;width:max(100%,520px);max-width:calc(100vw - 40px);max-height:320px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:5px;box-shadow:0 6px 18px rgba(0,0,0,.22)}
-.subopt{padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;white-space:normal;overflow-wrap:anywhere;line-height:1.4}
-.subopt:last-child{border-bottom:0}
-.subopt:hover,.subopt:focus-visible{background:var(--accent-soft)}
-.subopt.on{background:var(--accent-soft);font-weight:600}
-.tools input{flex:1 1 200px;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:6px 8px}
-.scroll{overflow:auto;max-width:100%}
-.scroll.tall{max-height:calc(100vh - 230px);min-height:280px}
-table{border-collapse:collapse;width:100%}
-th{position:sticky;top:0;background:var(--surface2);text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-td.code,.mono{font-family:var(--mono);white-space:nowrap}
-td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
-tr.picked td{background:var(--accent-soft)}
-td input{border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:4px 6px;width:96px;text-align:right;font-variant-numeric:tabular-nums}
-td input.per{width:64px}
-td input.bad{border-color:var(--bad);background:var(--bad-soft)}
-.layout.nofsr{grid-template-columns:minmax(0,1fr)}
-.layout.nofsr>aside{display:none}
-.hdr-actions{display:flex;gap:6px;flex-wrap:wrap}
-td input.txt,td textarea.txt{width:100%;min-width:150px;text-align:left}
-td textarea.txt{border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:4px 6px;min-height:54px;resize:vertical}
-td input.codein{width:96px;text-align:left;font-family:var(--mono)}
-td input.unitin{width:80px;text-align:left}
-.badge{display:inline-block;font-size:11px;color:var(--warn);background:var(--warn-soft);padding:1px 6px;border-radius:3px;margin-top:4px}
-.grip{cursor:grab;color:var(--muted);user-select:none;padding:0 4px;font-size:16px;line-height:1}
-#lineBody tr.dragover td{box-shadow:inset 0 2px 0 var(--accent)}
-#lineBody tr.dragging{opacity:.45}
-#fsrBody tr[data-drag]{cursor:grab}
-#fsrBody tr.fdragging{opacity:.45}
-#lineBody tr.dragover-after td{box-shadow:inset 0 -2px 0 var(--accent)}
-section.panel.dropzone{outline:2px dashed var(--accent);outline-offset:-2px}
-section.panel.dropzone #lineBody .empty{background:var(--accent-soft)}
-.nowrap{white-space:nowrap}
-.note{font-size:12px;color:var(--warn)}
-.totbar{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding:12px 14px;border-top:1px solid var(--line)}
-.totbar .chip{max-width:none;white-space:nowrap;font-size:13px}
-.totbar .chip.big{font-size:14px;font-weight:600;border-color:var(--accent)}
-.total{display:flex;justify-content:flex-end;gap:16px;padding:12px 14px;font-weight:600;border-top:1px solid var(--line)}
-.total span:last-child{font-variant-numeric:tabular-nums;font-family:var(--mono)}
-.msg{padding:9px 12px;border-radius:5px;margin-top:14px;display:none}
-.msg.show{display:block}
-.msg.ok{background:var(--accent-soft);color:var(--accent)}
-.msg.err{background:var(--bad-soft);color:var(--bad)}
-.foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--line)}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-start;justify-content:center;padding:calc(24px + env(safe-area-inset-top,0px)) 16px 24px;overflow:auto;z-index:20}
-.modal .sheet{background:var(--surface);border:1px solid var(--line);border-radius:6px;width:min(920px,100%);min-width:0}
-.sheet h2{font-size:17px;padding:14px 16px;border-bottom:1px solid var(--line)}
-.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 16px;padding:14px 16px}
-.kv div span{display:block;font-size:12px;color:var(--muted);font-family:var(--mono)}
-.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;padding:14px 16px}
-.rgrid .f.wide{grid-column:1/-1}
-.checks{display:flex;gap:18px;flex-wrap:wrap}
-.checks label{display:flex;gap:6px;align-items:center;color:var(--fg);font-family:var(--sans);font-size:14px}
-.rsum{padding:0 16px 14px;color:var(--muted)}
-.rsum b{color:var(--fg);font-family:var(--mono)}
-.welcome{padding:36px 16px;text-align:center;color:var(--muted)}
-.loginbox{display:flex;flex-direction:column;gap:12px;max-width:320px;margin:18px auto 0;text-align:left}
-.loginbox .msg{margin-top:0}
-.band{border-bottom:1px solid var(--line)}
-.band:last-child{border-bottom:0}
-.bandbar{display:flex;gap:10px;align-items:center;padding:10px 14px;cursor:pointer}
-.bandbar:hover{background:var(--accent-soft)}
-.bandbar:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.band.active>.bandbar{background:var(--accent-soft)}
-.caret{width:14px;color:var(--muted);flex:none}
-.bandtxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.bandtxt small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bandbody{padding:0 0 4px 22px;background:var(--surface)}
-.erow{border-top:1px solid var(--line)}
-.ebar{display:flex;gap:10px;align-items:center;padding:8px 14px 8px 8px;cursor:pointer}
-.ebar:hover{background:var(--accent-soft)}
-.ebar:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.erow.active>.ebar{background:var(--accent-soft)}
-.ebody{padding:0 14px 10px 32px}
-.chaphead td{background:var(--accent-soft);font-weight:600}
-.chapfoot td{font-weight:600;border-top:2px solid var(--line)}
-#chapBody td.task{max-width:340px;font-size:13px}
-.welcome h2{color:var(--fg);font-size:18px;margin-bottom:6px}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+.hide{display:none!important}
 
-/* ---- AI estimate agent ---- */
-.ai-body{display:flex;flex-direction:column;gap:8px;padding:12px 14px}
-.ai-body textarea{min-height:84px;width:100%}
-.ai-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.ai-status{font-size:13px;color:var(--muted)}
-.ai-status.bad{color:var(--bad)}
-.badge.ai{background:var(--accent-soft)}
+/* app bar */
+.appbar{background:var(--bar);color:#fff;position:sticky;top:0;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.14)}
+.appbar .in{max-width:960px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:18px;flex:none}
+.brand b{display:block;font-size:15.5px;font-weight:650;letter-spacing:-.01em;line-height:1.2}
+.brand small{display:block;font-size:11.5px;color:#9fb3c8;line-height:1.2}
+.who{display:flex;align-items:center;gap:12px;font-size:13px;color:#c5d3e2}
+#who{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.appbar button.alt{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:6px 13px}
+.appbar button.alt:hover{background:rgba(255,255,255,.12)}
+main{max-width:960px;margin:0 auto;padding:20px 16px 90px}
+
+/* sections (collapsible cards) */
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+section>details>summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:15px 18px 15px 44px;position:relative;cursor:pointer;list-style:none;user-select:none;font-size:16px;font-weight:650;letter-spacing:-.01em}
+section>details>summary::-webkit-details-marker{display:none}
+section>details>summary::before{content:"";position:absolute;left:19px;top:25px;width:7px;height:7px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:translateY(-70%) rotate(-45deg);transition:transform .15s}
+section>details[open]>summary::before{transform:translateY(-70%) rotate(45deg)}
+section>details>summary:hover{background:var(--bg)}
+section>details[open]>summary{border-bottom:1px solid var(--line)}
+section>details>*:not(summary){margin-left:18px;margin-right:18px}
+section>details>summary+*{margin-top:16px}
+section>details>*:last-child{margin-bottom:18px}
+.shead{display:flex;align-items:center;gap:10px;padding:15px 18px 15px 44px;position:relative;cursor:pointer;user-select:none;font-size:16px;font-weight:650;letter-spacing:-.01em}
+.shead::before{content:"";position:absolute;left:19px;top:50%;width:7px;height:7px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:translateY(-70%) rotate(-45deg);transition:transform .15s}
+section.open>.shead::before{transform:translateY(-70%) rotate(45deg)}
+.shead::after{content:"Add & manage entries";margin-left:auto;font-size:12px;font-weight:500;letter-spacing:0;color:var(--mute)}
+section.open>.shead::after{content:"Hide entries"}
+.shead:hover{background:var(--bg)}
+.shead:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 18px 6px;margin-bottom:16px}
+.panel h2{margin:0 0 12px;font-size:16px;font-weight:650;letter-spacing:-.01em}
+.sbody{padding:18px;border-top:1px solid var(--line)}
+.sbody>h3:first-child{margin-top:0;padding-top:0;border-top:0}
+h3{font:600 11.5px/1.3 var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin-top:24px;margin-bottom:12px;padding-top:18px;border-top:1px solid var(--line)}
+.stats+h3{margin-top:12px}
+
+/* forms */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:14px}
+label{display:block;font-size:12px;font-weight:500;color:var(--mute);margin-bottom:5px}
+input,select{width:100%;height:38px;padding:0 11px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:14px var(--font)}
+input[readonly]{background:var(--bg);color:var(--mute)}
+input::placeholder{color:color-mix(in srgb,var(--mute) 70%,transparent)}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{margin-top:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+/* buttons */
+button{font:600 14px var(--font);padding:9px 18px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);cursor:pointer;box-shadow:0 1px 2px rgba(15,27,45,.14);transition:filter .12s,transform .05s,background .12s}
+button:hover{filter:brightness(.93)}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.55;cursor:default}
+button.alt{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:none;font-weight:550}
+button.alt:hover{background:var(--bg);filter:none}
+button.ghost{background:transparent;color:var(--err);padding:3px 9px;font-size:13px;font-weight:550;box-shadow:none}
+button.ghost:hover{background:color-mix(in srgb,var(--err) 10%,transparent);filter:none}
+button.ghost.edit{color:var(--accent)}
+button.ghost.edit:hover{background:var(--accent-soft)}
+.tools{margin-top:3px}
+.tools button{padding:2px 6px;font-size:12px;font-weight:500;background:transparent;color:var(--mute);box-shadow:none;text-decoration:underline}
+
+/* info lines */
+.tot{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:14px;font-size:13px;font-weight:550}
+.tot:empty{display:none}
+#denBox .tot{margin-top:10px}
+.stats .tot{margin-top:4px}
+
+/* tables */
+.wrap{overflow-x:auto;margin-top:14px;border:1px solid var(--line);border-radius:10px}
+.wrap:has(>table:empty){display:none}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);text-align:left;padding:9px 12px;background:var(--bg);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--line)}
+td:first-child,td:last-child,td.n{white-space:nowrap}
+tr:last-child td{border-bottom:0}
+tr:hover td{background:var(--bg)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+
+/* stats */
+.stats{margin-bottom:4px}
+.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px}
+.chips>div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:12px;font-weight:500;color:var(--mute)}
+.chips b{display:block;margin-top:2px;font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums}
+.chips small{display:block;margin-top:3px;font-size:11px;font-weight:400;line-height:1.35;color:var(--mute)}
+.chips .hi,.chips .lo{border-left:4px solid}
+.chips .hi{color:var(--hi);border-left-color:var(--hi)}.chips .hi b{color:var(--hi)}
+.chips .lo{color:var(--lo);border-left-color:var(--lo)}.chips .lo b{color:var(--lo)}
+.tabs{display:flex;flex-wrap:nowrap;width:fit-content;max-width:100%;overflow-x:auto;gap:3px;padding:3px;margin-bottom:12px;background:var(--bg);border:1px solid var(--line);border-radius:10px}
+.tabs button{flex:none;white-space:nowrap;padding:5px 12px;font-size:13px;font-weight:500;background:transparent;color:var(--mute);border-radius:7px;box-shadow:none}
+.tabs button:hover{filter:none;color:var(--ink)}
+.tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(15,27,45,.18)}
+.br{display:grid;grid-template-columns:minmax(80px,140px) 1fr minmax(72px,104px);align-items:center;gap:10px;margin:7px 0;font-size:13px}
+.br span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.br i{display:block;height:8px;min-width:3px;border-radius:99px;background:var(--accent)}
+.br b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* calculator + denominations */
+.calc{max-width:340px}
+.calc input{height:48px;font-size:22px;text-align:right;font-variant-numeric:tabular-nums}
+.res{text-align:right;color:var(--mute);min-height:22px;margin:6px 2px 10px;font-size:13px}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.keys button{background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:12px 0;font-size:17px;font-weight:500;box-shadow:none}
+.keys button.eq{grid-column:1/-1;background:var(--accent);color:var(--accent-ink);border:0;font-weight:700}
+.den{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.den div{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px}
+.den span{min-width:44px;font-weight:600}
+.den input{width:64px;height:32px;padding:0 8px}
+.den output{margin-left:auto;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+
+/* browse cards */
+.bcard{margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.bhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13.5px}
+.bhead .sp{flex:1}
+.bcard .wrap{margin-top:10px}
+
+/* toast */
+#msg{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:50;max-width:min(92vw,560px);padding:11px 16px;border-radius:10px;background:var(--ink);color:var(--card);font-size:13.5px;font-weight:500;border-left:4px solid var(--accent);box-shadow:0 10px 30px rgba(0,0,0,.28)}
+#msg.bad{border-left-color:var(--err)}
+#msg:empty{display:none}
+
+/* login */
+#loginBox{min-height:100vh;display:grid;place-items:center;padding:24px 16px;background:radial-gradient(900px 420px at 50% -8%,color-mix(in srgb,var(--accent) 16%,transparent),transparent),var(--bg)}
+.login{width:100%;max-width:400px;padding:30px 28px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 14px 44px rgba(15,27,45,.14)}
+.login .logo{width:46px;height:46px;border-radius:13px;font-size:23px}
+.login h1{margin:16px 0 4px;font-size:22px;font-weight:700;letter-spacing:-.02em}
+.sub{margin:0 0 22px;color:var(--mute)}
+#lBtn{width:100%;height:42px;margin-top:2px}
+#kind{max-width:340px}
+#loginErr{min-height:20px;margin-top:12px;font-size:13px;color:var(--err)}
+
+@media (min-width:700px){.grid>div:has(#eBatch){grid-column:span 2}}
+@media (max-width:640px){.shead::after{content:"Entries"}section.open>.shead::after{content:"Hide"}.panel{padding:14px 14px 4px}.sbody{padding:14px}#who{display:none}.brand b{white-space:nowrap;font-size:14.5px}.appbar button.alt{white-space:nowrap}.chips{grid-template-columns:repeat(2,1fr);gap:8px}.chips>div{padding:10px 11px}.chips b{font-size:17px}main{padding:14px 10px 90px}section>details>*:not(summary){margin-left:14px;margin-right:14px}.brand small{display:none}}
 </style>
-
 </head>
 <body>
-<div class="bar">
-  <div>
-    <h1>FSR Estimate Entry</h1>
-    <div class="sub">Ananthapuramu Circle, FSR 2026-27</div>
-  </div>
-  <div class="actions">
-    <button class="btn" id="repBtn" type="button" disabled>Reports</button>
-    <button class="btn" id="mstBtn" type="button" disabled hidden>Masters</button>
-    <span class="chip" id="userChip" hidden></span>
-    <button class="btn" id="logoutBtn" type="button" hidden>Sign out</button>
-  </div>
-</div>
-
-<div id="login" class="welcome" hidden>
-  <h2>Sign in</h2>
-  <p>Enter your user name and password.</p>
-  <form id="loginForm" class="loginbox" autocomplete="off">
-    <div class="f"><label for="lUser">User name</label><input id="lUser" autocomplete="username"></div>
-    <div class="f"><label for="lPass">Password</label><input id="lPass" type="password" autocomplete="current-password"></div>
-    <div class="msg err" id="lMsg" role="alert"></div>
-    <button class="btn primary" id="lGo" type="submit">Sign in</button>
-  </form>
-</div>
-
-<div id="welcome" class="welcome" hidden>
-  <h2>Not connected to Supabase yet</h2>
-  <p>Open this file in a text editor and put your project URL and anon key in <code>window.FSR_CONFIG</code> near the top (see SETUP.md).</p>
-</div>
-
-<div class="layout" id="app" hidden>
-  <aside>
-    <section class="panel">
-    <header><h2>FSR items in this chapter</h2><span class="note" id="cnt"></span><button class="btn small" id="closeFsr" type="button">Close</button></header>
-    <div class="tools"><div class="subdd" id="fSubDd"><button class="subbtn" id="fSubBtn" type="button" aria-haspopup="listbox" aria-expanded="false"><span id="fSubTxt">All sub-headings</span><span aria-hidden="true">▾</span></button><div class="sublist" id="fSubList" role="listbox" hidden></div></div><input id="q" type="search" placeholder="Search FSR code or description" aria-label="Search FSR items"><button class="btn small" id="selAll" type="button" title="Tick or untick every item shown">Select all shown</button><button class="btn small primary" id="addSel" type="button" disabled>Add selected (0)</button></div>
-    <div class="scroll tall"><table><thead><tr><th></th><th>FSR Code</th><th>Description of work with detailed specifications</th><th></th></tr></thead><tbody id="fsrBody"></tbody></table></div>
-  </section>
-  </aside>
-
-  <main class="stack">
-    <section class="panel">
-      <header><h2>Estimates</h2><span class="hdr-actions"><button class="btn small" id="expAll" type="button">Expand all</button> <button class="btn small" id="colAll" type="button">Collapse all</button> <button class="btn small primary" id="newBtn" type="button">New</button></span></header>
-      <div id="estList"></div>
-    </section>
-
-    <section class="panel">
-      <header><h2 id="modeTitle">New estimate</h2><span class="note" id="modeNote"></span></header>
-      <div class="body form">
-        <div class="f"><label for="fCircle">Circle</label>
-          <select id="fCircle"><option>Ananthapuramu Circle</option></select></div>
-        <div class="f"><label for="fDiv">Division</label>
-          <select id="fDiv"><option>SF Division,Chittoor</option><option>Chitoor (T)</option></select></div>
-        <div class="f"><label for="fRange">Range</label>
-          <select id="fRange"><option>SF,CTR Range</option></select></div>
-        <div class="f"><label for="fBeat">Beat</label>
-          <select id="fBeat"><option>Chittoor</option></select></div>
-        <div class="f"><label for="fVss">VSS</label>
-          <select id="fVss"><option>Thimmasamudram</option></select></div>
-        <div class="f"><label for="fType">Esti_type</label>
-          <select id="fType"><option>DSO</option><option>RSO</option><option>CSO</option></select></div>
-        <div class="f"><label for="fScheme">Scheme</label>
-          <select id="fScheme"><option>CAMPA NPV</option></select></div>
-        <div class="f"><label for="fYear">Year</label>
-          <select id="fYear"><option>2025-2026</option><option selected>2026-2027</option><option>2027-2028</option><option>2028-2029</option><option>2029-2030</option></select></div>
-        <div class="f"><label for="fNo">Esti_no</label><input id="fNo" autocomplete="off"></div>
-        <div class="f"><label for="fChap">Chapter</label><select id="fChap"></select></div>
-        <div class="f wide"><label for="fDesc">Esti_description</label><textarea id="fDesc"></textarea></div>
-        <div class="f"><label for="fAmt">Amount (rounded)</label><input id="fAmt" readonly value="0"></div>
-      </div>
-    </section>
-
-    <section class="panel" id="nurPanel" hidden>
-      <header><h2>Nursery bags, beds and poly pots</h2><span class="note">Chapter 01: bag size gives beds (fsr_bags_per_bed); poly pot size gives weight (fsr_poly_pots).</span></header>
-      <div class="ai-body">
-        <div class="ai-row">
-          <label for="nurSize">Bag size</label><select id="nurSize"></select>
-          <label for="nurPot">Poly pot size</label><select id="nurPot"></select>
-          <label for="nurBags">No. of bags / pots (seedlings)</label><input id="nurBags" inputmode="numeric" placeholder="e.g. 20000" style="width:130px">
-          <button class="btn" id="nurApply" type="button">Apply to nursery tasks</button>
-        </div>
-        <div class="ai-status" id="nurInfo" role="status"></div>
-      </div>
-    </section>
-
-    <section class="panel" id="aiPanel">
-      <header><h2>AI estimate agent</h2><span class="note">Describe the work. The agent picks FSR items and quantities; rates come from the FSR.</span></header>
-      <div class="ai-body">
-        <textarea id="aiText" aria-label="Describe the work" placeholder="e.g. Raise 20,000 teak seedlings in the nursery and plant 10 ha with pit digging, planting and 2 weedings."></textarea>
-        <div class="ai-row">
-          <button class="btn primary" id="aiGo" type="button">Generate estimate</button>
-          <label class="ai-row"><input type="checkbox" id="aiReplace"> Replace existing picked tasks</label>
-          <span class="ai-status" id="aiStatus" role="status"></span>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <header><h2>Picked tasks</h2><span class="note" id="lineNote"></span><span class="hdr-actions"><button class="btn small primary" id="addFsrBtn" type="button">Add FSR items</button> <button class="btn small" id="addNewBtn" type="button">Add new task</button></span></header>
-      <div class="scroll"><table>
-        <thead><tr><th>#</th><th>FSR Code</th><th>Task</th><th class="num">Qty</th><th>Unit</th><th class="num">Rate</th><th class="num">Per</th><th class="num">Duration</th><th class="num">Amount</th><th></th></tr></thead>
-        <tbody id="lineBody"></tbody></table></div>
-      <div class="totbar" id="totBar" aria-live="polite">
-        <span class="chip big"><b>Total Estimate Cost</b> <span id="grandCount">(0 tasks)</span>: <span id="grand">0</span></span>
-        <span class="chip" id="chipMat">Material (0 tasks): 0</span>
-        <span class="chip" id="chipWage">Wage (0 tasks): 0</span>
-        <span class="chip" id="chipWard">Watch &amp; Ward (0 tasks): 0</span>
-        <span class="chip" id="chipCont">Contingency (0 tasks): 0</span>
-      </div>
-      <div class="foot">
-        <button class="btn" id="clearBtn" type="button">Clear</button>
-        <button class="btn primary" id="prevBtn" type="button">Preview</button>
-      </div>
-    </section>
-    <div class="msg" id="msg" role="status"></div>
-  </main>
-</div>
-
-<div class="modal" id="modal" hidden>
-  <div class="sheet">
-    <h2>Preview estimate</h2>
-    <div class="kv" id="pvHead"></div>
-    <div class="scroll"><table>
-      <thead><tr><th>esti_slno</th><th>fsr_code</th><th>task</th><th class="num">qty</th><th>unit</th><th class="num">rate</th><th class="num">per</th><th class="num">duration</th><th class="num">amount</th></tr></thead>
-      <tbody id="pvBody"></tbody></table></div>
-    <div class="total"><span>Total</span><span id="pvTotal"></span></div>
-    <div class="foot">
-      <button class="btn" id="pvBack" type="button">Back to edit</button>
-      <button class="btn primary" id="pvSave" type="button">Save estimate</button>
-    </div>
+<div id="loginBox" class="hide">
+  <div class="login">
+    <span class="logo">₹</span>
+    <h1>Expense & Cash Tracker</h1>
+    <p class="sub">Sign in to continue</p>
+    <form id="loginForm">
+      <label for="lEmail">Email</label>
+      <input id="lEmail" type="email" autocomplete="username" required>
+      <label for="lPass" style="margin-top:12px">Password</label>
+      <input id="lPass" type="password" autocomplete="current-password" required>
+      <div class="row"><button id="lBtn" type="submit">Sign in</button></div>
+      <div id="loginErr" role="alert"></div>
+    </form>
   </div>
 </div>
 
-<div class="modal" id="repModal" hidden>
-  <div class="sheet">
-    <h2>Generate report</h2>
-    <div class="rgrid">
-      <div class="f"><label for="rScheme">Scheme</label><select id="rScheme"></select></div>
-      <div class="f"><label for="rYear">Year</label><select id="rYear"></select></div>
-      <div class="f"><label for="rType">Esti_type</label><select id="rType"></select></div>
-      <div class="f"><label for="rCircle">Circle</label><select id="rCircle"></select></div>
-      <div class="f"><label for="rDiv">Division</label><select id="rDiv"></select></div>
-      <div class="f"><label for="rRange">Range</label><select id="rRange"></select></div>
-      <div class="f"><label for="rBeat">Beat</label><select id="rBeat"></select></div>
-      <div class="f"><label for="rVss">VSS</label><select id="rVss"></select></div>
-      <div class="f"><label for="rNo">Esti_no</label><select id="rNo"></select></div>
-      <div class="f"><label for="rGroup">Abstract grouped by</label>
-        <select id="rGroup"><option value="scheme">Scheme</option><option value="year">Year</option><option value="range">Range</option><option value="circle">Circle</option><option value="division">Division</option><option value="beat">Beat</option><option value="vss">VSS</option><option value="type">Esti_type</option><option value="no">Esti_no</option><option value="chapter">Chapter</option></select></div>
-      <div class="f wide checks">
-        <label><input type="checkbox" id="rAbs" checked> Abstract sheet (totals by the group above)</label>
-        <label><input type="checkbox" id="rEst" checked> One estimate sheet for each estimate</label>
-      </div>
-    </div>
-    <div class="rsum" id="rSum"></div>
-    <div class="foot">
-      <button class="btn" id="rClose" type="button">Close</button>
-      <button class="btn primary" id="rGo" type="button">Generate report</button>
-    </div>
-  </div>
+<div id="app" class="hide">
+<header class="appbar"><div class="in">
+  <div class="brand"><span class="logo">₹</span><div><b>Expense & Cash Tracker</b><small>Personal finance</small></div></div>
+  <div class="who"><span id="who"></span><button id="logout" class="alt">Sign out</button></div>
+</div></header>
+<div id="msg" role="status" aria-live="polite"></div>
+<main>
+<div class="dash">
+  <div class="panel"><h2>Income</h2><div class="stats" id="incStats"></div></div>
+  <div class="panel"><h2>Expense</h2><div class="stats" id="expStats"></div></div>
+  <div class="panel"><h2>Cash</h2><div class="stats" id="cashStats"></div></div>
 </div>
 
-<div class="modal" id="mstModal" hidden>
-  <div class="sheet">
-    <h2>Masters</h2>
-    <div class="tools" style="border-bottom:0">
-      <button class="btn small primary" id="tabOrg" type="button">Circle / Division / Range / Section / Beat</button>
-      <button class="btn small" id="tabVss" type="button">VSS</button>
-      <button class="btn small" id="tabScheme" type="button">Scheme</button>
-      <button class="btn small" id="tabUsers" type="button">Users</button>
-      <button class="btn small" id="tabLogin" type="button">Login log</button>
-      <button class="btn small" id="tabAct" type="button">Activity log</button>
-    </div>
-    <div class="rgrid" id="mForm"></div>
-    <div class="rsum" id="mMsg" role="status"></div>
-    <div class="scroll" style="max-height:42vh"><table><thead id="mHead"></thead><tbody id="mBody"></tbody></table></div>
-    <div class="foot">
-      <button class="btn" id="mClose" type="button">Close</button>
-      <button class="btn" id="mCancel" type="button" hidden>Cancel edit</button>
-      <button class="btn primary" id="mSave" type="button">Add</button>
-    </div>
+<section><details id="calcSec"><summary>Calculator</summary>
+  <div class="calc"><input id="calcIn" inputmode="decimal" autocomplete="off" placeholder="e.g. 250*3+40">
+    <div class="res" id="calcOut" aria-live="polite"></div><div class="keys" id="keys"></div>
+    <div class="row"><button id="useCash" class="alt">Use in cash amount</button><button id="useExp" class="alt">Use in expense amount</button></div></div>
+</details></section>
+
+<section id="incSec">
+  <div class="shead" id="incHead" role="button" tabindex="0" aria-expanded="false" aria-controls="incBody">Income</div>
+  <div class="sbody hide" id="incBody">
+  <h3>New income entry</h3>
+  <div class="grid">
+    <div><label for="iDate">Date</label><input type="date" id="iDate"></div>
+    <div><label for="iSrc">Source</label><select id="iSrc"></select>
+      <input id="iSrcNew" class="hide" placeholder="New source" style="margin-top:6px"><div class="tools" id="srcTools"></div></div>
+    <div><label for="iDesc">Description</label><input id="iDesc"></div>
+    <div><label for="iAmt">Amount</label><input type="number" id="iAmt" min="0" step="any"></div>
+    <div><label for="iMode">Received by</label>
+      <select id="iMode"><option>Cash</option><option>UPI app</option><option>Cheque</option></select></div>
   </div>
+  <div class="row"><button id="saveInc">Save income</button><button id="cancelInc" class="alt hide">Cancel edit</button></div>
+  <div class="wrap"><table id="incTbl"></table></div>
+  <button id="moreInc" class="alt hide" style="margin-top:10px"></button>
 </div>
+</section>
+
+<section id="expSec">
+  <div class="shead" id="expHead" role="button" tabindex="0" aria-expanded="false" aria-controls="expBody">Expense</div>
+  <div class="sbody hide" id="expBody">
+
+  <h3>1 · New batch</h3>
+  <div class="grid">
+    <div><label for="bDate">Date</label><input type="date" id="bDate"></div>
+    <div><label for="bNo">Batch no (auto)</label><input id="bNo" readonly></div>
+    <div><label for="bAmt">Amount spent</label><input type="number" id="bAmt" min="0" step="any"></div>
+    <div><label for="bPay">Payment mode</label><select id="bPay"><option>Cash</option><option>UPI app</option><option>Cheque</option></select></div>
+  </div>
+  <div class="row"><button id="saveBatch">Save batch</button></div>
+  <div class="tot" id="dayHdr"></div>
+  <div class="wrap"><table id="dayTbl"></table></div>
+
+  <h3>2 · Batch details (add now or any time later)</h3>
+  <div class="grid">
+    <div><label for="fDate">Find batches by date (optional)</label><input type="date" id="fDate"></div>
+    <div><label for="fNo">Filter by batch no (optional)</label><input id="fNo" list="bnoList" placeholder="e.g. 20261104-02" autocomplete="off"><datalist id="bnoList"></datalist></div>
+    <div><label for="eBatch">Batch</label><select id="eBatch"></select></div>
+    <div><label for="eSpent">Amount spent</label><input type="number" id="eSpent" min="0" step="any"></div>
+    <div><label for="eMode">Payment mode</label><select id="eMode"><option value="">Not set</option><option>Cash</option><option>UPI app</option><option>Cheque</option></select></div>
+    <div style="align-self:end;display:flex;gap:8px;flex-wrap:wrap"><button id="updAmt" class="alt">Update batch</button><button id="delBatch" class="alt" style="color:var(--err);border-color:var(--err)">Delete batch</button></div>
+  </div>
+  <div class="tot" id="batchSum"></div>
+  <div class="wrap"><table id="expTbl"></table></div>
+  <div class="grid" style="margin-top:12px">
+    <div><label for="eCat">Category</label><select id="eCat"></select>
+      <input id="eCatNew" class="hide" placeholder="New category" style="margin-top:6px"><div class="tools" id="catTools"></div></div>
+    <div><label for="eItem">Item</label><select id="eItem"></select>
+      <input id="eItemNew" class="hide" placeholder="New item" style="margin-top:6px"></div>
+    <div><label for="eQty">Qty</label><input type="number" id="eQty" min="0" step="any" value="1"></div>
+    <div><label for="eUnit">Unit</label><input id="eUnit" list="units" placeholder="kg, L, pcs"><datalist id="units"><option>kg</option><option>g</option><option>L</option><option>ml</option><option>pcs</option><option>dozen</option><option>packet</option><option>box</option></datalist></div>
+    <div><label for="eAmt">Amount</label><input type="number" id="eAmt" min="0" step="any"></div>
+  </div>
+  <div class="row"><button id="saveExp">Add item to batch</button><button id="cancelExp" class="alt hide">Cancel edit</button></div>
+  <h3>3 · Browse batches and their items</h3>
+  <div class="grid">
+    <div><label for="brMonth">Month</label><select id="brMonth"></select></div>
+    <div><label for="brDate">Date</label><select id="brDate"></select></div>
+    <div><label for="brNo">Batch no (optional)</label><input id="brNo" list="bnoList" placeholder="e.g. 20261104-02" autocomplete="off"></div>
+  </div>
+  <div class="tot" id="brSum"></div>
+  <div id="browse"></div>
+</div>
+</section>
+
+<section id="cashSec">
+  <div class="shead" id="cashHead" role="button" tabindex="0" aria-expanded="false" aria-controls="cashBody">Cash</div>
+  <div class="sbody hide" id="cashBody">
+  <h3>New cash entry</h3>
+  <div class="grid">
+    <div><label for="kind">Cash type</label>
+      <select id="kind"><option value="">Select…</option></select></div>
+  </div>
+  <div class="grid" id="cashFields" style="margin-top:12px"></div>
+  <div id="denBox" class="hide" style="margin-top:14px"></div>
+  <div class="row hide" id="cashBtn"><button id="addMore" class="alt hide">Add another</button><button id="cancelCash" class="alt hide">Cancel edit</button><button id="saveCash">Save cash entry</button></div>
+  <div class="wrap"><table id="pendTbl"></table></div>
+  <div class="wrap"><table id="cashTbl"></table></div>
+  <button id="moreCash" class="alt hide" style="margin-top:10px"></button>
+</div>
+</section>
+</main>
+</div>
+
 <script>
-/* ===== put your Supabase project details here (Project settings > API) ===== */
-window.FSR_CONFIG={ url:'https://ewnrcnfyiulrjritaeam.supabase.co', anonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3bnJjbmZ5aXVscmpyaXRhZWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTEwMDYsImV4cCI6MjEwNzc2NzAwNn0.rbJNPpBgS4k2uKxM9Igk6S7rN_FL3gZcoJu-8jkgeD8' };
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
-<script>
-(function(){
-const $=id=>document.getElementById(id);
-const CHAP={'01':'Chapter I: Nurseries','02':'Chapter II: Plantations','03':'Chapter III: Departmental Extraction Works','04':'Chapter IV: Research Items','05':'Chapter V: Miscellaneous Items'};
-const NURERR={};          // errors from reading fsr_bags_per_bed / fsr_poly_pots
-let POTRAW=[];
-let POTS=[];            // fsr_poly_pots rows {size, w} (w = weight per 1000)
-let BAGS=[];            // fsr_bags_per_bed rows {size, perBed}
-let items=[];           // FSR rows
-let masters=[];         // {no,type,desc,year,chapter}
-let tasks=[];           // {no,slno,task,code,qty,unit,rate,per,amount}
-let cur={mode:'new',lines:[]};
-let claudeDownloads=null;
-try{ if(window.claude&&claude.use) claude.use('downloads').then(d=>claudeDownloads=d).catch(()=>{}); }catch(e){}
+// Paste your project values here, or leave blank to be asked once (saved in this browser).
+const SUPABASE_URL = '';
+const SUPABASE_KEY = '';
 
-const fmt0=n=>(Number(n)||0).toLocaleString('en-IN',{maximumFractionDigits:0});
-const fmt=n=>(Number(n)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
-const val=c=>{ if(c==null) return ''; if(typeof c==='object'){ if(c.richText) return c.richText.map(r=>r.text).join(''); if(c.result!==undefined) return c.result; if(c.text!==undefined) return c.text; } return c; };
-function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function say(text,kind){const m=$('msg');m.textContent=text;m.className='msg show '+(kind||'ok');}
-function hush(){$('msg').className='msg';}
+const NEW = '__new__';
+const url = SUPABASE_URL || localStorage.getItem('sb_url') || prompt('Supabase project URL');
+const key = SUPABASE_KEY || localStorage.getItem('sb_key') || prompt('Supabase anon key');
+if (url && key) { localStorage.setItem('sb_url', url); localStorage.setItem('sb_key', key); }
+const db = supabase.createClient(url, key);
 
-/* "100 Nos." -> per 100, unit "Nos."; "ha" -> per 1, unit "ha" */
-function splitUnit(u){
-  u=String(u||'').trim();
-  const m=u.match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
-  if(m) return {per:parseFloat(m[1])||1, unit:m[2].replace(/^\/\s*/,'').trim()};
-  return {per:1, unit:u};
-}
-/* amount = qty x rate / per x duration, rounded to whole rupees per task */
-const calc=l=>{const r=Number(l.rate),q=Number(l.qty),p=Number(l.per),d=Number(l.duration);return (r>0&&q>0&&p>0&&d>0)?Math.round(q*r/p*d):0;};
+// One structure for every cash type: common fields + extra fields that go into the `details` JSON column.
+const COMMON = [['entry_date','Date','date'],['description','Description','text'],['amount','Amount','number']];
+const KINDS = {
+  in_hand:  {label:'In Hand',   extra:[]},
+  bank:     {label:'In Bank',   extra:[['bank_details','Bank details','text'],['account_no','Account no','text']]},
+  bonds:    {label:'Bonds',     extra:[['bond_name','Bond name / issuer','text'],['bond_no','Bond / certificate no','text'],['interest_rate','Interest rate %','number'],['maturity_date','Maturity date','date']]},
+  insurance:{label:'Insurance', extra:[['insurer','Insurer','text'],['policy_no','Policy no','text'],['maturity_date','Maturity date','date']]},
+  deposits: {label:'Deposits',  extra:[['bank_details','Bank details','text'],['deposit_no','Deposit / account no','text'],['interest_rate','Interest rate %','number'],['maturity_date','Maturity date','date']]}
+};
 
-/* ---------- backend (Supabase) ---------- */
-function makeDb(){
-  const c=window.FSR_CONFIG||{};
-  if(!window.supabase||!c.url||!c.anonKey||/YOUR-/.test(c.url+c.anonKey)) return null;
-  const sb=window.supabase.createClient(c.url,c.anonKey);
-  const fail=e=>{ const x=new Error((e&&e.message)||String(e)); x.code=e&&e.code; throw x; };
-  const ok=r=>{ if(r.error) fail(r.error); return r.data; };
-  const all=async(table,order)=>{ let out=[],from=0; for(;;){ const d=ok(await sb.from(table).select('*').order(order||'id').range(from,from+999)); out=out.concat(d); if(d.length<1000) return out; from+=1000; } };
-  const fn=async(name,body)=>{ const {data,error}=await sb.functions.invoke(name,{body}); if(error){ let msg=error.message; try{ const j=await error.context.json(); if(j&&j.error) msg=j.error; }catch(_){} throw new Error(msg); } if(data&&data.error) throw new Error(data.error); return data; };
-  const profile=async()=>{ const {data:{session}}=await sb.auth.getSession(); if(!session) return null; return ok(await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle()); };
-  return {
-    profile,
-    async accessToken(){ const {data:{session}}=await sb.auth.getSession(); return session?session.access_token:''; },
-    async restore(){ const p=await profile(); if(p&&p.status==='Active'&&!p.locked) return p; if(p) await sb.auth.signOut(); return null; },
-    async signIn(u,pw){ const d=await fn('auth-login',{user_name:u,password:pw}); ok(await sb.auth.setSession(d.session)); const p=await profile(); if(!p) throw new Error('No profile for this account.'); return p; },
-    async signOut(){ try{ await sb.rpc('log_logout'); }catch(_){} await sb.auth.signOut(); },
-    async loadAll(){ const [items,org,vss,schemes,estimates,tasks,bags,pots]=await Promise.all([all('fsr_items'),all('org_units'),all('vss'),all('schemes'),all('estimates'),all('estimate_tasks'),all('fsr_bags_per_bed','bag_size').catch(e=>{ NURERR.bags=e.message||String(e); return []; }),all('fsr_poly_pots','size').catch(e=>{ NURERR.pots=e.message||String(e); return []; })]); return {items,org,vss,schemes,estimates,tasks,bags,pots}; },
-    async loadEstimates(){ const [estimates,tasks]=await Promise.all([all('estimates'),all('estimate_tasks')]); return {estimates,tasks}; },
-    async loadMasters(){ const [org,vss,schemes]=await Promise.all([all('org_units'),all('vss'),all('schemes')]); return {org,vss,schemes}; },
-    async saveEstimate(id,m,t){ return ok(await sb.rpc('save_estimate',{p_id:id,m,t})); },
-    async deleteEstimate(id){ ok(await sb.rpc('delete_estimate',{p_id:id})); },
-    async masterInsert(table,o){ ok(await sb.from(table).insert(o)); },
-    async masterUpdate(table,id,o){ ok(await sb.from(table).update(o).eq('id',id)); },
-    async masterDelete(table,id){ ok(await sb.from(table).delete().eq('id',id)); },
-    async userList(){ return all('profiles','user_name'); },
-    async userCreate(o){ return fn('admin-users',{action:'create',...o}); },
-    async userPassword(id,password){ return fn('admin-users',{action:'set_password',id,password}); },
-    async userDelete(id){ return fn('admin-users',{action:'delete',id}); },
-    async userUpdate(id,name,role,perms){ ok(await sb.rpc('admin_update_user',{p_id:id,p_user_name:name,p_role:role,p_permissions:perms})); },
-    async userAct(id,action){ ok(await sb.rpc('admin_set_account',{p_id:id,p_action:action})); },
-    async logs(kind){ return ok(await sb.from(kind==='login'?'login_log':'activity_log').select('*').order('id',{ascending:false}).limit(500)); },
-    async logActivity(module,action,record,details){ ok(await sb.rpc('log_activity',{p_module:module,p_action:action,p_record:record||'',p_details:details||''})); },
-  };
-}
-/* ---------- backend 2: sign in with the TOKEN DASHBOARD's e-mail + password ----------
-   Same Supabase project, same Auth users, same profiles / estimate / esti_task / fsr_items tables
-   as mtokenboard.html. No Edge Function is needed. Users are managed in the token dashboard. */
-function makeTokenDb(){
-  const c=window.FSR_CONFIG||{};
-  if(!window.supabase||!c.url||!c.anonKey||/YOUR-/.test(c.url+c.anonKey)) return null;
-  /* sign-in is required every time the page is opened: the session is kept in memory only (set alwaysSignIn:false in FSR_CONFIG to remember it) */
-  const sb=window.supabase.createClient(c.url,c.anonKey,{auth:{persistSession:c.alwaysSignIn===false}});
-  const TZ='Asia/Kolkata', DAYS=['','Mon','Tue','Wed','Thu','Fri','Sat','Sun'], MOD='FSR', OPS='VAED';
-  const S=v=>(v===null||v===undefined)?'':String(v);
-  const ok=r=>{ if(r&&r.error){ const m=r.error.message||String(r.error);
-      if(/jwt|token is expired|not authenticated|invalid claim/i.test(m)) throw new Error('Your session has expired. Please sign in again.');
-      const e=new Error(m); e.code=r.error.code; throw e; } return r?r.data:null; };
-  const all=async(table,order)=>{ const ord=Array.isArray(order)?order:(order?[order]:[]), out=[];
-    for(let from=0;;from+=1000){ let q=sb.from(table).select('*'); ord.forEach(o=>{q=q.order(o,{ascending:true});});
-      const d=ok(await q.range(from,from+999))||[]; d.forEach(x=>out.push(x)); if(d.length<1000) break; } return out; };
-  const device=()=>{ const ua=navigator.userAgent||''; let b='Browser';
-    if(/Edg\//.test(ua)) b='Edge'; else if(/OPR\//.test(ua)) b='Opera'; else if(/Chrome\//.test(ua)) b='Chrome'; else if(/Firefox\//.test(ua)) b='Firefox'; else if(/Safari\//.test(ua)) b='Safari';
-    let os='Other'; if(/Android/.test(ua)) os='Android'; else if(/iPhone|iPad|iPod/.test(ua)) os='iOS'; else if(/Windows/.test(ua)) os='Windows'; else if(/Mac OS X/.test(ua)) os='macOS'; else if(/Linux/.test(ua)) os='Linux';
-    return b+' \u00b7 '+os+(/Mobi/.test(ua)?' (mobile)':''); };
-  const clip=(v,n)=>{ const s=S(v); return s.length>n?s.slice(0,n-1)+'\u2026':s; };
-  const fmtDMY=s=>s?s.slice(8,10)+'-'+s.slice(5,7)+'-'+s.slice(0,4):'';
-  const hhmm=v=>{ const m=S(v).trim().match(/^(\d{1,2}):(\d{2})/); return m&&Number(m[1])<24&&Number(m[2])<60?('0'+m[1]).slice(-2)+':'+m[2]:''; };
-  const parseDays=v=>{ const out=[]; (Array.isArray(v)?v:S(v).split(/[,\s]+/)).forEach(t=>{ t=S(t).trim(); if(!t) return;
-      let d=DAYS.indexOf(t.slice(0,1).toUpperCase()+t.slice(1,3).toLowerCase()); if(d<1&&/^[1-7]$/.test(t)) d=Number(t);
-      if(d>=1&&out.indexOf(d)===-1) out.push(d); }); return out.sort((a,b)=>a-b); };
-  /* profiles.permissions -> operations allowed on the FSR module ('VAED'); blank / admin = full access */
-  const fsrOps=p=>{ if(p.is_admin) return OPS; let raw=p.permissions, obj=raw;
-    if(raw===null||raw===undefined||raw==='') return OPS;
-    if(typeof raw==='string'){ const s=raw.trim(); if(!s) return OPS;
-      if(s.charAt(0)==='{'){ try{ obj=JSON.parse(s); }catch(e){ return OPS; } }
-      else { obj={}; s.split(';').forEach(part=>{ const i=part.lastIndexOf(':'); if(i>0) obj[part.slice(0,i).trim()]=part.slice(i+1); }); } }
-    if(typeof obj!=='object'||Array.isArray(obj)||!Object.keys(obj).length) return OPS;
-    const ops=S(obj[MOD]).toUpperCase(); return OPS.split('').filter(ch=>ops.indexOf(ch)!==-1).join(''); };
-  const now=()=>{ const f=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',weekday:'short',hourCycle:'h23'});
-    const p={}; f.formatToParts(new Date()).forEach(x=>{p[x.type]=x.value;});
-    return {date:p.year+'-'+p.month+'-'+p.day, dow:{Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6,Sun:7}[p.weekday], time:p.hour+':'+p.minute}; };
-  async function loginCfg(){ try{ const r=await sb.from('app_settings').select('value').eq('key','login_config').maybeSingle();
-      const v=r.data&&r.data.value; return {password:!v||v.password!==false}; }catch(e){ return {password:true}; } }
-  /* same rules as the token dashboard: active, validity dates, allowed days, allowed hours */
-  async function problem(p){
-    if(p.is_admin) return '';
-    if(p.active===false) return 'Your account is currently deactivated. Please contact your administrator.';
-    if((await loginCfg()).password===false) return 'Email & password sign-in is currently unavailable. Please contact your administrator.';
-    const n=now(), vf=S(p.valid_from).slice(0,10), vt=S(p.valid_to).slice(0,10), days=parseDays(p.allowed_days), f=hhmm(p.time_from), t=hhmm(p.time_to);
-    if(vf&&n.date<vf) return 'Your access begins on '+fmtDMY(vf)+'.';
-    if(vt&&n.date>vt) return 'Your access expired on '+fmtDMY(vt)+'. Please contact your administrator to renew it.';
-    if(days.length&&days.length<7&&days.indexOf(n.dow)===-1) return 'Sign-in is permitted only on: '+days.map(d=>DAYS[d]).join(', ')+'.';
-    if(f||t){ const good=f&&t?(f<=t?(n.time>=f&&n.time<=t):(n.time>=f||n.time<=t)):(f?n.time>=f:n.time<=t);
-      if(!good) return 'Sign-in is permitted only '+(f&&t?'between '+f+' and '+t:(f?'after '+f:'until '+t))+'.'; }
-    return ''; }
-  let who={identity:'',name:''};
-  const loginLog=(identity,name,event,result,details)=>{ try{ sb.from('login_log').insert({ts:new Date().toISOString(),identity:S(identity),name:S(name),method:'Email & Password',event,result,details:clip(details,500),device:device()}).then(()=>{},()=>{}); }catch(e){} };
-  const actLog=(action,details)=>{ try{ sb.from('activity_log').insert({ts:new Date().toISOString(),identity:S(who.identity),name:S(who.name),module:'FSR Estimate',action:S(action),details:clip(details,900),status:'Success'}).then(()=>{},()=>{}); }catch(e){} };
-  /* token-dashboard profile -> the shape this page expects */
-  const mapProfile=p=>{ const ops=fsrOps(p), perms=[];
-    if(ops.indexOf('V')!==-1) perms.push('read'); if(ops.indexOf('A')!==-1||ops.indexOf('E')!==-1) perms.push('write');
-    if(ops.indexOf('E')!==-1) perms.push('update'); if(ops.indexOf('D')!==-1) perms.push('delete');
-    const ident=S(p.email||p.mobile).toLowerCase(); who={identity:ident,name:S(p.name).trim()||ident};
-    return {id:p.id,user_name:who.name,role:p.is_admin?'Admin':'User',status:'Active',locked:false,permissions:perms}; };
-  const getProfile=async()=>{ const {data:{session}}=await sb.auth.getSession(); if(!session) return null;
-    const r=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle(); return r.error?null:r.data; };
-  const fsrParse=label=>{ const m=/^(.+?)\s+(\d+)\/(\d{4})-(\d{2})$/.exec(S(label).trim()); return m?{type:m[1],no:Number(m[2]),year:m[3]+'-'+m[3].slice(0,2)+m[4]}:null; };
-  const fsrMap=(e,t)=>{ const estimates=[],byLabel={},tasks=[];
-    e.forEach(r=>{ const p=r.esti_type?{type:r.esti_type,no:r.esti_seq,year:r.esti_year}:fsrParse(r.esti_no); if(!p) return;
-      estimates.push({id:r.est_id,esti_no:p.no,esti_type:p.type,description:r.esti_description,year:p.year,chapter:r.chapter,scheme:r.scheme,amount:r.est_cost,division:r.division,range_name:r.range_name,beat:r.beat,vss:r.vss,circle:r.circle});
-      byLabel[S(r.esti_no)]=r.est_id; });
-    t.forEach(r=>{ const id=byLabel[S(r.task_esti_no)]; if(id) tasks.push({estimate_id:id,slno:r.est_slno,task:r.task,fsr_code:r.fsr_code,qty:r.qty,unit:r.unit,rate:r.rate,per:r.per,duration:r.duration,amount:r.amount}); });
-    return {estimates,tasks}; };
-  const loadEst=async()=>{ const r=await Promise.all([all('estimate','est_id'),all('esti_task',['task_esti_no','est_slno'])]); return fsrMap(r[0],r[1]); };
-  const masters=async()=>{ const r=await Promise.all([all('org_units','id'),all('vss','id'),all('schemes','id')]); return {org:r[0],vss:r[1],schemes:r[2]}; };
-  return {
-    profile:async()=>{ const p=await getProfile(); return p?mapProfile(p):null; },
-    async restore(){ const p=await getProfile(); if(!p) return null; if(await problem(p)){ await sb.auth.signOut(); return null; } return mapProfile(p); },
-    async signIn(email,pw){ const id=S(email).trim().toLowerCase();
-      if(!id||!pw) throw new Error('Please enter both your email address and password.');
-      const r=await sb.auth.signInWithPassword({email:id,password:pw});
-      if(r.error||!r.data||!r.data.user){ const m=/rate limit|too many/i.test(r.error&&r.error.message)?'Too many attempts. Please try again after a few minutes.':'The email address or password is incorrect.';
-        loginLog(id,'','Login',/too many/i.test(m)?'Blocked':'Failed',m); throw new Error(m); }
-      const pr=await sb.from('profiles').select('*').eq('id',r.data.user.id).maybeSingle();
-      if(pr.error||!pr.data){ await sb.auth.signOut(); const m='Your account has not been set up yet. Please contact your administrator.'; loginLog(id,'','Login','Failed',m); throw new Error(m); }
-      const pb=await problem(pr.data);
-      if(pb){ await sb.auth.signOut(); loginLog(id,S(pr.data.name),'Login','Blocked',pb); throw new Error(pb); }
-      const u=mapProfile(pr.data); loginLog(who.identity||id,who.name,'Login','Success',''); return u; },
-    async signOut(){ if(who.identity) loginLog(who.identity,who.name,'Logout','Success',''); who={identity:'',name:''}; await sb.auth.signOut(); },
-    async loadAll(){ try{ const r=await Promise.all([all('fsr_items','id'),masters(),loadEst(),all('fsr_bags_per_bed').catch(e=>{ NURERR.bags=e.message||String(e); return []; }),all('fsr_poly_pots').catch(e=>{ NURERR.pots=e.message||String(e); return []; })]); return Object.assign({items:r[0],bags:r[3],pots:r[4]},r[1],r[2]); }
-      catch(e){ throw new Error(/does not exist|schema cache|relation|column/i.test(e.message||'')?e.message+' \u2014 run fsr_integration.sql in this Supabase project first.':(e.message||String(e))); } },
-    loadEstimates:loadEst, loadMasters:masters,
-    async saveEstimate(id,m,t){ const r=ok(await sb.rpc('save_fsr_estimate',{p_id:id,m,t})); actLog(id?'Updated estimate':'Added estimate',m.esti_type+' '+m.esti_no+'/'+m.year); return r; },
-    async deleteEstimate(id){ ok(await sb.rpc('delete_fsr_estimate',{p_id:id})); actLog('Deleted estimate','id '+id); },
-    async masterInsert(table,o){ ok(await sb.from(table).insert(o)); actLog('Added master row',table); },
-    async masterUpdate(table,id,o){ ok(await sb.from(table).update(o).eq('id',id)); actLog('Updated master row',table+' #'+id); },
-    async masterDelete(table,id){ ok(await sb.from(table).delete().eq('id',id)); actLog('Deleted master row',table+' #'+id); },
-    async logActivity(module,action,record,details){ actLog(action,[module,record,details].filter(Boolean).join(' | ')); },
-  };
-}
-const FSR_BACKEND=(window.FSR_CONFIG&&window.FSR_CONFIG.backend)||'tokenboard';   // 'tokenboard' (default) or 'own' (auth-login Edge Function)
-const db=window.__FSR_DB__||(FSR_BACKEND==='own'?makeDb():makeTokenDb());
-if(!window.__FSR_DB__&&FSR_BACKEND!=='own'){
-  const st=document.createElement('style'); st.textContent='#tabUsers,#tabLogin,#tabAct{display:none!important}'; document.head.appendChild(st);   // users and logs are managed in the token dashboard
-  document.querySelector('label[for="lUser"]').textContent='Email address'; $('lUser').setAttribute('autocomplete','email');
-}
+const $ = id => document.getElementById(id);
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+const say = (t, bad) => { const m = $('msg'); m.textContent = t; m.className = bad ? 'bad' : ''; clearTimeout(m.t); m.t = setTimeout(() => { m.textContent = ''; }, bad ? 9000 : 4500); };
+const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t ?? v; return o; };
+const cell = (tr, t, cls) => { const c = tr.insertCell(); c.textContent = cls === 'n' && t !== '' && t != null && !isNaN(t) ? Number(t).toLocaleString('en-IN', {maximumFractionDigits: 3}) : (t ?? ''); if (cls) c.className = cls; return c; };
 
-/* in-memory copies of the master tables */
-let ORG=[],VSSR=[],SCH=[],USERS=[],LOGS={login:[],activity:[]};
-const OH=['Circle','Division','Range','Section','Beat'], VH=['VSS_name','VSS_account_no','VSS_Chairman_name','VSS_Members','Beat'], SH=['Scheme'];
-const sheetRows=n=>n==='Org_master'?ORG.map(r=>[r.circle,r.division,r.range_name,r.section,r.beat]):n==='VSS_master'?VSSR.map(r=>[r.vss_name,r.account_no,r.chairman_name,r.members,r.beat]):SCH.map(r=>[r.scheme]);
-let vssInfo={};
-function fillSel(id,vals){ const el=$(id); const keep=el.value; el.innerHTML=vals.map(v=>'<option>'+esc(v)+'</option>').join(''); if(keep&&vals.includes(keep)) el.value=keep; }
-/* Circle > Division > Range > Beat > VSS : every dropdown lists only what belongs to the one above it */
-const LV=['fCircle','fDiv','fRange','fBeat','fVss'];
-function lvOpts(l){
-  const org=sheetRows('Org_master'), pick=i=>$(LV[i]).value, u=a=>[...new Set(a.filter(Boolean))];
-  if(l===0) return u(org.map(r=>r[0]));
-  if(l===1) return u(org.filter(r=>r[0]===pick(0)).map(r=>r[1]));
-  if(l===2) return u(org.filter(r=>r[0]===pick(0)&&r[1]===pick(1)).map(r=>r[2]));
-  if(l===3) return u(org.filter(r=>r[0]===pick(0)&&r[1]===pick(1)&&r[2]===pick(2)).map(r=>r[4]));
-  const vs=sheetRows('VSS_master'), n=x=>String(x||'').trim().toLowerCase(), hit=vs.filter(r=>!r[4]||n(r[4])===n(pick(3)));
-  return u((hit.length?hit:vs).map(r=>r[0]));   // no VSS tagged to this beat yet: list them all rather than an empty box
-}
-/* want: array of values to select (keepMissing adds a stored value that is no longer in the masters) */
-function cascade(from,want,keepMissing){
-  for(let l=from;l<LV.length;l++){
-    const el=$(LV[l]); const opts=lvOpts(l); let d=want?want[l]:el.value;
-    if(d&&!opts.includes(d)){ if(want&&keepMissing) opts.push(d); else d=''; }
-    el.innerHTML=opts.map(v=>'<option>'+esc(v)+'</option>').join(''); el.value=d||opts[0]||'';
+/* ---------- Shared helpers ---------- */
+const inr = n => { n = Number(n || 0); return (n < 0 ? '-' : '') + '₹' + Math.abs(n).toLocaleString('en-IN', {maximumFractionDigits: 2}); };
+const byDateDesc = (a, b) => b.entry_date.localeCompare(a.entry_date) || b.id - a.id;
+async function fetchAll(table) {          // pages past Supabase's 1000-row limit
+  let all = [];
+  for (let from = 0; from < 20000; from += 1000) {
+    const {data, error} = await db.from(table).select('*').order('id', {ascending: false}).range(from, from + 999);
+    if (error) return {error};
+    all = all.concat(data);
+    if (data.length < 1000) break;
   }
+  return {data: all};
 }
-function refreshLists(reset){
-  fillSel('fScheme',SCH.map(r=>r.scheme));
-  vssInfo={}; VSSR.forEach(r=>{ vssInfo[r.vss_name]={acc:r.account_no,chair:r.chairman_name,members:r.members,beat:r.beat}; });
-  cascade(0, reset?['','','','','']:null);
-}
-function mapEstimates(d){
-  masters=d.estimates.map(e=>({id:e.id,no:e.esti_no,type:e.esti_type,desc:e.description||'',year:e.year,chapter:e.chapter||'',scheme:e.scheme||'',amount:Number(e.amount)||0,division:e.division||'',range:e.range_name||'',beat:e.beat||'',vss:e.vss||'',circle:e.circle||''}));
-  const byId=new Map(masters.map(m=>[m.id,m]));
-  tasks=d.tasks.filter(t=>byId.has(t.estimate_id)).map(t=>{ const m=byId.get(t.estimate_id); return {no:m.no,type:m.type,year:m.year,slno:Number(t.slno)||0,task:t.task||'',code:t.fsr_code||'',qty:Number(t.qty)||0,unit:t.unit||'',rate:Number(t.rate)||0,per:Number(t.per)||1,duration:Number(t.duration)||1,amount:Number(t.amount)||0}; });
-}
-async function reloadEstimates(){ mapEstimates(await db.loadEstimates()); }
-async function reloadMasters(){ const d=await db.loadMasters(); ORG=d.org; VSSR=d.vss; SCH=d.schemes; }
-async function loadAll(){
-  const d=await db.loadAll();
-  items=d.items.map(r=>({code:r.code,sub:r.subheading||'',desc:r.description||'',rate:r.rate!=null?Number(r.rate):(r.rate_text||''),unit:r.unit||''}));
-  ORG=d.org; VSSR=d.vss; SCH=d.schemes; mapEstimates(d);
-  BAGS=(d.bags||[]).map(r=>({size:String(r.bag_size==null?'':r.bag_size).trim(),perBed:Number(r.bags_per_bed)})).filter(b=>b.size&&b.perBed>0);
-  /* weight_per_1000 is text (for example "5.5 kg" or "12.50"): take the first number in it; a value written in grams is converted to kg */
-  const potNum=t=>{ const str=String(t==null?'':t).replace(/,/g,''), m=str.match(/\d+(?:\.\d+)?/); if(!m) return 0; let n=parseFloat(m[0]); if(/\d\s*(gm|gms|gram|grams|g)\b/i.test(str)&&!/kg|kilo/i.test(str)) n/=1000; return n; };
-  POTRAW=d.pots||[];
-  const col=(r,n)=>{ const k=Object.keys(r).find(x=>x.toLowerCase()===n); return k?r[k]:undefined; };
-  POTS=POTRAW.map(r=>{ const sz=col(r,'size'), w=col(r,'weight_per_1000'); return {size:String(sz==null?'':sz).trim(),w:potNum(w),wtxt:String(w==null?'':w).trim()}; }).filter(x=>x.size);
-}
-const tsFmt=t=>{ const d=new Date(t); if(isNaN(d)) return String(t||''); const z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+' '+z(d.getHours())+':'+z(d.getMinutes())+':'+z(d.getSeconds()); };
-
-/* ---------- permissions, sign in / out ---------- */
-const ROLES=['Admin','Guest'];
-const PERMS=['read','write','delete','update','reactivate','deactivate','lock','unlock'];
-const PL={read:'Read',write:'Write',delete:'Delete',update:'Update',reactivate:'Re-activate',deactivate:'Deactivate',lock:'Lock',unlock:'Unlock'};
-const PERM_DEF={Admin:PERMS.slice(),Guest:['read']};
-let user=null;
-const can=p=>!!user&&user.perms.includes(p);
-const mkUser=p=>({id:p.id,name:p.user_name,role:p.role,perms:p.permissions||[]});
-function deny(p,inModal){ const t='You do not have '+PL[p]+' permission.'; if(inModal) mMsg(t,true); else say(t,'err'); return false; }
-function logAct(module,action,record,details){ if(db&&user) Promise.resolve(db.logActivity(module,action,record,details)).catch(()=>{}); }   // Read / Report entries; everything else is logged by the database itself
-function showLogin(){
-  user=null; $('app').hidden=true; $('login').hidden=false; $('welcome').hidden=true;
-  ['userChip','logoutBtn','mstBtn'].forEach(i=>$(i).hidden=true);
-  $('repBtn').disabled=true; $('mstModal').hidden=true; $('repModal').hidden=true; $('modal').hidden=true;
-  $('lUser').value=''; $('lPass').value=''; $('lMsg').className='msg err';
-}
-async function signOut(){ try{ sessionStorage.setItem('fsrManualSignOut','1'); }catch(e){} try{ await db.signOut(); }catch(e){} showLogin(); $('lUser').focus(); }
-function applyRole(){
-  const admin=user.role==='Admin';
-  $('login').hidden=true; $('app').hidden=false; $('repBtn').disabled=!can('read'); $('newBtn').disabled=!can('write');
-  $('mstBtn').hidden=!admin; $('mstBtn').disabled=!admin;
-  $('userChip').hidden=false; $('userChip').textContent=user.name+' ('+user.role+')'; $('logoutBtn').hidden=false;
-  renderList();
-}
-function loginFail(msg){ const m=$('lMsg'); m.textContent=msg; m.className='msg err show'; $('lPass').value=''; }
-async function startApp(){
-  try{ await loadAll(); }
-  catch(e){ try{ await db.signOut(); }catch(_){} showLogin(); loginFail('Could not load the data: '+(e.message||e)); return; }
-  refreshLists(true); buildChapters(); newEstimate(); applyRole(); hush();
-}
-$('loginForm').onsubmit=async e=>{
-  e.preventDefault(); const n=$('lUser').value.trim(), pw=$('lPass').value;
-  if(!n||!pw){ loginFail('Enter user name and password.'); return; }
-  $('lGo').disabled=true;
-  try{ const p=await db.signIn(n,pw); user=mkUser(p); await startApp(); $('lPass').value=''; }
-  catch(err){ loginFail(err.message||'Sign-in failed.'); }
-  finally{ $('lGo').disabled=false; }
-};
-$('logoutBtn').onclick=signOut;
-async function boot(){
-  if(!db){ $('welcome').hidden=false; $('login').hidden=true; return; }
-  let p=null; try{ p=await db.restore(); }catch(e){}
-  /* optional: sign in silently with the account named in FSR_CONFIG.autoLogin = { email:'..', password:'..' } */
-  const al=(window.FSR_CONFIG||{}).autoLogin;
-  if(!p&&al&&al.email&&al.password&&(window.FSR_CONFIG||{}).alwaysSignIn===false&&!(()=>{ try{ return sessionStorage.getItem('fsrManualSignOut'); }catch(e){ return ''; } })()){ try{ p=await db.signIn(al.email,al.password); }catch(e){ p=null; } }
-  if(p){ user=mkUser(p); await startApp(); } else showLogin();
-}
-
-/* ---------- Masters window ---------- */
-const MST={org:{table:'org_units',label:'Org_master',heads:OH,fields:['circle','division','range_name','section','beat'],arr:()=>ORG,req:[0,1,2,3,4]},
-           vss:{table:'vss',label:'VSS_master',heads:VH,fields:['vss_name','account_no','chairman_name','members','beat'],arr:()=>VSSR,req:[0]},
-           scheme:{table:'schemes',label:'Scheme_master',heads:SH,fields:['scheme'],arr:()=>SCH,req:[0]}};
-const TABS=[['tabOrg','org'],['tabVss','vss'],['tabScheme','scheme'],['tabUsers','users'],['tabLogin','login'],['tabAct','activity']];
-let mTab='org', mEdit=0, mArm=-1;   // mEdit = id of the row being edited (0 = adding)
-function mRows(){ const M=MST[mTab]; return M.arr().map(r=>({row:r.id,v:M.fields.map(f=>String(r[f]==null?'':r[f]))})); }
-function mMsg(t,bad){ const e=$('mMsg'); e.textContent=t||''; e.style.color=bad?'var(--bad)':''; }
-function mRender(){
-  TABS.forEach(([b,t])=>$(b).classList.toggle('primary',mTab===t));
-  $('mSave').hidden=(mTab==='login'||mTab==='activity');
-  if(mTab==='users') return uRender();
-  if(mTab==='login'||mTab==='activity') return lRender();
-  const M=MST[mTab], rows=mRows();
-  $('mForm').innerHTML=M.heads.map((h,i)=>'<div class="f'+(mTab==='vss'&&i===3?' wide':'')+'"><label for="mf'+i+'">'+h+(M.req.includes(i)?' *':'')+'</label><input id="mf'+i+'" autocomplete="off"></div>').join('');
-  $('mHead').innerHTML='<tr><th>#</th>'+M.heads.map(h=>'<th>'+h+'</th>').join('')+'<th></th></tr>';
-  $('mBody').innerHTML=rows.map((x,k)=>'<tr'+(x.row===mEdit?' class="picked"':'')+'><td>'+(k+1)+'</td>'+x.v.map(c=>'<td>'+esc(c)+'</td>').join('')+'<td style="white-space:nowrap"><button class="btn small" type="button" data-medit="'+x.row+'"'+(can('update')?'':' disabled')+'>Edit</button> <button class="btn small danger" type="button" data-mdel="'+x.row+'"'+(can('delete')?'':' disabled')+'>'+(mArm===x.row?'Confirm delete':'Delete')+'</button></td></tr>').join('')||'<tr><td colspan="'+(M.heads.length+2)+'" class="empty">No rows yet.</td></tr>';
-  if(mEdit){ const x=rows.find(q=>q.row===mEdit); if(x) x.v.forEach((c,i)=>$('mf'+i).value=c); }
-  $('mSave').textContent=mEdit?'Update':'Add'; $('mCancel').hidden=!mEdit;
-}
-async function gAfter(msg){ mEdit=0; mArm=-1; await reloadMasters(); refreshLists(false); mRender(); mMsg(msg); }
-async function mOpen(t){
-  mTab=t; mEdit=0; mArm=-1; mMsg('');
-  try{ if(t==='users') await loadUsers(); else if(t==='login'||t==='activity') LOGS[t]=await db.logs(t); }catch(e){ mMsg(e.message||String(e),true); }
-  mRender();
-}
-$('mstBtn').onclick=()=>{ if(user&&user.role!=='Admin') return; $('mstModal').hidden=false; mOpen(mTab); };
-$('mClose').onclick=()=>{ $('mstModal').hidden=true; };
-TABS.forEach(([b,t])=>$(b).onclick=()=>mOpen(t));
-$('mCancel').onclick=()=>{ mEdit=0; mMsg(''); mRender(); };
-$('mSave').onclick=()=>mTab==='users'?uSave():gSave();
-$('mBody').onclick=e=>mTab==='users'?uClick(e):gClick(e);
-const dupText={org:'That combination already exists.',vss:'That VSS name already exists.',scheme:'That scheme already exists.'};
-async function gSave(){
-  const M=MST[mTab], v=M.heads.map((h,i)=>$('mf'+i).value.trim());
-  const p=mEdit?'update':'write'; if(!can(p)) return deny(p,true);
-  const miss=M.req.find(i=>!v[i]); if(miss!==undefined){ mMsg(M.heads[miss]+' is required.',true); return; }
-  const o={}; M.fields.forEach((f,i)=>o[f]=v[i]);
-  try{ if(mEdit) await db.masterUpdate(M.table,mEdit,o); else await db.masterInsert(M.table,o); await gAfter(mEdit?'Updated.':'Added.'); }
-  catch(e){ mMsg(e.code==='23505'?dupText[mTab]:(e.message||String(e)),true); }
-}
-async function gClick(e){
-  const ed=e.target.closest('[data-medit]'); if(ed){ mEdit=+ed.dataset.medit; mArm=-1; mMsg('Editing — change the values above and press Update.'); mRender(); $('mf0').focus(); return; }
-  const d=e.target.closest('[data-mdel]'); if(!d) return; const rn=+d.dataset.mdel;
-  if(!can('delete')) return deny('delete',true);
-  if(mArm!==rn){ mArm=rn; mRender(); return; }
-  try{ await db.masterDelete(MST[mTab].table,rn); await gAfter('Deleted.'); }catch(err){ mArm=-1; mRender(); mMsg(err.message||String(err),true); }
-}
-/* users */
-async function loadUsers(){ USERS=(await db.userList()).map(u=>({id:u.id,name:u.user_name,role:u.role,perms:u.permissions||[],status:u.status,locked:!!u.locked,fails:u.failed_attempts||0})); }
-function uRender(){
-  const rows=USERS, edRow=mEdit?rows.find(r=>r.id===mEdit):null;
-  $('mForm').innerHTML='<div class="f"><label for="mf0">User name *</label><input id="mf0" autocomplete="off"></div>'+
-    '<div class="f"><label for="mf1">Password'+(mEdit?'':' *')+'</label><input id="mf1" type="password" autocomplete="new-password" placeholder="'+(mEdit?'leave blank to keep':'at least 6 characters')+'"></div>'+
-    '<div class="f"><label for="mf2">Role *</label><select id="mf2">'+ROLES.map(x=>'<option>'+x+'</option>').join('')+'</select></div>'+
-    '<div class="f wide"><label>Permissions</label><div class="checks">'+PERMS.map(p=>'<label><input type="checkbox" data-perm="'+p+'"> '+PL[p]+'</label>').join('')+'</div></div>';
-  const setP=a=>document.querySelectorAll('[data-perm]').forEach(c=>c.checked=a.includes(c.dataset.perm));
-  $('mf2').value='Guest'; setP(edRow?edRow.perms:PERM_DEF.Guest); if(edRow){ $('mf0').value=edRow.name; $('mf2').value=edRow.role; }
-  $('mf2').onchange=()=>setP(PERM_DEF[$('mf2').value]||[]);
-  $('mHead').innerHTML='<tr><th>#</th><th>User name</th><th>Password</th><th>Role</th><th>Permissions</th><th>Status</th><th>Locked</th><th>Failed</th><th></th></tr>';
-  const b=(a,id,txt,ok)=>'<button class="btn small'+(a==='delete'?' danger':'')+'" type="button" data-uact="'+a+'" data-row="'+id+'"'+(ok?'':' disabled')+'>'+txt+'</button> ';
-  $('mBody').innerHTML=rows.map((u,k)=>'<tr'+(u.id===mEdit?' class="picked"':'')+'><td>'+(k+1)+'</td><td>'+esc(u.name)+'</td><td>••••••</td><td>'+esc(u.role)+'</td><td>'+u.perms.map(p=>PL[p]||p).join(', ')+'</td><td>'+esc(u.status)+'</td><td>'+(u.locked?'Yes':'No')+'</td><td>'+u.fails+'</td><td style="white-space:nowrap">'+
-    b('edit',u.id,'Edit',can('update'))+(u.status==='Active'?b('deactivate',u.id,'Deactivate',can('deactivate')):b('reactivate',u.id,'Re-activate',can('reactivate')))+(u.locked?b('unlock',u.id,'Unlock',can('unlock')):b('lock',u.id,'Lock',can('lock')))+b('delete',u.id,mArm===u.id?'Confirm delete':'Delete',can('delete'))+'</td></tr>').join('');
-  $('mSave').textContent=mEdit?'Update':'Add'; $('mCancel').hidden=!mEdit;
-}
-async function afterUsers(msg){ mEdit=0; mArm=-1; await loadUsers(); mRender(); mMsg(msg); }
-async function uSave(){
-  const name=$('mf0').value.trim(), pw=$('mf1').value, role=$('mf2').value, perms=PERMS.filter(p=>document.querySelector('[data-perm="'+p+'"]').checked);
-  const old=mEdit?USERS.find(x=>x.id===mEdit):null, p=mEdit?'update':'write';
-  if(!can(p)) return deny(p,true);
-  if(!/^[A-Za-z0-9._-]{3,30}$/.test(name)){ mMsg('User name: 3-30 letters, digits, dot, dash or underscore.',true); return; }
-  if(USERS.some(x=>x.id!==mEdit&&x.name.toLowerCase()===name.toLowerCase())){ mMsg('That user name already exists.',true); return; }
-  if(!old&&!pw){ mMsg('Password is required for a new user.',true); return; }
-  if(pw&&pw.length<6){ mMsg('Password must be at least 6 characters.',true); return; }
-  try{
-    if(old){
-      await db.userUpdate(old.id,name,role,perms); if(pw) await db.userPassword(old.id,pw);
-      if(old.id===user.id){ user=mkUser(await db.profile()); applyRole(); if(user.role!=='Admin') $('mstModal').hidden=true; }
-      await afterUsers('Updated.');
-    } else { await db.userCreate({user_name:name,password:pw,role,permissions:perms}); await afterUsers('Added.'); }
-  }catch(e){ mMsg(e.message||String(e),true); }
-}
-async function uClick(e){
-  const a=e.target.closest('[data-uact]'); if(!a) return; const act=a.dataset.uact, id=a.dataset.row;
-  const u=USERS.find(x=>x.id===id); if(!u) return;
-  if(act==='edit'){ if(!can('update')) return deny('update',true); mEdit=id; mArm=-1; mMsg('Editing — change the values above and press Update.'); mRender(); $('mf0').focus(); return; }
-  if(!can(act)) return deny(act,true);
-  try{
-    if(act==='delete'){ if(mArm!==id){ mArm=id; mRender(); return; } await db.userDelete(id); await afterUsers('Deleted.'); return; }
-    await db.userAct(id,act); await afterUsers({deactivate:'Account deactivated.',reactivate:'Account re-activated.',lock:'Account locked.',unlock:'Account unlocked.'}[act]);
-  }catch(err){ mArm=-1; mRender(); mMsg(err.message||String(err),true); }
-}
-/* logs (read only) */
-function lRender(){
-  if(!can('read')){ $('mForm').innerHTML=''; $('mHead').innerHTML=''; $('mBody').innerHTML='<tr><td class="empty">You do not have Read permission.</td></tr>'; $('mCancel').hidden=true; return; }
-  const login=mTab==='login', heads=login?['timestamp','user_name','event','details']:['timestamp','user_name','module','action','record','details'], keep=($('lf')||{}).value||'';
-  const data=(LOGS[mTab]||[]).map(r=>login?[tsFmt(r.ts),r.user_name,r.event,r.details]:[tsFmt(r.ts),r.user_name,r.module,r.action,r.record,r.details]);
-  $('mForm').innerHTML='<div class="f wide"><label for="lf">Filter (user, event, text)</label><input id="lf" autocomplete="off" value="'+esc(keep)+'"></div>';
-  $('mHead').innerHTML='<tr>'+heads.map(h=>'<th>'+h+'</th>').join('')+'</tr>';
-  const draw=()=>{ const q=$('lf').value.trim().toLowerCase(); const rows=data.filter(r=>!q||r.join(' ').toLowerCase().includes(q));
-    $('mBody').innerHTML=rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')||'<tr><td colspan="'+heads.length+'" class="empty">No entries.</td></tr>';
-    mMsg(rows.length+' entr'+(rows.length===1?'y':'ies')+' (newest first, up to 500 are loaded).'); };
-  $('lf').oninput=draw; draw(); $('mCancel').hidden=true;
-}
-
-/* ---------- chapters + FSR picker ---------- */
-function buildChapters(){
-  const codes=[...new Set(items.map(i=>i.code.slice(0,2)))].sort();
-  $('fChap').innerHTML=codes.map(c=>'<option value="'+c+'">'+c+' – '+esc((CHAP[c]||'Chapter '+c).replace(/^Chapter [IVX]+: /,''))+'</option>').join(''); try{ nurUi(); }catch(_){}
-}
-const sel=new Set();
-function selUi(){ const n=sel.size,b=$('addSel'); b.textContent='Add selected ('+n+')'; b.disabled=!n; }
-let subSel='', subChap='';
-function renderFsr(){
-  if(typeof nurUi==='function') nurUi();
-  const ch=$('fChap').value, q=$('q').value.trim().toLowerCase();
-  const picked=new Map(); cur.lines.forEach(l=>picked.set(l.code,(picked.get(l.code)||0)+1));
-  const NOSUB='(No sub-heading)', subOf=i=>cleanSub(i.sub)||NOSUB;
-  const chItems=items.filter(i=>i.code.startsWith(ch+'-'));
-  const subs=[...new Set(chItems.map(subOf))];
-  if(subChap!==ch||!subs.includes(subSel)){ subSel=''; subChap=ch; }
-  $('fSubTxt').textContent=subSel||'All sub-headings ('+subs.length+')';
-  $('fSubList').innerHTML=['<div class="subopt'+(subSel?'':' on')+'" role="option" tabindex="0" data-sub="">All sub-headings ('+subs.length+')</div>'].concat(subs.map((v,k)=>'<div class="subopt'+(v===subSel?' on':'')+'" role="option" tabindex="0" data-sub="'+k+'">'+esc(v)+'</div>')).join('');
-  $('fSubList')._subs=subs;
-  const rows=chItems.filter(i=>(!subSel||subOf(i)===subSel) && (!q||(i.code+' '+i.desc+' '+i.sub).toLowerCase().includes(q)));
-  $('cnt').textContent=rows.length+' items'; selUi();
-  $('fsrBody').innerHTML=rows.map(i=>'<tr class="'+(picked.has(i.code)?'picked':'')+'" draggable="true" data-drag="'+i.code+'" title="Drag to Picked tasks"><td><input type="checkbox" data-sel="'+i.code+'" aria-label="Select '+i.code+'"'+(sel.has(i.code)?' checked':'')+'></td><td class="code">'+i.code+'</td><td>'+esc(i.desc)+'</td><td><button class="btn small" type="button" data-pick="'+i.code+'">'+(picked.has(i.code)?'Pick again ('+picked.get(i.code)+')':'Pick')+'</button></td></tr>').join('')||'<tr><td colspan="4" class="empty">No items match.</td></tr>';
-}
-/* compulsory tasks: whenever a task under the key below is picked, the listed codes are added too (once) */
-/* default rate / quantity filled when the task is added (the rate only when the FSR has none; the user can still edit both) */
-const TASK_DEFAULTS={'01-06-015':{rate:565,qty:234}};
-/* 01-06-014: its amount is a percentage of the estimate cost.
-   10% when the estimate has 01-05 tasks, else 5% when it has 01-06 tasks (01-06-014 and 01-06-015 themselves do not decide this).
-   Cost = total amount of every line except 01-06-014 and 01-06-015. Quantity is 1; the rate is worked out so that amount = percentage x cost. */
-const PCT_TASK={code:'01-06-014',rules:[['01-05',10],['01-06',5]],ignore:['01-06-014','01-06-015']};
-function pctUpdate(){
-  const i=cur.lines.findIndex(l=>codeEq(l.code,PCT_TASK.code)); if(i<0) return -1;
-  const l=cur.lines[i]; if(l.pctManual) return -1;
-  const deciding=cur.lines.filter(x=>!PCT_TASK.ignore.some(c=>codeEq(x.code,c)));
-  const rule=PCT_TASK.rules.find(r=>deciding.some(x=>codeMatch(r[0],x.code))); if(!rule) return -1;
-  const cost=cur.lines.reduce((t,x)=>t+(PCT_TASK.ignore.some(c=>codeEq(x.code,c))?0:(Number(x.amount)||0)),0);   // 01-06-014 and 01-06-015 are not part of the cost
-  const dur=Number(l.duration)>0?Number(l.duration):1, per=Number(l.per)>0?Number(l.per):1;
-  const rate=Math.round(cost*rule[1]/100*per/dur*100)/100;
-  const before=l.rate+'|'+l.qty+'|'+l.amount;
-  l.qty='1'; l.rate=rate; l.rateText=''; l.pct=rule[1]; l.dq=true; l.nq=false; l.amount=calc(l);
-  return before===(l.rate+'|'+l.qty+'|'+l.amount)?-1:i;
-}
-const COMPULSORY={'01-05':['01-06-14','01-06-15']};
-let compBatch=false;     // true while the AI panel adds many lines; it adds the compulsory tasks itself at the end
-const codeEq=(a,b)=>{ const x=codeSegs(a), y=codeSegs(b); return x.length===y.length&&x.every((v,i)=>v===y[i]); };
-function compulsoryFor(code){ const out=[]; Object.keys(COMPULSORY).forEach(k=>{ if(codeMatch(k,code)) COMPULSORY[k].forEach(c=>{ if(!out.includes(c)) out.push(c); }); }); return out; }
-function ensureCompulsory(code){
-  const miss=[];
-  compulsoryFor(code).forEach(c=>{ if(cur.lines.some(l=>codeEq(l.code,c))) return; const it=items.find(i=>codeEq(i.code,c)); if(it) addItem(it,true); else miss.push(c); });
-  if(miss.length) $('lineNote').textContent='Compulsory task(s) not found in the FSR: '+miss.join(', ');
-  return miss;
-}
-function addItem(it,internal){
-  const u=splitUnit(it.unit), num=typeof it.rate==='number';
-  const l={code:it.code,task:composeTask(it),qty:'',unit:u.unit,per:u.per,duration:1,rate:num?it.rate:'',rateText:num?'':String(it.rate||'No rate in FSR'),amount:0};
-  cur.lines.push(l);
-  if(it.code.startsWith('01-')&&typeof nurCalc==='function') nurSet(l,true);
-  const dk=Object.keys(TASK_DEFAULTS).find(k=>codeEq(k,it.code));
-  if(dk){ const d=TASK_DEFAULTS[dk]; if(!(Number(l.rate)>0)){ l.rate=d.rate; l.rateText=''; } if(d.qty){ l.qty=String(d.qty); l.nq=false; l.dq=true; } l.amount=calc(l); }
-  if(!internal&&!compBatch) ensureCompulsory(it.code);
-}
-function focusQty(i){ const q=document.querySelector('[data-f=qty][data-i="'+i+'"]'); if(q){ q.scrollIntoView({block:'center'}); q.focus({preventScroll:true}); } }
-$('fsrBody').onclick=e=>{
-  const b=e.target.closest('[data-pick]'); if(!b) return;
-  const it=items.find(i=>i.code===b.dataset.pick); if(!it) return;
-  addItem(it); renderFsr(); renderLines(); setFsr(false); focusQty(cur.lines.length-1);
-};
-$('fsrBody').onchange=e=>{
-  const c=e.target.closest('[data-sel]'); if(!c) return;
-  c.checked?sel.add(c.dataset.sel):sel.delete(c.dataset.sel); selUi();
-};
-$('selAll').onclick=()=>{
-  const boxes=[...document.querySelectorAll('#fsrBody [data-sel]')]; if(!boxes.length) return;
-  const all=boxes.every(b=>b.checked);
-  boxes.forEach(b=>{ b.checked=!all; !all?sel.add(b.dataset.sel):sel.delete(b.dataset.sel); }); selUi();
-};
-$('addSel').onclick=()=>{
-  const first=cur.lines.length;
-  items.filter(i=>sel.has(i.code)).forEach(addItem);   // FSR order
-  if(cur.lines.length===first) return;
-  sel.clear(); renderFsr(); renderLines(); setFsr(false); focusQty(first);
-};
-function setFsr(open){ $('app').classList.toggle('nofsr',!open); $('addFsrBtn').hidden=open; if(open){ renderFsr(); $('q').focus({preventScroll:true}); } }
-$('closeFsr').onclick=()=>setFsr(false);
-$('addNewBtn').onclick=()=>{
-  cur.lines.push({custom:true,code:'',task:'',qty:'',unit:'',per:1,duration:1,rate:'',rateText:'Rate',amount:0});
-  renderLines(); const t=document.querySelector('[data-f=task][data-i="'+(cur.lines.length-1)+'"]'); if(t){ t.scrollIntoView({block:'center'}); t.focus({preventScroll:true}); }
-};
-$('addFsrBtn').onclick=()=>setFsr(true);
-$('fChap').onchange=()=>{ sel.clear(); subSel=''; closeSub(); renderFsr(); setFsr(true); };
-function closeSub(){ $('fSubList').hidden=true; $('fSubBtn').setAttribute('aria-expanded','false'); }
-$('fSubBtn').onclick=e=>{ e.stopPropagation(); const o=$('fSubList').hidden; $('fSubList').hidden=!o; $('fSubBtn').setAttribute('aria-expanded',o); if(o){ const on=$('fSubList').querySelector('.on'); if(on) on.scrollIntoView({block:'nearest'}); } };
-function pickSub(el){ const k=el.dataset.sub; subSel=k===''?'':$('fSubList')._subs[+k]; closeSub(); renderFsr(); }
-$('fSubList').onclick=e=>{ const o=e.target.closest('[data-sub]'); if(o) pickSub(o); };
-$('fSubList').onkeydown=e=>{ const o=e.target.closest('[data-sub]'); if(!o) return; if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pickSub(o); } else if(e.key==='ArrowDown'&&o.nextElementSibling){ e.preventDefault(); o.nextElementSibling.focus(); } else if(e.key==='ArrowUp'&&o.previousElementSibling){ e.preventDefault(); o.previousElementSibling.focus(); } };
-document.addEventListener('click',e=>{ if(!e.target.closest('#fSubDd')) closeSub(); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSub(); }); $('q').oninput=renderFsr;
-
-/* ---------- task text: add the sub-heading when the item is a sub-class ---------- */
-const ENUMERATOR=/^\s*(\(?[ivx]+\)|[ivx]+\.|\(?[a-d]\)|[a-d]\.)\s*/i;
-function cleanSub(sub){
-  let t=String(sub||'').split(' | ').pop().trim();
-  if(/^CHAPTER\b/.test(t)) return '';
-  t=t.replace(/^'?\d\d\s?[-.:]\s?\d\d\s*[-–:]?\s*[A-Z0-9][A-Z0-9 ,&()\/.'’\-–:]*?(?=\s*[-–]?\s*[a-z]|$)/,'').trim();   // drop "01-06 – SECTION TITLE"
-  t=t.replace(/^[-–:\s]+/,'').replace(/^from [A-Z][a-z]+ to [A-Z][a-z]+\s+/,'').replace(/[\s:.,;–-]+$/,'');
-  return t.length>2?t:'';
-}
-function looksLikeSubItem(d){ return ENUMERATOR.test(d) || /^[a-z0-9(]/.test(d) || d.length<=60; }
-function composeTask(it){
-  const sub=cleanSub(it.sub), d=String(it.desc||'').trim();
-  if(!sub || !looksLikeSubItem(d) || d.toLowerCase().startsWith(sub.toLowerCase().slice(0,25))) return d;
-  return sub+' – '+d.replace(ENUMERATOR,'');
-}
-
-/* ---------- picked lines ---------- */
-function renderLines(){
-  try{ pctUpdate(); }catch(_){}
-  $('lineBody').innerHTML=cur.lines.length?cur.lines.map((l,i)=>{
-    const needRate=!(Number(l.rate)>0);
-    const cu=!!l.custom;
-    return '<tr data-row="'+i+'"><td class="mono nowrap"><span class="grip" draggable="true" data-grip="'+i+'" title="Drag to move" aria-hidden="true">⠿</span>'+(i+1)+'</td>'+
-    (cu?'<td><input class="codein" data-f="code" data-i="'+i+'" value="'+esc(l.code)+'" placeholder="FSR code (optional)" aria-label="FSR code"></td><td><textarea class="txt" data-f="task" data-i="'+i+'" placeholder="Description of the new task" aria-label="Task description">'+esc(l.task)+'</textarea><span class="badge">New task</span></td>'
-       :'<td class="code">'+l.code+'</td><td><textarea class="txt" data-f="task" data-i="'+i+'" aria-label="Task description">'+esc(l.task)+'</textarea></td>')+
-    '<td class="num"><input data-f="qty" data-i="'+i+'" inputmode="decimal" value="'+esc(l.qty)+'" aria-label="Quantity"></td>'+
-    (cu?'<td><input class="unitin" data-f="unit" data-i="'+i+'" value="'+esc(l.unit)+'" placeholder="Unit" aria-label="Unit"></td>':'<td>'+esc(l.unit)+'</td>')+
-    '<td class="num"><input data-f="rate" data-i="'+i+'" inputmode="decimal" class="'+(needRate?'bad':'')+'" value="'+esc(l.rate)+'" placeholder="'+esc(l.rateText||'')+'" aria-label="Rate"></td>'+
-    '<td class="num"><input class="per" data-f="per" data-i="'+i+'" inputmode="decimal" value="'+esc(l.per)+'" aria-label="Per"></td>'+
-    '<td class="num"><input class="per" data-f="duration" data-i="'+i+'" inputmode="decimal" value="'+esc(l.duration)+'" aria-label="Duration"></td>'+
-    '<td class="num mono" id="amt'+i+'">'+fmt0(l.amount)+'</td>'+
-    '<td class="nowrap"><button class="btn small" type="button" data-up="'+i+'" title="Move up" aria-label="Move line '+(i+1)+' up" '+(i===0?'disabled':'')+'>↑</button> <button class="btn small" type="button" data-down="'+i+'" title="Move down" aria-label="Move line '+(i+1)+' down" '+(i===cur.lines.length-1?'disabled':'')+'>↓</button> <button class="btn small" type="button" data-copy="'+i+'" title="Add the same task again below this line">Copy</button> <button class="btn small danger" type="button" data-del="'+i+'">Remove</button></td></tr>';}).join('')
-    :'<tr><td colspan="10" class="empty">Pick FSR items above, then enter the quantity for each.</td></tr>';
-  updateTotals();
-  const missing=cur.lines.filter(l=>!(Number(l.rate)>0)).length;
-  $('lineNote').textContent=missing?missing+' line(s) have no numeric rate in the FSR. Enter the rate to get an amount.':'';
-}
-/* Cost chips. A task is counted once, in this order: Watch & Ward (by code), Wage (by words in the task), Material (by words in the task).
-   Contingency = Total estimate cost - (Material + Wage + Watch & Ward), i.e. everything else, including 01-06-014. */
-const COST_RULES={
-  ward:{codes:['01-06-015']},
-  wage:{res:[/\bfilling\b[\s\S]*\b(bags?|pots?|polybags?|polythene)\b|\b(bags?|pots?|polybags?)\b[\s\S]*\bfilling\b/,/\bsow(ing|n)?\b/,/prick/,/\bwater(ing|ed)?\b/,/\bweed/,/\bshift/,/\bapplications?\b/,/site\s+prep|prepar\w*\s+of\s+(the\s+)?site/]},
-  material:{res:[/\bseeds?\b/,/\bplants?\b/,/red\s*soil/,/cow\s*dung/,/fertili[sz]ers?/,/\btransport/]}
-};
-function costGroup(l){
-  if(COST_RULES.ward.codes.some(c=>codeMatch(c,l.code))) return 'ward';
-  if(codeEq(l.code,PCT_TASK.code)) return '';
-  const t=String(l.task||'').toLowerCase();
-  if(COST_RULES.wage.res.some(r=>r.test(t))) return 'wage';
-  if(COST_RULES.material.res.some(r=>r.test(t))) return 'material';
-  return '';
-}
-function costChips(lines){
-  const g={material:{n:0,v:0},wage:{n:0,v:0},ward:{n:0,v:0}}; let t=0;
-  lines.forEach(l=>{ const a=Number(l.amount)||0; t+=a; const k=costGroup(l); if(k){ g[k].n++; g[k].v+=a; } });
-  const used=g.material.n+g.wage.n+g.ward.n;
-  g.cont={n:lines.length-used,v:t-(g.material.v+g.wage.v+g.ward.v)};
-  return {t,n:lines.length,g};
-}
-function updateTotals(){
-  const c=costChips(cur.lines), t=c.t; $('grand').textContent=fmt0(t); $('fAmt').value=fmt0(t);
-  $('grandCount').textContent='('+c.n+' task'+(c.n===1?'':'s')+')';
-  const pl=cur.lines.find(l=>codeEq(l.code,PCT_TASK.code)&&l.pct);
-  [['chipMat','Material',c.g.material],['chipWage','Wage',c.g.wage],['chipWard','Watch & Ward',c.g.ward],['chipCont','Contingency',c.g.cont]].forEach(([id,label,x])=>{
-    const share=t>0?(Math.round(x.v/t*1000)/10)+'%':'0%';
-    $(id).textContent=label+' ('+x.n+' task'+(x.n===1?'':'s')+'): '+fmt0(x.v)+' · '+(id==='chipCont'&&pl?pl.pct+'% of cost':share);
+const showAll = {cash: false, inc: false};
+function actBtns(tr, onEdit, onDel, editLabel = 'Edit') {
+  const c = tr.insertCell();
+  [[editLabel, onEdit, 'ghost edit'], ['Delete', onDel, 'ghost']].forEach(([t, f, cls]) => {
+    const b = document.createElement('button'); b.className = cls; b.textContent = t; b.onclick = f; c.append(b);
   });
 }
-$('lineBody').oninput=e=>{
-  const f=e.target.dataset.f; if(!f) return; const i=+e.target.dataset.i, l=cur.lines[i];
-  l[f]=e.target.value; if(f==='qty') l.nq=false; if(['code','task','unit'].includes(f)) return; if(codeEq(l.code,PCT_TASK.code)&&(f==='rate'||f==='qty')) l.pctManual=true; l.amount=calc(l); $('amt'+i).textContent=fmt0(l.amount); e.target.classList.remove('bad');
-  const j=(codeEq(l.code,PCT_TASK.code)?-1:pctUpdate()); if(j>=0){ const q=document.querySelector('[data-f="qty"][data-i="'+j+'"]'), r=document.querySelector('[data-f="rate"][data-i="'+j+'"]'); if(q) q.value=cur.lines[j].qty; if(r){ r.value=cur.lines[j].rate; r.classList.remove('bad'); } const a=$('amt'+j); if(a) a.textContent=fmt0(cur.lines[j].amount); }
-  updateTotals();
-};
-function moveLine(from,to){ if(to<0||to>=cur.lines.length||from===to) return; const [l]=cur.lines.splice(from,1); cur.lines.splice(to,0,l); renderLines(); }
-let dragFrom=null;
-$('lineBody').addEventListener('dragstart',e=>{ const g=e.target.closest('[data-grip]'); if(!g){ e.preventDefault(); return; } dragFrom=+g.dataset.grip; e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain',String(dragFrom));}catch(_){} g.closest('tr').classList.add('dragging'); });
-$('lineBody').addEventListener('dragover',e=>{ if(dragFrom===null) return; const tr=e.target.closest('tr[data-row]'); if(!tr) return; e.preventDefault(); $('lineBody').querySelectorAll('.dragover').forEach(x=>x.classList.remove('dragover')); tr.classList.add('dragover'); });
-$('lineBody').addEventListener('drop',e=>{ if(dragFrom===null) return; const tr=e.target.closest('tr[data-row]'); e.preventDefault(); const to=tr?+tr.dataset.row:dragFrom; const from=dragFrom; dragFrom=null; moveLine(from,to); });
-$('lineBody').addEventListener('dragend',()=>{ dragFrom=null; $('lineBody').querySelectorAll('.dragover,.dragging').forEach(x=>x.classList.remove('dragover','dragging')); });
-/* drag an FSR item (or all ticked items, when the dragged one is ticked) from the FSR list and drop it into Picked tasks */
-let fsrDrag=null;
-const dropZone=$('lineBody').closest('section');
-function dropPos(e){
-  const tr=e.target.closest('#lineBody tr[data-row]'); if(!tr) return {pos:cur.lines.length,tr:null,after:false};
-  const r=tr.getBoundingClientRect(), after=e.clientY>r.top+r.height/2, i=+tr.dataset.row;
-  return {pos:after?i+1:i,tr,after};
+function setSel(selId, newId, val) {      // pick an existing option, or fall back to "add new" with the value typed in
+  const sel = $(selId);
+  if ([...sel.options].some(o => o.value === val)) { sel.value = val; $(newId).value = ''; }
+  else { sel.value = NEW; $(newId).value = val || ''; }
 }
-function clearDropMarks(){ $('lineBody').querySelectorAll('.dragover,.dragover-after').forEach(x=>x.classList.remove('dragover','dragover-after')); dropZone.classList.remove('dropzone'); }
-$('fsrBody').addEventListener('dragstart',e=>{
-  const tr=e.target.closest('tr[data-drag]'); if(!tr){ return; }
-  const code=tr.dataset.drag;
-  fsrDrag=(sel.size>1&&sel.has(code))?items.filter(i=>sel.has(i.code)).map(i=>i.code):[code];
-  e.dataTransfer.effectAllowed='copy'; try{e.dataTransfer.setData('text/plain',fsrDrag.join(','));}catch(_){}
-  tr.classList.add('fdragging');
-});
-$('fsrBody').addEventListener('dragend',()=>{ fsrDrag=null; clearDropMarks(); $('fsrBody').querySelectorAll('.fdragging').forEach(x=>x.classList.remove('fdragging')); });
-dropZone.addEventListener('dragover',e=>{
-  if(!fsrDrag) return; e.preventDefault(); e.dataTransfer.dropEffect='copy';
-  clearDropMarks(); dropZone.classList.add('dropzone');
-  const d=dropPos(e); if(d.tr) d.tr.classList.add(d.after?'dragover-after':'dragover');
-});
-dropZone.addEventListener('dragleave',e=>{ if(fsrDrag&&!dropZone.contains(e.relatedTarget)) clearDropMarks(); });
-dropZone.addEventListener('drop',e=>{
-  if(!fsrDrag) return; e.preventDefault();
-  const d=dropPos(e), codes=fsrDrag; fsrDrag=null; clearDropMarks();
-  const start=cur.lines.length;
-  codes.map(c=>items.find(i=>i.code===c)).filter(Boolean).forEach(addItem);
-  const added=cur.lines.splice(start); if(!added.length) return;
-  cur.lines.splice(d.pos,0,...added);
-  codes.forEach(c=>sel.delete(c));
-  renderFsr(); renderLines(); focusQty(d.pos);
-});
-$('lineBody').onclick=e=>{
-  const up=e.target.closest('[data-up]'), dn=e.target.closest('[data-down]');
-  if(up){ moveLine(+up.dataset.up,+up.dataset.up-1); return; }
-  if(dn){ moveLine(+dn.dataset.down,+dn.dataset.down+1); return; }
-  const c=e.target.closest('[data-copy]');
-  if(c){ const i=+c.dataset.copy, l=cur.lines[i]; cur.lines.splice(i+1,0,{...l,qty:'',amount:0}); renderLines(); renderFsr(); return; }
-  const b=e.target.closest('[data-del]'); if(!b) return; cur.lines.splice(+b.dataset.del,1); renderLines(); renderFsr(); };
-$('clearBtn').onclick=()=>{cur.lines=[];renderLines();renderFsr();hush();};
-
-/* ---------- estimates list (Read / Update / Delete) ---------- */
-/* an estimate is identified by Esti_type + Esti_no + Year */
-const keyOf=(type,no,year)=>[type,no,year].join('|');
-const shortYear=y=>{const a=String(y||'').split('-');return a.length==2&&a[1].length==4?a[0]+'-'+a[1].slice(2):String(y||'');};
-const estiLabel=m=>m.type+' '+String(m.no).padStart(2,'0')+'/'+shortYear(m.year);
-const mKey=m=>keyOf(m.type,m.no,m.year), tKey=t=>keyOf(t.type,t.no,t.year);
-/* estimates grouped by Chapter: one collapsible band per chapter, the estimates (with Open / Delete) listed inside it */
-const openChaps=new Set(), openEsts=new Set();
-function taskTable(k){
-  const rows=tasks.filter(t=>tKey(t)===k).sort((a,b)=>a.slno-b.slno);
-  if(!rows.length) return '<div class="empty">No tasks saved for this estimate.</div>';
-  const sum=rows.reduce((s,t)=>s+t.amount,0);
-  return '<div class="scroll"><table><thead><tr><th>#</th><th>FSR Code</th><th>Task</th><th>Quantity</th><th>Rate</th><th>Per</th><th>Duration</th><th>Amount</th></tr></thead><tbody>'+
-    rows.map(t=>'<tr><td class="mono">'+t.slno+'</td><td class="code">'+esc(t.code)+'</td><td class="task" title="'+esc(t.task)+'">'+esc(t.task.length>140?t.task.slice(0,140)+'…':t.task)+'</td><td class="num">'+t.qty+' '+esc(t.unit)+'</td><td class="num">'+fmt(t.rate)+'</td><td class="num">'+t.per+'</td><td class="num">'+t.duration+'</td><td class="num mono">'+fmt0(t.amount)+'</td></tr>').join('')+
-    '<tr class="chapfoot"><td colspan="7" style="text-align:right">Total</td><td class="num mono">'+fmt0(sum)+'</td></tr></tbody></table></div>';
-}
-const chapName=c=>c?(CHAP[c]||'Chapter '+c):'Other (no chapter)';
-function estRow(m){
-  const k=mKey(m), n=tasks.filter(t=>tKey(t)===k).length, isOpen=openEsts.has(k);
-  return '<div class="erow'+(cur.mode==='edit'&&cur.key===k?' active':'')+'">'+
-    '<div class="ebar" data-etog="'+esc(k)+'" role="button" tabindex="0" aria-expanded="'+isOpen+'"><span class="caret" aria-hidden="true">'+(isOpen?'▾':'▸')+'</span>'+
-    '<div class="bandtxt"><b>'+esc(estiLabel(m))+'</b><small>'+esc((m.desc||'').slice(0,80))+(m.desc&&m.desc.length>80?'…':'')+'</small><small>'+esc(m.scheme)+' · '+n+' task'+(n===1?'':'s')+' · Rs. '+fmt0(m.amount)+'</small></div>'+
-    '<div class="row-actions"><button class="btn small" data-open="'+esc(k)+'" type="button">Open</button><button class="btn small danger" data-ask="'+esc(k)+'" type="button">Delete</button></div></div>'+
-    '<div class="ebody"'+(isOpen?'':' hidden')+'>'+(isOpen?taskTable(k):'')+'</div></div>';
-}
-function renderList(){
-  if(!user){ $('estList').innerHTML=''; return; }
-  if(!can('read')){ $('estList').innerHTML='<div class="empty">You do not have Read permission.</div>'; return; }
-  const live=new Set(masters.map(mKey)); [...openEsts].forEach(k=>{ if(!live.has(k)) openEsts.delete(k); });
-  const groups=new Map(); masters.forEach(m=>{ const c=m.chapter||''; if(!groups.has(c)) groups.set(c,[]); groups.get(c).push(m); });
-  $('estList').innerHTML=[...groups.keys()].sort((a,b)=>(a||'~').localeCompare(b||'~')).map(c=>{
-    const g=groups.get(c), sum=g.reduce((s,m)=>s+m.amount,0), isOpen=openChaps.has(c), act=cur.mode==='edit'&&g.some(m=>mKey(m)===cur.key);
-    return '<div class="band'+(act?' active':'')+'"><div class="bandbar" data-tog="'+esc(c||'-')+'" role="button" tabindex="0" aria-expanded="'+isOpen+'"><span class="caret" aria-hidden="true">'+(isOpen?'▾':'▸')+'</span>'+
-      '<div class="bandtxt"><b>'+esc(chapName(c))+'</b><small>'+g.length+' estimate'+(g.length===1?'':'s')+' · Rs. '+fmt0(sum)+'</small></div></div>'+
-      '<div class="bandbody"'+(isOpen?'':' hidden')+'>'+(isOpen?g.map(estRow).join(''):'')+'</div></div>';
-  }).join('')||'<div class="empty">No estimates saved yet. Fill the form and save the first one.</div>';
-}
-function toggleChap(bar){
-  const c=bar.dataset.tog==='-'?'':bar.dataset.tog, body=bar.nextElementSibling, open=body.hidden;
-  if(open){ openChaps.add(c); body.innerHTML=masters.filter(m=>(m.chapter||'')===c).map(estRow).join(''); } else openChaps.delete(c);
-  body.hidden=!open; bar.setAttribute('aria-expanded',open); bar.querySelector('.caret').textContent=open?'▾':'▸';
-}
-function toggleEst(bar){
-  const k=bar.dataset.etog, body=bar.nextElementSibling, open=body.hidden;
-  if(open){ openEsts.add(k); body.innerHTML=taskTable(k); } else openEsts.delete(k);
-  body.hidden=!open; bar.setAttribute('aria-expanded',open); bar.querySelector('.caret').textContent=open?'▾':'▸';
-}
-$('estList').onclick=e=>{
-  const o=e.target.closest('[data-open]'), a=e.target.closest('[data-ask]'), y=e.target.closest('[data-yes]');
-  if(o){ openEstimate(o.dataset.open); return; }
-  if(a){ if(!can('delete')){ deny('delete'); return; } a.outerHTML='<button class="btn small danger" data-yes="'+a.dataset.ask+'" type="button">Confirm delete</button>'; return; }
-  if(y){ deleteEstimate(y.dataset.yes); return; }
-  const eb=e.target.closest('[data-etog]'); if(eb){ toggleEst(eb); return; }
-  const cb=e.target.closest('[data-tog]'); if(cb) toggleChap(cb);
-};
-$('estList').onkeydown=e=>{ if(e.key!=='Enter'&&e.key!==' ') return; const t=e.target; if(t.matches('[data-etog]')){ e.preventDefault(); toggleEst(t); } else if(t.matches('[data-tog]')){ e.preventDefault(); toggleChap(t); } };
-$('expAll').onclick=()=>{ masters.forEach(m=>{ openChaps.add(m.chapter||''); openEsts.add(mKey(m)); }); renderList(); };
-$('colAll').onclick=()=>{ openChaps.clear(); openEsts.clear(); renderList(); };
-LV.forEach((id,l)=>{ if(l<4) $(id).onchange=()=>cascade(l+1); });
-function setSel(id,v){ const el=$(id); if(v && ![...el.options].some(o=>o.value===v)) el.add(new Option(v,v)); if(v) el.value=v; }
-function openEstimate(k){
-  const m=masters.find(x=>mKey(x)===k); if(!m) return;
-  if(!can('read')) return deny('read');
-  logAct('Estimate','Read',estiLabel(m),'');
-  cur={mode:'edit',key:k,lines:tasks.filter(t=>tKey(t)===k).sort((a,b)=>a.slno-b.slno).map(t=>({custom:!items.some(i=>i.code===t.code),code:t.code,task:t.task,qty:t.qty,unit:t.unit,per:t.per,duration:t.duration||1,rate:t.rate,rateText:'',amount:t.amount}))};
-  const ci=m.circle||(sheetRows('Org_master',5).find(r=>r[1]===m.division)||[])[0]||'';
-  cascade(0,[ci,m.division,m.range,m.beat,m.vss],true);
-  $('fType').value=m.type; if(m.scheme) setSel('fScheme',m.scheme); setSel('fYear',m.year); $('fNo').value=m.no; $('fDesc').value=m.desc;
-  if([...$('fChap').options].some(o=>o.value===m.chapter)) $('fChap').value=m.chapter;
-  try{ nurUi(); }catch(_){}
-  $('modeTitle').textContent='Edit estimate '+estiLabel(m); $('modeNote').textContent='';
-  hush(); renderLines(); renderFsr(); renderList(); setFsr(!cur.lines.length);
-}
-function newEstimate(){
-  cur={mode:'new',lines:[]}; $('fNo').value=''; $('fDesc').value=''; $('fType').value='DSO'; $('fScheme').selectedIndex=0; $('fYear').value='2026-2027';
-  cascade(0,['','','','','']);
-  $('modeTitle').textContent='New estimate'; $('modeNote').textContent=''; hush(); renderLines(); renderFsr(); renderList(); setFsr(true);
-}
-$('newBtn').onclick=newEstimate;
-async function deleteEstimate(k){
-  if(!can('delete')) return deny('delete');
-  const m=masters.find(x=>mKey(x)===k); if(!m) return; const label=estiLabel(m);
-  try{ await db.deleteEstimate(m.id); await reloadEstimates(); }
-  catch(e){ say('Could not delete '+label+': '+(e.message||e),'err'); return; }
-  if(cur.mode==='edit'&&cur.key===k) newEstimate();
-  renderList(); say('Estimate '+label+' deleted.');
-}
-
-/* ---------- preview + save ---------- */
-function formKey(){ return keyOf($('fType').value,$('fNo').value.trim(),$('fYear').value); }
-function duplicate(){ const k=formKey(); return masters.some(m=>mKey(m)===k && !(cur.mode==='edit'&&cur.key===k)); }
-function validate(){
-  const no=$('fNo').value.trim();
-  if(!no) return 'Enter Esti_no.';
-  if(duplicate()) return 'An estimate with Esti_type '+$('fType').value+', Esti_no '+no+' and Year '+$('fYear').value+' already exists. Change one of them, or open the existing estimate from the list.';
-  if(!cur.lines.length) return 'Pick at least one FSR item.';
-  const nt=cur.lines.findIndex(l=>!String(l.task||'').trim()); if(nt>=0) return 'Line '+(nt+1)+' needs a task description.';
-  const bad=cur.lines.findIndex(l=>!(Number(l.qty)>0)); if(bad>=0) return 'Enter a quantity for line '+(bad+1)+'.';
-  const nr=cur.lines.findIndex(l=>!(Number(l.rate)>0)); if(nr>=0) return 'Line '+(nr+1)+' needs a rate.';
-  const np=cur.lines.findIndex(l=>!(Number(l.per)>0)); if(np>=0) return 'Line '+(np+1)+' needs a Per value greater than 0.';
-  const nd=cur.lines.findIndex(l=>!(Number(l.duration)>0)); if(nd>=0) return 'Line '+(nd+1)+' needs a Duration greater than 0.';
-  return '';
-}
-$('prevBtn').onclick=()=>{
-  const err=validate(); if(err){say(err,'err');return;} hush();
-  const total=cur.lines.reduce((s,l)=>s+l.amount,0);
-  $('pvHead').innerHTML=[['Circle',$('fCircle').value],['Division',$('fDiv').value],['Range',$('fRange').value],['Beat',$('fBeat').value],['VSS',$('fVss').value],['Esti_type',$('fType').value],['Scheme',$('fScheme').value],['Year',$('fYear').value],['Esti_no',$('fNo').value.trim()],['Chapter',$('fChap').value],['Esti_description',$('fDesc').value||'-'],['Amount',fmt0(total)]].map(a=>'<div><span>'+a[0]+'</span>'+esc(a[1])+'</div>').join('');
-  $('pvBody').innerHTML=cur.lines.map((l,i)=>'<tr><td class="mono">'+(i+1)+'</td><td class="code">'+l.code+'</td><td>'+esc(l.task)+'</td><td class="num">'+l.qty+'</td><td>'+esc(l.unit)+'</td><td class="num">'+fmt(l.rate)+'</td><td class="num">'+l.per+'</td><td class="num">'+l.duration+'</td><td class="num mono">'+fmt0(l.amount)+'</td></tr>').join('');
-  $('pvTotal').textContent=fmt0(total); $('modal').hidden=false;
-};
-$('pvBack').onclick=()=>{$('modal').hidden=true;};
-$('pvSave').onclick=async()=>{
-  { const need=cur.mode==='edit'?'update':'write'; if(!can(need)){ $('modal').hidden=true; return deny(need); } }
-  const err=validate(); if(err){ $('modal').hidden=true; say(err,'err'); return; }
-  const no=$('fNo').value.trim(), type=$('fType').value, year=$('fYear').value, k=keyOf(type,no,year), old=cur.mode==='edit'?cur.key:null;
-  const oldM=old?masters.find(m=>mKey(m)===old):null;
-  const m={esti_no:no,esti_type:type,year,description:$('fDesc').value.trim(),chapter:$('fChap').value,scheme:$('fScheme').value,circle:$('fCircle').value,division:$('fDiv').value,range_name:$('fRange').value,beat:$('fBeat').value,vss:$('fVss').value};
-  const t=cur.lines.map((l,n)=>({slno:n+1,task:l.task,fsr_code:l.code,qty:Number(l.qty),unit:l.unit,rate:Number(l.rate),per:Number(l.per),duration:Number(l.duration)}));
-  $('pvSave').disabled=true;
-  try{ await db.saveEstimate(oldM?oldM.id:null,m,t); await reloadEstimates(); }
-  catch(e){ $('modal').hidden=true; say((e.code==='23505'?'An estimate with this Esti_type, Esti_no and Year already exists. ':'Could not save: ')+(e.message||e),'err'); return; }
-  finally{ $('pvSave').disabled=false; }
-  $('modal').hidden=true;
-  cur.mode='edit'; cur.key=k; $('modeTitle').textContent='Edit estimate '+estiLabel({type,no,year});
-  renderList(); say('Estimate '+estiLabel({type,no,year})+' saved ('+cur.lines.length+' task'+(cur.lines.length===1?'':'s')+').');
-};
-
-/* ---------- nursery: bag size -> beds, poly pot size -> weight ---------- */
-const isNur=()=>$('fChap').value==='01';
-const nurN=()=>Math.round(Number(String($('nurBags').value).replace(/,/g,'')))||0;
-function nurCalc(){            // beds from fsr_bags_per_bed
-  const b=BAGS.find(x=>x.size===$('nurSize').value), bags=nurN();
-  if(!b||!(bags>0)) return null;
-  return {size:b.size,perBed:b.perBed,bags,beds:Math.round(bags/b.perBed*100)/100}   // 2 digits after the decimal, not rounded up to a whole bed;
-}
-function potCalc(){            // weight from fsr_poly_pots: weight_per_1000 x pots / 1000
-  const x=POTS.find(v=>v.size===$('nurPot').value), n=nurN();
-  if(!x||!(n>0)) return null;
-  return {size:x.size,weightPer1000:x.w,pots:n,weight:Math.round(x.w*n/1000*100)/100};
-}
-/* quantity for a nursery line from its unit and name:
-   poly pot / poly bag task in kg -> weight; per bed -> beds; bags / seedlings / Nos -> number of bags; anything else is left for the user */
-/* FSR codes whose quantity is always the calculated poly pot weight (add more codes here if needed) */
-const POT_WEIGHT_CODES=['01-05-003'];
-function nurQty(l){
-  if(!isNur()) return 0;
-  const u=String(l.unit||'').toLowerCase(), t=String(l.task||'').toLowerCase();
-  const pc=potCalc(), c=nurCalc();
-  if(pc&&POT_WEIGHT_CODES.includes(String(l.code||'').trim())) return pc.weight;
-  if(pc&&/\b(kg|kgs|kilogram)/.test(u)&&/poly\s*-?\s*(thene|pot|bag)|polypot|polybag/.test(t)) return pc.weight;
-  if(c&&/\bbeds?\b/.test(u)) return c.beds;
-  if(c&&/bag|seedling|plant|\bnos?\b/.test(u)) return c.bags;
-  return 0;
-}
-function nurSet(l,force){
-  if(l.dq) return false;                 // task has its own default quantity
-  if(!force&&!l.nq) return false;
-  const q=nurQty(l); if(!(q>0)) return false;
-  l.qty=String(q); l.nq=true; l.amount=calc(l); return true;
-}
-function nurFill(sel,rows,label){
-  const keep=sel.value; sel.innerHTML=rows.length?rows.map(r=>'<option value="'+esc(r.size)+'">'+esc(r.size)+'</option>').join(''):'<option value="">'+label+'</option>';
-  if(keep&&rows.some(r=>r.size===keep)) sel.value=keep;
-}
-function nurUi(){
-  const show=isNur(); $('nurPanel').hidden=!show; if(!show) return;
-  nurFill($('nurSize'),BAGS,'(no rows in fsr_bags_per_bed)'); nurFill($('nurPot'),POTS,'(no rows in fsr_poly_pots)');
-  const c=nurCalc(), pc=potCalc(), b=BAGS.find(x=>x.size===$('nurSize').value), x=POTS.find(v=>v.size===$('nurPot').value), parts=[];
-  if(c) parts.push('Bag size '+c.size+': '+c.perBed+' bags per bed, so '+c.bags+' bags need '+c.beds+' bed(s).'); else if(b) parts.push('Bag size '+b.size+': '+b.perBed+' bags per bed.');
-  if(pc) parts.push('Poly pot size '+pc.size+': weight_per_1000 "'+x.wtxt+'" (value used '+pc.weightPer1000+'), so '+pc.pots+' pots weigh '+pc.weight+'.'); else if(x) parts.push('Poly pot size '+x.size+': weight_per_1000 "'+x.wtxt+'" (value used '+x.w+').');
-  if(!POTS.length){
-    if(NURERR.pots) parts.push('fsr_poly_pots could not be read: '+NURERR.pots);
-    else if(POTRAW.length) parts.push('fsr_poly_pots has '+POTRAW.length+' row(s) but no readable "size" column. Columns found: '+Object.keys(POTRAW[0]).join(', ')+'.');
-    else parts.push('fsr_poly_pots returned no rows. Check the table has data and that this user is allowed to read it (row-level security).');
-  } else if(x&&!(x.w>0)) parts.push('Poly pot size '+x.size+' has no readable weight_per_1000 value.');
-  if(!BAGS.length&&NURERR.bags) parts.push('fsr_bags_per_bed could not be read: '+NURERR.bags);
-  if(!nurN()) parts.push('Enter the number of bags / pots to fill in quantities.');
-  $('nurInfo').textContent=parts.join(' ');
-}
-function nurRefresh(force){ nurUi(); let n=0; cur.lines.forEach(l=>{ if(nurSet(l,force)) n++; }); renderLines(); renderFsr(); return n; }
-$('nurSize').onchange=()=>nurRefresh(false);
-$('nurPot').onchange=()=>nurRefresh(false);
-$('nurBags').oninput=()=>nurRefresh(false);
-$('nurApply').onclick=()=>{ if(!nurCalc()&&!potCalc()){ $('nurInfo').textContent='Choose a bag size or poly pot size and enter the number of bags / pots first.'; return; } const n=nurRefresh(true); $('nurInfo').textContent+=' '+n+' line(s) updated.'; };
-
-/* ---------- AI estimate agent ---------- */
-/* The browser never holds the agent ID or API key: it calls the Edge Function "fsr-agent" (see supabase/functions/fsr-agent),
-   which holds them as secrets. The agent only chooses FSR codes + quantities; rate, per, unit and amount come from the FSR table here. */
-const AI_STOP=new Set('the a an of and or for to in on at by with from per is are be as this that it its all any into using use work works item items cost estimate prepare make raise plant planting pick select code codes starting under quantity qty each'.split(' '));
-/* codes typed like 01-11 or 01-11-03: EVERY FSR item under that code is added by the page itself (exact match, no AI choice) */
-function aiPrefixes(text){ return [...new Set(String(text).match(/\b\d{2}(?:-\d{1,3}){1,3}\b/g)||[])]; }
-/* bag / pot size variants: the same task can exist once per size (e.g. "... of size 6x9"). */
-const codeSegs=c=>String(c||'').trim().split(/[-.]/).map(x=>parseInt(x,10));
-function codeMatch(prefix,code){ const p=codeSegs(prefix), c=codeSegs(code); return p.length>0&&p.length<=c.length&&p.every((v,i)=>v===c[i]); }
-const sizeNorm=t=>String(t==null?'':t).toLowerCase().replace(/(\d)\s*(?:cm|mm|inches|inch|in)\b/g,'$1').replace(/[×*]/g,'x').replace(/[^a-z0-9.]/g,'');
-/* a size written two ways, e.g. 10 cm x 17.5 cm (4"X7"), matches a description that uses either way */
-function sizeAlts(size){ const t=String(size==null?'':size), alts=[t.replace(/\([^)]*\)/g,' ')]; (t.match(/\(([^)]*)\)/g)||[]).forEach(x=>alts.push(x.slice(1,-1))); alts.push(t);
-  return [...new Set(alts.map(sizeNorm).filter(x=>x.length>=3))]; }
-function sizeIn(hay,size){ return sizeAlts(size).some(n=>{ let i=hay.indexOf(n);
-  while(i!==-1){ const pv=hay[i-1], nx=hay[i+n.length]; if(!(pv&&/[0-9.]/.test(pv))&&!(nx&&/[0-9]/.test(nx))) return true; i=hay.indexOf(n,i+1); } return false; }); }
-function sizePairs(text){
-  const out=[], re=/(\d+(?:\.\d+)?)\s*(?:cm|mm|inches|inch|in|"|\u201d|\u2033|'')?\s*[x\u00d7*]\s*(\d+(?:\.\d+)?)/gi; let m;
-  const t=String(text==null?'':text);
-  while((m=re.exec(t))){ const a=parseFloat(m[1]), b=parseFloat(m[2]); if(a>0&&b>0&&a<=60&&b<=60) out.push(a+'x'+b); }
-  return out;
-}
-function aiKnownSizes(){ return [...new Set(BAGS.map(b=>b.size).concat(POTS.map(x=>x.size)))].filter(x=>sizeAlts(x).length); }
-function aiSizeFromText(text){
-  const h=sizeNorm(text); let best='';
-  aiKnownSizes().forEach(z=>{ if(sizeIn(h,z)&&sizeNorm(z).length>sizeNorm(best).length) best=z; });
-  if(best) return best;
-  const m=String(text).match(/\b(?:bag|pot|poly\s*pot|polybag)?\s*size\s*(?:of|=|:)?\s*([0-9][0-9a-z.\s×x*"']*?)(?=\s*(?:,|;|\band\b|\bduration\b|\bqty\b|\bquantity\b|$))/i);
-  return m?m[1].trim():'';
-}
-function aiForced(text){
-  const pre=aiPrefixes(text); if(!pre.length) return {list:[],size:'',dropped:0,total:0};
-  const all=items.filter(it=>pre.some(x=>codeMatch(x,it.code)));
-  /* size from the request, else the Bag size chosen in the nursery panel */
-  let size=aiSizeFromText(text), fromPanel=false;
-  if(!size&&isNur()&&$('nurSize').value){ size=$('nurSize').value; fromPanel=true; }
-  if(!size) return {list:all,size:'',dropped:0,total:all.length};
-  const known=aiKnownSizes(); if(!known.some(z=>sizeAlts(z).some(a=>sizeAlts(size).includes(a)))) known.push(size);
-  /* the requested size as comparable pairs: from its alternatives (10x17.5, 4x7), either order */
-  const want=new Set(); sizeAlts(size).concat(sizePairs(size)).forEach(a=>{ want.add(a); const m=/^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$/.exec(a); if(m) want.add(m[2]+'x'+m[1]); });
-  const list=all.filter(it=>{ const txt=composeTask(it)+' '+it.desc+' '+it.sub, h=sizeNorm(txt), ms=known.filter(z=>sizeIn(h,z)), pr=sizePairs(txt);
-    if(!ms.length&&!pr.length) return true;                       // no size in the text: a generic task
-    return ms.some(z=>sizeAlts(z).some(a=>want.has(a)))||pr.some(x=>want.has(x)); });
-  return {list,size,fromPanel,dropped:all.length-list.length,total:all.length,sample:all.slice(0,3).map(x=>(String(x.sub||'').trim()?String(x.sub).trim().slice(0,70)+' / ':'')+String(x.desc||'').trim().slice(0,90)).join('  |  ')};
-}
-/* "quantity 1000 each" / "qty 500" typed in the request: used for forced items the agent gave no quantity for */
-/* durations typed in the request:
-   "watering duration 3, weeding duration 2, shifting duration 2"  -> by task keyword (also "duration 3 for watering")
-   "duration 3" on its own                                          -> every added task without a keyword rule */
-function aiStem(w){ w=w.toLowerCase(); return w.length>4?w.replace(/(ing|es|s)$/,''):w; }
-function aiDurations(text){
-  const out={global:0,rules:[]};
-  String(text).split(/[,;\n]|\band\b/i).forEach(seg=>{
-    const m=seg.match(/(.*?)\bduration\b\s*(?:of|=|:)?\s*(\d+(?:\.\d+)?)(?:\s*(?:for|to|on)\s+(.+))?/i); if(!m) return;
-    const n=Number(m[2]); if(!(n>0)) return;
-    const codes=String(m[3]||m[1]).match(/\b\d{2}(?:-\d{1,3}){1,3}\b/g)||[];
-    if(codes.length){ codes.forEach(c=>out.rules.push({code:c,kw:[],n})); return; }
-    const kw=String(m[3]||m[1]).toLowerCase().replace(/\b\d[\d\-.]*\b/g,' ').replace(/[^a-z ]+/g,' ').split(/\s+/).filter(w=>w.length>2&&!AI_STOP.has(w)).map(aiStem);
-    if(kw.length) out.rules.push({kw,n}); else out.global=n;
+function nameTools(selId, boxId, table, refTable, refField, label, reload) {   // rename / delete a dropdown value
+  const mk = (t, f) => { const b = document.createElement('button'); b.textContent = t; b.onclick = f; $(boxId).append(b); };
+  mk('Rename', async () => {
+    const old = $(selId).value; if (old === NEW) return;
+    const nn = (prompt('Rename ' + label, old) || '').trim(); if (!nn || nn === old) return;
+    let r = await db.from(table).update({name: nn}).eq('name', old);
+    if (r.error) return say('Could not rename: ' + r.error.message, true);
+    r = await db.from(refTable).update({[refField]: nn}).eq(refField, old);
+    if (r.error) return say('Could not update entries: ' + r.error.message, true);
+    say(label + ' renamed.'); reload(nn);
   });
+  mk('Delete', async () => {
+    const old = $(selId).value; if (old === NEW) return;
+    if (!confirm('Delete ' + label + ' "' + old + '"? Existing entries keep the name.')) return;
+    const r = await db.from(table).delete().eq('name', old);
+    if (r.error) return say('Could not delete: ' + r.error.message, true);
+    say(label + ' deleted.'); reload();
+  });
+}
+const statTab = {}, statMonth = {};
+const mlabel = k => new Date(k + '-01T00:00').toLocaleDateString('en-IN', {month: 'short', year: 'numeric'});
+// totalRows: [{d: 'YYYY-MM-DD', a: amount}] drives So far / Today / This month / By date / By month.
+// catRows:   [{c: label, a: amount}] drives the category tab.
+// modeRows:  optional [{d, m: payment mode, a}] adds a 'By payment mode' tab with an all-months / single-month filter.
+function renderStats(boxId, L, totalRows, catRows, extra = [], early = [], modeRows = null) {
+  const box = $(boxId), tab = statTab[boxId] || 'date', td = today(), tm = td.slice(0, 7);
+  const sum = rows => rows.reduce((a, r) => a + Number(r.a || 0), 0);
+  const group = (rows, key) => { const m = {}; rows.forEach(r => { const k = key(r); m[k] = (m[k] || 0) + Number(r.a || 0); }); return Object.entries(m); };
+  const el = (tag, txt, cls) => { const e = document.createElement(tag); if (txt != null) e.textContent = txt; if (cls) e.className = cls; return e; };
+  box.innerHTML = '';
+  const items = [[L.total, sum(totalRows)], ...early,
+    ['Today', sum(totalRows.filter(r => r.d === td))], ['This month', sum(totalRows.filter(r => (r.d || '').slice(0, 7) === tm))], ...extra];
+  const chips = el('div', null, 'chips');
+  items.forEach(([k, v, note, cls]) => { const d = el('div', k, cls || ''); d.append(el('b', inr(v))); if (note) d.append(el('small', note)); chips.append(d); });
+  box.append(chips);
+  const tabs = el('div', null, 'tabs');
+  [['date', 'By date'], ['cat', L.cat], ['month', 'By month'], ...(modeRows ? [['mode', 'By payment mode']] : [])].forEach(([id, name]) => {
+    const b = el('button', name, id === tab ? 'on' : ''); b.onclick = () => { statTab[boxId] = id; renderStats(boxId, L, totalRows, catRows, extra, early, modeRows); }; tabs.append(b);
+  });
+  box.append(tabs);
+  let mf = '', mrows = [];
+  if (tab === 'mode' && modeRows) {          // month filter: all months, or one month
+    const months = [...new Set(modeRows.map(r => (r.d || '').slice(0, 7)).filter(Boolean))].sort().reverse();
+    mf = months.includes(statMonth[boxId]) ? statMonth[boxId] : '';
+    const sel = document.createElement('select'); sel.style.cssText = 'width:auto;margin-bottom:8px'; sel.setAttribute('aria-label', 'Month filter');
+    sel.append(opt('', 'All months'), ...months.map(m => opt(m, mlabel(m))));
+    sel.value = mf;
+    sel.onchange = () => { statMonth[boxId] = sel.value; renderStats(boxId, L, totalRows, catRows, extra, early, modeRows); };
+    box.append(sel);
+    mrows = modeRows.filter(r => !mf || (r.d || '').slice(0, 7) === mf);
+  }
+  const list = tab === 'mode' ? group(mrows, r => r.m || 'Not set').sort((a, b) => b[1] - a[1])
+    : tab === 'cat' ? group(catRows, r => r.c || '—').sort((a, b) => b[1] - a[1])
+    : tab === 'month' ? group(totalRows, r => (r.d || '').slice(0, 7)).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 12)
+    : group(totalRows, r => r.d).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 10);
+  if (!list.length) box.append(el('div', 'No data yet.', 'br'));
+  const max = Math.max(1, ...list.map(x => x[1]));
+  list.forEach(([k, v]) => {
+    const r = el('div', null, 'br'), i = el('i');
+    i.style.width = (v / max * 100) + '%';
+    r.append(el('span', tab === 'month' ? new Date(k + '-01T00:00').toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : k), i, el('b', inr(v)));
+    box.append(r);
+  });
+  if (tab === 'mode') box.append(el('div', 'Total ' + inr(sum(mrows)) + ' · ' + (mf ? mlabel(mf) : 'all months'), 'tot'));
+}
+
+/* ---------- Cash ---------- */
+for (const k in KINDS) $('kind').append(opt(k, KINDS[k].label));
+
+function fieldHTML(f) {
+  const [id, label, type] = f;
+  return `<div><label for="c_${id}">${label}</label><input id="c_${id}" type="${type}"${type==='number'?' step="any"':''}></div>`;
+}
+const DEN = [500,200,100,50,20,10,5,2,1];
+const queue = [];   // cash entries waiting to be saved together
+
+function renderFields() {
+  const k = $('kind').value;
+  $('cashFields').innerHTML = k ? [...COMMON, ...KINDS[k].extra].map(fieldHTML).join('') : '';
+  if (k) $('c_entry_date').value = today();
+  const show = k === 'in_hand', b = $('denBox');
+  b.classList.toggle('hide', !show);
+  b.innerHTML = show ? '<label>Denominations (count of each note / coin)</label><div class="den">' +
+    DEN.map(n => `<div><span>₹${n}</span>×<input type="number" min="0" id="d_${n}"><output id="o_${n}">0</output></div>`).join('') +
+    '</div><div class="tot">Total: ₹<span id="denTot">0</span></div>' : '';
+  b.oninput = calcDen;
+}
+function calcDen() {
+  let t = 0, any = false;
+  DEN.forEach(n => { const c = parseInt($('d_'+n).value) || 0; $('o_'+n).textContent = c * n; t += c * n; if (c) any = true; });
+  $('denTot').textContent = t;
+  if (any) $('c_amount').value = t;
+}
+let editCashId = null;
+function syncCashButtons() {
+  const k = $('kind').value, ed = editCashId !== null;
+  $('cashBtn').classList.toggle('hide', !k && !queue.length);
+  $('addMore').classList.toggle('hide', ed || !k || k === 'in_hand');
+  $('cancelCash').classList.toggle('hide', !ed);
+  $('saveCash').textContent = ed ? 'Update entry' : (k === 'in_hand' || (!queue.length && !k)) ? 'Save cash entry' : 'Save all';
+}
+function startEditCash(r) {
+  if (!KINDS[r.kind]) return;
+  editCashId = r.id; $('kind').value = r.kind; $('kind').disabled = true; renderFields();
+  const dt = r.details || {};
+  $('c_entry_date').value = r.entry_date; $('c_description').value = r.description || '';
+  for (const [id] of KINDS[r.kind].extra) $('c_' + id).value = dt[id] ?? '';
+  if (r.kind === 'in_hand') { DEN.forEach(n => $('d_' + n).value = (dt.denominations || {})[n] || ''); calcDen(); }
+  $('c_amount').value = r.amount;
+  syncCashButtons(); $('cashSec').scrollIntoView({behavior: 'smooth'});
+}
+function endEditCash() { editCashId = null; $('kind').disabled = false; $('kind').value = ''; renderFields(); syncCashButtons(); }
+$('kind').onchange = () => { renderFields(); syncCashButtons(); };
+
+function readCash() {
+  const k = $('kind').value;
+  if (!k) return null;
+  const row = {kind: k, entry_date: $('c_entry_date').value, description: $('c_description').value.trim(),
+               amount: parseFloat($('c_amount').value), details: {}};
+  if (!row.entry_date || isNaN(row.amount)) return null;
+  for (const [id,,type] of KINDS[k].extra) {
+    const v = $('c_'+id).value.trim();
+    if (v) row.details[id] = type === 'number' ? parseFloat(v) : v;
+  }
+  if (k === 'in_hand') {
+    const d = {};
+    DEN.forEach(n => { const c = parseInt($('d_'+n).value); if (c > 0) d[n] = c; });
+    if (Object.keys(d).length) row.details.denominations = d;
+  }
+  return row;
+}
+function renderQueue() {
+  const t = $('pendTbl'); t.innerHTML = '';
+  if (!queue.length) return;
+  t.createTHead().insertRow().innerHTML = '<th colspan="5">Waiting to save</th>';
+  queue.forEach((r, i) => {
+    const tr = t.insertRow();
+    cell(tr, r.entry_date); cell(tr, KINDS[r.kind].label); cell(tr, r.description); cell(tr, r.amount, 'n');
+    const b = document.createElement('button'); b.className = 'ghost'; b.textContent = 'Remove';
+    b.onclick = () => { queue.splice(i, 1); renderQueue(); syncCashButtons(); };
+    tr.insertCell().append(b);
+  });
+}
+$('addMore').onclick = () => {
+  const row = readCash();
+  if (!row) return say('Enter a date and an amount before adding another.', true);
+  queue.push(row); renderQueue(); renderFields(); syncCashButtons();
+  say('Added to the list. Fill in the next one.');
+};
+$('saveCash').onclick = async () => {
+  if (editCashId !== null) {
+    const cur = readCash();
+    if (!cur) return say('Enter a date and an amount.', true);
+    const {error} = await db.from('cash_entries').update(cur).eq('id', editCashId);
+    if (error) return say('Could not update: ' + error.message, true);
+    say('Cash entry updated.'); endEditCash(); loadCash(); return;
+  }
+  const rows = [...queue], cur = readCash();
+  const k = $('kind').value;
+  const typed = k && ['description','amount'].some(f => $('c_'+f).value.trim());
+  if (cur) rows.push(cur);
+  else if (typed || (k === 'in_hand' && !rows.length)) return say('Enter a date and an amount.', true);
+  if (!rows.length) return say('Nothing to save yet.', true);
+  const {error} = await db.from('cash_entries').insert(rows);
+  if (error) return say('Could not save: ' + error.message, true);
+  say(rows.length + (rows.length > 1 ? ' cash entries saved.' : ' cash entry saved.'));
+  queue.length = 0; renderQueue(); renderFields(); syncCashButtons();
+  loadCash();
+};
+const fmtDetail = ([a, b]) => a === 'denominations'
+  ? 'notes: ' + Object.entries(b).map(([n, c]) => n + '×' + c).join(', ')
+  : a.replace(/_/g, ' ') + ': ' + b;
+let cashRows = [], incRows = [];
+function drawCashStats() {
+  const tot = (rows, f, k = 'amount') => rows.filter(f).reduce((a, r) => a + Number(r[k] || 0), 0);
+  const inHand = tot(cashRows, r => r.kind === 'in_hand'), inBank = tot(cashRows, r => r.kind === 'bank');
+  const incCash = tot(incRows, r => r.received_mode === 'Cash'), incOther = tot(incRows, r => r.received_mode !== 'Cash');
+  const paidCash = tot(batchRows, r => r.payment_mode === 'Cash', 'amount_spent');
+  const paidBank = tot(batchRows, r => r.payment_mode === 'UPI app' || r.payment_mode === 'Cheque', 'amount_spent');
+  const handNow = inHand + incCash - paidCash, bankNow = inBank + incOther - paidBank;
+  renderStats('cashStats', {total: 'Total so far', cat: 'By type'},
+    cashRows.map(r => ({d: r.entry_date, a: r.amount})),
+    cashRows.map(r => ({c: KINDS[r.kind] ? KINDS[r.kind].label : r.kind, a: r.amount})),
+    [['Current cash in hand', handNow, inr(inHand) + ' in hand + ' + inr(incCash) + ' cash income − ' + inr(paidCash) + ' cash expenses (batches)'],
+     ['Current cash in bank', bankNow, inr(inBank) + ' in bank + ' + inr(incOther) + ' non-cash income − ' + inr(paidBank) + ' UPI / cheque expenses (batches)']],
+    [['Current balance', handNow + bankNow, 'cash in hand + cash in bank']]);
+}
+async function loadCash() {
+  const res = await fetchAll('cash_entries'), t = $('cashTbl'); t.innerHTML = '';
+  if (res.error) return say('Could not load cash entries: ' + res.error.message, true);
+  const all = res.data.sort(byDateDesc), data = showAll.cash ? all : all.slice(0, 15);
+  $('moreCash').classList.toggle('hide', all.length <= 15); $('moreCash').textContent = showAll.cash ? 'Show latest 15' : 'Show all (' + all.length + ')';
+  cashRows = all; drawCashStats();
+  if (!data.length) return;
+  t.createTHead().insertRow().innerHTML = '<th>Date</th><th>Type</th><th>Description</th><th class="n">Amount</th><th>Details</th><th></th>';
+  for (const r of data) {
+    const tr = t.insertRow();
+    cell(tr, r.entry_date); cell(tr, KINDS[r.kind]?.label || r.kind); cell(tr, r.description);
+    cell(tr, r.amount, 'n');
+    cell(tr, Object.entries(r.details || {}).map(fmtDetail).join(', '));
+    actBtns(tr, () => startEditCash(r), async () => {
+      if (confirm('Delete this entry?')) { await db.from('cash_entries').delete().eq('id', r.id); if (editCashId === r.id) endEditCash(); loadCash(); }
+    });
+  }
+}
+
+/* ---------- Expense ---------- */
+let batchRows = [], expRows = [], items = {}, lastUnit = {}, curBatch = '';
+const bno = (d, n) => d.replace(/-/g, '') + '-' + String(n).padStart(2, '0');
+const nextSeq = rows => rows.reduce((m, r) => Math.max(m, parseInt(r.batch_no.split('-')[1]) || 0), 0) + 1;
+
+// Step 1: batch header (date, auto batch no, amount spent)
+async function refreshNextNo() {
+  const d = $('bDate').value;
+  if (!d) { $('bNo').value = ''; return; }
+  const {data} = await db.from('expense_batches').select('batch_no').eq('batch_date', d);
+  $('bNo').value = bno(d, nextSeq(data || []));
+}
+async function createBatch(d, spent, mode) {
+  for (let i = 0; i < 3; i++) {     // retry if two devices grab the same number
+    const {data} = await db.from('expense_batches').select('batch_no').eq('batch_date', d);
+    const bn = bno(d, nextSeq(data || []));
+    const {error} = await db.from('expense_batches').insert({batch_date: d, batch_no: bn, amount_spent: spent, payment_mode: mode});
+    if (!error) return bn;
+    if (error.code !== '23505') { say('Could not create batch: ' + error.message, true); return null; }
+  }
+  say('Could not create a batch number. Try again.', true); return null;
+}
+$('saveBatch').onclick = async () => {
+  const d = $('bDate').value, amt = parseFloat($('bAmt').value);
+  if (!d || isNaN(amt)) return say('Enter the date and the amount spent for the batch.', true);
+  const bn = await createBatch(d, amt, $('bPay').value);
+  if (!bn) return;
+  say('Batch ' + bn + ' saved. Add its details below, now or later.');
+  $('bAmt').value = ''; $('fDate').value = ''; $('fNo').value = '';
+  await loadBatches(bn);
+  refreshNextNo();
+  $('eCat').focus();
+};
+
+function openBatch(b) { $('fDate').value = ''; $('fNo').value = ''; fillBatchSelect(b.batch_no); $('eBatch').scrollIntoView({behavior: 'smooth', block: 'center'}); }
+
+// Step 3: pick a month (or all), then a date, and see every batch with all its items
+let brMonth = null, brDate = '';
+function renderBrowse() {
+  const months = [...new Set(batchRows.map(b => b.batch_date.slice(0, 7)))].sort().reverse();
+  if (brMonth === null) brMonth = months.includes(today().slice(0, 7)) ? today().slice(0, 7) : (months[0] || '');
+  if (brMonth && !months.includes(brMonth)) brMonth = '';
+  const ms = $('brMonth'); ms.innerHTML = '';
+  ms.append(opt('', 'All months'), ...months.map(m => opt(m, mlabel(m)))); ms.value = brMonth;
+  const inMonth = batchRows.filter(b => !brMonth || b.batch_date.startsWith(brMonth));
+  const dates = [...new Set(inMonth.map(b => b.batch_date))].sort().reverse();
+  if (brDate && !dates.includes(brDate)) brDate = '';
+  const ds = $('brDate'); ds.innerHTML = '';
+  ds.append(opt('', 'All dates' + (brMonth ? ' in ' + mlabel(brMonth) : '')), ...dates.map(dt => opt(dt, dt + ' (' + inMonth.filter(b => b.batch_date === dt).length + (inMonth.filter(b => b.batch_date === dt).length === 1 ? ' batch)' : ' batches)')))); ds.value = brDate;
+  const bn = $('brNo').value.trim().toLowerCase();
+  const list = inMonth.filter(b => (!brDate || b.batch_date === brDate) && (!bn || b.batch_no.toLowerCase().includes(bn)))
+    .sort((a, b) => b.batch_date.localeCompare(a.batch_date) || a.batch_no.localeCompare(b.batch_no));
+  const itemsOf = b => expRows.filter(r => r.batch_no === b.batch_no);
+  const sum = rows => rows.reduce((a, r) => a + Number(r.amount ?? r.amount_spent ?? 0), 0);
+  $('brSum').textContent = list.length + (list.length === 1 ? ' batch' : ' batches') + ' · Spent ' + inr(sum(list)) + ' · Items entered ' + inr(sum(list.flatMap(itemsOf)));
+  const box = $('browse'); box.innerHTML = '';
+  for (const b of list) {
+    const its = itemsOf(b), it = sum(its), card = document.createElement('div'); card.className = 'bcard';
+    const head = document.createElement('div'); head.className = 'bhead';
+    const t = document.createElement('span');
+    t.textContent = b.batch_date + ' · ' + b.batch_no + ' · ' + (b.payment_mode || 'mode not set') + ' · Spent ' + inr(b.amount_spent) + ' · Items ' + inr(it) + ' · Left ' + inr(b.amount_spent - it);
+    t.style.fontWeight = '600';
+    const sp = document.createElement('span'); sp.className = 'sp';
+    head.append(t, sp);
+    [['Open', () => openBatch(b), 'ghost edit'], ['Delete', () => deleteBatch(b), 'ghost']].forEach(([n, f, c]) => { const x = document.createElement('button'); x.className = c; x.textContent = n; x.onclick = f; head.append(x); });
+    card.append(head);
+    if (its.length) {
+      const w = document.createElement('div'); w.className = 'wrap'; const tb = document.createElement('table'); w.append(tb); card.append(w);
+      tb.createTHead().insertRow().innerHTML = '<th>Category</th><th>Item</th><th class="n">Qty</th><th>Unit</th><th class="n">Amount</th>';
+      its.slice().sort((a, c) => a.id - c.id).forEach(r => { const tr = tb.insertRow(); cell(tr, r.category); cell(tr, r.item); cell(tr, r.qty, 'n'); cell(tr, r.unit); cell(tr, r.amount, 'n'); });
+    } else { const n = document.createElement('div'); n.style.cssText = 'color:var(--mute);font-size:13px;margin-top:4px'; n.textContent = 'No items added yet.'; card.append(n); }
+    box.append(card);
+  }
+  if (!list.length) { const n = document.createElement('div'); n.style.cssText = 'color:var(--mute);margin-top:8px'; n.textContent = 'No batches for this selection.'; box.append(n); }
+}
+$('brMonth').onchange = () => { brMonth = $('brMonth').value; brDate = ''; renderBrowse(); };
+$('brDate').onchange = () => { brDate = $('brDate').value; renderBrowse(); };
+
+function renderDayBatches() {
+  const d = $('bDate').value, t = $('dayTbl'); t.innerHTML = '';
+  const rows = batchRows.filter(b => b.batch_date === d).sort((a, b) => a.batch_no.localeCompare(b.batch_no));
+  const itemsOf = b => expRows.filter(r => r.batch_no === b.batch_no).reduce((a, r) => a + Number(r.amount), 0);
+  $('dayHdr').textContent = d ? 'Batches on ' + d + ': ' + rows.length + (rows.length ? ' · Total spent ' + inr(rows.reduce((a, b) => a + Number(b.amount_spent || 0), 0)) : '') : '';
+  if (!rows.length) return;
+  t.createTHead().insertRow().innerHTML = '<th>Date</th><th>Batch no</th><th>Payment</th><th class="n">Amount spent</th><th class="n">Items entered</th><th class="n">Left</th><th></th>';
+  for (const b of rows) {
+    const tr = t.insertRow(), it = itemsOf(b);
+    cell(tr, b.batch_date); cell(tr, b.batch_no); cell(tr, b.payment_mode || 'not set'); cell(tr, b.amount_spent, 'n'); cell(tr, it, 'n'); cell(tr, Math.round((b.amount_spent - it) * 100) / 100, 'n');
+    actBtns(tr, () => openBatch(b), () => deleteBatch(b), 'Open');
+  }
+}
+
+// Step 2: details for any saved batch
+const curB = () => batchRows.find(b => b.batch_no === $('eBatch').value);
+function fillBatchSelect(keep) {
+  const f = $('fDate').value, n = $('fNo').value.trim().toLowerCase(), sel = $('eBatch');
+  const list = batchRows.filter(b => (!f || b.batch_date === f) && (!n || b.batch_no.toLowerCase().includes(n)));
+  sel.innerHTML = '';
+  list.forEach(b => sel.append(opt(b.batch_no, b.batch_no + ' · ' + inr(b.amount_spent) + ' · ' + (b.payment_mode || 'mode not set'))));
+  if (!list.length) sel.append(opt('', f || n ? 'No matching batches' : 'No batches yet'));
+  const pick = keep || curBatch;
+  sel.value = list.some(b => b.batch_no === pick) ? pick : (list[0] ? list[0].batch_no : '');
+  syncBatch();
+}
+function syncBatch() {
+  endEditExp();
+  const b = curB();
+  curBatch = b ? b.batch_no : '';
+  $('eSpent').value = b && b.amount_spent != null ? b.amount_spent : '';
+  $('eMode').value = b && b.payment_mode ? b.payment_mode : '';
+  showBatchSum(); renderItems();
+}
+function showBatchSum() {
+  const b = curB();
+  if (!b) { $('batchSum').textContent = 'Save a batch above, then pick it here to add items.'; return; }
+  const sum = expRows.filter(r => r.batch_no === b.batch_no).reduce((a, r) => a + Number(r.amount), 0);
+  $('batchSum').textContent = b.batch_date + ' · ' + (b.payment_mode || 'payment mode not set') + ' · Items entered: ' + inr(sum) + ' of ' + inr(b.amount_spent) + ' · Left: ' + inr(b.amount_spent - sum);
+}
+async function deleteBatch(b) {
+  const n = expRows.filter(r => r.batch_no === b.batch_no).length;
+  if (!confirm('Delete batch ' + b.batch_no + (n ? ' and its ' + n + ' item(s)?' : '?'))) return;
+  let r = await db.from('expenses').delete().eq('batch_no', b.batch_no);
+  if (r.error) return say('Could not delete items: ' + r.error.message, true);
+  r = await db.from('expense_batches').delete().eq('batch_no', b.batch_no);
+  if (r.error) return say('Could not delete batch: ' + r.error.message, true);
+  say('Batch ' + b.batch_no + ' deleted.'); curBatch = '';
+  await loadExpenses(); await loadBatches(); refreshNextNo();
+}
+$('delBatch').onclick = () => { const b = curB(); if (!b) return say('Pick a batch first.', true); deleteBatch(b); };
+$('updAmt').onclick = async () => {
+  const b = curB(), amt = parseFloat($('eSpent').value);
+  if (!b || isNaN(amt)) return say('Pick a batch and enter the amount.', true);
+  const {error} = await db.from('expense_batches').update({amount_spent: amt, payment_mode: $('eMode').value || null}).eq('batch_no', b.batch_no);
+  if (error) return say('Could not update: ' + error.message, true);
+  say('Batch updated.');
+  loadBatches(b.batch_no);
+};
+
+function fillSelect(sel, values, addLabel, keep) {
+  sel.innerHTML = '';
+  values.forEach(v => sel.append(opt(v)));
+  sel.append(opt(NEW, addLabel));
+  if (keep && values.includes(keep)) sel.value = keep;
+}
+async function loadCategories(keep) {
+  const {data, error} = await db.from('categories').select('name').order('name');
+  if (error) return say('Could not load categories: ' + error.message, true);
+  fillSelect($('eCat'), data.map(r => r.name), '➕ Add new category…', keep);
+  syncCat();
+}
+function syncCat() {
+  const isNew = $('eCat').value === NEW;
+  $('eCatNew').classList.toggle('hide', !isNew); $('catTools').classList.toggle('hide', isNew);
+  const list = isNew ? [] : (items[$('eCat').value] || []);
+  fillSelect($('eItem'), list, '➕ Add new item…');
+  if (!list.length) $('eItem').value = NEW;
+  syncItem();
+}
+function syncItem() {
+  $('eItemNew').classList.toggle('hide', $('eItem').value !== NEW);
+  $('eUnit').value = lastUnit[$('eCat').value + '|' + $('eItem').value] || '';
+}
+$('eCat').onchange = syncCat;
+$('eItem').onchange = syncItem;
+
+function itemExtremes() {      // highest and least spend per item (category + item), over all entries
+  const m = {};
+  expRows.forEach(r => { const k = r.category + '|' + r.item; (m[k] ??= {c: r.category, i: r.item, a: 0, n: 0}); m[k].a += Number(r.amount || 0); m[k].n++; });
+  const list = Object.values(m).sort((x, y) => y.a - x.a);
+  if (!list.length) return [];
+  const mk = (label, o, cls) => [label, o.a, o.i + ' (' + o.c + ') · ' + o.n + (o.n === 1 ? ' entry' : ' entries'), cls, o.i];
+  const out = [mk('Highest expenditure item', list[0], 'hi')];
+  if (list.length > 1) out.push(mk('Least expenditure item', list[list.length - 1], 'lo'));
   return out;
 }
-function aiRuleDur(rules,task,code){
-  const t=String(task||'').toLowerCase(), cd=String(code||''); let best=null;
-  rules.forEach(r=>{ if(r.code){ if(codeMatch(r.code,cd)) best={kw:[],n:r.n,top:true}; return; } if(best&&best.top) return; if(r.kw.every(k=>t.includes(k))&&(!best||r.kw.length>best.kw.length)) best=r; });
-  return best?best.n:0;
+function drawExpStats() {
+  renderStats('expStats', {total: 'Spent so far', cat: 'By category'},
+    batchRows.map(b => ({d: b.batch_date, a: b.amount_spent})), expRows.map(r => ({c: r.category, a: r.amount})),
+    itemExtremes(), [], batchRows.map(b => ({d: b.batch_date, m: b.payment_mode, a: b.amount_spent})));
 }
-function aiLocalQty(text){ const m=String(text).match(/\b(?:qty|quantity)\s*(?:of|=|:)?\s*(\d+(?:\.\d+)?)/i); return m?Number(m[1]):0; }
-const aiRow=it=>({code:it.code,description:composeTask(it).slice(0,160),unit:it.unit,rate:typeof it.rate==='number'?it.rate:null});
-function aiCandidates(text,limit,forced){
-  const fset=new Set(forced.map(i=>i.code));
-  const words=[...new Set(String(text).toLowerCase().replace(/[^a-z0-9 ]+/g,' ').split(/\s+/).filter(w=>w.length>2&&!AI_STOP.has(w)))];
-  const scored=words.length?items.map(it=>{ const hay=(it.code+' '+it.sub+' '+it.desc).toLowerCase(); let sc=0; words.forEach(w=>{ if(hay.includes(w)) sc+=1+(w.length>5?.5:0); }); return {it,sc}; })
-    .filter(x=>x.sc>0&&!fset.has(x.it.code)).sort((a,b)=>b.sc-a.sc).slice(0,Math.max(0,limit-Math.min(forced.length,100))):[];
-  return forced.slice(0,100).map(aiRow).concat(scored.map(x=>aiRow(x.it)));
+async function loadBatches(keep) {
+  const res = await fetchAll('expense_batches');
+  if (res.error) return say('Could not load batches: ' + res.error.message, true);
+  batchRows = res.data.sort((a, b) => b.batch_date.localeCompare(a.batch_date) || b.batch_no.localeCompare(a.batch_no));
+  $('bnoList').replaceChildren(...batchRows.map(b => opt(b.batch_no)));
+  fillBatchSelect(keep); drawExpStats(); drawCashStats(); renderDayBatches(); renderBrowse();
 }
-function aiStatus(t,bad){ const e=$('aiStatus'); e.textContent=t||''; e.className='ai-status'+(bad?' bad':''); }
-async function aiGenerate(){
-  const text=$('aiText').value.trim();
-  if(!text){ aiStatus('Describe the work first.',true); return; }
-  if(!can('write')&&!can('update')){ aiStatus('You do not have permission to create or change estimates.',true); return; }
-  const pre=aiPrefixes(text), fo=aiForced(text), forced=fo.list;
-  if(pre.length&&!forced.length){ aiStatus(fo.total?(fo.total+' FSR item(s) found under '+pre.join(', ')+', but none mention size '+fo.size+'. First items: "'+fo.sample+'". Write the size the way the descriptions do, or leave the size out.'):'No FSR items start with '+pre.join(', ')+'. Check the code.',true); return; }
-  if(fo.size){ const same=(a,b)=>sizeAlts(a).some(x=>sizeAlts(b).includes(x)); const hit=BAGS.find(b=>same(b.size,fo.size)); if(hit&&isNur()) $('nurSize').value=hit.size; const ph=POTS.find(x=>same(x.size,fo.size)); if(ph&&isNur()) $('nurPot').value=ph.size; nurUi(); }
-  const cands=aiCandidates(text,100,forced);
-  if(!cands.length){ aiStatus('No FSR items matched those words. Add more detail (for example "pit digging 45 cm" or "seedlings in polybags").',true); return; }
-  const cfg=window.FSR_CONFIG||{}, url=cfg.agentUrl||(cfg.url+'/functions/v1/fsr-agent');
-  $('aiGo').disabled=true; aiStatus('Agent is preparing the estimate…');
-  let d={lines:[]}, agentErr='';
-  try{
-    const token=db.accessToken?await db.accessToken():'';
-    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','apikey':cfg.anonKey,'Authorization':'Bearer '+(token||cfg.anonKey)},
-      body:JSON.stringify({request:text,candidates:cands,context:{type:$('fType').value,year:$('fYear').value,scheme:$('fScheme').value,nursery:isNur()?{beds:nurCalc(),polyPots:potCalc()}:null}})});
-    const j=await r.json().catch(()=>({}));
-    if(!r.ok) throw new Error(j.error||('Agent request failed ('+r.status+').'));
-    d=j;
-  }catch(e){ agentErr=e.message||String(e); }
-  try{
-    if(agentErr&&!forced.length){ aiStatus(agentErr,true); return; }
-    const byCode=new Map(items.map(i=>[i.code,i])), aq=new Map((d.lines||[]).map(x=>[String(x.code||'').trim(),Number(x.qty)||0])), dq=new Map((d.lines||[]).map(x=>[String(x.code||'').trim(),Number(x.duration)||0])), durs=aiDurations(text), ld=durs.global;
-    const lq=aiLocalQty(text), added=[], skipped=[], seen=new Set();
-    compBatch=true;
-    if($('aiReplace').checked) cur.lines=[]; else cur.lines.forEach(l=>seen.add(l.code));
-    const put=(it,q,du)=>{ if(seen.has(it.code)) return; seen.add(it.code); addItem(it); const l=cur.lines[cur.lines.length-1]; if(q>0&&!l.nq&&!l.dq) l.qty=String(q); const rd=aiRuleDur(durs.rules,l.task,l.code), dd=rd||du; if(dd>0) l.duration=String(dd); l.amount=calc(l); l.ai=true; added.push(it.code); };
-    forced.forEach(it=>put(it,aq.get(it.code)||lq,dq.get(it.code)||ld));                    // every item under the typed code, in FSR order
-    (d.lines||[]).forEach(x=>{ const c=String(x.code||'').trim(), it=byCode.get(c); if(!it){ skipped.push(c||'?'); return; } if(pre.length) return; put(it,Number(x.qty)||lq,Number(x.duration)||ld); });   // with a typed code, only that code's items are added
-    /* compulsory tasks for every code that was added (e.g. 01-05-xxx -> 01-06-14, 01-06-15) */
-    const compAdded=[], compMiss=[];
-    [...new Set(added.flatMap(c=>compulsoryFor(c)))].forEach(c=>{
-      const it=items.find(i=>codeEq(i.code,c)); if(!it){ compMiss.push(c); return; }
-      if(seen.has(it.code)||cur.lines.some(l=>codeEq(l.code,c))) return;
-      put(it,aq.get(c)||lq,dq.get(c)||ld); compAdded.push(it.code); });
-    if(d.description&&!$('fDesc').value.trim()) $('fDesc').value=String(d.description).slice(0,500);
-    renderLines(); renderFsr(); setFsr(false);
-    let msg=added.length?added.length+' task(s) added'+(forced.length?' ('+forced.length+' under '+pre.join(', ')+')':'')+'. Check each quantity and rate before saving.':'Nothing new was added (the items may already be picked).';
-    const noq=cur.lines.filter(l=>l.ai&&!(Number(l.qty)>0)).length; if(noq) msg+=' '+noq+' line(s) have no quantity: enter it, or write "quantity 1000 each" in the request.';
-    if(compAdded.length) msg+=' Compulsory task(s) added: '+compAdded.join(', ')+'.';
-    if(compMiss.length) msg+=' Compulsory task(s) not found in the FSR: '+compMiss.join(', ')+'.';
-    if(fo.size) msg+=' Size '+fo.size+(fo.fromPanel?' (from the Bag size dropdown)':'')+': '+(fo.dropped?fo.dropped+' task variant(s) for other sizes were skipped.':'no size was found in the task text, so nothing was filtered. First items: "'+fo.sample+'".');
-    if(agentErr) msg+=' The AI agent could not be reached ('+agentErr+'), so only the exact code items were added.';
-    if(skipped.length) msg+=' Ignored unknown codes: '+skipped.join(', ')+'.';
-    aiStatus(msg,!added.length);
-  }catch(e){ aiStatus(e.message||String(e),true); }
-  finally{ compBatch=false; $('aiGo').disabled=false; }
+async function loadExpenses() {
+  const res = await fetchAll('expenses');
+  if (res.error) return say('Could not load expenses: ' + res.error.message, true);
+  expRows = res.data.sort(byDateDesc);
+  const count = {}; lastUnit = {};
+  expRows.forEach(r => {
+    (count[r.category] ??= {})[r.item] = (count[r.category][r.item] || 0) + 1;
+    const k = r.category + '|' + r.item; if (r.unit && !(k in lastUnit)) lastUnit[k] = r.unit;
+  });
+  items = {};
+  for (const c in count) items[c] = Object.keys(count[c]).sort((a, b) => count[c][b] - count[c][a]);
+  syncCat(); showBatchSum(); renderItems(); drawExpStats(); drawCashStats(); renderDayBatches(); renderBrowse();
 }
-$('aiGo').onclick=aiGenerate;
-
-/* ---------- reports ---------- */
-const RF=[['rCircle','circle'],['rScheme','scheme'],['rYear','year'],['rType','type'],['rDiv','division'],['rRange','range'],['rBeat','beat'],['rVss','vss'],['rNo','no']];
-function fillReportFilters(){
-  RF.forEach(([id,f])=>{ const el=$(id), keep=el.value; const vals=[...new Set(masters.map(m=>String(m[f]||'')).filter(Boolean))].sort();
-    el.innerHTML='<option value="">All</option>'+vals.map(v=>'<option>'+esc(v)+'</option>').join(''); if(vals.includes(keep)) el.value=keep; });
-}
-function repMatches(){ return masters.filter(m=>RF.every(([id,f])=>!$(id).value||String(m[f]||'')===$(id).value)); }
-function repSummary(){
-  const ms=repMatches(), tot=ms.reduce((s,m)=>s+tasks.filter(t=>tKey(t)===mKey(m)).reduce((a,t)=>a+t.amount,0),0);
-  $('rSum').innerHTML='<b>'+ms.length+'</b> estimate(s) match. Total amount <b>'+fmt0(tot)+'</b>.';
-  $('rGo').disabled=!ms.length||!($('rAbs').checked||$('rEst').checked);
-}
-$('repBtn').onclick=()=>{ fillReportFilters(); repSummary(); $('repModal').hidden=false; };
-$('rClose').onclick=()=>{ $('repModal').hidden=true; };
-[...RF.map(r=>r[0]),'rAbs','rEst'].forEach(id=>$(id).onchange=repSummary);
-
-const GROUPS={circle:'Circle',scheme:'Scheme',year:'Year',range:'Range',division:'Division',beat:'Beat',vss:'VSS',type:'Esti_type',no:'Esti_no',chapter:'Chapter'};
-const ONES=['','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
-const TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
-function below100(n){ return n<20?ONES[n]:TENS[Math.floor(n/10)]+(n%10?' '+ONES[n%10]:''); }
-function below1000(n){ return (n>=100?ONES[Math.floor(n/100)]+' hundred'+(n%100?' ':''):'')+(n%100?below100(n%100):''); }
-function words(n){ n=Math.round(n); if(!n) return 'zero'; const out=[]; const cr=Math.floor(n/1e7), la=Math.floor(n/1e5)%100, th=Math.floor(n/1e3)%100, rest=n%1000;
-  if(cr) out.push(below1000(cr)+' crore'); if(la) out.push(below100(la)+' lakh'); if(th) out.push(below100(th)+' thousand'); if(rest) out.push(below1000(rest));
-  const t=out.join(' '); return t.charAt(0).toUpperCase()+t.slice(1); }
-const rupees=n=>Math.round(n).toLocaleString('en-IN');
-function durText(l){ const d=Number(l.duration)||1, u=String(l.unit||'').toLowerCase();
-  const w=/month|\bpm\b/.test(u)?'month':/day/.test(u)?'day':/year/.test(u)?'year':/time|weeding|shifting|watering/.test(u)?'time':'';
-  return w?d+' '+w+(d===1?'':'s'):String(d); }
-/* "Per bed/month" -> "bed"; "Nos." stays "Nos." */
-const noun=u=>String(u||'').replace(/^\s*per\s+/i,'').split('/')[0].trim();
-const nounQ=(u,q)=>{ const n=noun(u); return (Number(q)!==1&&/^(bed|plant|tree|pole|pit|stump|bag|km|trench|sample)$/i.test(n))?n+'s':n; };
-const perText=l=>Number(l.per)>1?(l.per+' '+noun(l.unit)).trim():noun(l.unit);
-const lineCount=(txt,w)=>String(txt||'').split('\n').reduce((n,p)=>n+Math.max(1,Math.ceil(p.length/w)),0);
-const FONT='Tahoma';
-function put(ws,addr,v,o={}){ const c=ws.getCell(addr); c.value=v; c.font={name:FONT,size:o.size||13,bold:o.bold!==false&&!o.plain};
-  c.alignment={horizontal:o.h||'center',vertical:o.v||'middle',wrapText:o.wrap!==false}; if(o.fmt) c.numFmt=o.fmt; return c; }
-function box(ws,r,c1,c2,top,bottom){ for(let c=c1;c<=c2;c++){ const cell=ws.getRow(r).getCell(c);
-  cell.border={left:{style:c===1?'medium':'thin'},right:{style:c===8?'medium':'thin'},top:{style:top||'thin'},bottom:{style:bottom||'thin'}}; } }
-function safeName(wb2,base){ let n=base.replace(/[\\\/\?\*\[\]:]/g,'-').slice(0,31), k=2; while(wb2.getWorksheet(n)){ const suf=' ('+k+')'; n=base.replace(/[\\\/\?\*\[\]:]/g,'-').slice(0,31-suf.length)+suf; k++; } return n; }
-
-function estimateSheet(wb2,m,rows){
-  const ws=wb2.addWorksheet(safeName(wb2,estiLabel(m).replace('/','-')));
-  [7.86,11,11,40.29,13.71,10.5,11.7,11.71].forEach((w,i)=>ws.getColumn(i+1).width=w);
-  ws.pageSetup={paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:rows.length<=12?1:0,printTitlesRow:'4:5',margins:{left:.45,right:.45,top:.49,bottom:.5,header:.3,footer:.3}};
-  ws.mergeCells('A1:H1'); put(ws,'A1','ESTIMATE',{size:16}); ws.getRow(1).height=22.15;
-  ws.mergeCells('A2:C2'); put(ws,'A2','Name of the work :-',{h:'left',v:'top'});
-  ws.mergeCells('D2:H2'); put(ws,'D2',m.desc||'',{h:'justify',v:'top'}); ws.getRow(2).height=Math.max(36,lineCount(m.desc,64)*18.5);
-  put(ws,'A3','SCHEME  : '+(m.scheme||''),{h:'left',wrap:false}); put(ws,'E3','VSS :',{h:'right'}); put(ws,'F3',m.vss||'',{h:'left',wrap:false}); ws.getRow(3).height=19.9;
-  ws.mergeCells('B4:C4'); ws.mergeCells('B5:C5');
-  ['Sl. No.','Quantity',null,'Description of work','FSR Item No.','Rate','Per','Amount'].forEach((h,i)=>{ if(h) put(ws,String.fromCharCode(65+i)+'4',h); });
-  [1,2,null,3,4,5,6,7].forEach((h,i)=>{ if(h) put(ws,String.fromCharCode(65+i)+'5',h); });
-  ws.getRow(4).height=36.6; ws.getRow(5).height=17.25; box(ws,4,1,8,'medium'); box(ws,5,1,8,'thin','medium');
-  let r=6;
-  rows.forEach((l,i)=>{
-    put(ws,'A'+r,i+1,{plain:true}); put(ws,'B'+r,(l.qty+' '+nounQ(l.unit,l.qty)).trim(),{plain:true}); put(ws,'C'+r,durText(l),{plain:true});
-    put(ws,'D'+r,l.task,{plain:true,h:'justify',v:'top'}); put(ws,'E'+r,l.code,{plain:true}); put(ws,'F'+r,l.rate,{plain:true});
-    put(ws,'G'+r,perText(l),{plain:true}); put(ws,'H'+r,l.amount,{plain:true,fmt:'0'});
-    ws.getRow(r).height=Math.max(24,lineCount(l.task,30)*18.5); box(ws,r,1,8); r++; });
-  const first=6,last=r-1, total=rows.reduce((s,l)=>s+l.amount,0);
-  ws.mergeCells('A'+r+':G'+r); put(ws,'A'+r,'TOTAL ::',{h:'right'});
-  const tc=put(ws,'H'+r,{formula:'SUM(H'+first+':H'+last+')',result:total},{fmt:'0'}); ws.getRow(r).height=17.25; box(ws,r,1,8,'medium','medium');
-  const t=r; ws.getRow(t+1).height=1.5;
-  const big=total>200000;   // above Rs 2,00,000 the estimate goes to the Divisional Forest Officer
-  put(ws,'A'+(t+2),big?'Submitted to  the Divisional Forest Officer, '+String(m.range||'').replace(/\s*Range$/i,'')+' for favour of kind sanction.':'Submitted to  Forest Range Officer, '+(m.range||'')+' for favour of kind sanction.',{h:'left',wrap:false,plain:true}); ws.getRow(t+2).height=16.5;
-  if(big){   // Forest Range Officer signs in front of (beside) the Chairman
-    [[t+5,'Forest Range Officer,'],[t+6,(m.range||'')+(m.range?',':'')],[t+7,(m.beat||'')+(m.beat?'.':'')]].forEach(([row,txt])=>{ ws.mergeCells('B'+row+':D'+row); put(ws,'B'+row,txt,{size:11,wrap:false}); });
+function renderItems() {
+  const t = $('expTbl'); t.innerHTML = '';
+  const rows = expRows.filter(r => r.batch_no === curBatch);
+  if (!rows.length) return;
+  t.createTHead().insertRow().innerHTML = '<th>Category</th><th>Item</th><th class="n">Qty</th><th>Unit</th><th class="n">Amount</th><th></th>';
+  for (const r of rows) {
+    const tr = t.insertRow();
+    cell(tr, r.category); cell(tr, r.item); cell(tr, r.qty, 'n'); cell(tr, r.unit); cell(tr, r.amount, 'n');
+    actBtns(tr, () => startEditExp(r), async () => {
+      if (confirm('Delete this item?')) { await db.from('expenses').delete().eq('id', r.id); if (editExpId === r.id) endEditExp(); loadExpenses(); }
+    });
   }
-  ws.mergeCells('F'+(t+5)+':H'+(t+5)); put(ws,'F'+(t+5),'Chairman',{size:11,wrap:false});
-  ws.mergeCells('F'+(t+6)+':H'+(t+6)); put(ws,'F'+(t+6),(m.vss||'')+' VSS',{size:11,wrap:false});
-  const ch=((vssInfo[m.vss]||{}).chair||'').trim();
-  if(ch&&!/^to be updated$/i.test(ch)){ ws.mergeCells('F'+(t+7)+':H'+(t+7)); put(ws,'F'+(t+7),'('+ch+')',{size:11,wrap:false}); }
-  [['Head of Account : '+(m.scheme||''),8],[m.type+'.No. '+estiLabel(m).slice(m.type.length+1)+', dt.',9],['Sanctioned for Rs : '+rupees(total)+'/- Rupees( '+words(total)+') only.',10]].forEach(([txt,o])=>{
-    put(ws,'A'+(t+o),txt,{size:12,h:'left',wrap:false}); ws.getRow(t+o).height=21.6; });
-  if(big){
-    ws.mergeCells('F'+(t+13)+':H'+(t+13)); put(ws,'F'+(t+13),'Divisional Forest Officer,',{size:11.5,wrap:false});
-    ws.mergeCells('F'+(t+14)+':H'+(t+14)); put(ws,'F'+(t+14),'Social Forestry Division,',{size:11.5,wrap:false});
-    put(ws,'G'+(t+15),'Chittoor.',{size:11.5,wrap:false});
-  } else {
-    ws.mergeCells('F'+(t+13)+':H'+(t+13)); put(ws,'F'+(t+13),' Forest Range Officer,',{size:11.5,wrap:false});
-    ws.mergeCells('F'+(t+14)+':H'+(t+14)); put(ws,'F'+(t+14),m.range?m.range+',':'',{size:11.5,wrap:false});
-    put(ws,'G'+(t+15),m.beat?m.beat+'.':'',{size:11.5,wrap:false});
+}
+let editExpId = null;
+function startEditExp(r) {
+  editExpId = r.id;
+  setSel('eCat', 'eCatNew', r.category); syncCat();
+  setSel('eItem', 'eItemNew', r.item); syncItem();
+  $('eUnit').value = r.unit || ''; $('eQty').value = r.qty; $('eAmt').value = r.amount;
+  $('saveExp').textContent = 'Update item'; $('cancelExp').classList.remove('hide');
+  $('eCat').scrollIntoView({behavior: 'smooth', block: 'center'});
+}
+function endEditExp() {
+  editExpId = null; $('saveExp').textContent = 'Add item to batch'; $('cancelExp').classList.add('hide');
+  $('eAmt').value = ''; $('eQty').value = 1; $('eCatNew').value = ''; $('eItemNew').value = '';
+}
+$('saveExp').onclick = async () => {
+  const b = curB();
+  if (!b) return say('Save a batch first, then pick it to add items.', true);
+  const isNewCat = $('eCat').value === NEW;
+  const cat = isNewCat ? $('eCatNew').value.trim() : $('eCat').value;
+  const item = $('eItem').value === NEW ? $('eItemNew').value.trim() : $('eItem').value;
+  const row = {entry_date: b.batch_date, batch_no: b.batch_no, category: cat, item, qty: parseFloat($('eQty').value),
+               unit: $('eUnit').value.trim() || null, amount: parseFloat($('eAmt').value)};
+  if (!cat || !item || isNaN(row.qty) || isNaN(row.amount)) return say('Fill in category, item, qty and amount.', true);
+  if (isNewCat) {
+    const r = await db.from('categories').upsert({name: cat}, {onConflict: 'name'});
+    if (r.error) return say('Could not save category: ' + r.error.message, true);
   }
-  return total;
-}
-function abstractSheet(wb2,ms,gkey){
-  const ws=wb2.addWorksheet('Abstract');
-  const cols=[['Sl. No.',7],['Esti_type',10],['Esti_no',16],['Year',11],['Name of the work',50],['Scheme',22],['Division',20],['Range',16],['Beat',13],['VSS',17],['Amount (Rs.)',15]];
-  cols.forEach((c,i)=>ws.getColumn(i+1).width=c[1]);
-  ws.pageSetup={paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:'4:4',margins:{left:.45,right:.45,top:.49,bottom:.5,header:.3,footer:.3}};
-  ws.mergeCells('A1:K1'); put(ws,'A1','ABSTRACT OF ESTIMATES',{size:16}); ws.getRow(1).height=24;
-  ws.mergeCells('A2:K2'); put(ws,'A2',GROUPS[gkey]+'-wise',{size:13}); ws.getRow(2).height=20;
-  const thin={style:'thin'};
-  cols.forEach((c,i)=>{ const cell=put(ws,String.fromCharCode(65+i)+'4',c[0],{size:12}); cell.border={top:thin,bottom:thin,left:thin,right:thin}; cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE7ECE3'}}; });
-  ws.getRow(4).height=32;
-  const groups=new Map(); ms.forEach(m=>{ const g=String(m[gkey]||'(blank)'); if(!groups.has(g)) groups.set(g,[]); groups.get(g).push(m); });
-  let r=5, n=1; const subRows=[]; let grand=0;
-  [...groups.keys()].sort().forEach(g=>{
-    ws.mergeCells('A'+r+':K'+r); const hc=put(ws,'A'+r,GROUPS[gkey]+' : '+g,{size:12,h:'left'}); hc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4F6F1'}}; r++;
-    const first=r; let sum=0;
-    groups.get(g).forEach(m=>{
-      const amt=tasks.filter(t=>tKey(t)===mKey(m)).reduce((a,t)=>a+t.amount,0); sum+=amt;
-      [n++,m.type,estiLabel(m),m.year,m.desc,m.scheme,m.division,m.range,m.beat,m.vss,amt].forEach((v,i)=>{ const c=put(ws,String.fromCharCode(65+i)+r,v,{size:11,plain:true,h:i===4?'left':'center',v:'top',fmt:i===10?'#,##0':undefined}); c.border={top:thin,bottom:thin,left:thin,right:thin}; });
-      ws.getRow(r).height=Math.max(18,lineCount(m.desc,52)*15.5); r++; });
-    ws.mergeCells('A'+r+':J'+r); put(ws,'A'+r,'Sub-total : '+g,{size:12,h:'right'});
-    put(ws,'K'+r,{formula:'SUM(K'+first+':K'+(r-1)+')',result:sum},{size:12,fmt:'#,##0'}); for(let c=1;c<=11;c++) ws.getRow(r).getCell(c).border={top:thin,bottom:thin,left:thin,right:thin};
-    subRows.push(r); grand+=sum; r++; });
-  ws.mergeCells('A'+r+':J'+r); put(ws,'A'+r,'GRAND TOTAL ::',{size:13,h:'right'});
-  put(ws,'K'+r,{formula:subRows.map(x=>'K'+x).join('+'),result:grand},{size:13,fmt:'#,##0'}); for(let c=1;c<=11;c++) ws.getRow(r).getCell(c).border={top:{style:'medium'},bottom:{style:'medium'},left:thin,right:thin};
-  return grand;
-}
-async function saveBlob(name,blob){
-  if(claudeDownloads){ await claudeDownloads.save({filename:name,data:blob}); return; }
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove();
-}
-$('rGo').onclick=async()=>{
-  if(!can('read')) return deny('read');
-  const ms=repMatches(); if(!ms.length) return;
-  logAct('Report','Generate','Grouped by '+$('rGroup').value,ms.length+' estimate(s)');
-  try{
-    const wb2=new ExcelJS.Workbook(); let total=0;
-    if($('rAbs').checked) abstractSheet(wb2,ms,$('rGroup').value);
-    if($('rEst').checked) ms.forEach(m=>{ total+=estimateSheet(wb2,m,tasks.filter(t=>tKey(t)===mKey(m)).sort((a,b)=>a.slno-b.slno)); });
-    const buf=await wb2.xlsx.writeBuffer();
-    const nm=ms.length===1?'Estimate_'+estiLabel(ms[0]).replace(/[ \/]/g,'_'):'Estimates_'+GROUPS[$('rGroup').value]+'_wise';
-    await saveBlob(nm.replace(/[^\w.-]+/g,'_')+'.xlsx',new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
-    $('repModal').hidden=true; say('Report generated for '+ms.length+' estimate(s).');
-  }catch(e){ if(e&&e.code==='declined') return; say('Could not generate the report: '+(e.message||e),'err'); $('repModal').hidden=true; }
+  const {error} = editExpId !== null ? await db.from('expenses').update(row).eq('id', editExpId) : await db.from('expenses').insert(row);
+  if (error) return say('Could not save: ' + error.message, true);
+  say(editExpId !== null ? 'Item updated.' : 'Item added to ' + b.batch_no + '.');
+  endEditExp();
+  await loadCategories(cat);
+  await loadExpenses();
 };
-boot();
-})();
+
+/* ---------- Income ---------- */
+async function loadSources(keep) {
+  const {data, error} = await db.from('income_sources').select('name').order('name');
+  if (error) return say('Could not load income sources: ' + error.message, true);
+  fillSelect($('iSrc'), data.map(r => r.name), '➕ Add new source…', keep);
+  syncSrc();
+}
+function syncSrc() { const n = $('iSrc').value === NEW; $('iSrcNew').classList.toggle('hide', !n); $('srcTools').classList.toggle('hide', n); }
+$('iSrc').onchange = syncSrc;
+let editIncId = null;
+function startEditInc(r) {
+  editIncId = r.id; $('iDate').value = r.entry_date; setSel('iSrc', 'iSrcNew', r.source); syncSrc();
+  $('iDesc').value = r.description || ''; $('iAmt').value = r.amount; $('iMode').value = r.received_mode;
+  $('saveInc').textContent = 'Update income'; $('cancelInc').classList.remove('hide');
+  $('incSec').scrollIntoView({behavior: 'smooth'});
+}
+function endEditInc() {
+  editIncId = null; $('saveInc').textContent = 'Save income'; $('cancelInc').classList.add('hide');
+  $('iAmt').value = ''; $('iDesc').value = ''; $('iSrcNew').value = '';
+}
+async function loadIncome() {
+  const res = await fetchAll('incomes'), t = $('incTbl'); t.innerHTML = '';
+  if (res.error) return say('Could not load income: ' + res.error.message, true);
+  const all = res.data.sort(byDateDesc), data = showAll.inc ? all : all.slice(0, 15);
+  $('moreInc').classList.toggle('hide', all.length <= 15); $('moreInc').textContent = showAll.inc ? 'Show latest 15' : 'Show all (' + all.length + ')';
+  incRows = all; drawCashStats();
+  renderStats('incStats', {total: 'Received so far', cat: 'By source'}, all.map(r => ({d: r.entry_date, a: r.amount})), all.map(r => ({c: r.source, a: r.amount})));
+  if (!data.length) return;
+  t.createTHead().insertRow().innerHTML = '<th>Date</th><th>Source</th><th>Description</th><th class="n">Amount</th><th>Received by</th><th></th>';
+  for (const r of data) {
+    const tr = t.insertRow();
+    cell(tr, r.entry_date); cell(tr, r.source); cell(tr, r.description); cell(tr, r.amount, 'n'); cell(tr, r.received_mode);
+    actBtns(tr, () => startEditInc(r), async () => {
+      if (confirm('Delete this income entry?')) { await db.from('incomes').delete().eq('id', r.id); if (editIncId === r.id) endEditInc(); loadIncome(); }
+    });
+  }
+}
+$('saveInc').onclick = async () => {
+  const isNew = $('iSrc').value === NEW;
+  const src = isNew ? $('iSrcNew').value.trim() : $('iSrc').value;
+  const row = {entry_date: $('iDate').value, source: src, description: $('iDesc').value.trim(),
+               amount: parseFloat($('iAmt').value), received_mode: $('iMode').value};
+  if (!row.entry_date || !src || isNaN(row.amount)) return say('Fill in date, source and amount.', true);
+  if (isNew) {
+    const r = await db.from('income_sources').upsert({name: src}, {onConflict: 'name'});
+    if (r.error) return say('Could not save source: ' + r.error.message, true);
+  }
+  const {error} = editIncId !== null ? await db.from('incomes').update(row).eq('id', editIncId) : await db.from('incomes').insert(row);
+  if (error) return say('Could not save: ' + error.message, true);
+  say(editIncId !== null ? 'Income updated.' : 'Income saved.');
+  endEditInc();
+  await loadSources(src); loadIncome();
+};
+
+/* ---------- Calculator ---------- */
+function evalExpr(src) {
+  const s = src.replace(/\s/g, '').replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+  const t = s.match(/\d*\.?\d+|[-+*\/()%]/g) || [];
+  if (!s || t.join('') !== s) throw 0;
+  let i = 0;
+  const post = v => { while (t[i] === '%') { i++; v /= 100; } return v; };
+  const prim = () => {
+    const x = t[i++];
+    if (x === '(') { const v = add(); if (t[i++] !== ')') throw 0; return post(v); }
+    if (x === '-') return -prim();
+    if (x === '+') return prim();
+    if (x === undefined || isNaN(x)) throw 0;
+    return post(+x);
+  };
+  const mul = () => { let v = prim(); while (t[i] === '*' || t[i] === '/') { const o = t[i++], r = prim(); v = o === '*' ? v * r : v / r; } return v; };
+  const add = () => { let v = mul(); while (t[i] === '+' || t[i] === '-') { const o = t[i++], r = mul(); v = o === '+' ? v + r : v - r; } return v; };
+  const v = add();
+  if (i < t.length || !isFinite(v)) throw 0;
+  return Math.round(v * 1e10) / 1e10;
+}
+const cIn = $('calcIn'), cOut = $('calcOut');
+function preview() { try { cOut.textContent = '= ' + evalExpr(cIn.value); } catch { cOut.textContent = cIn.value ? '…' : ''; } }
+function equals() { try { cIn.value = evalExpr(cIn.value); cOut.textContent = ''; } catch { cOut.textContent = 'Check the expression'; } }
+[['C','⌫','(',')'],['7','8','9','÷'],['4','5','6','×'],['1','2','3','−'],['0','.','%','+']].flat().forEach(k => {
+  const b = document.createElement('button'); b.textContent = k;
+  b.onclick = () => { if (k === 'C') cIn.value = ''; else if (k === '⌫') cIn.value = cIn.value.slice(0, -1); else cIn.value += k; preview(); cIn.focus(); };
+  $('keys').append(b);
+});
+const eq = document.createElement('button'); eq.textContent = '='; eq.className = 'eq'; eq.onclick = equals; $('keys').append(eq);
+cIn.oninput = preview;
+cIn.onkeydown = e => { if (e.key === 'Enter') equals(); };
+function useResult(id, what) {
+  const el = $(id);
+  if (!el) return say('Choose a cash type first.', true);
+  try { el.value = evalExpr(cIn.value); say('Result put in the ' + what + ' amount.'); } catch { say('Calculate a valid number first.', true); }
+}
+$('useCash').onclick = () => useResult('c_amount', 'cash');
+$('useExp').onclick = () => useResult('eAmt', 'expense');
+
+$('bDate').onchange = () => { refreshNextNo(); renderDayBatches(); }; $('eBatch').onchange = syncBatch; $('fDate').onchange = () => fillBatchSelect(); $('fNo').oninput = () => fillBatchSelect(); $('brNo').oninput = renderBrowse;
+$('cancelExp').onclick = endEditExp; $('cancelInc').onclick = endEditInc; $('cancelCash').onclick = endEditCash;
+$('moreCash').onclick = () => { showAll.cash = !showAll.cash; loadCash(); };
+$('moreInc').onclick = () => { showAll.inc = !showAll.inc; loadIncome(); };
+nameTools('eCat', 'catTools', 'categories', 'expenses', 'category', 'category', async k => { await loadCategories(k); await loadExpenses(); });
+nameTools('iSrc', 'srcTools', 'income_sources', 'incomes', 'source', 'source', k => { loadSources(k); loadIncome(); });
+
+/* ---------- Section toggles (collapsed by default; stats stay visible) ---------- */
+['exp', 'inc', 'cash'].forEach(k => {
+  const head = $(k + 'Head'), body = $(k + 'Body');
+  const toggle = () => { const open = !body.classList.toggle('hide'); head.setAttribute('aria-expanded', open); head.parentElement.classList.toggle('open', open); };
+  head.onclick = toggle;
+  head.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
+});
+
+/* ---------- Login ---------- */
+let started = false;
+function loadAll() {
+  $('bDate').value = today(); $('iDate').value = today(); refreshNextNo();
+  loadCategories().then(loadExpenses); loadBatches(); loadSources(); loadIncome(); loadCash();
+}
+$('loginForm').onsubmit = async e => {
+  e.preventDefault();
+  $('loginErr').textContent = ''; $('lBtn').disabled = true;
+  const {error} = await db.auth.signInWithPassword({email: $('lEmail').value.trim(), password: $('lPass').value});
+  $('lBtn').disabled = false;
+  if (error) $('loginErr').textContent = error.message;
+};
+$('logout').onclick = () => db.auth.signOut();
+db.auth.onAuthStateChange((event, session) => {
+  setTimeout(() => {      // deferred: supabase-js advises against awaiting its calls inside this callback
+    if (session) {
+      $('who').textContent = session.user.email || '';
+      if (!started) { started = true; $('loginBox').classList.add('hide'); $('app').classList.remove('hide'); $('lPass').value = ''; loadAll(); }
+    } else {
+      started = false; $('app').classList.add('hide'); $('loginBox').classList.remove('hide');
+      batchRows = []; expRows = []; cashRows = []; incRows = []; $('msg').textContent = '';
+    }
+  }, 0);
+});
 </script>
 </body>
 </html>

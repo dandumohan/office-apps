@@ -22,7 +22,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--font);-w
 
 /* app bar */
 .appbar{background:var(--bar);color:#fff;position:sticky;top:0;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.14)}
-.appbar .in{max-width:960px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.appbar .in{max-width:1120px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:11px}
 .logo{width:34px;height:34px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:18px;flex:none}
 .brand b{display:block;font-size:15.5px;font-weight:650;letter-spacing:-.01em;line-height:1.2}
@@ -31,29 +31,52 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--font);-w
 #who{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .appbar button.alt{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:6px 13px}
 .appbar button.alt:hover{background:rgba(255,255,255,.12)}
-main{max-width:960px;margin:0 auto;padding:20px 16px 90px}
+main{max-width:1120px;margin:0 auto;padding:20px 16px 90px}
 
 /* sections (collapsible cards) */
 section{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
-section>details>summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:15px 18px 15px 44px;position:relative;cursor:pointer;list-style:none;user-select:none;font-size:16px;font-weight:650;letter-spacing:-.01em}
-section>details>summary::-webkit-details-marker{display:none}
-section>details>summary::before{content:"";position:absolute;left:19px;top:25px;width:7px;height:7px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:translateY(-70%) rotate(-45deg);transition:transform .15s}
-section>details[open]>summary::before{transform:translateY(-70%) rotate(45deg)}
-section>details>summary:hover{background:var(--bg)}
-section>details[open]>summary{border-bottom:1px solid var(--line)}
-section>details>*:not(summary){margin-left:18px;margin-right:18px}
-section>details>summary+*{margin-top:16px}
-section>details>*:last-child{margin-bottom:18px}
-.shead{display:flex;align-items:center;gap:10px;padding:15px 18px 15px 44px;position:relative;cursor:pointer;user-select:none;font-size:16px;font-weight:650;letter-spacing:-.01em}
-.shead::before{content:"";position:absolute;left:19px;top:50%;width:7px;height:7px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:translateY(-70%) rotate(-45deg);transition:transform .15s}
-section.open>.shead::before{transform:translateY(-70%) rotate(45deg)}
-.shead::after{content:"Add & manage entries";margin-left:auto;font-size:12px;font-weight:500;letter-spacing:0;color:var(--mute)}
-section.open>.shead::after{content:"Hide entries"}
-.shead:hover{background:var(--bg)}
-.shead:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;align-items:start;margin-bottom:16px}
+.dash .panel{margin-bottom:0}
+.dash .chips{grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px}
+.dash .chips b{font-size:18px}
+.dash .br{grid-template-columns:76px 1fr 80px;gap:8px}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 18px 6px;margin-bottom:16px}
-.panel h2{margin:0 0 12px;font-size:16px;font-weight:650;letter-spacing:-.01em}
-.sbody{padding:18px;border-top:1px solid var(--line)}
+.panel h2{margin:0;font-size:16px;font-weight:650;letter-spacing:-.01em}
+.panel:not(.open){padding-bottom:12px}
+.phead{display:flex;align-items:center;position:relative;padding:2px 0 2px 22px;margin-bottom:10px;cursor:pointer;user-select:none;border-radius:6px}
+.phead::before{content:"";position:absolute;left:3px;top:50%;width:7px;height:7px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:translateY(-70%) rotate(-45deg);transition:transform .15s}
+.panel.open .phead::before{transform:translateY(-70%) rotate(45deg)}
+.phead:hover h2{color:var(--accent)}
+.phead:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel:not(.open) .full{display:none}
+.panel.open .mini{display:none}
+.mini .mr{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:13px;color:var(--mute)}
+.mini .mr:first-child{border-top:0;padding-top:2px}
+.mini .mr span{min-width:0}
+.mini .mr b{flex:none;font-weight:650;font-size:14px;color:var(--ink);font-variant-numeric:tabular-nums}
+.mini .mr.hi span,.mini .mr.hi b{color:var(--hi)}.mini .mr.lo span,.mini .mr.lo b{color:var(--lo)}
+.dashbar{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 10px}
+.dashbar h2{margin:0;font:600 11.5px/1.3 var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--mute)}
+.dashbar button{padding:5px 13px;font-size:13px}
+.ehead{display:flex;align-items:center;position:relative;padding:15px 18px 15px 44px;cursor:pointer;user-select:none}
+.ehead h2{margin:0;font-size:16px;font-weight:650;letter-spacing:-.01em}
+.ehead::before{content:"";position:absolute;left:19px;top:50%;width:7px;height:7px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:translateY(-70%) rotate(-45deg);transition:transform .15s}
+section.open>.ehead::before{transform:translateY(-70%) rotate(45deg)}
+.ehead:hover{background:var(--bg)}
+.ehead:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+section.open>.ehead{border-bottom:1px solid var(--line)}
+.calcbox{margin:16px 18px 0;border:1px solid var(--line);border-radius:10px}
+.calcbox>summary{list-style:none;cursor:pointer;user-select:none;position:relative;padding:11px 14px 11px 38px;font-weight:600;font-size:14.5px;border-radius:10px}
+.calcbox>summary::-webkit-details-marker{display:none}
+.calcbox>summary::before{content:"";position:absolute;left:15px;top:50%;width:6px;height:6px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:translateY(-70%) rotate(-45deg);transition:transform .15s}
+.calcbox[open]>summary::before{transform:translateY(-70%) rotate(45deg)}
+.calcbox>summary:hover{background:var(--bg)}
+.calcbox>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.calcbox[open]>summary{border-bottom:1px solid var(--line);border-radius:10px 10px 0 0}
+.calcbox>.calc{margin:14px}
+.esel{padding:16px 18px 0;max-width:420px}
+.esel select{font-weight:550}
+.sbody{padding:18px}
 .sbody>h3:first-child{margin-top:0;padding-top:0;border-top:0}
 h3{font:600 11.5px/1.3 var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin-top:24px;margin-bottom:12px;padding-top:18px;border-top:1px solid var(--line)}
 .stats+h3{margin-top:12px}
@@ -152,7 +175,7 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 #loginErr{min-height:20px;margin-top:12px;font-size:13px;color:var(--err)}
 
 @media (min-width:700px){.grid>div:has(#eBatch){grid-column:span 2}}
-@media (max-width:640px){.shead::after{content:"Entries"}section.open>.shead::after{content:"Hide"}.panel{padding:14px 14px 4px}.sbody{padding:14px}#who{display:none}.brand b{white-space:nowrap;font-size:14.5px}.appbar button.alt{white-space:nowrap}.chips{grid-template-columns:repeat(2,1fr);gap:8px}.chips>div{padding:10px 11px}.chips b{font-size:17px}main{padding:14px 10px 90px}section>details>*:not(summary){margin-left:14px;margin-right:14px}.brand small{display:none}}
+@media (max-width:640px){.panel{padding:14px 14px 4px}.sbody{padding:14px}#who{display:none}.brand b{white-space:nowrap;font-size:14.5px}.appbar button.alt{white-space:nowrap}.chips{grid-template-columns:repeat(2,1fr);gap:8px}.chips>div{padding:10px 11px}.chips b{font-size:17px}main{padding:14px 10px 90px}.calcbox{margin:14px 14px 0}.esel{padding:14px 14px 0}.brand small{display:none}}
 </style>
 </head>
 <body>
@@ -179,21 +202,25 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 </div></header>
 <div id="msg" role="status" aria-live="polite"></div>
 <main>
+<div class="dashbar"><h2>Overview</h2><button id="allStats" class="alt">Expand all</button></div>
 <div class="dash">
-  <div class="panel"><h2>Income</h2><div class="stats" id="incStats"></div></div>
-  <div class="panel"><h2>Expense</h2><div class="stats" id="expStats"></div></div>
-  <div class="panel"><h2>Cash</h2><div class="stats" id="cashStats"></div></div>
+  <div class="panel" id="incPanel"><div class="phead" id="incPHead" role="button" tabindex="0" aria-expanded="false"><h2>Income</h2></div><div class="stats" id="incStats"></div></div>
+  <div class="panel" id="expPanel"><div class="phead" id="expPHead" role="button" tabindex="0" aria-expanded="false"><h2>Expenses</h2></div><div class="stats" id="expStats"></div></div>
+  <div class="panel" id="cashPanel"><div class="phead" id="cashPHead" role="button" tabindex="0" aria-expanded="false"><h2>Cash</h2></div><div class="stats" id="cashStats"></div></div>
 </div>
 
-<section><details id="calcSec"><summary>Calculator</summary>
+<section id="entries">
+  <div class="ehead" id="eHead" role="button" tabindex="0" aria-expanded="false" aria-controls="eBody"><h2>Add &amp; manage entries</h2></div>
+  <div class="ebody hide" id="eBody">
+  <details id="calcSec" class="calcbox"><summary>Calculator</summary>
   <div class="calc"><input id="calcIn" inputmode="decimal" autocomplete="off" placeholder="e.g. 250*3+40">
     <div class="res" id="calcOut" aria-live="polite"></div><div class="keys" id="keys"></div>
     <div class="row"><button id="useCash" class="alt">Use in cash amount</button><button id="useExp" class="alt">Use in expense amount</button></div></div>
-</details></section>
-
-<section id="incSec">
-  <div class="shead" id="incHead" role="button" tabindex="0" aria-expanded="false" aria-controls="incBody">Income</div>
-  <div class="sbody hide" id="incBody">
+</details>
+  <div class="esel"><label for="secSel">Section</label>
+    <select id="secSel"><option value="inc">Income</option><option value="exp">Expenses</option><option value="cash">Cash</option></select></div>
+  <div class="pane hide" id="incSec">
+  <div class="sbody" id="incBody">
   <h3>New income entry</h3>
   <div class="grid">
     <div><label for="iDate">Date</label><input type="date" id="iDate"></div>
@@ -208,11 +235,10 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
   <div class="wrap"><table id="incTbl"></table></div>
   <button id="moreInc" class="alt hide" style="margin-top:10px"></button>
 </div>
-</section>
+</div>
 
-<section id="expSec">
-  <div class="shead" id="expHead" role="button" tabindex="0" aria-expanded="false" aria-controls="expBody">Expense</div>
-  <div class="sbody hide" id="expBody">
+<div class="pane hide" id="expSec">
+  <div class="sbody" id="expBody">
 
   <h3>1 · New batch</h3>
   <div class="grid">
@@ -251,15 +277,16 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
     <div><label for="brMonth">Month</label><select id="brMonth"></select></div>
     <div><label for="brDate">Date</label><select id="brDate"></select></div>
     <div><label for="brNo">Batch no (optional)</label><input id="brNo" list="bnoList" placeholder="e.g. 20261104-02" autocomplete="off"></div>
+    <div><label for="brCat">Category (optional)</label><select id="brCat"></select></div>
+    <div><label for="brItem">Item (optional)</label><input id="brItem" list="itemList" placeholder="e.g. Rice" autocomplete="off"><datalist id="itemList"></datalist></div>
   </div>
   <div class="tot" id="brSum"></div>
   <div id="browse"></div>
 </div>
-</section>
+</div>
 
-<section id="cashSec">
-  <div class="shead" id="cashHead" role="button" tabindex="0" aria-expanded="false" aria-controls="cashBody">Cash</div>
-  <div class="sbody hide" id="cashBody">
+<div class="pane hide" id="cashSec">
+  <div class="sbody" id="cashBody">
   <h3>New cash entry</h3>
   <div class="grid">
     <div><label for="kind">Cash type</label>
@@ -272,7 +299,10 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
   <div class="wrap"><table id="cashTbl"></table></div>
   <button id="moreCash" class="alt hide" style="margin-top:10px"></button>
 </div>
+</div>
+</div>
 </section>
+
 </main>
 </div>
 
@@ -358,16 +388,22 @@ function renderStats(boxId, L, totalRows, catRows, extra = [], early = [], modeR
   const group = (rows, key) => { const m = {}; rows.forEach(r => { const k = key(r); m[k] = (m[k] || 0) + Number(r.a || 0); }); return Object.entries(m); };
   const el = (tag, txt, cls) => { const e = document.createElement(tag); if (txt != null) e.textContent = txt; if (cls) e.className = cls; return e; };
   box.innerHTML = '';
+  const mini = el('div', null, 'mini'), full = el('div', null, 'full');
+  box.append(mini, full);
   const items = [[L.total, sum(totalRows)], ...early,
     ['Today', sum(totalRows.filter(r => r.d === td))], ['This month', sum(totalRows.filter(r => (r.d || '').slice(0, 7) === tm))], ...extra];
+  [L.total, ...early.map(e => e[0]), 'This month', ...extra.map(e => e[0])].forEach(k => {      // compact list shown while collapsed
+    const it = items.find(x => x[0] === k), r = el('div', null, 'mr ' + (it[3] || ''));
+    r.append(el('span', k + (it[4] ? ' · ' + it[4] : '')), el('b', inr(it[1]))); mini.append(r);
+  });
   const chips = el('div', null, 'chips');
   items.forEach(([k, v, note, cls]) => { const d = el('div', k, cls || ''); d.append(el('b', inr(v))); if (note) d.append(el('small', note)); chips.append(d); });
-  box.append(chips);
+  full.append(chips);
   const tabs = el('div', null, 'tabs');
-  [['date', 'By date'], ['cat', L.cat], ['month', 'By month'], ...(modeRows ? [['mode', 'By payment mode']] : [])].forEach(([id, name]) => {
+  [['date', 'By date'], ['cat', L.cat], ['month', 'By month'], ...(modeRows ? [['mode', 'By payment']] : [])].forEach(([id, name]) => {
     const b = el('button', name, id === tab ? 'on' : ''); b.onclick = () => { statTab[boxId] = id; renderStats(boxId, L, totalRows, catRows, extra, early, modeRows); }; tabs.append(b);
   });
-  box.append(tabs);
+  full.append(tabs);
   let mf = '', mrows = [];
   if (tab === 'mode' && modeRows) {          // month filter: all months, or one month
     const months = [...new Set(modeRows.map(r => (r.d || '').slice(0, 7)).filter(Boolean))].sort().reverse();
@@ -376,22 +412,22 @@ function renderStats(boxId, L, totalRows, catRows, extra = [], early = [], modeR
     sel.append(opt('', 'All months'), ...months.map(m => opt(m, mlabel(m))));
     sel.value = mf;
     sel.onchange = () => { statMonth[boxId] = sel.value; renderStats(boxId, L, totalRows, catRows, extra, early, modeRows); };
-    box.append(sel);
+    full.append(sel);
     mrows = modeRows.filter(r => !mf || (r.d || '').slice(0, 7) === mf);
   }
   const list = tab === 'mode' ? group(mrows, r => r.m || 'Not set').sort((a, b) => b[1] - a[1])
     : tab === 'cat' ? group(catRows, r => r.c || '—').sort((a, b) => b[1] - a[1])
     : tab === 'month' ? group(totalRows, r => (r.d || '').slice(0, 7)).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 12)
     : group(totalRows, r => r.d).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 10);
-  if (!list.length) box.append(el('div', 'No data yet.', 'br'));
+  if (!list.length) full.append(el('div', 'No data yet.', 'br'));
   const max = Math.max(1, ...list.map(x => x[1]));
   list.forEach(([k, v]) => {
     const r = el('div', null, 'br'), i = el('i');
     i.style.width = (v / max * 100) + '%';
     r.append(el('span', tab === 'month' ? new Date(k + '-01T00:00').toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : k), i, el('b', inr(v)));
-    box.append(r);
+    full.append(r);
   });
-  if (tab === 'mode') box.append(el('div', 'Total ' + inr(sum(mrows)) + ' · ' + (mf ? mlabel(mf) : 'all months'), 'tot'));
+  if (tab === 'mode') full.append(el('div', 'Total ' + inr(sum(mrows)) + ' · ' + (mf ? mlabel(mf) : 'all months'), 'tot'));
 }
 
 /* ---------- Cash ---------- */
@@ -571,7 +607,7 @@ $('saveBatch').onclick = async () => {
 function openBatch(b) { $('fDate').value = ''; $('fNo').value = ''; fillBatchSelect(b.batch_no); $('eBatch').scrollIntoView({behavior: 'smooth', block: 'center'}); }
 
 // Step 3: pick a month (or all), then a date, and see every batch with all its items
-let brMonth = null, brDate = '';
+let brMonth = null, brDate = '', brCat = '';
 function renderBrowse() {
   const months = [...new Set(batchRows.map(b => b.batch_date.slice(0, 7)))].sort().reverse();
   if (brMonth === null) brMonth = months.includes(today().slice(0, 7)) ? today().slice(0, 7) : (months[0] || '');
@@ -583,12 +619,18 @@ function renderBrowse() {
   if (brDate && !dates.includes(brDate)) brDate = '';
   const ds = $('brDate'); ds.innerHTML = '';
   ds.append(opt('', 'All dates' + (brMonth ? ' in ' + mlabel(brMonth) : '')), ...dates.map(dt => opt(dt, dt + ' (' + inMonth.filter(b => b.batch_date === dt).length + (inMonth.filter(b => b.batch_date === dt).length === 1 ? ' batch)' : ' batches)')))); ds.value = brDate;
-  const bn = $('brNo').value.trim().toLowerCase();
-  const list = inMonth.filter(b => (!brDate || b.batch_date === brDate) && (!bn || b.batch_no.toLowerCase().includes(bn)))
-    .sort((a, b) => b.batch_date.localeCompare(a.batch_date) || a.batch_no.localeCompare(b.batch_no));
+  const cats = [...new Set(expRows.map(r => r.category))].sort((a, b) => a.localeCompare(b));
+  if (brCat && !cats.includes(brCat)) brCat = '';
+  const cs = $('brCat'); cs.innerHTML = ''; cs.append(opt('', 'All categories'), ...cats.map(c => opt(c))); cs.value = brCat;
+  const bn = $('brNo').value.trim().toLowerCase(), iq = $('brItem').value.trim().toLowerCase(), filtering = !!(iq || brCat);
   const itemsOf = b => expRows.filter(r => r.batch_no === b.batch_no);
+  const matchOf = b => filtering ? itemsOf(b).filter(r => (!brCat || r.category === brCat) && (!iq || r.item.toLowerCase().includes(iq))) : itemsOf(b);
+  const list = inMonth.filter(b => (!brDate || b.batch_date === brDate) && (!bn || b.batch_no.toLowerCase().includes(bn)) && (!filtering || matchOf(b).length))
+    .sort((a, b) => b.batch_date.localeCompare(a.batch_date) || a.batch_no.localeCompare(b.batch_no));
   const sum = rows => rows.reduce((a, r) => a + Number(r.amount ?? r.amount_spent ?? 0), 0);
-  $('brSum').textContent = list.length + (list.length === 1 ? ' batch' : ' batches') + ' · Spent ' + inr(sum(list)) + ' · Items entered ' + inr(sum(list.flatMap(itemsOf)));
+  const hits = list.flatMap(matchOf), nb = list.length + (list.length === 1 ? ' batch' : ' batches');
+  $('brSum').textContent = filtering ? nb + ' · Matching items ' + inr(sum(hits)) + ' (' + hits.length + (hits.length === 1 ? ' entry)' : ' entries)')
+    : nb + ' · Spent ' + inr(sum(list)) + ' · Items entered ' + inr(sum(list.flatMap(itemsOf)));
   const box = $('browse'); box.innerHTML = '';
   for (const b of list) {
     const its = itemsOf(b), it = sum(its), card = document.createElement('div'); card.className = 'bcard';
@@ -600,10 +642,12 @@ function renderBrowse() {
     head.append(t, sp);
     [['Open', () => openBatch(b), 'ghost edit'], ['Delete', () => deleteBatch(b), 'ghost']].forEach(([n, f, c]) => { const x = document.createElement('button'); x.className = c; x.textContent = n; x.onclick = f; head.append(x); });
     card.append(head);
-    if (its.length) {
+    const shown = matchOf(b);
+    if (filtering) { const nt = document.createElement('div'); nt.style.cssText = 'color:var(--mute);font-size:12.5px;margin-top:6px'; nt.textContent = 'Showing ' + shown.length + ' of ' + its.length + ' items matching ' + [brCat && 'category ' + brCat, iq && '“' + $('brItem').value.trim() + '”'].filter(Boolean).join(' + '); card.append(nt); }
+    if (shown.length) {
       const w = document.createElement('div'); w.className = 'wrap'; const tb = document.createElement('table'); w.append(tb); card.append(w);
       tb.createTHead().insertRow().innerHTML = '<th>Category</th><th>Item</th><th class="n">Qty</th><th>Unit</th><th class="n">Amount</th>';
-      its.slice().sort((a, c) => a.id - c.id).forEach(r => { const tr = tb.insertRow(); cell(tr, r.category); cell(tr, r.item); cell(tr, r.qty, 'n'); cell(tr, r.unit); cell(tr, r.amount, 'n'); });
+      shown.slice().sort((a, c) => a.id - c.id).forEach(r => { const tr = tb.insertRow(); cell(tr, r.category); cell(tr, r.item); cell(tr, r.qty, 'n'); cell(tr, r.unit); cell(tr, r.amount, 'n'); });
     } else { const n = document.createElement('div'); n.style.cssText = 'color:var(--mute);font-size:13px;margin-top:4px'; n.textContent = 'No items added yet.'; card.append(n); }
     box.append(card);
   }
@@ -611,6 +655,7 @@ function renderBrowse() {
 }
 $('brMonth').onchange = () => { brMonth = $('brMonth').value; brDate = ''; renderBrowse(); };
 $('brDate').onchange = () => { brDate = $('brDate').value; renderBrowse(); };
+$('brCat').onchange = () => { brCat = $('brCat').value; renderBrowse(); };
 
 function renderDayBatches() {
   const d = $('bDate').value, t = $('dayTbl'); t.innerHTML = '';
@@ -732,6 +777,7 @@ async function loadExpenses() {
   });
   items = {};
   for (const c in count) items[c] = Object.keys(count[c]).sort((a, b) => count[c][b] - count[c][a]);
+  $('itemList').replaceChildren(...[...new Set(expRows.map(r => r.item))].sort((a, b) => a.localeCompare(b)).map(n => opt(n)));
   syncCat(); showBatchSum(); renderItems(); drawExpStats(); drawCashStats(); renderDayBatches(); renderBrowse();
 }
 function renderItems() {
@@ -875,20 +921,41 @@ function useResult(id, what) {
 $('useCash').onclick = () => useResult('c_amount', 'cash');
 $('useExp').onclick = () => useResult('eAmt', 'expense');
 
-$('bDate').onchange = () => { refreshNextNo(); renderDayBatches(); }; $('eBatch').onchange = syncBatch; $('fDate').onchange = () => fillBatchSelect(); $('fNo').oninput = () => fillBatchSelect(); $('brNo').oninput = renderBrowse;
+$('bDate').onchange = () => { refreshNextNo(); renderDayBatches(); }; $('eBatch').onchange = syncBatch; $('fDate').onchange = () => fillBatchSelect(); $('fNo').oninput = () => fillBatchSelect(); $('brNo').oninput = renderBrowse; $('brItem').oninput = renderBrowse;
 $('cancelExp').onclick = endEditExp; $('cancelInc').onclick = endEditInc; $('cancelCash').onclick = endEditCash;
 $('moreCash').onclick = () => { showAll.cash = !showAll.cash; loadCash(); };
 $('moreInc').onclick = () => { showAll.inc = !showAll.inc; loadIncome(); };
 nameTools('eCat', 'catTools', 'categories', 'expenses', 'category', 'category', async k => { await loadCategories(k); await loadExpenses(); });
 nameTools('iSrc', 'srcTools', 'income_sources', 'incomes', 'source', 'source', k => { loadSources(k); loadIncome(); });
 
-/* ---------- Section toggles (collapsed by default; stats stay visible) ---------- */
-['exp', 'inc', 'cash'].forEach(k => {
-  const head = $(k + 'Head'), body = $(k + 'Body');
-  const toggle = () => { const open = !body.classList.toggle('hide'); head.setAttribute('aria-expanded', open); head.parentElement.classList.toggle('open', open); };
-  head.onclick = toggle;
-  head.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
+/* ---------- Stats cards: collapsed by default, expand one or all ---------- */
+const panelKeys = ['inc', 'exp', 'cash'];
+const isOpen = k => $(k + 'Panel').classList.contains('open');
+function setPanel(k, open) {
+  $(k + 'Panel').classList.toggle('open', open); $(k + 'PHead').setAttribute('aria-expanded', open);
+  $('allStats').textContent = panelKeys.every(isOpen) ? 'Collapse all' : 'Expand all';
+}
+panelKeys.forEach(k => {
+  const h = $(k + 'PHead'), t = () => setPanel(k, !isOpen(k));
+  h.onclick = t;
+  h.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); t(); } };
 });
+$('allStats').onclick = () => { const open = !panelKeys.every(isOpen); panelKeys.forEach(k => setPanel(k, open)); };
+
+/* ---------- Add & manage entries: collapsed by default ---------- */
+{ const h = $('eHead'), t = () => { const open = !$('eBody').classList.toggle('hide'); h.setAttribute('aria-expanded', open); $('entries').classList.toggle('open', open); };
+  h.onclick = t;
+  h.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); t(); } }; }
+
+/* ---------- Section filter: Income / Expenses / Cash ---------- */
+function showPane(k) {
+  ['inc', 'exp', 'cash'].forEach(x => $(x + 'Sec').classList.toggle('hide', x !== k));
+  try { localStorage.setItem('pane', k); } catch (e) {}
+}
+{ let k = 'inc'; try { k = localStorage.getItem('pane') || 'inc'; } catch (e) {}
+  if (!['inc', 'exp', 'cash'].includes(k)) k = 'inc';
+  $('secSel').value = k; showPane(k); }
+$('secSel').onchange = () => showPane($('secSel').value);
 
 /* ---------- Login ---------- */
 let started = false;

@@ -120,6 +120,25 @@
     .est-tip-no { font-weight: 700; font-size: 11px; letter-spacing: 0.04em; color: #F5B971; margin-bottom: 3px; }
     .est-tip-desc { word-break: break-word; }
     [data-est-no] { cursor: help; }
+    /* ---- High unadvanced balance alert (Accounts Report) ---- */
+    @keyframes bal-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(217,45,32,0.45); } 50% { box-shadow: 0 0 0 7px rgba(217,45,32,0); } }
+    @keyframes bal-glow  { 0%,100% { background-color: #FFF1F0; } 50% { background-color: #FFD9D5; } }
+    tr.bal-alert td { background: #FFF1F0; animation: bal-glow 1.8s ease-in-out infinite; }
+    tr.bal-alert td:first-child { border-left: 4px solid #D92D20; }
+    .bal-badge { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 10px; font-size: 10.5px; font-weight: 700; color: #fff; background: #D92D20; animation: bal-pulse 1.6s ease-out infinite; white-space: nowrap; }
+    .bal-banner { display: none; align-items: flex-start; gap: 10px; margin: 12px 0 0; padding: 10px 14px; border-radius: 10px; border: 1px solid #F1B5AF; background: #FEF3F2; color: #7A271A; font-size: 12.5px; line-height: 1.5; }
+    .bal-banner.show { display: flex; animation: bal-pulse 1.6s ease-out 3; }
+    .bal-banner .bal-ico { font-size: 18px; line-height: 1.2; }
+    .bal-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+    .bal-list li { padding: 6px 10px; background: #fff; border: 1px solid #F1B5AF; border-radius: 8px; }
+    .bal-banner .bal-total { display: inline-block; margin-left: 4px; padding: 2px 12px; border-radius: 12px; background: #D92D20; color: #fff; font-weight: 600; font-size: 13px; animation: bal-pulse 1.6s ease-out infinite; }
+    .bal-banner .bal-total b { color: #fff; font-size: 15px; font-weight: 800; letter-spacing: 0.02em; }
+    .bal-sch { font-weight: 700; color: #7A271A; }
+    .bal-banner .bal-amt { display: inline-block; margin-left: 8px; padding: 1px 10px; border-radius: 10px; background: #D92D20; color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .bal-hoas { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+    .bal-chip { font-size: 11px; padding: 1px 8px; border-radius: 10px; background: #FEE4E2; color: #7A271A; white-space: nowrap; }
+    .bal-banner b { color: #B42318; }
+    @media (prefers-reduced-motion: reduce) { tr.bal-alert td, .bal-badge, .bal-banner.show, .bal-banner .bal-total { animation: none; } }
     .nt-toasts { position: fixed; top: 16px; right: 16px; z-index: 20001; display: flex; flex-direction: column; gap: 8px; }
     .nt-toast { background: #fff; border-left: 4px solid; border-radius: 8px; padding: 10px 14px; min-width: 240px; max-width: 360px; font-size: 13px; box-shadow: 0 6px 20px rgba(0,0,0,0.18); animation: nt-pop 0.18s ease-out; }
     @keyframes nt-fade { from { opacity: 0; } to { opacity: 1; } }
@@ -348,6 +367,8 @@
     .strip-status-chip.st-inprogress { background: #E8F0FE; border-color: #BFD3F8; }
     .strip-status-chip.st-completed { background: #EEF7F1; border-color: #BFE0CB; }
     .strip-status-chip.st-cancelled { background: #FDECEA; border-color: #F3C4BF; }
+    .strip-status-chip.st-closednotexecuted { background: #F1EEF8; border-color: #D3C9EA; }
+    .strip-status-chip.st-completedcrsfiled { background: #E3F4F4; border-color: #A9D8D8; }
     .strip-balance { background: #EEF7F1; border-radius: 8px; border-left: none; margin-left: 10px; padding: 4px 14px; }
     .strip-balance .strip-value { color: #1E7B45; }
     .strip-balance.neg { background: #FDECEA; }
@@ -1178,12 +1199,17 @@
           </div>
           <div class="field-row">
             <label>Status</label>
-            <select id="est_status">
-              <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <select id="est_status">
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+                <option value="Closed-Not Executed">Closed-Not Executed</option>
+                <option value="Completed-CRs Filed">Completed-CRs Filed</option>
+              </select>
+              <button type="button" class="icon-btn" title="Add / remove / reorder Status values" onclick="openEstStatusManager()">&#9881;</button>
+            </div>
           </div>
           <div class="field-row">
             <label class="blue-label">Total Est_exp</label>
@@ -1229,6 +1255,8 @@
               <option value="In Progress">In Progress</option>
               <option value="Completed">Completed</option>
               <option value="Cancelled">Cancelled</option>
+              <option value="Closed-Not Executed">Closed-Not Executed</option>
+              <option value="Completed-CRs Filed">Completed-CRs Filed</option>
             </select>
           </div>
           <div class="field-row">
@@ -2240,6 +2268,8 @@
           <div style="display:flex; gap:8px; align-items:center;">
             <button class="action" style="font-size:11px; padding:4px 10px;" onclick="downloadAccReportPdf(this)" title="Generate a PDF report: Scheme > Estimate > Advance Token, with Advance/Credited amounts, Credited Date, and token-wise Expenditure">&#128196; Generate PDF Report</button>
             <button class="action" style="font-size:11px; padding:4px 10px;" onclick="downloadTokensReportPdf(this)" title="Generate a per-token PDF report: Sl.No, Scheme, Advance Token No, Advance/Credited amounts and dates, and month-wise Expenditure">&#128196; Generate Tokens Report</button>
+            <button class="action" style="font-size:11px; padding:4px 10px;" onclick="downloadBudgetAdvanceReportPdf(this)" title="Generate a PDF: Scheme > HOA with No. of Tokens, Budget Released, Advance Amount and To Be Advance (Budget Released - Advance)">&#128196; Generate Budget vs Advance Report</button>
+            <button class="action" style="font-size:11px; padding:4px 10px;" onclick="downloadEstimateReportPdf(this)" title="Generate the Estimate report (Abstract: month-wise DSO / RSO / CSO counts and costs; Details: per-estimate cost, expenditure, status and expenditure months) for the chosen Estimate Report Type">&#128196; Generate Estimate Report</button>
             <button class="icon-btn" title="Refresh" onclick="renderAccReport()">&#8635;</button>
           </div>
         </div>
@@ -2269,11 +2299,50 @@
             </select>
           </div>
           <div class="field-row">
+            <label>Estimate Report Type</label>
+            <select id="report_acc_est_type">
+              <option value="abstract">Abstract</option>
+              <option value="details">Details</option>
+            </select>
+            <div class="stat-label" style="margin-top:2px;">Scheme "All" lists every scheme; blank Financial Year = all years</div>
+          </div>
+          <div class="field-row">
+            <label>Alert if Balance (Budget - Advance) is above</label>
+            <input type="number" id="report_acc_bal_alert" min="0" step="1" value="1000000" oninput="saveBalAlertLimit_(); renderAccReport()" title="Schemes whose Budget minus Advance is above this amount (in Rupees) are highlighted and flagged">
+            <div class="stat-label" style="margin-top:2px;">In Rupees. 0 = alerts off. Also highlights rows in the Budget vs Advance PDF.</div>
+          </div>
+          <div class="field-row">
+            <label>PDF Font</label>
+            <select id="report_acc_font" onchange="saveRepFont_()">
+              <option value="helvetica">Helvetica (Arial style)</option>
+              <option value="times">Times (Serif)</option>
+              <option value="courier">Courier (Typewriter)</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <label>PDF Font Size</label>
+            <select id="report_acc_fsize" onchange="saveRepFont_()">
+              <option value="0">Auto (best fit per report)</option>
+              <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option>
+              <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+            </select>
+            <div class="stat-label" style="margin-top:2px;">Applies to all Accounts Report PDFs. Large sizes on wide reports may wrap or split columns.</div>
+          </div>
+          <div class="field-row">
+            <label>Remarks (Details report)</label>
+            <select id="report_acc_est_remarks">
+              <option value="yes">With Remarks (expenditure months)</option>
+              <option value="no">Without Remarks</option>
+            </select>
+          </div>
+          <div class="field-row">
             <label>Show Months Upto</label>
             <input type="month" id="report_acc_upto_month">
             <div class="stat-label" style="margin-top:2px;">Leave blank for the current month</div>
           </div>
         </div>
+
+        <div class="bal-banner" id="report_acc_bal_banner" role="alert"></div>
 
         <div class="stats-board">
           <div class="stat-card"><div class="stat-label">Sum Budget</div><div class="stat-value" id="report_acc_stat_budget">0</div></div>
@@ -2587,12 +2656,14 @@
 
   /* ============================================================
      ESTIMATE DESCRIPTION TOOLTIP
-     Hover over an Esti_no in the Estimate tab (records list and the
-     "Expenditure by Estimate" table) to see the estimate's description.
-     Any element carrying data-est-no gets it.
+     Hover over an Esti_no ANYWHERE in the app (every tab, section, modal,
+     report table or list) to see the estimate's description. Elements
+     carrying data-est-no get it explicitly; any other plain text that
+     equals a known Esti_no is detected automatically under the pointer.
      ============================================================ */
   (function () {
-    let tip = null, timer = null, curEl = null, lastX = 0, lastY = 0;
+    let tip = null, timer = null, curNo = null, lastX = 0, lastY = 0, raf = 0;
+    let setRef = null, noList = [];
 
     function descFor(no) {
       const r = (typeof estimateCache !== 'undefined' ? estimateCache : []).find(e => String(e.Esti_no) === String(no));
@@ -2610,31 +2681,82 @@
       t.style.left = left + 'px';
       t.style.top = top + 'px';
     }
-    function hide() { clearTimeout(timer); curEl = null; if (tip) tip.style.display = 'none'; }
+    function hide() { clearTimeout(timer); curNo = null; if (tip) tip.style.display = 'none'; }
 
-    document.addEventListener('mouseover', e => {
-      const el = e.target.closest ? e.target.closest('[data-est-no]') : null;
-      if (!el || el === curEl) return;
-      curEl = el;
-      lastX = e.clientX; lastY = e.clientY;
-      const no = el.getAttribute('data-est-no');
+    // Known estimate numbers (longest first so "EST0012" wins over "EST001").
+    function known() {
+      const c = (typeof estimateCache !== 'undefined') ? estimateCache : [];
+      if (c !== setRef || noList.length !== c.length) {
+        setRef = c;
+        noList = c.map(e => String(e.Esti_no == null ? '' : e.Esti_no).trim()).filter(Boolean)
+          .sort((x, y) => y.length - x.length);
+      }
+      return noList;
+    }
+    const isWord = ch => !!ch && /[A-Za-z0-9_]/.test(ch);
+
+    // Finds an estimate number sitting under the pointer in ANY plain text
+    // (table cells, cards, modals, lists, "EST0001, EST0002" style cells...).
+    function noAtPoint(x, y, target) {
+      if (!target || !target.closest) return null;
+      if (target.closest('input,textarea,select,option,script,style,.est-tip')) return null;
+      const list = known(); if (!list.length) return null;
+      let node = null, off = 0;
+      if (document.caretPositionFromPoint) {
+        const p = document.caretPositionFromPoint(x, y); if (p) { node = p.offsetNode; off = p.offset; }
+      } else if (document.caretRangeFromPoint) {
+        const r = document.caretRangeFromPoint(x, y); if (r) { node = r.startContainer; off = r.startOffset; }
+      }
+      if (!node || node.nodeType !== 3) return null;
+      const text = node.data; if (!text || text.length > 3000) return null;
+      for (const no of list) {
+        let i = text.indexOf(no);
+        while (i !== -1) {
+          const end = i + no.length;
+          if (off >= i && off <= end && !isWord(text[i - 1]) && !isWord(text[end])) {
+            // make sure the pointer is really over those characters (not blank space nearby)
+            const rg = document.createRange(); rg.setStart(node, i); rg.setEnd(node, end);
+            const rects = rg.getClientRects();
+            for (let k = 0; k < rects.length; k++) {
+              const q = rects[k];
+              if (x >= q.left - 1 && x <= q.right + 1 && y >= q.top - 1 && y <= q.bottom + 1) return no;
+            }
+          }
+          i = text.indexOf(no, i + 1);
+        }
+      }
+      return null;
+    }
+
+    function resolve(e) {
+      const t = e.target;
+      const el = t && t.closest ? t.closest('[data-est-no]') : null;
+      if (el) return el.getAttribute('data-est-no');   // explicit marker (Estimate tab) wins
+      return noAtPoint(e.clientX, e.clientY, t);
+    }
+    function show(no) {
+      curNo = no;
       const d = descFor(no);
       const t = ensureTip();
       t.innerHTML = '<div class="est-tip-no">' + ntEsc_(no) + '</div>' +
         '<div class="est-tip-desc">' + (d ? ntEsc_(d) : '<span style="opacity:0.7;">No description available</span>') + '</div>';
       clearTimeout(timer);
       timer = setTimeout(() => { t.style.display = 'block'; place(); }, 150);
-    });
+    }
+
     document.addEventListener('mousemove', e => {
       lastX = e.clientX; lastY = e.clientY;
       if (tip && tip.style.display === 'block') place();
-    });
-    document.addEventListener('mouseout', e => {
-      if (!curEl) return;
-      const to = e.relatedTarget;
-      if (to && curEl.contains(to)) return;
-      hide();
-    });
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        let no = null;
+        try { no = resolve({ target: document.elementFromPoint(lastX, lastY), clientX: lastX, clientY: lastY }); } catch (err) { no = null; }
+        if (no == null) { if (curNo !== null) hide(); return; }
+        if (no !== curNo) show(no);
+      });
+    }, true);
+    document.documentElement.addEventListener('mouseleave', hide);
     window.addEventListener('scroll', hide, true);
     document.addEventListener('mousedown', hide, true);
   })();
@@ -3181,6 +3303,20 @@
     return { success: true, list: a };
   };
 
+  /* ---------- Estimate Status list (managed from the Estimate tab, stored in app_settings) ---------- */
+  const DEFAULT_EST_STATUS_ = ['Pending', 'In Progress', 'Completed', 'Cancelled', 'Closed-Not Executed', 'Completed-CRs Filed'];
+  API_.getEstimateStatusOptions = async () => {
+    let a = await getSetting_('estimate_status_list');
+    if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { a = null; } }
+    return Array.isArray(a) && a.length ? a.map(String) : DEFAULT_EST_STATUS_.slice();
+  };
+  API_.saveEstimateStatusOptions = async list => {
+    const a = Array.from(new Set((list || []).map(x => T_(x)).filter(Boolean)));
+    if (!a.length) return { success: false, message: 'Keep at least one Status value.' };
+    await setSetting_('estimate_status_list', JSON.stringify(a));
+    return { success: true, list: a };
+  };
+
   /* ---------- Fund application ---------- */
   API_.getFundApplicationData = (estiNo, taskNo) => list_('fund', q => {
     if (estiNo) q = q.eq('esti_no', S_(estiNo));
@@ -3676,6 +3812,10 @@
   function monthlyOf_(exps, months) {
     return months.map(m => exps.filter(e => { const d = monthKey_(e.Dt); return d && d.getFullYear() === m.year && d.getMonth() === m.month; }).reduce((s, e) => s + (Number(e.Amount) || 0), 0));
   }
+  // Font used by every Accounts-screen PDF report (set from the "PDF Font" / "PDF Font Size" fields).
+  const repFont_ = window.__repFont_ = { family: 'helvetica', size: 0 };          // size 0 = each report's own default
+  const repSize_ = def => (repFont_.size > 0 ? repFont_.size : def);
+  const repTitle_ = () => (repFont_.size > 0 ? repFont_.size + 5 : 13);
   const SH_ = [214, 219, 223];
   function reportTable_(doc, startY, leadHeads, months, body, opts) {
     const lead = leadHeads.map(h => ({ content: h, rowSpan: 2 }));
@@ -3686,7 +3826,7 @@
     textCols.forEach(c => { colStyles[c] = { halign: 'left' }; });
     doc.autoTable({
       startY: startY, margin: { left: 24, right: 24, top: 24, bottom: 24 }, theme: 'grid',
-      styles: { fontSize: opts.fontSize || 6.5, cellPadding: 2, halign: 'center', valign: 'middle', lineColor: [183, 183, 183], lineWidth: 0.4, textColor: 0, overflow: 'linebreak' },
+      styles: { font: repFont_.family, fontSize: repSize_(opts.fontSize || 6.5), cellPadding: 2, halign: 'center', valign: 'middle', lineColor: [183, 183, 183], lineWidth: 0.4, textColor: 0, overflow: 'linebreak' },
       headStyles: { fillColor: [46, 64, 83], textColor: 255, fontStyle: 'bold', halign: 'center' },
       columnStyles: colStyles, showHead: 'everyPage',
       head: months.length ? [head1, head2] : [head1], body: body
@@ -3707,7 +3847,7 @@
     const wantDetail = reportType !== 'abstract', wantAbstract = reportType !== 'detail';
     const doc = new (jsPdfCtor_())({ orientation: 'landscape', unit: 'pt', format: 'letter' });
     const W = doc.internal.pageSize.getWidth();
-    const title = t => { doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.text(t, W / 2, 38, { align: 'center' }); };
+    const title = t => { doc.setFont(repFont_.family, 'bold'); doc.setFontSize(repTitle_()); doc.text(t, W / 2, 38, { align: 'center' }); };
 
     const order = [], byScheme = {};
     estimates.forEach(e => { const s = e.Scheme || '(No Scheme)'; if (!byScheme[s]) { byScheme[s] = []; order.push(s); } byScheme[s].push(e); });
@@ -3756,6 +3896,178 @@
     return { success: true, filename: 'Acc_Report' + label + '_' + fyLabel + (schemeFilter ? '_' + schemeFilter : '') + '.pdf', base64: pdfBase64_(doc) };
   };
 
+  /* ---------- Budget vs Advance report (Scheme > HOA) ---------- */
+  API_.generateBudgetAdvanceReportPdf = async (schemeFilter, unit, alertLimit) => {
+    alertLimit = Number(alertLimit) || 0;
+    let [budgets, advances] = await Promise.all([API_.getBudgetData(), API_.getAdvanceData()]);
+    if (schemeFilter) { budgets = budgets.filter(b => same_(b.Scheme, schemeFilter)); advances = advances.filter(a => same_(a.Scheme, schemeFilter)); }
+    if (!budgets.length && !advances.length) return { success: false, message: 'No budget or advance records found for this report' };
+    const dec = 3, unitLabel = unit === 'lakhs' ? ' (Rs. in Lakhs)' : ' (Rs. in Rupees)';
+    const sch = r => S_(r.Scheme).trim() || '(No Scheme)', hoa = r => S_(r.Hoa).trim() || '(No HOA)';
+    const groups = {};                                    // scheme -> hoa -> { tokens, budget, adv }
+    const slot = (r) => { const g = groups[sch(r)] = groups[sch(r)] || {}; return g[hoa(r)] = g[hoa(r)] || { tokens: 0, budget: 0, adv: 0 }; };
+    budgets.forEach(b => { slot(b).budget += Number(b.Amt) || 0; });
+    advances.forEach(a => { const g = slot(a); g.tokens++; g.adv += Number(a.Amount) || 0; });
+    const doc = new (jsPdfCtor_())({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth();
+    doc.setFont(repFont_.family, 'bold'); doc.setFontSize(repTitle_());
+    doc.text('BUDGET vs ADVANCE REPORT' + unitLabel + ' \u2014 ' + (schemeFilter || 'All Schemes'), W / 2, 38, { align: 'center' });
+    const f = v => fmtRep_(v, unit, dec);
+    const body = [], grand = { tokens: 0, budget: 0, adv: 0 };
+    let sl = 1;
+    Object.keys(groups).sort((x, y) => x.localeCompare(y)).forEach(scheme => {
+      const st = { tokens: 0, budget: 0, adv: 0 };
+      Object.keys(groups[scheme]).sort((x, y) => x.localeCompare(y)).forEach(h => {
+        const g = groups[scheme][h];
+        const hot = alertLimit > 0 && (g.budget - g.adv) > alertLimit;
+        const toBe = hot ? { content: f(g.budget - g.adv), styles: { fontStyle: 'bold', textColor: [180, 35, 24], fillColor: [254, 228, 226] } } : f(g.budget - g.adv);
+        body.push([String(sl++), { content: scheme, styles: { halign: 'left' } }, { content: h, styles: { halign: 'left' } }, String(g.tokens), f(g.budget), f(g.adv), toBe]);
+        ['tokens', 'budget', 'adv'].forEach(k => { st[k] += g[k]; grand[k] += g[k]; });
+      });
+      const schemeRow = boldRow_(['', 'Scheme Total (' + clipTxt_(scheme, 30) + ')', '', String(st.tokens), f(st.budget), f(st.adv), f(st.budget - st.adv)]);
+      if (alertLimit > 0 && (st.budget - st.adv) > alertLimit) { const c = schemeRow[6]; c.content = f(st.budget - st.adv) + '  (HIGH)'; c.styles = Object.assign({}, c.styles, { textColor: [180, 35, 24], fillColor: [254, 228, 226] }); }
+      body.push(schemeRow);
+    });
+    body.push(boldRow_(['', 'GRAND TOTAL', '', String(grand.tokens), f(grand.budget), f(grand.adv), f(grand.budget - grand.adv)]));
+    doc.autoTable({
+      startY: 50, margin: { left: 24, right: 24, top: 24, bottom: 24 }, theme: 'grid',
+      styles: { font: repFont_.family, fontSize: repSize_(8), cellPadding: 3, halign: 'center', valign: 'middle', lineColor: [183, 183, 183], lineWidth: 0.4, textColor: 0, overflow: 'linebreak' },
+      headStyles: { fillColor: [46, 64, 83], textColor: 255, fontStyle: 'bold', halign: 'center' }, showHead: 'everyPage',
+      head: [['Sl.No', 'Scheme', 'HOA', 'No. of Tokens', 'Budget Released', 'Advance Amount', 'To Be Advance (Budget Released - Advance)']],
+      body: body
+    });
+    return { success: true, filename: 'Budget_vs_Advance_Report' + (schemeFilter ? '_' + schemeFilter : '') + '.pdf', base64: pdfBase64_(doc) };
+  };
+
+  /* ---------- Estimate report (Abstract / Details) ---------- */
+  API_.generateEstimateReportPdf = async (schemeFilter, financialYear, unit, reportKind, withRemarks) => {
+    withRemarks = withRemarks !== false;
+    let [estimates, advances, expenditures] = await Promise.all([API_.getEstimateData(), API_.getAdvanceData(), API_.getExpenditureData()]);
+    if (schemeFilter) estimates = estimates.filter(e => same_(e.Scheme, schemeFilter));
+    const fyGiven = !!String(financialYear || '').match(/\d{4}/);
+    const fyStart = fyGiven ? parseFinancialYearStart_(financialYear) : null;
+    const fyOf = d => { const t = monthKey_(d); if (!t) return null; return t.getMonth() >= 3 ? t.getFullYear() : t.getFullYear() - 1; };
+    if (fyGiven) estimates = estimates.filter(e => fyOf(e.Est_date) === fyStart);
+    if (!estimates.length) return { success: false, message: 'No estimates found for this report' };
+    const unitLabel = unit === 'lakhs' ? ' (Rs. in Lakhs)' : ' (Rs. in Rupees)';
+    const dec = 3;
+    const scopeLabel = fyGiven ? ' \u2014 FY ' + fyStart + '-' + String(fyStart + 1).slice(-2) : ' \u2014 All Years';
+    const doc = new (jsPdfCtor_())({ orientation: 'landscape', unit: 'pt', format: 'letter' });
+    const W = doc.internal.pageSize.getWidth();
+    const title = t => { doc.setFont(repFont_.family, 'bold'); doc.setFontSize(repTitle_()); doc.text(t, W / 2, 38, { align: 'center' }); };
+    const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const tableBase = { margin: { left: 24, right: 24, top: 24, bottom: 24 }, theme: 'grid',
+      styles: { font: repFont_.family, fontSize: repSize_(8), cellPadding: 3, halign: 'center', valign: 'middle', lineColor: [183, 183, 183], lineWidth: 0.4, textColor: 0, overflow: 'linebreak' },
+      headStyles: { fillColor: [46, 64, 83], textColor: 255, fontStyle: 'bold', halign: 'center' }, showHead: 'everyPage' };
+    const typeOf = e => { const m = String(e.Esti_no || '').trim().match(/^(DSO|RSO|CSO)/i); return m ? m[1].toUpperCase() : null; };
+    const suffix = (schemeFilter ? '_' + schemeFilter : '') + (fyGiven ? '_' + fyStart + '-' + String(fyStart + 1).slice(-2) : '');
+
+    const schemeOf = e => S_(e.Scheme).trim() || '(No Scheme)';
+    const fmtDt = v => { const t = monthKey_(v); return t ? String(t.getDate()).padStart(2, '0') + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + t.getFullYear() : '-'; };
+
+    if (reportKind !== 'details') {
+      /* ----- ABSTRACT: Month (by Est_date) x Scheme, DSO / RSO / CSO counts and costs ----- */
+      const months = {};                                   // sortKey -> { label, schemes: { name: {n, c} } }
+      const blank = () => ({ n: { DSO: 0, RSO: 0, CSO: 0 }, c: { DSO: 0, RSO: 0, CSO: 0 }, nos: [] });
+      const monthOf = (label, key) => (months[key] = months[key] || { label: label, sort: key, schemes: {} });
+      // one chosen scheme + a financial year: keep every month of the year visible
+      if (fyGiven && schemeFilter) buildFinancialYearMonths_(fyStart).forEach(m => { monthOf(m.label, m.year * 100 + m.month).schemes[schemeFilter] = blank(); });
+      let other = 0;
+      estimates.forEach(e => {
+        const t = typeOf(e); if (!t) { other++; return; }
+        const d = monthKey_(e.Est_date);
+        const mo = d ? monthOf(MN[d.getMonth()] + '-' + String(d.getFullYear()).slice(-2), d.getFullYear() * 100 + d.getMonth()) : monthOf('No date', 9999999);
+        const sc = schemeOf(e), r = mo.schemes[sc] = mo.schemes[sc] || blank();
+        r.n[t]++; r.c[t] += Number(e.Est_cost) || 0; r.nos.push(S_(e.Esti_no));
+      });
+      const nz = v => v ? String(v) : '-', cz = v => v ? fmtRep_(v, unit, dec) : '-';
+      const tot = blank(), body = [];
+      let sl = 1;
+      Object.keys(months).map(Number).sort((x, y) => x - y).forEach(k => {
+        const mo = months[k], names = Object.keys(mo.schemes).sort((x, y) => x.localeCompare(y));
+        names.forEach((sc, i) => {
+          const r = mo.schemes[sc], nT = r.n.DSO + r.n.RSO + r.n.CSO, cT = r.c.DSO + r.c.RSO + r.c.CSO;
+          ['DSO', 'RSO', 'CSO'].forEach(t => { tot.n[t] += r.n[t]; tot.c[t] += r.c[t]; });
+          const row = [String(sl++)];
+          if (i === 0) row.push({ content: mo.label, rowSpan: names.length });
+          row.push({ content: sc, styles: { halign: 'left' } });
+          row.push({ content: r.nos.slice().sort(naturalCompare_).join(', ') || '-', styles: { halign: 'left' } });
+          body.push(row.concat([nz(r.n.DSO), nz(r.n.RSO), nz(r.n.CSO), nz(nT), cz(r.c.DSO), cz(r.c.RSO), cz(r.c.CSO), cz(cT)]));
+        });
+      });
+      const gN = tot.n.DSO + tot.n.RSO + tot.n.CSO, gC = tot.c.DSO + tot.c.RSO + tot.c.CSO;
+      body.push(boldRow_(['', '', 'TOTAL', '', String(tot.n.DSO), String(tot.n.RSO), String(tot.n.CSO), String(gN),
+        fmtRep_(tot.c.DSO, unit, dec), fmtRep_(tot.c.RSO, unit, dec), fmtRep_(tot.c.CSO, unit, dec), fmtRep_(gC, unit, dec)]));
+      title('ESTIMATE REPORT \u2014 ABSTRACT' + scopeLabel + unitLabel + ' \u2014 ' + (schemeFilter || 'All Schemes'));
+      doc.autoTable(Object.assign({}, tableBase, {
+        startY: 50,
+        head: [
+          [{ content: 'Sl.No', rowSpan: 2 }, { content: 'Month', rowSpan: 2 }, { content: 'Scheme', rowSpan: 2 }, { content: 'Esti_no', rowSpan: 2 }, { content: 'No. of Estimates', colSpan: 4 }, { content: 'Estimate Cost', colSpan: 4 }],
+          ['DSO', 'RSO', 'CSO', 'Total', 'Esti_cost of DSO', 'Esti_cost of RSO', 'Esti_cost of CSO', 'Total Cost']
+        ],
+        body: body
+      }));
+      if (other) {
+        const y = doc.lastAutoTable.finalY + 14;
+        doc.setFont(repFont_.family, 'italic'); doc.setFontSize(repSize_(8));
+        doc.text(other + ' estimate(s) whose Esti_no does not start with DSO / RSO / CSO are not included in this abstract.', 24, y);
+      }
+      return { success: true, filename: 'Estimate_Report_Abstract' + suffix + '.pdf', base64: pdfBase64_(doc) };
+    }
+
+    /* ----- DETAILS: per estimate, with expenditure month-wise in Remarks ----- */
+    const sorted = estimates.slice().sort((a, b) => {
+      const ya = fyOf(a.Est_date), yb = fyOf(b.Est_date);
+      if (ya !== yb) return (ya === null ? 1 : yb === null ? -1 : ya - yb);
+      const da = monthKey_(a.Est_date), db = monthKey_(b.Est_date);
+      if (da && db && da.getTime() !== db.getTime()) return da - db;
+      return naturalCompare_(a.Esti_no, b.Esti_no);
+    });
+    const body = [];
+    let sl = 1, gCost = 0, gExp = 0;
+    sorted.forEach(est => {
+      const tokens = {}; advances.filter(a => same_(a.Trans_id, est.Esti_no)).forEach(a => { tokens[String(a.Token_No)] = true; });
+      const byM = {};
+      expenditures.filter(x => tokens[String(x.Adv_Token_No)]).forEach(x => {
+        const d = monthKey_(x.Dt); const k = d ? d.getFullYear() * 100 + d.getMonth() : 9999999;
+        const o = byM[k] = byM[k] || { label: d ? MN[d.getMonth()] + '-' + String(d.getFullYear()).slice(-2) : 'No date', amt: 0 };
+        o.amt += Number(x.Amount) || 0;
+      });
+      const mRows = Object.keys(byM).map(Number).sort((a, b) => a - b).map(k => byM[k]);
+      const expTotal = mRows.reduce((t, o) => t + o.amt, 0);
+      const fy = fyOf(est.Est_date), yr = fy === null ? '-' : fy + '-' + String(fy + 1).slice(-2);
+      const stTxt = S_(est.status).trim();
+      const status = (String(est.Est_closed_status) === 'Yes' && !/closed|completed|cancel/i.test(stTxt)) ? 'Closed' : (stTxt || '-');
+      const n = withRemarks ? Math.max(1, mRows.length) : 1;
+      const lead = [
+        { content: yr, rowSpan: n }, { content: String(sl++), rowSpan: n },
+        { content: schemeOf(est), rowSpan: n, styles: { halign: 'left' } },
+        { content: S_(est.Esti_no), rowSpan: n },
+        { content: S_(est.Esti_Description) || '-', rowSpan: n, styles: { halign: 'left' } },
+        { content: fmtDt(est.Est_date), rowSpan: n },
+        { content: fmtRep_(est.Est_cost, unit, dec), rowSpan: n }, { content: fmtRep_(expTotal, unit, dec), rowSpan: n },
+        { content: status, rowSpan: n }
+      ];
+      if (!withRemarks) body.push(lead);
+      else if (!mRows.length) body.push(lead.concat(['-', '-']));
+      else mRows.forEach((o, i) => body.push((i === 0 ? lead : []).concat([o.label, fmtRep_(o.amt, unit, dec)])));
+      gCost += Number(est.Est_cost) || 0; gExp += expTotal;
+    });
+    body.push(boldRow_(['', '', '', '', 'TOTAL', '', fmtRep_(gCost, unit, dec), fmtRep_(gExp, unit, dec), ''].concat(withRemarks ? ['', ''] : [])));
+    title('ESTIMATE REPORT \u2014 DETAILS' + scopeLabel + unitLabel + (schemeFilter ? ' \u2014 ' + schemeFilter : ''));
+    doc.autoTable(Object.assign({}, tableBase, {
+      startY: 50,
+      head: [
+        [{ content: 'Year', rowSpan: 2 }, { content: 'Sl.No', rowSpan: 2 }, { content: 'Scheme', rowSpan: 2 }, { content: 'Esti_no', rowSpan: 2 }, { content: 'Esti_Description', rowSpan: 2 }, { content: 'Esti_date', rowSpan: 2 }, { content: 'Esti_cost', rowSpan: 2 },
+         { content: 'Esti_Expenditure', rowSpan: 2 }, { content: 'Status', rowSpan: 2 }].concat(withRemarks ? [{ content: 'Remarks', colSpan: 2 }] : []),
+        ['Expenditure Month', 'Expenditure']
+      ].slice(0, withRemarks ? 2 : 1).map((h, i, all) => withRemarks ? h : h.map(c => Object.assign({}, c, { rowSpan: 1 }))),
+      body: body,
+      columnStyles: { 0: { cellWidth: 46 }, 1: { cellWidth: 28 }, 2: { cellWidth: 80, halign: 'left' }, 3: { cellWidth: 52 }, 4: { cellWidth: 'auto', halign: 'left' }, 5: { cellWidth: 54 }, 6: { cellWidth: 60 }, 7: { cellWidth: 80 }, 8: { cellWidth: 52 }, 9: { cellWidth: 66 }, 10: { cellWidth: 60 } }
+    }));
+    return { success: true, filename: 'Estimate_Report_Details' + (withRemarks ? '' : '_NoRemarks') + suffix + '.pdf', base64: pdfBase64_(doc) };
+  };
+
   API_.generateTokensReportPdf = async (schemeFilter, financialYear, unit, uptoMonth) => {
     let [advances, expenditures] = await Promise.all([API_.getAdvanceData(), API_.getExpenditureData()]);
     if (schemeFilter) advances = advances.filter(a => same_(a.Scheme, schemeFilter));
@@ -3765,33 +4077,39 @@
     const fyLabel = fyStart + '-' + String(fyStart + 1).slice(-2);
     const unitLabel = unit === 'lakhs' ? ' (Rs. in Lakhs)' : ' (Rs. in Rupees)';
     const dec = 3;
-    advances = advances.slice().sort((a, b) => { const s = String(a.Scheme || '').localeCompare(String(b.Scheme || '')); return s !== 0 ? s : naturalCompare_(a.Token_No, b.Token_No); });
+    const schemeOf = a => S_(a.Scheme).trim() || '(No Scheme)', hoaOf = a => S_(a.Hoa).trim() || '(No HOA)';
+    advances = advances.slice().sort((a, b) => {
+      const s = schemeOf(a).localeCompare(schemeOf(b)); if (s !== 0) return s;
+      const h = hoaOf(a).localeCompare(hoaOf(b)); return h !== 0 ? h : naturalCompare_(a.Token_No, b.Token_No);
+    });
     const doc = new (jsPdfCtor_())({ orientation: 'landscape', unit: 'pt', format: 'letter' });
     const W = doc.internal.pageSize.getWidth();
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
-    doc.text('TOKENS REPORT \u2014 FY ' + fyLabel + unitLabel + (schemeFilter ? ' \u2014 ' + schemeFilter : ''), W / 2, 38, { align: 'center' });
-    const body = [];
-    const grand = { adv: 0, cred: 0, exp: 0, monthly: months.map(() => 0) };
-    let sch = { adv: 0, cred: 0, exp: 0, monthly: months.map(() => 0) };
-    let sl = 1;
+    doc.setFont(repFont_.family, 'bold'); doc.setFontSize(repTitle_());
+    doc.text('TOKENS REPORT \u2014 SCHEME & HOA WISE \u2014 FY ' + fyLabel + unitLabel + ' \u2014 ' + (schemeFilter || 'All Schemes'), W / 2, 38, { align: 'center' });
+    const LEAD = 12;                                   // Sl, Scheme, HOA, Esti_no, Token, Batch, Adv Amt, Adv Dt, Credited, Cred Amt, Cred Dt, Cred Acct
+    const zero = () => ({ adv: 0, cred: 0, exp: 0, monthly: months.map(() => 0) });
+    const add = (t, adv, cred, exp, monthly) => { t.adv += adv; t.cred += cred; t.exp += exp; monthly.forEach((v, k) => { t.monthly[k] += v; }); };
+    const totRow = (label, t) => boldRow_(['', '', label, '', '', '', fmtRep_(t.adv, unit, dec), '', '', fmtRep_(t.cred, unit, dec), '', '']
+      .concat(t.monthly.map(v => fmtRep_(v, unit, dec))).concat([fmtRep_(t.exp, unit, dec)]));
+    const body = [], grand = zero();
+    let hoaT = zero(), schT = zero(), sl = 1;
     advances.forEach((a, i) => {
       const advAmt = Number(a.Amount) || 0, credAmt = Number(a.Credited_Amt) || 0;
       const monthly = monthlyOf_(expenditures.filter(e => same_(e.Adv_Token_No, a.Token_No)), months);
       const expTotal = monthly.reduce((s, v) => s + v, 0);
-      body.push([String(sl++), clipTxt_(a.Scheme, 30), S_(a.Token_No), fmtRep_(advAmt, unit, dec), S_(a.Dt), fmtRep_(credAmt, unit, dec), S_(a.Credited_Date)]
+      body.push([String(sl++), clipTxt_(schemeOf(a), 30), hoaOf(a), S_(a.Trans_id), S_(a.Token_No), S_(a.Batch_No), fmtRep_(advAmt, unit, dec), S_(a.Dt),
+        S_(a.Credited) || '-', fmtRep_(credAmt, unit, dec), S_(a.Credited_Date), S_(a.Credited_Account_No)]
         .concat(monthly.map(v => v ? fmtRep_(v, unit, dec) : '-')).concat([fmtRep_(expTotal, unit, dec)]));
-      sch.adv += advAmt; sch.cred += credAmt; sch.exp += expTotal; grand.adv += advAmt; grand.cred += credAmt; grand.exp += expTotal;
-      monthly.forEach((v, k) => { sch.monthly[k] += v; grand.monthly[k] += v; });
-      const next = (i + 1 < advances.length) ? (advances[i + 1].Scheme || '') : null;
-      if (next === null || next !== (a.Scheme || '')) {
-        body.push(boldRow_(['', 'Scheme Total (' + (a.Scheme || '(No Scheme)') + ')', '', fmtRep_(sch.adv, unit, dec), '', fmtRep_(sch.cred, unit, dec), '']
-          .concat(sch.monthly.map(v => fmtRep_(v, unit, dec))).concat([fmtRep_(sch.exp, unit, dec)])));
-        sch = { adv: 0, cred: 0, exp: 0, monthly: months.map(() => 0) };
-      }
+      add(hoaT, advAmt, credAmt, expTotal, monthly); add(schT, advAmt, credAmt, expTotal, monthly); add(grand, advAmt, credAmt, expTotal, monthly);
+      const nx = advances[i + 1];
+      const lastOfHoa = !nx || schemeOf(nx) !== schemeOf(a) || hoaOf(nx) !== hoaOf(a);
+      const lastOfScheme = !nx || schemeOf(nx) !== schemeOf(a);
+      if (lastOfHoa) { body.push(totRow('HOA Total (' + hoaOf(a) + ')', hoaT)); hoaT = zero(); }
+      if (lastOfScheme) { body.push(totRow('Scheme Total (' + clipTxt_(schemeOf(a), 30) + ')', schT)); schT = zero(); }
     });
-    body.push(boldRow_(['', '', 'GRAND TOTAL', fmtRep_(grand.adv, unit, dec), '', fmtRep_(grand.cred, unit, dec), '']
-      .concat(grand.monthly.map(v => fmtRep_(v, unit, dec))).concat([fmtRep_(grand.exp, unit, dec)])));
-    reportTable_(doc, 50, ['Sl.No', 'Scheme', 'Advance Token No', 'Advance Amount', 'Advance Token Dt', 'Credited Amount', 'Credited Date'], months, body, { textCols: [1] });
+    body.push(totRow('GRAND TOTAL', grand));
+    reportTable_(doc, 50, ['Sl.No', 'Scheme', 'HOA', 'Esti_no', 'Advance Token No', 'Batch No', 'Advance Amount', 'Advance Token Dt', 'Credited', 'Credited Amount', 'Credited Date', 'Credited Account No'],
+      months, body, { textCols: [1, 2], fontSize: 5.5 });
     return { success: true, filename: 'Tokens_Report_' + fyLabel + (schemeFilter ? '_' + schemeFilter : '') + '.pdf', base64: pdfBase64_(doc) };
   };
 
@@ -4195,7 +4513,7 @@
   const secW_ = (m, op, fns) => fns.forEach(f => { SEC_[f] = { module: m, op: op, kind: 'write' }; });
   const secG_ = (m, fns) => fns.forEach(f => { SEC_[f] = { module: m, op: 'V', kind: 'gen' }; });
   secR_(null, ['getDashboardData', 'getTokenNumbers', 'getVoucherSettings', 'getMbookPageInfo', 'hasVouchersForBatch', 'getAdvanceTokenForBatch', 'getAdvanceForEstimate', 'getFundApplicationStatusReport']);
-  secR_('Estimate', ['getEstimateData']); secW_('Estimate', 'A', ['addEstimate']); secW_('Estimate', 'E', ['updateEstimate', 'batchSyncEstimateExpenditures']); secW_('Estimate', 'D', ['deleteEstimate']);
+  secR_('Estimate', ['getEstimateData']); secW_('Estimate', 'A', ['addEstimate']); secW_('Estimate', 'E', ['updateEstimate', 'batchSyncEstimateExpenditures', 'saveEstimateStatusOptions']); secW_('Estimate', 'D', ['deleteEstimate']);
   secR_('Expenditure', ['getExpenditureData']); secW_('Expenditure', 'A', ['addExpenditure']);
   secR_('APOs', ['getApoData']); secW_('APOs', 'A', ['addApo']); secW_('APOs', 'E', ['updateApo']); secW_('APOs', 'D', ['deleteApo']);
   secR_('Personnel', ['getPersonnelData']); secW_('Personnel', 'A', ['addPersonnel']); secW_('Personnel', 'E', ['updatePersonnel']); secW_('Personnel', 'D', ['deletePersonnel']);
@@ -4204,7 +4522,7 @@
   secR_('Vehicle Events', ['getVehicleEventsData']); secW_('Vehicle Events', 'A', ['addVehicleEvent']); secW_('Vehicle Events', 'E', ['updateVehicleEvent']); secW_('Vehicle Events', 'D', ['deleteVehicleEvent']);
   secR_('Procurement', ['getProcurementData']); secW_('Procurement', 'A', ['addProcurement']); secW_('Procurement', 'E', ['updateProcurement']); secW_('Procurement', 'D', ['deleteProcurement']);
   secR_('Services', ['getServicesData']); secW_('Services', 'A', ['addService']); secW_('Services', 'E', ['updateService']); secW_('Services', 'D', ['deleteService']);
-  secR_('Budget', ['getBudgetData']); secR_(null, ['getQtrOptions']); secW_('Budget', 'A', ['addBudget']); secW_('Budget', 'E', ['updateBudget', 'saveQtrOptions']); secW_('Budget', 'D', ['deleteBudget']);
+  secR_('Budget', ['getBudgetData']); secR_(null, ['getQtrOptions', 'getEstimateStatusOptions']); secW_('Budget', 'A', ['addBudget']); secW_('Budget', 'E', ['updateBudget', 'saveQtrOptions']); secW_('Budget', 'D', ['deleteBudget']);
   secR_('Tokens (Advance)', ['getAdvanceData', 'getAdjustmentData']); secW_('Tokens (Advance)', 'A', ['addAdvance', 'addAdjustment']); secW_('Tokens (Advance)', 'E', ['updateAdvance']); secW_('Tokens (Advance)', 'D', ['deleteAdvance']);
   secR_('Estimate Tasks', ['getEstiTaskData', 'getEstiTaskDataForFundApplication']); secW_('Estimate Tasks', 'A', ['addEstiTask']); secW_('Estimate Tasks', 'E', ['updateEstiTask']); secW_('Estimate Tasks', 'D', ['deleteEstiTask']);
   secR_('Vouchers', ['getVoucherData']); secW_('Vouchers', 'A', ['addVoucherDetail', 'saveVoucherPlan']); secW_('Vouchers', 'E', ['updateVoucherDetail', 'saveVoucherSettings']); secW_('Vouchers', 'D', ['deleteVoucherDetail']);
@@ -4214,7 +4532,7 @@
   secR_('Withdrawal Accounts', ['getWithdrawalAccountsData']); secW_('Withdrawal Accounts', 'A', ['addWithdrawalAccount']); secW_('Withdrawal Accounts', 'E', ['updateWithdrawalAccount']); secW_('Withdrawal Accounts', 'D', ['deleteWithdrawalAccount']);
   secR_('Cheque Books', ['getChequeBooksData']); secW_('Cheque Books', 'A', ['addChequeBook']); secW_('Cheque Books', 'E', ['updateChequeBook']); secW_('Cheque Books', 'D', ['deleteChequeBook']);
   secR_('Fund Application', ['getFundApplicationData']); secW_('Fund Application', 'A', ['saveFundApplicationPlan', 'addFundApplication']); secW_('Fund Application', 'E', ['updateFundApplication', 'updateFundApplicationBatch']); secW_('Fund Application', 'D', ['deleteFundApplication', 'deleteFundApplicationBatch']);
-  secG_('Reports', ['generateTokensReportPdf', 'generateAccReportPdf', 'exportWorkbookForVoucherSuite']);
+  secG_('Reports', ['generateTokensReportPdf', 'generateAccReportPdf', 'generateEstimateReportPdf', 'generateBudgetAdvanceReportPdf', 'exportWorkbookForVoucherSuite']);
 
   function secureActionLabel_(fn) {
     const past = { add: 'Added', update: 'Updated', delete: 'Deleted', save: 'Saved', clear: 'Cleared', generate: 'Generated', export: 'Exported', batch: 'Batch' };
@@ -6518,6 +6836,7 @@
       populateAdvTransIdDropdown();
       loadFaStatus(applyEstimateFilters);
       loadQtrOptions();
+      loadEstimateStatusOptions();
       clearEstimateForm();
       refreshAdvanceTable();
     }).getEstimateData();
@@ -7026,6 +7345,7 @@
 
     const tbody = document.getElementById('report_acc_table');
     tbody.innerHTML = '';
+    const balLimit = balAlertLimit_(), flagged = [];
     schemes.sort().forEach(scheme => {
       const budget = budgetRows.filter(r => String(r.Scheme) === String(scheme)).reduce((s, r) => s + (Number(r.Amt) || 0), 0);
       const advance = advRows.filter(r => String(r.Scheme) === String(scheme)).reduce((s, r) => s + (Number(r.Amount) || 0), 0);
@@ -7033,10 +7353,59 @@
       const adjustment = adjRows.filter(a => { const adv = findAdvanceByToken(a.Adv_Token_No); return adv && String(adv.Scheme) === String(scheme); }).reduce((s, a) => s + (Number(a.Adj_Amt) || 0), 0);
       const balance = budget - advance;
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="font-weight:600;">${scheme}</td><td>${inr(budget)}</td><td>${inr(advance)}</td><td>${inr(expenditure)}</td><td>${inr(adjustment)}</td><td style="font-weight:700; color:${balance > 0 ? 'var(--success)' : (balance < 0 ? 'var(--danger)' : 'var(--muted)')};">${inr(balance)}</td>`;
+      const huge = balLimit > 0 && balance > balLimit;
+      if (huge) {
+        tr.className = 'bal-alert';
+        // HOA-wise split of this scheme's balance (Budget released - Advance), largest first
+        const hm = {};
+        budgetRows.filter(r => String(r.Scheme) === String(scheme)).forEach(r => { const h = String(r.Hoa || '').trim() || '(No HOA)'; (hm[h] = hm[h] || { b: 0, a: 0 }).b += Number(r.Amt) || 0; });
+        advRows.filter(r => String(r.Scheme) === String(scheme)).forEach(r => { const h = String(r.Hoa || '').trim() || '(No HOA)'; (hm[h] = hm[h] || { b: 0, a: 0 }).a += Number(r.Amount) || 0; });
+        const hoas = Object.keys(hm).map(h => ({ hoa: h, balance: hm[h].b - hm[h].a })).filter(x => x.balance > 0).sort((x, y) => y.balance - x.balance);
+        flagged.push({ scheme: scheme, balance: balance, hoas: hoas });
+      }
+      tr.innerHTML = `<td style="font-weight:600;">${scheme}${huge ? '<span class="bal-badge" title="Balance is above the alert limit">&#9888; High balance</span>' : ''}</td><td>${inr(budget)}</td><td>${inr(advance)}</td><td>${inr(expenditure)}</td><td>${inr(adjustment)}</td><td style="font-weight:700; color:${balance > 0 ? 'var(--success)' : (balance < 0 ? 'var(--danger)' : 'var(--muted)')};">${inr(balance)}</td>`;
       tbody.appendChild(tr);
     });
+    const banner = document.getElementById('report_acc_bal_banner');
+    if (banner) {
+      if (flagged.length) {
+        flagged.sort((x, y) => y.balance - x.balance);
+        banner.innerHTML = '<span class="bal-ico">&#9888;&#65039;</span><div style="flex:1; min-width:0;"><b>' + flagged.length + ' scheme' + (flagged.length > 1 ? 's have' : ' has') + ' a large balance still to be advanced</b> (above ' + inr(balLimit) + ') \u2014 <span class="bal-total">Total: <b>' + inr(flagged.reduce((t, f) => t + f.balance, 0)) + '</b></span>' +
+          '<ul class="bal-list">' + flagged.map(f => '<li><span class="bal-sch">' + ntEsc_(f.scheme) + '</span> <span class="bal-amt">' + inr(f.balance) + '</span>' +
+            (f.hoas.length ? '<div class="bal-hoas">' + f.hoas.map(h => '<span class="bal-chip">HOA <b>' + ntEsc_(h.hoa) + '</b> \u2014 ' + inr(h.balance) + '</span>').join('') + '</div>' : '') + '</li>').join('') + '</ul></div>';
+        banner.classList.add('show');
+      } else { banner.classList.remove('show'); banner.innerHTML = ''; }
+    }
   }
+
+  const REP_FONT_KEY_ = 'acc_report_font';
+  function applyRepFont_() {
+    const f = document.getElementById('report_acc_font'), z = document.getElementById('report_acc_fsize');
+    const fam = f && ['helvetica', 'times', 'courier'].indexOf(f.value) !== -1 ? f.value : 'helvetica';
+    const sz = z ? Number(z.value) : 0;
+    window.__repFont_.family = fam; window.__repFont_.size = (sz >= 5 && sz <= 16) ? sz : 0;
+  }
+  function saveRepFont_() {
+    applyRepFont_();
+    try { localStorage.setItem(REP_FONT_KEY_, JSON.stringify({ f: window.__repFont_.family, z: window.__repFont_.size })); } catch (e) { /* storage unavailable */ }
+  }
+  (function () {
+    try {
+      const v = JSON.parse(localStorage.getItem(REP_FONT_KEY_) || 'null'); if (!v) return;
+      const f = document.getElementById('report_acc_font'), z = document.getElementById('report_acc_fsize');
+      if (f && v.f) f.value = v.f; if (z && v.z !== undefined) z.value = String(v.z);
+    } catch (e) { /* ignore */ }
+    applyRepFont_();
+  })();
+
+  const BAL_ALERT_KEY_ = 'acc_bal_alert_limit';
+  function balAlertLimit_() {
+    const el = document.getElementById('report_acc_bal_alert');
+    const v = el ? Number(el.value) : NaN;
+    return isNaN(v) ? 0 : v;
+  }
+  function saveBalAlertLimit_() { try { localStorage.setItem(BAL_ALERT_KEY_, String(balAlertLimit_())); } catch (e) { /* storage unavailable */ } }
+  (function () { try { const v = localStorage.getItem(BAL_ALERT_KEY_), el = document.getElementById('report_acc_bal_alert'); if (v !== null && el) el.value = v; } catch (e) { /* ignore */ } })();
 
   function downloadAccReportPdf(btnEl) {
     const schemeFilter = document.getElementById('report_acc_filter_scheme').value;
@@ -7047,12 +7416,46 @@
     const originalHtml = btnEl ? btnEl.innerHTML : null;
     if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '&#8987; Generating...'; }
 
+    applyRepFont_();
     gsr().withSuccessHandler(res => {
       triggerPdfDownload_(res, btnEl, originalHtml, 'Unable to generate the accounts report PDF. Please try again.');
     }).withFailureHandler(err => {
       if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = originalHtml; }
       alert('Unable to generate the accounts report PDF. Reason: ' + (err && err.message ? err.message : err));
     }).generateAccReportPdf(schemeFilter, financialYear, unit, reportType, uptoMonth);
+  }
+
+  function downloadBudgetAdvanceReportPdf(btnEl) {
+    const schemeFilter = document.getElementById('report_acc_filter_scheme').value;
+    const unit = document.getElementById('report_acc_unit').value;
+    const originalHtml = btnEl ? btnEl.innerHTML : null;
+    if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '&#8987; Generating...'; }
+
+    applyRepFont_();
+    gsr().withSuccessHandler(res => {
+      triggerPdfDownload_(res, btnEl, originalHtml, 'Unable to generate the budget vs advance report PDF. Please try again.');
+    }).withFailureHandler(err => {
+      if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = originalHtml; }
+      alert('Unable to generate the budget vs advance report PDF. Reason: ' + (err && err.message ? err.message : err));
+    }).generateBudgetAdvanceReportPdf(schemeFilter, unit, balAlertLimit_());
+  }
+
+  function downloadEstimateReportPdf(btnEl) {
+    const schemeFilter = document.getElementById('report_acc_filter_scheme').value;
+    const financialYear = document.getElementById('report_acc_financial_year').value;
+    const unit = document.getElementById('report_acc_unit').value;
+    const kind = document.getElementById('report_acc_est_type').value;
+    const withRemarks = document.getElementById('report_acc_est_remarks').value !== 'no';
+    const originalHtml = btnEl ? btnEl.innerHTML : null;
+    if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '&#8987; Generating...'; }
+
+    applyRepFont_();
+    gsr().withSuccessHandler(res => {
+      triggerPdfDownload_(res, btnEl, originalHtml, 'Unable to generate the estimate report PDF. Please try again.');
+    }).withFailureHandler(err => {
+      if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = originalHtml; }
+      alert('Unable to generate the estimate report PDF. Reason: ' + (err && err.message ? err.message : err));
+    }).generateEstimateReportPdf(schemeFilter, financialYear, unit, kind, withRemarks);
   }
 
   function downloadTokensReportPdf(btnEl) {
@@ -7063,6 +7466,7 @@
     const originalHtml = btnEl ? btnEl.innerHTML : null;
     if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '&#8987; Generating...'; }
 
+    applyRepFont_();
     gsr().withSuccessHandler(res => {
       triggerPdfDownload_(res, btnEl, originalHtml, 'Unable to generate the tokens report PDF. Please try again.');
     }).withFailureHandler(err => {
@@ -7703,7 +8107,7 @@
     document.getElementById('est_description').value = r.Esti_Description;
     document.getElementById('est_cost').value = r.Est_cost;
     document.getElementById('est_date').value = r.Est_date;
-    document.getElementById('est_status').value = r.status || 'Pending';
+    setEstStatus_(r.status || 'Pending');
     document.getElementById('est_closed').checked = r.Est_closed_status === 'Yes';
     document.getElementById('est_remarks').value = r.remarks;
     enableEstExpPanel(r.Est_id, Number(r.Est_cost) || 0, r.status, r.Est_closed_status, r.Esti_no);
@@ -7910,7 +8314,7 @@
       const sumExp = items.reduce((s, r) => s + computeEstimateExpenditure(r.Esti_no), 0);
       const sumCredited = items.reduce((s, r) => s + computeEstimateAdvCredited(r.Esti_no), 0);
       const sumToBeCred = items.reduce((s, r) => s + computeEstimateAdvToBeCredited(r.Esti_no), 0);
-      const statusOrder = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
+      const statusOrder = estimateStatusList.slice();
       const statusCounts = {};
       statusOrder.forEach(st => { statusCounts[st] = 0; });
       items.forEach(r => {
@@ -11675,6 +12079,67 @@
       refreshAllEmbeddedBudgetStats();
       loadedTabs.budget = true;
     }).getBudgetData();
+  }
+
+  /* ---------- Estimate Status list (dropdown values, editable from the gear button) ---------- */
+  let estimateStatusList = ['Pending', 'In Progress', 'Completed', 'Cancelled', 'Closed-Not Executed', 'Completed-CRs Filed'], estStatusEdit = [];
+  async function loadEstimateStatusOptions() {
+    try { const l = await gsrCall('getEstimateStatusOptions'); if (Array.isArray(l) && l.length) estimateStatusList = l; } catch (e) { }
+    applyEstimateStatusOptions();
+  }
+  function applyEstimateStatusOptions() {
+    const opts = list => list.map(v => '<option value="' + ntEsc_(v) + '">' + ntEsc_(v) + '</option>').join('');
+    const f = document.getElementById('est_status');
+    if (f) { const cur = f.value; f.innerHTML = opts(estimateStatusList); setEstStatus_(cur || estimateStatusList[0]); }
+    const q = document.getElementById('est_filter_status');
+    if (q) { const cur = q.value; q.innerHTML = '<option value="">All</option>' + opts(estimateStatusList); q.value = cur; }
+  }
+  // Sets the form's Status; a value that is no longer in the list (older record) is kept visible instead of blanked.
+  function setEstStatus_(v) {
+    const s = document.getElementById('est_status'); if (!s) return;
+    if (v && !Array.from(s.options).some(o => o.value === v)) s.insertAdjacentHTML('beforeend', '<option value="' + ntEsc_(v) + '">' + ntEsc_(v) + '</option>');
+    s.value = v;
+  }
+  function openEstStatusManager() {
+    estStatusEdit = estimateStatusList.slice();
+    const old = document.getElementById('est_status_mgr_modal'); if (old) old.remove();
+    const m = document.createElement('div'); m.id = 'est_status_mgr_modal'; m.className = 'fa-mgr-overlay';
+    m.innerHTML = '<div class="fa-mgr" style="width:440px;"><div class="scheme-card-title" style="margin-bottom:4px;">Estimate Status values</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">These values appear in the Estimate form and the Status filter. Removing a value does not change existing estimates that already use it.</div><div id="est_status_mgr_body"></div></div>';
+    m.addEventListener('mousedown', e => { if (e.target === m) m.remove(); });
+    m.addEventListener('click', estStatusMgrClick);
+    document.body.appendChild(m);
+    estStatusMgrRender();
+  }
+  function estStatusMgrRender() {
+    const b = document.getElementById('est_status_mgr_body'); if (!b) return;
+    b.innerHTML = '<table class="grid"><tbody>' + estStatusEdit.map((q, i) => '<tr><td>' + ntEsc_(q) + '</td><td style="text-align:right;white-space:nowrap;"><button class="icon-btn" data-es="up" data-i="' + i + '" title="Move up">&#9650;</button><button class="icon-btn" data-es="down" data-i="' + i + '" title="Move down">&#9660;</button><button class="icon-btn" data-es="del" data-i="' + i + '" title="Remove">&#10005;</button></td></tr>').join('') + '</tbody></table>' +
+      '<div class="btn-row" style="margin-top:8px;"><input type="text" id="est_status_new" placeholder="New status, e.g. On Hold" style="flex:1;"><button class="action" data-es="add">Add</button></div>' +
+      '<div class="status" id="est_status_mgr_msg"></div><div class="btn-row"><button class="action primary" data-es="save">Save</button><button class="action" data-es="close">Cancel</button></div>';
+  }
+  async function estStatusMgrClick(e) {
+    const b = e.target.closest('[data-es]'); if (!b) return;
+    const a = b.dataset.es, i = Number(b.dataset.i), msg = t => { const el = document.getElementById('est_status_mgr_msg'); if (el) { el.className = 'status err'; el.textContent = t; } };
+    if (a === 'close') { document.getElementById('est_status_mgr_modal').remove(); return; }
+    if (a === 'up' && i > 0) { estStatusEdit.splice(i - 1, 0, estStatusEdit.splice(i, 1)[0]); estStatusMgrRender(); return; }
+    if (a === 'down' && i < estStatusEdit.length - 1) { estStatusEdit.splice(i + 1, 0, estStatusEdit.splice(i, 1)[0]); estStatusMgrRender(); return; }
+    if (a === 'del') { estStatusEdit.splice(i, 1); estStatusMgrRender(); return; }
+    if (a === 'add') {
+      const v = (document.getElementById('est_status_new').value || '').trim();
+      if (!v) return;
+      if (estStatusEdit.some(q => q.toLowerCase() === v.toLowerCase())) { msg('"' + v + '" is already in the list.'); return; }
+      estStatusEdit.push(v); estStatusMgrRender(); return;
+    }
+    if (a === 'save') {
+      try {
+        const res = await gsrCall('saveEstimateStatusOptions', estStatusEdit);
+        if (res && res.__denied) { msg(res.message); return; }
+        if (!res || res.success === false) { msg((res && res.message) || 'Unable to save.'); return; }
+        estimateStatusList = res.list; applyEstimateStatusOptions();
+        document.getElementById('est_status_mgr_modal').remove();
+        setStatus('est_status_msg', 'Status list saved.');
+        if (typeof applyEstimateFilters === 'function') applyEstimateFilters();
+      } catch (err) { msg(err.message || String(err)); }
+    }
   }
 
   let budgetQtrList = ['Q1', 'Q2', 'Q3', 'Q4'], qtrEdit = [];

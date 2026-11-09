@@ -23,8 +23,17 @@ th{background:var(--bg);font-size:12px}td.r{min-width:70px}
 pre{background:var(--bg);padding:8px;overflow:auto;font-size:12px}.cfg{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
 .sel td{background:var(--bg)}.sheet h3{color:inherit}#bill table td,#dbill table td{white-space:nowrap}.card{border:1px solid var(--br);border-radius:8px;padding:8px;margin-bottom:10px}
 @media print{.wrap>*:not(#tabs){display:none!important}.tabbar{display:none!important}#tabs section:not(.pv){display:none!important}.noprint{display:none!important}body{padding:0;background:#fff;color:#000}section.pv{border:0}#bill th,#bill td,#dbill th,#dbill td{border-color:#000;color:#000}@page{size:landscape}}
-</style></head><body><div class="wrap"><div id="msg"></div>
-<div class="bar noprint" style="margin:0 0 12px"><h1 style="margin:0">Arrear Bill Preparation</h1><span style="flex:1"></span><span id="unsaved" style="color:var(--mu)"></span><button onclick="saveAll()" title="Save every unsaved employee row and the open bills to Supabase">💾 Save All to Supabase</button></div>
+</style></head><body><div id="login" class="noprint" style="position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto" onkeydown="if(event.key==='Enter')doLogin()">
+<div class="card" style="max-width:400px;width:100%;background:var(--card);margin:0"><h2 style="margin:0 0 4px">Arrear Bill — Sign in</h2>
+<p style="color:var(--mu);margin:0 0 12px">Use your Supabase account email and password.</p>
+<label>Email</label><input id="le" type="email" autocomplete="username"><div style="height:8px"></div>
+<label>Password</label><input id="lp" type="password" autocomplete="current-password">
+<details id="lcfg" style="margin-top:10px"><summary style="cursor:pointer;color:var(--mu)">Supabase connection</summary>
+<label style="margin-top:8px">Project URL</label><input id="lu" placeholder="https://xxxx.supabase.co"><div style="height:8px"></div><label>Anon public key</label><input id="lk"></details>
+<div id="lmsg" style="color:var(--dg);min-height:20px;margin:10px 0 4px"></div>
+<button id="lb" onclick="doLogin()" style="width:100%">Sign in</button></div></div>
+<div class="wrap"><div id="msg"></div>
+<div class="bar noprint" style="margin:0 0 12px"><h1 style="margin:0">Arrear Bill Preparation</h1><span style="flex:1"></span><span id="who" style="color:var(--mu)"></span><span id="unsaved" style="color:var(--mu)"></span><button onclick="saveAll()" title="Save every unsaved employee row and the open bills to Supabase">💾 Save All to Supabase</button><button class="s" onclick="signOut()">Sign out</button></div>
 
 <section class="noprint"><details id="cfgd"><summary><b>Supabase connection</b> (set once)</summary>
 <div class="cfg" style="margin-top:8px"><div><label>Project URL</label><input id="sbu" placeholder="https://xxxx.supabase.co"></div>
@@ -44,8 +53,10 @@ alter table pay_drawings enable row level security;
 alter table arrear_bills enable row level security;
 drop policy if exists "open" on pay_drawings;
 drop policy if exists "open" on arrear_bills;
-create policy "open" on pay_drawings for all using(true) with check(true);
-create policy "open" on arrear_bills for all using(true) with check(true);
+drop policy if exists "auth_only" on pay_drawings;
+drop policy if exists "auth_only" on arrear_bills;
+create policy "auth_only" on pay_drawings for all to authenticated using(true) with check(true);
+create policy "auth_only" on arrear_bills for all to authenticated using(true) with check(true);
 notify pgrst, 'reload schema';</pre></details></section>
 
 <section class="noprint"><h2>1. Pay Drawing Particulars</h2>
@@ -111,9 +122,27 @@ const SB_DEFAULT={url:'',key:''};
 let savedA='',savedB='',sb=null,emps=[],sel=0,bills=[],periods=[],cur={id:null,narr:''},tm;
 const newEmp=()=>({id:null,cfms:'',hrm:'',hrms:'',doj:'',pay:{},ded:{},pct:{},cps:false,emp:{name:'',desig:'',office:DEFOFF,sig:DEFSIG},dirty:true});
 function msg(t,e){const m=$('msg');m.textContent=t;m.style.color=e?'var(--dg)':'var(--pr)';m.style.display='block';clearTimeout(tm);tm=setTimeout(()=>m.style.display='none',4500)}
+let authSub=null;
+const lmsg=t=>$('lmsg').textContent=t||'';
+function showLogin(v,t){$('login').style.display=v?'flex':'none';lmsg(t)}
+function readCfg(){let u,k;try{u=localStorage.getItem('sbu');k=localStorage.getItem('sbk')}catch(e){}return[u||SB_DEFAULT.url,k||SB_DEFAULT.key]}
+async function init(){const[u,k]=readCfg();$('sbu').value=u||'';$('sbk').value=k||'';$('lu').value=u||'';$('lk').value=k||'';
+ if(authSub){authSub.unsubscribe();authSub=null}
+ if(!(u&&k)){sb=null;$('lcfg').open=true;showLogin(true,'Enter the Supabase project URL and anon key, then sign in.');selEmp(0,true);return}
+ sb=supabase.createClient(u,k);
+ const{data}=await sb.auth.getSession();
+ authSub=sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_OUT'){resetData();showLogin(true,'Signed out.')}}).data.subscription;
+ if(data&&data.session)onSignedIn(data.session);else showLogin(true)}
+function onSignedIn(sess){showLogin(false);$('who').textContent=sess.user.email||'';fetchEmps()}
+async function doLogin(){const u=$('lu').value.trim(),k=$('lk').value.trim(),em=$('le').value.trim(),pw=$('lp').value;
+ if(!u||!k){$('lcfg').open=true;return lmsg('Enter the Supabase project URL and anon key')}if(!em||!pw)return lmsg('Enter your email and password');
+ try{localStorage.setItem('sbu',u);localStorage.setItem('sbk',k)}catch(e){}
+ sb=supabase.createClient(u,k);$('lb').disabled=true;lmsg('Signing in…');
+ const{data,error}=await sb.auth.signInWithPassword({email:em,password:pw});$('lb').disabled=false;
+ if(error)return lmsg(error.message);$('lp').value='';$('sbu').value=u;$('sbk').value=k;onSignedIn(data.session)}
+function resetData(){emps=[newEmp()];sel=0;bills=[];$('who').textContent='';selEmp(0,true)}
+async function signOut(){if(anyUnsaved()&&!confirm('There are unsaved changes. Sign out and discard them?'))return;if(sb)await sb.auth.signOut();resetData();showLogin(true,'Signed out.')}
 function saveCfg(){try{localStorage.setItem('sbu',$('sbu').value.trim());localStorage.setItem('sbk',$('sbk').value.trim())}catch(e){}init()}
-function init(){let u,k;try{u=localStorage.getItem('sbu');k=localStorage.getItem('sbk')}catch(e){}
- u=u||SB_DEFAULT.url;k=k||SB_DEFAULT.key;$('sbu').value=u||'';$('sbk').value=k||'';if(u&&k){sb=supabase.createClient(u,k);fetchEmps()}else{$('cfgd').open=true;selEmp(0,true)}}
 /* ---------- 1. pay drawing ---------- */
 function secHeads(t){const e=emps[sel]||newEmp(),L=t==='pay'?PAY:DED,o=t==='pay'?e.pay:e.ded,m={};L.forEach(h=>{if(o[h]!==''&&o[h]!=null)m[h]=n(o[h])});return m}
 function rowsSel(t){const m=secHeads(t);return Object.keys(m).map(h=>({head:h,amount:m[h]}))}

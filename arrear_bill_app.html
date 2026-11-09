@@ -24,7 +24,7 @@ pre{background:var(--bg);padding:8px;overflow:auto;font-size:12px}.cfg{display:g
 .sel td{background:var(--bg)}.sheet h3{color:inherit}#bill table td,#dbill table td{white-space:nowrap}.card{border:1px solid var(--br);border-radius:8px;padding:8px;margin-bottom:10px}
 @media print{.wrap>*:not(#tabs){display:none!important}.tabbar{display:none!important}#tabs section:not(.pv){display:none!important}.noprint{display:none!important}body{padding:0;background:#fff;color:#000}section.pv{border:0}#bill th,#bill td,#dbill th,#dbill td{border-color:#000;color:#000}@page{size:landscape}}
 </style></head><body><div class="wrap"><div id="msg"></div>
-<h1>Arrear Bill Preparation</h1>
+<div class="bar noprint" style="margin:0 0 12px"><h1 style="margin:0">Arrear Bill Preparation</h1><span style="flex:1"></span><span id="unsaved" style="color:var(--mu)"></span><button onclick="saveAll()" title="Save every unsaved employee row and the open bills to Supabase">💾 Save All to Supabase</button></div>
 
 <section class="noprint"><details id="cfgd"><summary><b>Supabase connection</b> (set once)</summary>
 <div class="cfg" style="margin-top:8px"><div><label>Project URL</label><input id="sbu" placeholder="https://xxxx.supabase.co"></div>
@@ -107,12 +107,13 @@ DEFSIG='Divisional Forest Officer,\nSocial Forestry Division,\nChittoor.';
 const $=i=>document.getElementById(i),n=v=>parseFloat(v)||0,f=v=>n(v).toFixed(2),r0=v=>Math.round(v),f0=v=>String(Math.round(n(v)));
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const dmy=v=>v?v.split('-').reverse().join('.'):'',sumH=(o,L)=>L.reduce((t,h)=>t+n(o[h]),0);
-let sb=null,emps=[],sel=0,bills=[],periods=[],cur={id:null,narr:''},tm;
+const SB_DEFAULT={url:'',key:''};
+let savedA='',savedB='',sb=null,emps=[],sel=0,bills=[],periods=[],cur={id:null,narr:''},tm;
 const newEmp=()=>({id:null,cfms:'',hrm:'',hrms:'',doj:'',pay:{},ded:{},pct:{},cps:false,emp:{name:'',desig:'',office:DEFOFF,sig:DEFSIG},dirty:true});
 function msg(t,e){const m=$('msg');m.textContent=t;m.style.color=e?'var(--dg)':'var(--pr)';m.style.display='block';clearTimeout(tm);tm=setTimeout(()=>m.style.display='none',4500)}
 function saveCfg(){try{localStorage.setItem('sbu',$('sbu').value.trim());localStorage.setItem('sbk',$('sbk').value.trim())}catch(e){}init()}
 function init(){let u,k;try{u=localStorage.getItem('sbu');k=localStorage.getItem('sbk')}catch(e){}
- $('sbu').value=u||'';$('sbk').value=k||'';if(u&&k){sb=supabase.createClient(u,k);fetchEmps()}else{$('cfgd').open=true;selEmp(0)}}
+ u=u||SB_DEFAULT.url;k=k||SB_DEFAULT.key;$('sbu').value=u||'';$('sbk').value=k||'';if(u&&k){sb=supabase.createClient(u,k);fetchEmps()}else{$('cfgd').open=true;selEmp(0,true)}}
 /* ---------- 1. pay drawing ---------- */
 function secHeads(t){const e=emps[sel]||newEmp(),L=t==='pay'?PAY:DED,o=t==='pay'?e.pay:e.ded,m={};L.forEach(h=>{if(o[h]!==''&&o[h]!=null)m[h]=n(o[h])});return m}
 function rowsSel(t){const m=secHeads(t);return Object.keys(m).map(h=>({head:h,amount:m[h]}))}
@@ -148,11 +149,11 @@ async function saveEmp(i){if(!sb)return msg('Connect Supabase first',1);const e=
  if(r.error){msg(r.error.message,1);return false}e.id=r.data.id;e.dirty=false;msg('Employee row saved');updRow(i);if(i===sel)await fetchBills(),renderBills(),renderDBills();return true}
 async function delEmp(i){const e=emps[i];if(!confirm('Delete this row'+(e.id?' and all its arrear bills':'')+'?'))return;
  if(e.id&&sb){await sb.from('arrear_bills').delete().eq('pay_id',e.id);const r=await sb.from('pay_drawings').delete().eq('id',e.id);if(r.error)return msg(r.error.message,1)}
- emps.splice(i,1);if(!emps.length)emps.push(newEmp());await selEmp(Math.min(sel>i?sel-1:sel,emps.length-1))}
+ emps.splice(i,1);if(!emps.length)emps.push(newEmp());await selEmp(Math.min(sel>i?sel-1:sel,emps.length-1),true)}
 async function fetchEmps(){const{data,error}=await sb.from('pay_drawings').select('*').order('created_at');if(error)return msg(error.message,1);
  emps=data.map(r=>({id:r.id,cfms:r.cfms_id||'',hrm:r.emp_hrm_id||'',pay:r.pay||{},ded:r.ded||{},pct:(r.emp||{}).pct||{},cps:!!(r.emp||{}).cps,hrms:(r.emp||{}).hrms||'',doj:(r.emp||{}).doj||'',emp:(({pct,cps,hrms,doj,...x})=>({name:'',desig:'',sig:DEFSIG,...x,office:x.office||DEFOFF}))(r.emp||{}),dirty:false}));
- if(!emps.length)emps=[newEmp()];await selEmp(0)}
-async function selEmp(i){sel=i;newBill();const e=emps[sel];$('nm').value=e.emp.name;$('ds').value=e.emp.desig;$('of').value=e.emp.office;$('sig').value=e.emp.sig;$('narr').value='';
+ if(!emps.length)emps=[newEmp()];await selEmp(0,true)}
+async function selEmp(i,force){if(!force&&i!==sel&&dirtyBills()&&!confirm('The open bills have unsaved changes. Switch employee and discard them?\n(Cancel, then use Save All to keep them.)')){renderPT();return}sel=i;newBill();const e=emps[sel];$('nm').value=e.emp.name;$('ds').value=e.emp.desig;$('of').value=e.emp.office;$('sig').value=e.emp.sig;$('narr').value='';
  setEh();renderPT();renderArrear();newDBill();renderDiff();await fetchBills();renderBills();renderDBills()}
 function onEmp(k,v){emps[sel].emp[k]=v;dirty(sel);renderBill()}
 /* ---------- 2. arrear bills ---------- */
@@ -165,16 +166,16 @@ function renderBills(){const e=emps[sel],A=bills.filter(b=>(b.details||{}).type!
   h+=`<tr class="${b.id===cur.id?'sel':''}"><td>${i+1}</td><td style="text-align:left">${dmy(fr)} to ${dmy(to)}</td><td>${f0(b.total_arrear)}</td><td>${f0(ps.reduce((s,p)=>s+n(p.net),0))}</td><td>${new Date(b.created_at).toLocaleDateString()}</td>
   <td><button class="s" onclick="openBill('${b.id}',1)">Preview</button> <button class="s" onclick="openBill('${b.id}')">Edit</button> <button class="d" onclick="delBill('${b.id}')">Delete</button></td></tr>`});
  $('bt').innerHTML=h}
-function newBill(){cur={id:null,narr:''};periods=[{from:'',to:'',pcts:{},note:''}];const x=$('narr');if(x)x.value=''}
-function openBill(id,go){const b=bills.find(x=>x.id===id);if(!b)return;cur={id,narr:(b.details||{}).narr||''};$('narr').value=cur.narr;
- periods=(b.arrear_periods||[]).map(x=>({from:x.from,to:x.to,pcts:x.pcts||{},note:x.note||''}));renderArrear();renderBills();go?genBill():msg('Editing saved bill — press Save Bill to update')}
+function newBill(){cur={id:null,narr:''};periods=[{from:'',to:'',pcts:{},note:''}];const x=$('narr');if(x)x.value='';savedA=snapA()}
+function openBill(id,go){const b=bills.find(x=>x.id===id);if(!b)return;cur={id,narr:(b.details||{}).narr||''};$('narr').value=cur.narr;savedA='';
+ periods=(b.arrear_periods||[]).map(x=>({from:x.from,to:x.to,pcts:x.pcts||{},note:x.note||''}));savedA=snapA();renderArrear();renderBills();go?genBill():msg('Editing saved bill — press Save Bill to update')}
 async function delBill(id){if(!confirm('Delete this arrear bill?'))return;const{error}=await sb.from('arrear_bills').delete().eq('id',id);if(error)return msg(error.message,1);
  if(cur.id===id){newBill();renderArrear()}if(curD.id===id){newDBill();renderDiff()}msg('Bill deleted');await fetchBills();renderBills();renderDBills()}
 async function saveBill(){if(!sb)return msg('Connect Supabase first',1);const e=emps[sel];if(!e.id||e.dirty){if(!await saveEmp(sel))return}
  const P=rowsSel('pay'),D=rowsSel('ded'),b={pay_id:e.id,emp_hrm_id:e.hrm,cfms_id:e.cfms,payments:P,deductions:D,
  net_payable:P.reduce((s,x)=>s+x.amount,0)-D.reduce((s,x)=>s+x.amount,0),arrear_periods:periods.map(p=>({...p,...comp(p)})),total_arrear:periods.reduce((s,p)=>s+comp(p).gross,0),details:details()};
  const r=cur.id?await sb.from('arrear_bills').update(b).eq('id',cur.id).select().single():await sb.from('arrear_bills').insert(b).select().single();
- if(r.error)return msg(r.error.message,1);cur.id=r.data.id;msg('Bill saved');await fetchBills();renderBills()}
+ if(r.error){msg(r.error.message,1);return false}cur.id=r.data.id;savedA=snapA();msg('Bill saved');await fetchBills();renderBills();return true}
 function monthFactor(a,b){if(!a||!b)return 0;let d=new Date(a+'T00:00:00Z'),e=new Date(b+'T00:00:00Z'),fct=0;
  while(d<=e){const y=d.getUTCFullYear(),m=d.getUTCMonth(),dim=new Date(Date.UTC(y,m+1,0)).getUTCDate(),last=new Date(Date.UTC(y,m,dim)),end=e<last?e:last,k=Math.round((end-d)/864e5)+1;fct+=k/dim;d=new Date(Date.UTC(y,m+1,1))}return fct}
 function diff(a,b){if(!a||!b)return 0;const x=Math.round((new Date(b)-new Date(a))/864e5)+1;return x>0?x:0}
@@ -195,6 +196,17 @@ function addPeriod(){periods.push({from:'',to:'',pcts:{},note:''});renderArrear(
 function fillDed(i){const D=secHeads('ded');Object.keys(D).filter(h=>!(h==='CPS'&&emps[sel].cps)).forEach(h=>periods[i].pcts['d:'+h]=String(D[h]));renderArrear()}
 function setP(i,k,v){periods[i][k]=v;renderArrear()}
 function setPct(i,k,v){periods[i].pcts[k]=v;renderArrear()}
+const snapA=()=>JSON.stringify([periods,cur.narr]),snapB=()=>JSON.stringify([dbatches,curD.narr]),hasA=()=>periods.some(p=>p.from&&p.to),hasB=()=>dbatches.some(b=>b.periods.some(p=>p.from&&p.to));
+const dirtyBills=()=>(hasA()&&snapA()!==savedA)||(hasB()&&snapB()!==savedB),empHas=e=>e.hrm||e.cfms||e.hrms||Object.keys(e.pay).length||Object.keys(e.ded).length;
+const anyUnsaved=()=>emps.some(e=>e.dirty&&empHas(e))||dirtyBills();
+function updUnsaved(){const u=$('unsaved');if(u)u.textContent=anyUnsaved()?'● Unsaved changes':'✓ All saved'}
+setInterval(updUnsaved,1000);addEventListener('beforeunload',e=>{if(anyUnsaved()){e.preventDefault();e.returnValue=''}});
+async function saveAll(){if(!sb)return msg('Connect Supabase first',1);let ne=0,bad=0,skip=0;
+ for(let i=0;i<emps.length;i++){const e=emps[i];if(!e.dirty)continue;if(!(e.hrm.trim()||e.cfms.trim()||e.hrms.trim())){if(empHas(e))skip++;continue}if(await saveEmp(i))ne++;else bad++}
+ const parts=[];if(ne)parts.push(ne+' employee row(s)');
+ if(!bad){if(hasA()&&(snapA()!==savedA||!cur.id)){if(await saveBill())parts.push('period bill');else bad++}
+  if(!bad&&hasB()&&(snapB()!==savedB||!curD.id)){if(await saveDBill())parts.push('difference bill');else bad++}}
+ if(bad)return;msg('Saved: '+(parts.join(', ')||'nothing new to save')+(skip?` · ${skip} row(s) skipped — enter an ID`:''));updUnsaved()}
 function renderArrear(){const P=Object.keys(secHeads('pay')).filter(h=>h!=='Basic Pay'),D=Object.keys(secHeads('ded')),H0=secHeads('pay'),HD=secHeads('ded'),e0=emps[sel]||newEmp();
  const T={basic:0,pay:{},ded:{},gross:0,dedt:0,net:0,days:0};P.forEach(h=>T.pay[h]=0);D.forEach(h=>T.ded[h]=0);
  let h=`<tr><th>#</th><th>From</th><th>To</th><th>Note</th><th>Days</th><th>Basic Pay</th>${P.map(x=>`<th>${x} ${PCT.includes(x)?'%':'value'}</th><th>${x}</th>`).join('')}<th>Gross</th>${D.map(x=>`<th>${x}</th>`).join('')}<th>Total Ded.</th><th>Net</th><th></th></tr>`;
@@ -258,7 +270,7 @@ let dbatches=[],curD={id:null,narr:''},dfl={q:'',b:'all',from:'',to:'',view:'all
 const newDP=()=>({from:'',to:'',unit:'days',qty:'',note:'',pct:{}}),newBatch=()=>({dr:{pay:{},pct:{}},tb:{pay:{},pct:{}},periods:[newDP()]}),allP=()=>dbatches.flatMap(b=>b.periods),hasP=(s,h)=>s.pct[h]!==''&&s.pct[h]!=null,sumo=o=>PAY.reduce((t,x)=>t+n(o[x]),0);
 function tab(x){['A','B'].forEach(k=>{$('tab'+k).style.display=k===x?'':'none';$('tb'+k).className=k===x?'':'s'});if(x==='B')renderDiff()}
 function amtOf(s,h){const b=n(s.pay['Basic Pay']);return PCT.includes(h)&&hasP(s,h)?r0(b*n(s.pct[h])/100):n(s.pay[h])}
-function newDBill(){curD={id:null,narr:''};dbatches=[newBatch()];const x=$('dnarr');if(x)x.value=''}
+function newDBill(){curD={id:null,narr:''};dbatches=[newBatch()];const x=$('dnarr');if(x)x.value='';savedB=snapB()}
 function damt(B){const o={dr:{},tb:{},df:{}};PAY.forEach(h=>{const a=amtOf(B.dr,h),b=amtOf(B.tb,h);o.dr[h]=a;o.tb[h]=b;o.df[h]=b-a});return o}
 function addBatch(){dbatches.push(newBatch());renderDiff()}
 function delBatch(b){dbatches.splice(b,1);if(!dbatches.length)dbatches=[newBatch()];renderDiff()}
@@ -377,15 +389,15 @@ function diffModel(){const e=emps[sel]||newEmp(),d=details(),F=dfl.rep,bs=dbatch
  title:`Arrear bill (difference of pay) of ${d.name}${d.desig?', '+d.desig:''}${d.office?', '+d.office:''} for the period from ${dmy(fr)} to ${dmy(to)}`,
  info:[e.hrm?'EmployeeID: '+e.hrm:'',e.cfms?'CFMS ID: '+e.cfms:'',e.hrms?'HRMS ID: '+e.hrms:'',e.doj?'DOJ: '+dmy(e.doj):'',d.name+(d.desig?', '+d.desig:'')].filter(Boolean).join('\n'),
  narr:curD.narr,words:`Rs.${tot}/-(Rupees ${words(tot)} only)`,sign:d.sig}}
-function openDBill(id,go){const b=bills.find(x=>x.id===id);if(!b)return;const d=b.details||{};curD={id,narr:d.narr||''};$('dnarr').value=curD.narr;
+function openDBill(id,go){const b=bills.find(x=>x.id===id);if(!b)return;const d=b.details||{};curD={id,narr:d.narr||''};$('dnarr').value=curD.narr;savedB='';
  dbatches=dfBatches(d.diff).map(x=>({dr:x.dr||{pay:{},pct:{}},tb:x.tb||{pay:{},pct:{}},periods:(x.periods||[]).map(p=>({...newDP(),from:p.from,to:p.to,unit:p.unit,qty:p.qty,note:p.note,pct:p.pct||{},...(p.own?{own:p.own}:{})}))}));
  dbatches.forEach(B=>{if(!B.periods.length)B.periods=[newDP()]});if(!dbatches.length)dbatches=[newBatch()];
- renderDiff();renderDBills();go?$('dbill').scrollIntoView({behavior:'smooth'}):msg('Editing saved bill — press Save Bill to update')}
+ savedB=snapB();renderDiff();renderDBills();go?$('dbill').scrollIntoView({behavior:'smooth'}):msg('Editing saved bill — press Save Bill to update')}
 async function saveDBill(){if(!sb)return msg('Connect Supabase first',1);const e=emps[sel];if(!e.id||e.dirty){if(!await saveEmp(sel))return}
  const tot=dbatches.reduce((t,B)=>t+B.periods.reduce((u,p)=>u+dcomp(p,B).gross,0),0),
  b={pay_id:e.id,emp_hrm_id:e.hrm,cfms_id:e.cfms,payments:[],deductions:[],net_payable:0,arrear_periods:[],total_arrear:tot,details:{...details(),type:'diff',narr:curD.narr,diff:{batches:dbatches}}};
  const r=curD.id?await sb.from('arrear_bills').update(b).eq('id',curD.id).select().single():await sb.from('arrear_bills').insert(b).select().single();
- if(r.error)return msg(r.error.message,1);curD.id=r.data.id;msg('Difference bill saved');await fetchBills();renderBills();renderDBills()}
+ if(r.error){msg(r.error.message,1);return false}curD.id=r.data.id;savedB=snapB();msg('Difference bill saved');await fetchBills();renderBills();renderDBills();return true}
 function renderDBill(){if(!allP().some(p=>diff(p.from,p.to)>0)){$('dbill').innerHTML='<p style="color:var(--mu)">Enter the period dates to see the bill preview.</p>';return}
  const m=diffModel(),td=(v,i,b)=>`<td style="text-align:${i?'right':'left'}${b?';font-weight:700':''}">${esc(v)}</td>`;
  $('dbill').innerHTML=`<h3 style="text-align:center;font-size:14px;color:inherit">${esc(m.title)}</h3><table><tr>${m.hdr.map(t=>`<th>${esc(t)}</th>`).join('')}</tr>

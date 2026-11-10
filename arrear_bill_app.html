@@ -21,7 +21,7 @@ th{background:var(--bg);font-size:12px}td.r{min-width:70px}
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
 #msg{position:fixed;right:14px;bottom:14px;background:var(--card);border:1px solid var(--br);padding:8px 12px;border-radius:8px;display:none;z-index:9;max-width:80vw}
 pre{background:var(--bg);padding:8px;overflow:auto;font-size:12px}.cfg{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
-.sel td{background:var(--bg)}.sheet h3{color:inherit}#bill table td,#dbill table td{white-space:nowrap}.card{border:1px solid var(--br);border-radius:8px;padding:8px;margin-bottom:10px}
+.sel td{background:var(--bg)}.sheet h3{color:inherit}#bill table td,#dbill table td{white-space:nowrap}.tip{display:inline-block;width:18px;height:18px;line-height:17px;text-align:center;border-radius:50%;border:1px solid var(--mu);color:var(--mu);font-size:12px;font-weight:400;cursor:help;margin-left:6px;vertical-align:middle}.card{border:1px solid var(--br);border-radius:8px;padding:8px;margin-bottom:10px}
 @media print{.wrap>*:not(#tabs){display:none!important}.tabbar{display:none!important}#tabs section:not(.pv){display:none!important}.noprint{display:none!important}body{padding:0;background:#fff;color:#000}section.pv{border:0}#bill th,#bill td,#dbill th,#dbill td{border-color:#000;color:#000}@page{size:landscape}}
 </style></head><body><div id="login" class="noprint" style="position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto" onkeydown="if(event.key==='Enter')doLogin()">
 <div class="card" style="max-width:400px;width:100%;background:var(--card);margin:0"><h2 style="margin:0 0 4px">Arrear Bill — Sign in</h2>
@@ -57,44 +57,58 @@ drop policy if exists "auth_only" on pay_drawings;
 drop policy if exists "auth_only" on arrear_bills;
 create policy "auth_only" on pay_drawings for all to authenticated using(true) with check(true);
 create policy "auth_only" on arrear_bills for all to authenticated using(true) with check(true);
+create table if not exists master_data(
+ id uuid primary key default gen_random_uuid(),
+ sheet text not null, row_no int not null, cells jsonb not null,
+ created_at timestamptz default now(), unique(sheet,row_no));
+alter table master_data enable row level security;
+drop policy if exists "auth_only" on master_data;
+create policy "auth_only" on master_data for all to authenticated using(true) with check(true);
 notify pgrst, 'reload schema';</pre></details></section>
 
-<section class="noprint"><h2>1. Pay Drawing Particulars</h2>
-<div class="sc"><table id="pt"></table></div>
-<div class="bar"><button class="s" onclick="addEmp()">+ Add Row</button>
-<span style="color:var(--mu)">● select an employee · 💾 save row · ⧉ duplicate · × delete</span></div></section>
+<div id="strip" class="card noprint" style="position:sticky;top:0;z-index:5;margin:0 0 12px;background:var(--card);display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center"></div>
+<div id="tabs"><div class="bar tabbar noprint" style="margin:0 0 12px"><button id="t1" onclick="gotab(1)">1 · Employee Details</button><button id="t2" class="s" onclick="gotab(2)">2 · Pay Drawing Particulars</button><button id="t3" class="s" onclick="gotab(3)">3 · Bill Type</button><button id="t4" class="s" onclick="gotab(4)">4 · Preview</button><button id="t5" class="s" onclick="gotab(5)">5 · Print</button><button id="t6" class="s" onclick="gotab(6)">6 · Master</button></div>
 
-<div id="tabs"><div class="bar tabbar noprint" style="margin:0 0 12px"><button id="tbA" onclick="tab('A')">Period Arrear Bill</button><button id="tbB" class="s" onclick="tab('B')">Pay Difference Bill</button></div>
+<div id="p1"><section class="noprint"><h2>Employee Details</h2>
+<div class="bar" style="margin:0 0 8px"><input id="eq" placeholder="Search name, designation, ID, office…" oninput="renderET()" style="max-width:300px"><button onclick="addEmp()">+ New Employee</button></div>
+<div class="sc"><table id="et"></table></div></section>
+<section class="noprint"><h2>Selected employee — details</h2><div class="g2">
+<div><label>Name (e.g. Sri D.Mohan)</label><input id="nm" oninput="onEmp('name',this.value)"></div>
+<div><label>Designation</label><input id="ds" oninput="onEmp('desig',this.value)"></div>
+<div><label>CFMS ID</label><input id="cf" oninput="setId(sel,'cfms',this.value)"></div>
+<div><label>HRMS EMP ID</label><input id="hs" oninput="setId(sel,'hrms',this.value)"></div>
+<div><label>Aadhar no</label><input id="ad" oninput="setId(sel,'hrm',this.value)"></div>
+<div><label>Date of Join</label><input type="date" id="dj" onchange="setId(sel,'doj',this.value)"></div>
+<div style="grid-column:1/-1"><label>Office / Division (bill title)</label><input id="of" oninput="onEmp('office',this.value)" placeholder="O/o Divisional Forest Officer,Social Forestry Division,Chittoor"></div>
+<div style="grid-column:1/-1"><label>Signature block</label><textarea id="sig" rows="3" oninput="onEmp('sig',this.value)"></textarea></div></div>
+<div class="bar"><button onclick="saveEmp(sel)">💾 Save Employee</button><button class="s" onclick="copyEmp(sel)">⧉ Duplicate</button><button class="d" onclick="delEmp(sel)">× Delete</button></div></section></div>
+
+<div id="p2" style="display:none"><section class="noprint"><h2>Pay Drawing Particulars <span class="tip" tabindex="0" title="For DA, HRA and IR enter a % to calculate the amount from Basic Pay (rounded to whole rupees).&#10;Tick CPS for CPS employees: CPS = 10% of (Basic Pay + DA).&#10;Net Payable = total payment − total deduction.">ⓘ</span></h2>
+<div class="sc"><table id="pt"></table></div>
+</section></div>
+
+<div id="p3" style="display:none"><section class="noprint"><h2>Bill Type</h2><div class="bar" style="margin:0"><button id="bA" onclick="setBt('A')">Period Arrear Bill</button><button id="bB" class="s" onclick="setBt('B')">Pay Difference Bill</button></div></section>
 <div id="tabA">
-<section class="noprint"><h2>2. Arrear Bills — <span id="eh" style="font-weight:400"></span></h2>
+<section class="noprint"><h2>Period Arrear Bill</h2>
 <h3>Saved arrear bills of this employee</h3><div class="sc"><table id="bt"></table></div>
 <div class="bar"><button class="s" onclick="newBill();renderArrear();renderBills()">+ New Bill</button></div>
-<h3>Arrear calculation (current bill)</h3>
-<p style="color:var(--mu);margin:0 0 8px">Whole rupees. Basic = Basic Pay ÷ days in month × arrear days. DA/HRA = arrear Basic × %. Other pay heads = value entered (blank = pay drawing amount) ÷ days in month × arrear days. Deductions = amount typed for the period (blank = 0; ⇩Ded fills the pay drawing amounts); CPS employees get 10% of (arrear Basic + arrear DA) automatically. DA/HRA % default to the % set in Pay Drawing Particulars.</p>
+<h3>Arrear calculation (current bill) <span class="tip" tabindex="0" title="Whole rupees. Basic = Basic Pay ÷ days in the month × arrear days (a period spanning months is split month by month).&#10;DA, HRA and IR = arrear Basic × % (the % defaults to the Pay Drawing %, or type one for the period).&#10;Other pay heads = value entered (blank = pay drawing amount) ÷ days in the month × arrear days.&#10;Deductions = amount typed for the period (blank = 0; ⇩Ded fills the pay drawing amounts).&#10;CPS employees get 10% of (arrear Basic + arrear DA) automatically.">ⓘ</span></h3>
+
 <div class="sc"><table id="at"></table></div>
+<div style="margin-top:10px"><label>Narrative / remarks for this bill</label><textarea id="narr" rows="3" oninput="cur.narr=this.value;renderBill()"></textarea></div>
 <div class="bar"><button class="s" onclick="addPeriod()">+ Add Period</button><button class="s" onclick="addDojMonth()" title="Month start to day before joining, and joining date to month end">+ Periods for Date-of-Join month</button><button onclick="saveBill()">Save Bill</button>
 <b style="margin-left:auto">Gross Arrear: ₹ <span id="ta">0</span> &nbsp;|&nbsp; Net Arrear: ₹ <span id="tn">0</span></b></div></section>
 
-<section class="noprint"><h2>3. Employee Details</h2><div class="g2">
-<div><label>Name (e.g. Sri D.Rithwik)</label><input id="nm" oninput="onEmp('name',this.value)"></div>
-<div><label>Designation</label><input id="ds" oninput="onEmp('desig',this.value)"></div>
-<div style="grid-column:1/-1"><label>Office / Division (bill title)</label><input id="of" oninput="onEmp('office',this.value)" placeholder="O/o Divisional Forest Officer,Social Forestry Division,Chittoor"></div>
-<div style="grid-column:1/-1"><label>Narrative / remarks for this bill</label><textarea id="narr" rows="4" oninput="cur.narr=this.value;renderBill()"></textarea></div>
-<div style="grid-column:1/-1"><label>Signature block</label><textarea id="sig" rows="3" oninput="onEmp('sig',this.value)"></textarea></div></div>
-<div class="bar"><button onclick="saveEmp(sel)">Save Employee Details</button></div></section>
 
-<section id="s4" class="pv"><h2 class="noprint">4. Bill Generation &amp; Preview</h2>
-<div class="bar noprint" style="margin:0 0 10px"><button onclick="genBill()">Generate Bill</button><button class="s" onclick="window.print()">Print / Save PDF</button><button class="s" onclick="xl()">Download Excel</button>
-<label style="display:flex;gap:5px;align-items:center;margin:0;color:var(--tx)"><input type="checkbox" id="incded" checked style="width:auto" onchange="renderBill()">Include pay drawing deductions (except auto CPS) if none typed</label></div>
-<div id="bill" class="sheet sc"></div></section>
+
 </div>
 <div id="tabB" style="display:none">
-<section class="noprint"><h2>Pay Difference Bill — <span id="eh2" style="font-weight:400"></span></h2>
-<p style="color:var(--mu);margin:0 0 8px">Each batch has one Already drawn pay and one To be drawn pay (for DA/HRA enter a % to calculate from Basic Pay) and as many periods as needed — the difference is applied to every period and all heads are summed across batches. Difference per head × period: if the unit is <b>Days</b> = difference ÷ 31 × days; if <b>Months</b> = difference × months. All amounts are rounded to whole rupees. Name, designation, office and signature come from Employee Details in the other tab.</p>
+<section class="noprint"><h2>Pay Difference Bill <span class="tip" tabindex="0" title="Each batch has one Already drawn pay and one To be drawn pay and as many periods as needed.&#10;Difference = To be drawn − Already drawn, for each head.&#10;Arrear per head: Days → difference ÷ 31 × days; Months → difference × months.&#10;DA, HRA and IR are calculated as a % of Basic Pay. All amounts are rounded to whole rupees and summed across periods and batches.">ⓘ</span></h2>
+
 <h3>Saved difference bills of this employee</h3><div class="sc"><table id="dbt"></table></div>
 <div class="bar"><button class="s" onclick="newDBill();renderDiff();renderDBills()">+ New Bill</button></div>
 <h3>Current bill</h3>
-<div class="bar" style="margin:0 0 10px"><input type="file" id="xf" accept=".xlsx,.xls" style="display:none" onchange="importXls(this)"><button class="s" onclick="$('xf').click()">⬆ Import from Excel file</button><span style="color:var(--mu)">Reads either a table (columns: from, to, unit, To be drawn, Already drawn, DA %, HRA %, IR %) or “Pay Bill” blocks (From … to … – n months/days, Pay, D.A., HRA, Addl.HRA, CCA, Dhobi, Risk Allowance, IR with To be drawn / Already drawn) and adds them to this employee's bill, grouping periods with the same Already drawn / To be drawn Basic Pay into one batch (each period keeps its own DA % / HRA % / IR %; only a period whose other pay heads differ gets its own pay particulars).</span></div>
+<div class="bar" style="margin:0 0 10px"><input type="file" id="xf" accept=".xlsx,.xls" style="display:none" onchange="importXls(this)"><button class="s" onclick="$('xf').click()">⬆ Import from Excel file</button><span class="tip" tabindex="0" title="Reads either a table (columns: from, to, unit, To be drawn, Already drawn, DA %, HRA %, IR %) or Pay Bill blocks (From … to … – n months/days, with Pay, D.A., HRA, Addl.HRA, CCA, Dhobi, Risk Allowance and IR, To be drawn / Already drawn). Periods with the same Basic Pay pair are grouped into one batch; each period keeps its own DA / HRA / IR %.">ⓘ</span></div>
 <div class="card" id="dfl"><div class="bar" style="margin:0;align-items:end">
 <div style="flex:1;min-width:200px"><label>Search (batch no., pay amount, date, note)</label><input id="fq" placeholder="e.g. 94500, 2022, batch 5, LWA" oninput="setF('q',this.value)"></div>
 <div><label>Batch</label><select id="fb" onchange="setF('b',this.value)"></select></div>
@@ -107,9 +121,21 @@ notify pgrst, 'reload schema';</pre></details></section>
 <div id="dp"></div>
 <div class="bar"><button class="s" onclick="addBatch()">+ Add Batch</button><button onclick="saveDBill()">Save Bill</button><b style="margin-left:auto">Total Arrear: ₹ <span id="dta">0</span></b></div>
 <div style="margin-top:10px"><label>Narrative / remarks for this bill</label><textarea id="dnarr" rows="3" oninput="curD.narr=this.value;renderDBill()"></textarea></div></section>
-<section class="pv"><div class="bar noprint" style="margin:0 0 10px"><button class="s" onclick="window.print()">Print / Save PDF</button><button class="s" onclick="xlD()">Download Excel</button></div><div id="dbill" class="sheet sc"></div></section></div>
+</div></div>
+
+<div id="p4" style="display:none"><div class="bar noprint" style="margin:0 0 10px"><h2 style="margin:0;font-size:15px">Preview</h2><span style="flex:1"></span><label id="incl" style="display:flex;gap:5px;align-items:center;margin:0;color:var(--tx)"><input type="checkbox" id="incded" checked style="width:auto" onchange="renderBill()">Include pay drawing deductions (except auto CPS) if none typed</label><button class="s" onclick="xlAny()">Download Excel</button></div>
+<div id="h4"><section id="pvsec" class="pv"><div id="bill" class="sheet sc"></div><div id="dbill" class="sheet sc" style="display:none"></div></section></div></div>
+
+<div id="p6" style="display:none"><section class="noprint"><h2>Master Data <span class="tip" tabindex="0" title="Reference data imported from ap_employees_master_da_hra_v2.xlsx: RPS 2022 pay levels, DA history and HRA slabs.">ⓘ</span></h2>
+<div class="bar" style="margin:0 0 8px"><span id="msb" style="display:contents"></span><button class="s" onclick="uploadMaster()" title="Reset the master data in Supabase to the built-in copy from the Excel file">⬆ Upload to Supabase</button><button onclick="mAdd()">+ Add Row</button><button class="s" onclick="uploadMissing()" title="Upload only the built-in sheets that are not in Supabase yet; existing data is not touched">⬆ Add new sheets</button><button class="s" onclick="reloadMaster()">↻ Reload</button><span style="flex:1"></span><input id="mq" placeholder="Search this sheet…" oninput="renderMaster()" style="max-width:260px"></div>
+<div id="mcnt" style="color:var(--mu);margin-bottom:6px"></div><div id="msrc" style="color:var(--mu);margin-bottom:6px"></div>
+<div class="sc"><table id="mt"></table></div></section></div>
+<div id="p5" style="display:none"><div class="bar noprint" style="margin:0 0 10px"><h2 style="margin:0;font-size:15px">Print</h2><span style="flex:1"></span><label style="margin:0">Paper</label><select id="ori" onchange="setOri(this.value)" style="width:130px"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select><button onclick="window.print()">🖨 Print / Save PDF</button><button class="s" onclick="xlAny()">Download Excel</button></div>
+<div id="h5"></div></div>
 </div>
+<style id="pgs">@media print{@page{size:landscape}}</style>
 </div>
+
 <script>
 const PAY=["Basic Pay","DA","HRA","AHRA","CCA","PHA","Risk All","Dhobi","IR","Special Pay","Personal Pay","Other"],
 DED=["GPF","CPS","APGLI","GIS","PT","Sanjeevini","EHF","Non-Gov. Deductions","Income Tax","HBA","Recovery","Other"],PCT=['DA','HRA','IR'],
@@ -118,6 +144,7 @@ DEFSIG='Divisional Forest Officer,\nSocial Forestry Division,\nChittoor.';
 const $=i=>document.getElementById(i),n=v=>parseFloat(v)||0,f=v=>n(v).toFixed(2),r0=v=>Math.round(v),f0=v=>String(Math.round(n(v)));
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const dmy=v=>v?v.split('-').reverse().join('.'):'',sumH=(o,L)=>L.reduce((t,h)=>t+n(o[h]),0);
+const idOk=e=>e.hrm.trim()||e.cfms.trim()||e.hrms.trim()||(e.emp.name||'').trim();
 const SB_DEFAULT={url:'',key:''};
 let savedA='',savedB='',sb=null,emps=[],sel=0,bills=[],periods=[],cur={id:null,narr:''},tm;
 const newEmp=()=>({id:null,cfms:'',hrm:'',hrms:'',doj:'',pay:{},ded:{},pct:{},cps:false,emp:{name:'',desig:'',office:DEFOFF,sig:DEFSIG},dirty:true});
@@ -140,51 +167,113 @@ async function doLogin(){const u=$('lu').value.trim(),k=$('lk').value.trim(),em=
  sb=supabase.createClient(u,k);$('lb').disabled=true;lmsg('Signing in…');
  const{data,error}=await sb.auth.signInWithPassword({email:em,password:pw});$('lb').disabled=false;
  if(error)return lmsg(error.message);$('lp').value='';$('sbu').value=u;$('sbk').value=k;onSignedIn(data.session)}
-function resetData(){emps=[newEmp()];sel=0;bills=[];$('who').textContent='';selEmp(0,true)}
+function resetData(){MASTER=MASTER0;mloaded=false;msrc='built-in copy';emps=[newEmp()];sel=0;bills=[];$('who').textContent='';selEmp(0,true)}
 async function signOut(){if(anyUnsaved()&&!confirm('There are unsaved changes. Sign out and discard them?'))return;if(sb)await sb.auth.signOut();resetData();showLogin(true,'Signed out.')}
 function saveCfg(){try{localStorage.setItem('sbu',$('sbu').value.trim());localStorage.setItem('sbk',$('sbk').value.trim())}catch(e){}init()}
 /* ---------- 1. pay drawing ---------- */
 function secHeads(t){const e=emps[sel]||newEmp(),L=t==='pay'?PAY:DED,o=t==='pay'?e.pay:e.ded,m={};L.forEach(h=>{if(o[h]!==''&&o[h]!=null)m[h]=n(o[h])});return m}
 function rowsSel(t){const m=secHeads(t);return Object.keys(m).map(h=>({head:h,amount:m[h]}))}
-function renderPT(){const ro=(i,t,h)=>(t==='pay'&&PCT.includes(h)&&hasPct(i,h))||(t==='ded'&&h==='CPS'&&emps[i].cps)?'readonly':'';
- const inp=(i,t,h,j)=>(t==='pay'&&PCT.includes(h)?`<td><input type="number" step="0.01" min="0" style="min-width:60px" placeholder="%" value="${emps[i].pct[h]??''}" oninput="setPctE(${i},'${h}',this.value)"></td>`:'')+
-  `<td><input id="${t==='pay'?'p':'q'}${i}_${j}" type="number" step="0.01" min="0" style="min-width:78px" ${ro(i,t,h)} value="${emps[i][t][h]??''}" oninput="setAmt(${i},'${t}','${h}',this.value)"></td>`;
- let h=`<tr><th rowspan="2">Sel</th><th rowspan="2">ID</th><th rowspan="2">CFMS ID</th><th rowspan="2">EMP HRM ID</th><th rowspan="2">HRMS ID</th><th rowspan="2">Date of Join</th><th rowspan="2">CPS<br>(10%)</th><th colspan="${PAY.length+PCT.length+1}">Payment</th><th colspan="${DED.length+1}">Deduction</th><th rowspan="2">Net Payable</th><th rowspan="2">Status</th><th rowspan="2">Actions</th></tr><tr>${PAY.map(x=>PCT.includes(x)?`<th>${x} %</th><th>${x}</th>`:`<th>${x}</th>`).join('')}<th>Gross</th>${DED.map(x=>`<th>${x}</th>`).join('')}<th>Total Ded.</th></tr>`;
- emps.forEach((e,i)=>{h+=`<tr class="${i===sel?'sel':''}"><td><input type="radio" name="sel" ${i===sel?'checked':''} style="width:auto" onchange="selEmp(${i})"></td><td>${i+1}</td>
- <td><input style="min-width:100px" value="${esc(e.cfms)}" oninput="setId(${i},'cfms',this.value)"></td><td><input style="min-width:100px" value="${esc(e.hrm)}" oninput="setId(${i},'hrm',this.value)"></td><td><input style="min-width:100px" value="${esc(e.hrms)}" oninput="setId(${i},'hrms',this.value)"></td><td><input type="date" style="min-width:130px" value="${e.doj||''}" onchange="setId(${i},'doj',this.value)"></td>
- <td style="text-align:center"><input type="checkbox" style="width:auto" ${e.cps?'checked':''} title="Employee under CPS: CPS = 10% of (Basic Pay + DA)" onchange="togCps(${i},this.checked)"></td>
- ${PAY.map((x,j)=>inp(i,'pay',x,j)).join('')}<td class="r" id="g${i}"></td>${DED.map((x,j)=>inp(i,'ded',x,j)).join('')}<td class="r" id="d${i}"></td><td class="r" id="n${i}"></td><td id="s${i}"></td>
- <td><button title="Save row" onclick="saveEmp(${i})">💾</button> <button class="s" title="Duplicate" onclick="copyEmp(${i})">⧉</button> <button class="d" title="Delete" onclick="delEmp(${i})">×</button></td></tr>`});
- $('pt').innerHTML=h;emps.forEach((_,i)=>{auto(i);updRow(i)})}
 const hasPct=(i,h)=>emps[i].pct[h]!==''&&emps[i].pct[h]!=null;
 function auto(i){const e=emps[i],b=n(e.pay['Basic Pay']);
  PCT.forEach(h=>{const el=$('p'+i+'_'+PAY.indexOf(h)),has=hasPct(i,h);if(has)e.pay[h]=String(r0(b*n(e.pct[h])/100));if(el){el.readOnly=has;if(has)el.value=e.pay[h]}});
  const el=$('q'+i+'_'+DED.indexOf('CPS'));if(e.cps)e.ded.CPS=String(r0((b+n(e.pay.DA))*0.1));if(el){el.readOnly=!!e.cps;if(e.cps)el.value=e.ded.CPS}}
 function setPctE(i,h,v){emps[i].pct[h]=v;auto(i);dirty(i);if(i===sel)renderArrear()}
 function togCps(i,v){emps[i].cps=v;auto(i);dirty(i);if(i===sel)renderArrear()}
-function updRow(i){const e=emps[i],g=sumH(e.pay,PAY),d=sumH(e.ded,DED);$('g'+i).textContent=f(g);$('d'+i).textContent=f(d);$('n'+i).textContent=f(g-d);
- $('s'+i).innerHTML=e.dirty?'<span style="color:var(--dg)">Unsaved</span>':'Saved'}
+function updRow(i){const e=emps[i];if(!e)return;const g=sumH(e.pay,PAY),d=sumH(e.ded,DED),st=e.dirty?'<span style="color:var(--dg)">Unsaved</span>':'Saved';
+ if($('g'+i)){$('g'+i).textContent=f(g);$('d'+i).textContent=f(d);$('n'+i).textContent=f(g-d)}
+ if($('s'+i))$('s'+i).innerHTML=st;if($('es'+i))$('es'+i).innerHTML=st}
+function renderPT(){const i=sel,e=emps[i];if(!e)return;const ro=(t,h)=>(t==='pay'&&PCT.includes(h)&&hasPct(i,h))||(t==='ded'&&h==='CPS'&&e.cps)?'readonly':'';
+ const inp=(t,h,j)=>(t==='pay'&&PCT.includes(h)?`<td><input type="number" step="0.01" min="0" style="min-width:60px" placeholder="%" value="${e.pct[h]??''}" oninput="setPctE(${i},'${h}',this.value)"></td>`:'')+
+  `<td><input id="${t==='pay'?'p':'q'}${i}_${j}" type="number" step="0.01" min="0" style="min-width:78px" ${ro(t,h)} value="${e[t][h]??''}" oninput="setAmt(${i},'${t}','${h}',this.value)"></td>`;
+ $('pt').innerHTML=`<tr><th rowspan="2">CPS<br>(10%)</th><th colspan="${PAY.length+PCT.length+1}">Payment</th><th colspan="${DED.length+1}">Deduction</th><th rowspan="2">Net Payable</th><th rowspan="2">Status</th><th rowspan="2">Action</th></tr><tr>${PAY.map(x=>PCT.includes(x)?`<th>${x} %</th><th>${x}</th>`:`<th>${x}</th>`).join('')}<th>Gross</th>${DED.map(x=>`<th>${x}</th>`).join('')}<th>Total Ded.</th></tr>
+ <tr><td style="text-align:center"><input type="checkbox" style="width:auto" ${e.cps?'checked':''} title="CPS = 10% of (Basic Pay + DA)" onchange="togCps(${i},this.checked)"></td>${PAY.map((x,j)=>inp('pay',x,j)).join('')}<td class="r" id="g${i}"></td>${DED.map((x,j)=>inp('ded',x,j)).join('')}<td class="r" id="d${i}"></td><td class="r" id="n${i}"></td><td id="s${i}"></td><td><button onclick="saveEmp(${i})">💾 Save</button></td></tr>`;
+ auto(i);updRow(i)}
+function renderET(){const q=(($('eq')||{}).value||'').toLowerCase();
+ let h='<tr><th>#</th><th>Name</th><th>Designation</th><th>CFMS ID</th><th>HRMS EMP ID</th><th>Aadhar no</th><th>DOJ</th><th>Office</th><th>Status</th><th>Actions</th></tr>';
+ emps.forEach((e,i)=>{const L=x=>`<td style="text-align:left">${esc(x)}</td>`;if(q&&![e.emp.name,e.emp.desig,e.cfms,e.hrms,e.hrm,e.emp.office].join(' ').toLowerCase().includes(q))return;
+  h+=`<tr class="${i===sel?'sel':''}"><td>${i+1}</td>${L(e.emp.name)}${L(e.emp.desig)}${L(e.cfms)}${L(e.hrms)}${L(e.hrm)}<td>${dmy(e.doj)}</td>${L(e.emp.office)}<td id="es${i}"></td>
+  <td><button class="${i===sel?'':'s'}" onclick="selEmp(${i})">${i===sel?'Selected':'Select'}</button> <button class="s" title="Save" onclick="saveEmp(${i})">💾</button> <button class="s" title="Duplicate" onclick="copyEmp(${i})">⧉</button> <button class="d" title="Delete" onclick="delEmp(${i})">×</button></td></tr>`});
+ $('et').innerHTML=h;emps.forEach((_,i)=>updRow(i))}
+function setEh(){const e=emps[sel]||newEmp(),d=e.emp,L=(k,v)=>v?`<span><span style="color:var(--mu)">${k}:</span> <b>${esc(v)}</b></span>`:'';
+ const parts=[L('Name',d.name),L('Designation',d.desig),L('CFMS ID',e.cfms),L('HRMS EMP ID',e.hrms),L('Aadhar no',e.hrm),L('DOJ',dmy(e.doj)),L('Office',d.office)].filter(Boolean);
+ $('strip').innerHTML=parts.length?parts.join(''):'<span style="color:var(--mu)">No employee selected — add or select one in Employee Details</span>'}
+const MASTER0=[{"name":"RPS 2022 Pay Levels & AAS","rows":[["Grade","Starting Pay (INR)","Maximum Pay (INR)","Typical Cadres Covered","SG Scale (6 Years)","SPP-IA Scale (12 Years)","SPP-IB Scale (18 Years)","SPP-II Scale (24 Years)"],["Grade I",20000,61960,"Office Subordinates, Attenders, Last Grade Service (LGS)","Grade II","Grade III","Grade IV","Grade V"],["Grade II",20600,63660,"Chowkidars, Cycle Peons, Cleaners","Grade III","Grade IV","Grade V","Grade VI"],["Grade III",21200,65360,"Lift Operators, Lab Attendants","Grade IV","Grade V","Grade VI","Grade VII"],["Grade IV",21800,67190,"Daffadars, Jaldars, Experienced LGS","Grade V","Grade VI","Grade VII","Grade VIII"],["Grade V",22460,72810,"Drivers (Light Vehicle), Record Assistants","Grade VI","Grade VII","Grade VIII","Grade IX"],["Grade VI",23780,76730,"Junior Assistants, Typists, Intermediate Cadres","Grade VII","Grade VIII","Grade IX","Grade X"],["Grade VII",25220,80910,"Senior Drivers, Lab Technicians Grade-II","Grade VIII","Grade IX","Grade X","Grade XI"],["Grade VIII",27500,87480,"Assistant Statistical Officers","Grade IX","Grade X","Grade XI","Grade XII"],["Grade IX",28280,89720,"Senior Assistants, Junior Auditors","Grade X","Grade XI","Grade XII","Grade XIII"],["Grade X",29980,94500,"VROs, Special Cadre Typists","Grade XI","Grade XII","Grade XIII","Grade XIV"],["Grade XI",32670,101970,"Secondary Grade Teachers (SGT), Pharmacists","Grade XII","Grade XIII","Grade XIV","Grade XV"],["Grade XII",34580,107210,"SGT (Special Grade), Assistant Sub-Inspectors","Grade XIII","Grade XIV","Grade XV","Grade XVI"],["Grade XIII",35570,109910,"Extension Officers, Technical Assistants","Grade XIV","Grade XV","Grade XVI","Grade XVII"],["Grade XIV",38720,115500,"Superintendents, Sub-Inspectors of Police","Grade XV","Grade XVI","Grade XVII","Grade XVIII"],["Grade XV",40970,118390,"Assistant Engineers, Statistical Officers","Grade XVI","Grade XVII","Grade XVIII","Grade XIX"],["Grade XVI",43310,121280,"Lecturers (Junior Colleges), Custom Gr. Superintendents","Grade XVII","Grade XVIII","Grade XIX","Grade XX"],["Grade XVII",44570,127480,"School Assistants (SA), High School Teachers","Grade XVIII","Grade XIX","Grade XX","Grade XXI"],["Grade XVIII",45830,130580,"Mandals Revenue Officers (Tahsidars)","Grade XIX","Grade XX","Grade XXI","Grade XXII"],["Grade XIX",48440,137220,"Assistant Accounts Officers","Grade XX","Grade XXI","Grade XXII","Grade XXIII"],["Grade XX",51140,140540,"Lecturers (Degree Colleges), Veterinary Assistant Surgeons","Grade XXI","Grade XXII","Grade XXIII","Grade XXIV"],["Grade XXI",54060,140540,"Gazetted Headmasters Grade-II, MEOs","Grade XXII","Grade XXIII","Grade XXIV","Grade XXV"],["Grade XXII",57100,147760,"Assistant Executive Engineers (AEE)","Grade XXIII","Grade XXIV","Grade XXV","Grade XXVI"],["Grade XXIII",61960,151370,"Deputy Collectors, RTOs, Municipal Comm. Gr-I","Grade XXIV","Grade XXV","Grade XXVI","Grade XXVII"],["Grade XXIV",65360,154980,"Executive Engineers, Joint Directors","Grade XXV","Grade XXVI","Grade XXVII","Grade XXVIII"],["Grade XXV",70850,158880,"Deputy Secretaries, Selection Grade Cadres","Grade XXVI","Grade XXVII","Grade XXVIII","Grade XXIX"],["Grade XXVI",76730,162780,"Regional Joint Directors, Superintending Engineers","Grade XXVII","Grade XXVIII","Grade XXIX","Grade XXX"],["Grade XXVII",80910,166680,"Chief Executive Officers (Zilla Parishad)","Grade XXVIII","Grade XXIX","Grade XXX","Grade XXXI"],["Grade XXVIII",83000,170580,"Special Grade Deputy Collectors","Grade XXIX","Grade XXX","Grade XXXI","Grade XXXII"],["Grade XXIX",89720,170580,"Additional Directors, Senior Scale State Cadres","Grade XXX","Grade XXXI","Grade XXXII","Top Scale Limit"],["Grade XXX",96890,174790,"Directors of Departments, Chief Engineers","Grade XXXI","Grade XXXII","Top Scale Limit","Top Scale Limit"],["Grade XXXI",104510,179000,"Special Secretaries, High-Level State Heads","Grade XXXII","Top Scale Limit","Top Scale Limit","Top Scale Limit"],["Grade XXXII",112610,179000,"Heads of Departments (Top Tier), Major Advisors","Top Scale Limit","Top Scale Limit","Top Scale Limit","Top Scale Limit"]]},{"name":"DA Historical Timeline","rows":[["Baseline","Effective Date","DA Rate (%)","Increment Rate (%)","Details","Formatted DA Entry"],["RPS 2022","01-01-2025",41.86,1.82,"enhanced by +1.82% via G.O. Ms. No. 120","01-01-2025: 41.86% (enhanced by +1.82% via G.O. Ms. No. 120)"],["RPS 2022","01-07-2024",40.04,2.73,"enhanced by +2.73% via The Hindu G.O. Ms. No. 119","01-07-2024: 40.04% (enhanced by +2.73% via The Hindu G.O. Ms. No. 119)"],["RPS 2022","01-01-2024",37.31,3.64,"enhanced by +3.64% via G.O. Ms. No. 50","01-01-2024: 37.31% (enhanced by +3.64% via G.O. Ms. No. 50)"],["RPS 2022","01-07-2023",33.67,3.64,"enhanced by +3.64% via G.O. Ms. No. 27","01-07-2023: 33.67% (enhanced by +3.64% via G.O. Ms. No. 27)"],["RPS 2022","01-01-2023",30.03,3.64,"enhanced by +3.64% via G.O. Ms. No. 115","01-01-2023: 30.03% (enhanced by +3.64% via G.O. Ms. No. 115)"],["RPS 2022","01-07-2022",26.39,3.64,"enhanced by +3.64% via G.O. Ms. No. 66","01-07-2022: 26.39% (enhanced by +3.64% via G.O. Ms. No. 66)"],["RPS 2022","01-01-2022",22.75,2.73,"enhanced by +2.73% via G.O. Ms. No. 9","01-01-2022: 22.75% (enhanced by +2.73% via G.O. Ms. No. 9)"],["RPS 2022","01-07-2021",20.02,2.73,"enhanced by +2.73% via RPS 2022 introductory order","01-07-2021: 20.02% (enhanced by +2.73% via RPS 2022 introductory order)"],["RPS 2022","01-01-2021",17.29,0,"frozen during COVID-19 period","01-01-2021: 17.29% (frozen during COVID-19 period)"],["RPS 2022","01-07-2020",13.65,0,"frozen during COVID-19 period","01-07-2020: 13.65% (frozen during COVID-19 period)"],["RPS 2022","01-01-2020",10.92,0,"frozen during COVID-19 period","01-01-2020: 10.92% (frozen during COVID-19 period)"],["RPS 2015","01-07-2019",38.776,5.24,"enhanced by +5.24% via G.O. Ms. No. 99","01-07-2019: 38.776% (enhanced by +5.24% via G.O. Ms. No. 99)"],["RPS 2015","01-01-2019",33.536,3.144,"enhanced by +3.144% via G.O. Ms. No. 51","01-01-2019: 33.536% (enhanced by +3.144% via G.O. Ms. No. 51)"],["RPS 2015","01-07-2018",30.392,3.144,"enhanced by +3.144% via G.O. Ms. No. 94","01-07-2018: 30.392% (enhanced by +3.144% via G.O. Ms. No. 94)"],["RPS 2015","01-01-2018",27.248,1.572,"enhanced by +1.572% via G.O. Ms. No. 14","01-01-2018: 27.248% (enhanced by +1.572% via G.O. Ms. No. 14)"],["RPS 2015","01-07-2017",25.676,1.572,"enhanced by +1.572% via G.O. Ms. No. 150","01-07-2017: 25.676% (enhanced by +1.572% via G.O. Ms. No. 150)"],["RPS 2015","01-01-2017",24.104,2.096,"enhanced by +2.096% via G.O. Ms. No. 27","01-01-2017: 24.104% (enhanced by +2.096% via G.O. Ms. No. 27)"],["RPS 2015","01-07-2016",22.008,3.668,"enhanced by +3.668% via G.O. Ms. No. 140","01-07-2016: 22.008% (enhanced by +3.668% via G.O. Ms. No. 140)"],["RPS 2015","01-01-2016",18.34,3.144,"enhanced by +3.144% via G.O. Ms. No. 16","01-01-2016: 18.34% (enhanced by +3.144% via G.O. Ms. No. 16)"],["RPS 2015","01-07-2015",15.196,3.144,"enhanced by +3.144% via G.O. Ms. No. 172","01-07-2015: 15.196% (enhanced by +3.144% via G.O. Ms. No. 172)"],["RPS 2015","01-01-2015",12.052,3.144,"enhanced by +3.144% via G.O. Ms. No. 18","01-01-2015: 12.052% (enhanced by +3.144% via G.O. Ms. No. 18)"],["RPS 2015","01-07-2014",8.908,3.668,"enhanced by +3.668% via G.O. Ms. No. 47","01-07-2014: 8.908% (enhanced by +3.668% via G.O. Ms. No. 47)"],["RPS 2015","01-01-2014",5.24,0,"initial structure configuration under RPS 2015","01-01-2014: 5.24% (initial structure configuration under RPS 2015)"],["RPS 2010","01-07-2013",63.344,8.56,"enhanced by +8.56% via G.O. Ms. No. 294","01-07-2013: 63.344% (enhanced by +8.56% via G.O. Ms. No. 294)"],["RPS 2010","01-01-2013",54.784,6.848,"enhanced by +6.848% via G.O. Ms. No. 136","01-01-2013: 54.784% (enhanced by +6.848% via G.O. Ms. No. 136)"],["RPS 2010","01-07-2012",47.936,5.992,"enhanced by +5.992% via G.O. Ms. No. 297","01-07-2012: 47.936% (enhanced by +5.992% via G.O. Ms. No. 297)"],["RPS 2010","01-01-2012",41.944,5.992,"enhanced by +5.992% via G.O. Ms. No. 178","01-01-2012: 41.944% (enhanced by +5.992% via G.O. Ms. No. 178)"],["RPS 2010","01-07-2011",35.952,6.848,"enhanced by +6.848% via G.O. Ms. No. 25","01-07-2011: 35.952% (enhanced by +6.848% via G.O. Ms. No. 25)"],["RPS 2010","01-01-2011",29.104,4.28,"enhanced by +4.28% via G.O. Ms. No. 104","01-01-2011: 29.104% (enhanced by +4.28% via G.O. Ms. No. 104)"],["RPS 2010","01-07-2010",24.824,0,"initial configuration transition","01-07-2010: 24.824% (initial configuration transition)"],["RPS 2005","01-01-2010",73.476,13.188,"enhanced by +13.188% via G.O. Ms. No. 248","01-01-2010: 73.476% (enhanced by +13.188% via G.O. Ms. No. 248)"],["RPS 2005","01-07-2009",60.288,8.478,"enhanced by +8.478% via G.O. Ms. No. 265","01-07-2009: 60.288% (enhanced by +8.478% via G.O. Ms. No. 265)"],["RPS 2005","01-09-2008",51.81,9.42,"enhanced by +9.420% via G.O. Ms. No. 104","01-09-2008: 51.81% (enhanced by +9.420% via G.O. Ms. No. 104)"],["RPS 2005","01-01-2008",42.39,6.594,"enhanced by +6.594% via G.O. Ms. No. 372","01-01-2008: 42.39% (enhanced by +6.594% via G.O. Ms. No. 372)"],["RPS 2005","01-07-2007",35.796,5.652,"enhanced by +5.652% via G.O. Ms. No. 100","01-07-2007: 35.796% (enhanced by +5.652% via G.O. Ms. No. 100)"],["RPS 2005","01-01-2007",30.144,5.652,"enhanced by +5.652% via G.O. Ms. No. 255","01-01-2007: 30.144% (enhanced by +5.652% via G.O. Ms. No. 255)"],["RPS 2005","01-07-2006",24.492,5.652,"enhanced by +5.652% via G.O. Ms. No. 133","01-07-2006: 24.492% (enhanced by +5.652% via G.O. Ms. No. 133)"],["RPS 2005","01-01-2006",18.84,4.71,"enhanced by +4.710% via G.O. Ms. No. 19","01-01-2006: 18.84% (enhanced by +4.710% via G.O. Ms. No. 19)"],["RPS 2005","01-07-2005",14.13,2.826,"enhanced by +2.826% via G.O. Ms. No. 139","01-07-2005: 14.13% (enhanced by +2.826% via G.O. Ms. No. 139)"],["RPS 2005","01-01-2005",11.304,3.768,"enhanced by +3.768% via G.O. Ms. No. 112","01-01-2005: 11.304% (enhanced by +3.768% via G.O. Ms. No. 112)"],["RPS 2005","01-07-2004",7.536,2.826,"enhanced by +2.826% via G.O. Ms. No. 214","01-07-2004: 7.536% (enhanced by +2.826% via G.O. Ms. No. 214)"],["RPS 2005","01-01-2004",4.71,2.826,"enhanced by +2.826% via G.O. Ms. No. 214","01-01-2004: 4.71% (enhanced by +2.826% via G.O. Ms. No. 214)"],["RPS 2005","01-07-2003",1.884,0,"initial master base setup under RPS 2005","01-07-2003: 1.884% (initial master base setup under RPS 2005)"],["RPS 1999","01-01-2003",59,4,"enhanced by +4.00% via G.O. Ms. No. 118","01-01-2003: 59.0% (enhanced by +4.00% via G.O. Ms. No. 118)"],["RPS 1999","01-07-2002",55,3,"enhanced by +3.00% via G.O. Ms. No. 89","01-07-2002: 55.0% (enhanced by +3.00% via G.O. Ms. No. 89)"],["RPS 1999","01-01-2002",52,3,"enhanced by +3.00% via G.O. Ms. No. 34","01-01-2002: 52.0% (enhanced by +3.00% via G.O. Ms. No. 34)"],["RPS 1999","01-07-2001",49,4,"enhanced by +4.00% via G.O. Ms. No. 221","01-07-2001: 49.0% (enhanced by +4.00% via G.O. Ms. No. 221)"],["RPS 1999","01-01-2001",45,2,"enhanced by +2.00% via G.O. Ms. No. 102","01-01-2001: 45.0% (enhanced by +2.00% via G.O. Ms. No. 102)"],["RPS 1999","01-07-2000",43,2,"enhanced by +2.00% via G.O. Ms. No. 67","01-07-2000: 43.0% (enhanced by +2.00% via G.O. Ms. No. 67)"],["RPS 1999","01-01-2000",41,3,"enhanced by +3.00% via G.O. Ms. No. 12","01-01-2000: 41.0% (enhanced by +3.00% via G.O. Ms. No. 12)"],["RPS 1999","01-07-1999",38,1,"enhanced by +1.00% via G.O. Ms. No. 198","01-07-1999: 38.0% (enhanced by +1.00% via G.O. Ms. No. 198)"],["RPS 1999","01-01-1999",37,5,"enhanced by +5.00% via G.O. Ms. No. 115","01-01-1999: 37.0% (enhanced by +5.00% via G.O. Ms. No. 115)"],["RPS 1999","01-07-1998",32,0,"initial baseline transition under RPS 1999","01-07-1998: 32.0% (initial baseline transition under RPS 1999)"],["RPS 1993","01-01-1998",148,12,"enhanced by +12.00% via G.O. Ms. No. 222","01-01-1998: 148.0% (enhanced by +12.00% via G.O. Ms. No. 222)"],["RPS 1993","01-07-1997",136,11,"enhanced by +11.00% via G.O. Ms. No. 143","01-07-1997: 136.0% (enhanced by +11.00% via G.O. Ms. No. 143)"],["RPS 1993","01-01-1997",125,11,"enhanced by +11.00% via G.O. Ms. No. 56","01-01-1997: 125.0% (enhanced by +11.00% via G.O. Ms. No. 56)"],["RPS 1993","01-07-1996",114,10,"enhanced by +10.00% via G.O. Ms. No. 201","01-07-1996: 114.0% (enhanced by +10.00% via G.O. Ms. No. 201)"],["RPS 1993","01-01-1996",104,7,"enhanced by +7.00% via G.O. Ms. No. 88","01-01-1996: 104.0% (enhanced by +7.00% via G.O. Ms. No. 88)"],["RPS 1993","01-07-1995",97,5,"enhanced by +5.00% via G.O. Ms. No. 182","01-07-1995: 97.0% (enhanced by +5.00% via G.O. Ms. No. 182)"],["RPS 1993","01-01-1995",92,9,"enhanced by +9.00% via G.O. Ms. No. 44","01-01-1995: 92.0% (enhanced by +9.00% via G.O. Ms. No. 44)"],["RPS 1993","01-07-1994",83,12,"enhanced by +12.00% via G.O. Ms. No. 312","01-07-1994: 83.0% (enhanced by +12.00% via G.O. Ms. No. 312)"],["RPS 1993","01-01-1994",71,11,"enhanced by +11.00% via G.O. Ms. No. 109","01-01-1994: 71.0% (enhanced by +11.00% via G.O. Ms. No. 109)"],["RPS 1993","01-07-1993",60,0,"initial basic setup under RPS 1993","01-07-1993: 60.0% (initial basic setup under RPS 1993)"],["RPS 1986","01-01-1993",97,5,"enhanced by +5.00% via G.O. Ms. No. 112","01-01-1993: 97.0% (enhanced by +5.00% via G.O. Ms. No. 112)"],["RPS 1986","01-07-1992",92,9,"enhanced by +9.00% via G.O. Ms. No. 343","01-07-1992: 92.0% (enhanced by +9.00% via G.O. Ms. No. 343)"],["RPS 1986","01-01-1992",83,12,"enhanced by +12.00% via G.O. Ms. No. 94","01-01-1992: 83.0% (enhanced by +12.00% via G.O. Ms. No. 94)"],["RPS 1986","01-07-1991",71,11,"enhanced by +11.00% via G.O. Ms. No. 288","01-07-1991: 71.0% (enhanced by +11.00% via G.O. Ms. No. 288)"],["RPS 1986","01-01-1991",60,9,"enhanced by +9.00% via G.O. Ms. No. 71","01-01-1991: 60.0% (enhanced by +9.00% via G.O. Ms. No. 71)"],["RPS 1986","01-07-1990",51,8,"enhanced by +8.00% via G.O. Ms. No. 231","01-07-1990: 51.0% (enhanced by +8.00% via G.O. Ms. No. 231)"],["RPS 1986","01-01-1990",43,5,"enhanced by +5.00% via G.O. Ms. No. 45","01-01-1990: 43.0% (enhanced by +5.00% via G.O. Ms. No. 45)"]]},{"name":"HRA Master Slabs All RPS","rows":[["RPS Scale","Effective Date","Location Category","HRA Rate (%)","Monthly Ceiling (INR)","Eligible Criteria / Major Locations"],["RPS 2022","01-07-2021","Secretariat & HoD",24,25000,"Secretariat, Heads of Departments, AP Bhavan (New Delhi / Hyderabad)"],["RPS 2022","01-07-2021","Major Cities & HQs",16,17000,"Visakhapatnam, Vijayawada, Guntur, Nellore, Kurnool, Tirupati, Kadapa, Kakinada, Rajahmundry, Eluru, Ananthapur, Vizianagaram, Srikakulam, Machilipatnam, Chittoor, Ongole, Nandyal, Proddatur, and 8 new district HQs"],["RPS 2022","01-07-2021","Towns",12,13000,"Population 50,000 to 2 Lakhs (Municipalities, Mandal HQs)"],["RPS 2022","01-07-2021","Other Places",10,11000,"Population < 50,000 (Rural areas, villages)"],["RPS 2015","02-06-2014","Metropolitan / State HQs",30,20000,"Greater Visakhapatnam, Vijayawada, Hyderabad, New Delhi (AP Bhavan)"],["RPS 2015","02-06-2014","Major Cities / District HQs",20,15000,"13 Legacy District Headquarters & Major Towns"],["RPS 2015","02-06-2014","Towns",14.5,15000,"Population over 50,000"],["RPS 2015","02-06-2014","Other Places",12,15000,"All other rural areas and small towns"],["RPS 2010","01-07-2008","Major Cities",30,12000,"Hyderabad, Secunderabad, Visakhapatnam, Vijayawada"],["RPS 2010","01-07-2008","District HQs / Grade-I Towns",20,8000,"District HQs, Tirupati, Guntur, Warangal, Nellore, Rajahmundry, Kakinada, Kurnool, Nizamabad"],["RPS 2010","01-07-2008","Towns",12.5,8000,"Population 50,000 to 2 Lakhs"],["RPS 2010","01-07-2008","Other Places",10,8000,"Population < 50,000"],["RPS 2005","01-07-2003","Major Cities",20,6000,"Hyderabad, Secunderabad, Visakhapatnam, Vijayawada"],["RPS 2005","01-07-2003","District HQs / Selection Grade",12.5,4500,"District HQs, Towns with population > 50,000"],["RPS 2005","01-07-2003","Other Places",10,4000,"All other areas"],["RPS 1999","01-07-1998","Major Cities",20,3000,"Hyderabad, Secunderabad, Visakhapatnam, Vijayawada"],["RPS 1999","01-07-1998","District HQs",12.5,2000,"District Headquarters"],["RPS 1999","01-07-1998","Other Places",10,1500,"All remaining locations"],["RPS 1993","01-01-1993","Major Cities",20,1500,"Hyderabad, Visakhapatnam, Vijayawada"],["RPS 1993","01-01-1993","District HQs / Contiguous Areas",12.5,1000,"District HQs and municipalities"],["RPS 1993","01-01-1993","Other Places",10,800,"All remaining towns and villages"],["RPS 1986","01-07-1986","Major Cities",15,1000,"Hyderabad, Visakhapatnam, Vijayawada"],["RPS 1986","01-07-1986","District HQs",10,500,"All District Headquarters"],["RPS 1986","01-07-1986","Other Places",7.5,300,"All remaining places"]]},{"name":"83 Master Scale Stages","rows":[["Stage Number","Basic Pay Point (INR)","Next Annual Increment (INR)"],[1,20000,600],[2,20600,600],[3,21200,600],[4,21800,600],[5,22400,660],[6,23060,660],[7,23720,660],[8,24380,720],[9,25100,720],[10,25820,720],[11,26540,780],[12,27320,780],[13,28100,780],[14,28880,850],[15,29730,850],[16,30580,850],[17,31430,920],[18,32350,920],[19,33270,920],[20,34190,990],[21,35180,990],[22,36170,990],[23,37160,1080],[24,38240,1080],[25,39320,1080],[26,40400,1170],[27,41570,1170],[28,42740,1170],[29,43910,1260],[30,45170,1260],[31,46430,1260],[32,47690,1350],[33,49040,1350],[34,50390,1350],[35,51740,1460],[36,53200,1460],[37,54660,1460],[38,56120,1580],[39,57700,1580],[40,59280,1580],[41,60860,1700],[42,62560,1700],[43,64260,1700],[44,65960,1830],[45,67790,1830],[46,69620,1830],[47,71450,1960],[48,73410,1960],[49,75370,1960],[50,77330,2090],[51,79420,2090],[52,81510,2090],[53,83600,2240],[54,85840,2240],[55,88080,2240],[56,90320,2390],[57,92710,2390],[58,95100,2390],[59,97490,2540],[60,100030,2540],[61,102570,2540],[62,105110,2700],[63,107810,2700],[64,110510,2700],[65,113210,2890],[66,116100,2890],[67,118990,2890],[68,121880,3100],[69,124980,3100],[70,128080,3100],[71,131180,3320],[72,134500,3320],[73,137820,3320],[74,141140,3610],[75,144750,3610],[76,148360,3610],[77,151970,3610],[78,155580,3900],[79,159480,3900],[80,163380,3900],[81,167280,3900],[82,171180,4210],[83,175390,4210]]}];
+let MASTER=MASTER0,msi=0,mloaded=false,mlive=false,medit=null,msrc='built-in copy';
+async function loadMaster(){mlive=false;medit=null;if(!sb){msrc='built-in copy (not connected to Supabase)';return}
+ const{data,error}=await sb.from('master_data').select('id,sheet,row_no,cells').order('sheet').order('row_no').limit(5000);
+ if(error){MASTER=MASTER0;msrc='built-in copy — Supabase: '+error.message;return}
+ if(!data.length){MASTER=MASTER0;msrc='built-in copy — not uploaded to Supabase yet (press Upload to Supabase)';return}
+ const g={};data.forEach(r=>{const x=g[r.sheet]=g[r.sheet]||{rows:[],ids:[],rn:[]};x.rows.push(r.cells);x.ids.push(r.id);x.rn.push(r.row_no)});
+ const names=[...MASTER0.map(m=>m.name).filter(x=>g[x]),...Object.keys(g).filter(x=>!MASTER0.some(m=>m.name===x))];
+ MASTER=names.map(name=>({name,...g[name]}));msi=Math.min(msi,MASTER.length-1);mlive=true;msrc='Supabase (table master_data)';const miss=MASTER0.filter(m=>!g[m.name]).map(m=>m.name);if(miss.length)msrc+=' — not yet in Supabase: '+miss.join(', ')+' (press Add new sheets)'}
+async function uploadMissing(){if(!sb)return msg('Connect to Supabase and sign in first',1);
+ const have=new Set(mlive?MASTER.map(m=>m.name):[]),add=MASTER0.filter(m=>!have.has(m.name));
+ if(!add.length)return msg('All built-in sheets are already in Supabase');
+ const rows=[];add.forEach(m=>m.rows.forEach((c,i)=>rows.push({sheet:m.name,row_no:i,cells:c})));
+ const r=await sb.from('master_data').insert(rows);if(r.error)return msg(r.error.message,1);
+ msg('Added '+add.length+' new sheet(s) to Supabase ('+rows.length+' rows)');await reloadMaster()}
+async function reloadMaster(){await loadMaster();mloaded=true;renderMaster()}
+async function uploadMaster(){if(!sb)return msg('Connect to Supabase and sign in first',1);
+ if(!confirm('Replace ALL master data in Supabase with the built-in copy from the Excel file? Any edits made here will be lost.'))return;
+ const rows=[];MASTER0.forEach(m=>m.rows.forEach((c,i)=>rows.push({sheet:m.name,row_no:i,cells:c})));
+ let r=await sb.from('master_data').delete().in('sheet',MASTER0.map(m=>m.name));if(r.error)return msg(r.error.message,1);
+ r=await sb.from('master_data').insert(rows);if(r.error)return msg(r.error.message,1);
+ msg('Master data uploaded to Supabase ('+rows.length+' rows)');await reloadMaster()}
+function setMs(i){msi=Math.min(i,MASTER.length-1);medit=null;$('mq').value='';renderMaster()}
+function mneed(){if(!mlive){msg('Upload the master data to Supabase first',1);return false}return true}
+function mAdd(){if(!mneed())return;$('mq').value='';medit=-1;renderMaster()}
+function mEdit(i){if(!mneed())return;medit=i;renderMaster()}
+function mCancel(){medit=null;renderMaster()}
+function mconv(sh,j,t){t=t.trim();if(t==='')return '';let nn=0,tt=0;for(let i=1;i<sh.rows.length;i++){const v=sh.rows[i][j];if(v===''||v==null)continue;tt++;if(typeof v==='number')nn++}
+ return(tt&&nn*2>tt&&/^-?\d+(\.\d+)?$/.test(t))?parseFloat(t):t}
+async function mSave(){if(!mneed())return;const sh=MASTER[msi],vals=[...document.querySelectorAll('#mt input.mi')].map((el,j)=>mconv(sh,j,el.value));
+ if(vals.every(v=>v===''))return msg('Enter at least one value',1);
+ if(medit===-1){const rn=Math.max(...sh.rn)+1,r=await sb.from('master_data').insert({sheet:sh.name,row_no:rn,cells:vals}).select('id').single();if(r.error)return msg(r.error.message,1);
+  sh.rows.push(vals);sh.ids.push(r.data.id);sh.rn.push(rn);msg('Row added')}
+ else{const r=await sb.from('master_data').update({cells:vals}).eq('id',sh.ids[medit]);if(r.error)return msg(r.error.message,1);sh.rows[medit]=vals;msg('Row updated')}
+ medit=null;renderMaster()}
+async function mDel(i){if(!mneed())return;if(!confirm('Delete this row from the master data?'))return;const sh=MASTER[msi],r=await sb.from('master_data').delete().eq('id',sh.ids[i]);if(r.error)return msg(r.error.message,1);
+ sh.rows.splice(i,1);sh.ids.splice(i,1);sh.rn.splice(i,1);if(medit!==null)medit=null;msg('Row deleted');renderMaster()}
+function renderMaster(){const sh=MASTER[msi],q=$('mq').value.trim().toLowerCase(),hd=sh.rows[0],idx=[];
+ for(let i=1;i<sh.rows.length;i++)if(!q||sh.rows[i].some(c=>String(c??'').toLowerCase().includes(q)))idx.push(i);
+ $('msb').innerHTML=MASTER.map((m,i)=>`<button class="${i===msi?'':'s'}" onclick="setMs(${i})">${esc(m.name)}</button>`).join('');
+ const num=v=>typeof v==='number',fm=v=>num(v)?(Number.isInteger(v)?v.toLocaleString('en-IN'):String(v)):esc(v??'');
+ const wide=hd.map((_,j)=>sh.rows.slice(1).some(r=>typeof r[j]==='string'&&r[j].length>40));
+ const inp=(vals)=>hd.map((_,j)=>`<td style="text-align:left"><input class="mi" value="${esc(vals[j]??'')}" style="min-width:${wide[j]?260:90}px"></td>`).join('');
+ const sv='<td style="white-space:nowrap"><button onclick="mSave()">Save</button> <button class="s" onclick="mCancel()">Cancel</button></td>';
+ let h=`<tr>${hd.map(x=>`<th>${esc(x)}</th>`).join('')}<th>Actions</th></tr>`;
+ if(medit===-1)h+=`<tr class="sel">${inp([])}${sv}</tr>`;
+ idx.forEach(i=>{const r=sh.rows[i];
+  if(medit===i)h+=`<tr class="sel">${inp(r)}${sv}</tr>`;
+  else h+=`<tr>${r.map((v,j)=>`<td style="text-align:${num(v)?'right':'left'};${wide[j]?'white-space:normal;min-width:220px':''}">${fm(v)}</td>`).join('')}<td style="white-space:nowrap"><button class="s" onclick="mEdit(${i})" title="Edit row">✎</button> <button class="d" onclick="mDel(${i})" title="Delete row">×</button></td></tr>`});
+ $('mt').innerHTML=h;
+ $('mcnt').textContent=`${idx.length} of ${sh.rows.length-1} rows`;$('msrc').textContent='Source: '+msrc+(mlive?'':' — editing is enabled once the data is in Supabase')}
+let curTab=1,btype='A';
+function gotab(k){curTab=k;for(let i=1;i<=6;i++){$('p'+i).style.display=i===k?'':'none';$('t'+i).className=i===k?'':'s'}
+ if(k===4||k===5){$('h'+k).appendChild($('pvsec'));setBt(btype)}if(k===2)renderPT();if(k===6){renderMaster();if(!mloaded){mloaded=true;loadMaster().then(renderMaster)}}if(k===1)renderET();window.scrollTo(0,0)}
+function setBt(x){btype=x;$('tabA').style.display=x==='A'?'':'none';$('tabB').style.display=x==='B'?'':'none';$('bA').className=x==='A'?'':'s';$('bB').className=x==='B'?'':'s';
+ $('bill').style.display=x==='A'?'':'none';$('dbill').style.display=x==='B'?'':'none';$('incl').style.display=x==='A'?'flex':'none';if(x==='A')renderBill();else renderDiff()}
+const xlAny=()=>btype==='A'?xl():xlD();
+function setOri(v){$('pgs').textContent='@media print{@page{size:'+v+'}}'}
 function dirty(i){emps[i].dirty=true;updRow(i)}
 function setAmt(i,t,h,v){emps[i][t][h]=v;auto(i);dirty(i);if(i===sel)renderArrear()}
-function setId(i,k,v){emps[i][k]=v;dirty(i);if(i===sel){setEh();renderBill()}}
-const setEh=()=>{$('eh').textContent=ehTxt();$('eh2').textContent=ehTxt()};
-const ehTxt=()=>{const e=emps[sel];return e?`CFMS ID: ${e.cfms||'-'} · EMP HRM ID: ${e.hrm||'-'} · HRMS ID: ${e.hrms||'-'}`:''};
+function setId(i,k,v){emps[i][k]=v;dirty(i);renderET();if(i===sel){setEh();renderBill();renderDBill()}}
 function addEmp(){emps.push(newEmp());selEmp(emps.length-1)}
 function copyEmp(i){const e=emps[i],c=newEmp();c.pay={...e.pay};c.ded={...e.ded};c.emp={...e.emp};c.pct={...e.pct};c.cps=e.cps;emps.splice(i+1,0,c);selEmp(i+1)}
 async function saveEmp(i){if(!sb)return msg('Connect Supabase first',1);const e=emps[i];
- if(!e.hrm.trim()&&!e.cfms.trim()&&!e.hrms.trim())return msg('Enter CFMS ID, EMP HRM ID or HRMS ID',1);
+ if(!idOk(e))return msg('Enter the name or an ID (CFMS ID, HRMS EMP ID or Aadhar no)',1);
  const b={cfms_id:e.cfms.trim(),emp_hrm_id:e.hrm.trim(),pay:e.pay,ded:e.ded,emp:{...e.emp,pct:e.pct,cps:e.cps,hrms:e.hrms,doj:e.doj}};
  const r=e.id?await sb.from('pay_drawings').update(b).eq('id',e.id).select().single():await sb.from('pay_drawings').insert(b).select().single();
- if(r.error){msg(r.error.message,1);return false}e.id=r.data.id;e.dirty=false;msg('Employee row saved');updRow(i);if(i===sel)await fetchBills(),renderBills(),renderDBills();return true}
+ if(r.error){msg(r.error.message,1);return false}e.id=r.data.id;e.dirty=false;msg('Employee saved');updRow(i);setEh();renderET();if(i===sel)await fetchBills(),renderBills(),renderDBills();return true}
 async function delEmp(i){const e=emps[i];if(!confirm('Delete this row'+(e.id?' and all its arrear bills':'')+'?'))return;
  if(e.id&&sb){await sb.from('arrear_bills').delete().eq('pay_id',e.id);const r=await sb.from('pay_drawings').delete().eq('id',e.id);if(r.error)return msg(r.error.message,1)}
  emps.splice(i,1);if(!emps.length)emps.push(newEmp());await selEmp(Math.min(sel>i?sel-1:sel,emps.length-1),true)}
 async function fetchEmps(){const{data,error}=await sb.from('pay_drawings').select('*').order('created_at');if(error)return msg(error.message,1);
  emps=data.map(r=>({id:r.id,cfms:r.cfms_id||'',hrm:r.emp_hrm_id||'',pay:r.pay||{},ded:r.ded||{},pct:(r.emp||{}).pct||{},cps:!!(r.emp||{}).cps,hrms:(r.emp||{}).hrms||'',doj:(r.emp||{}).doj||'',emp:(({pct,cps,hrms,doj,...x})=>({name:'',desig:'',sig:DEFSIG,...x,office:x.office||DEFOFF}))(r.emp||{}),dirty:false}));
  if(!emps.length)emps=[newEmp()];await selEmp(0,true)}
-async function selEmp(i,force){if(!force&&i!==sel&&dirtyBills()&&!confirm('The open bills have unsaved changes. Switch employee and discard them?\n(Cancel, then use Save All to keep them.)')){renderPT();return}sel=i;newBill();const e=emps[sel];$('nm').value=e.emp.name;$('ds').value=e.emp.desig;$('of').value=e.emp.office;$('sig').value=e.emp.sig;$('narr').value='';
- setEh();renderPT();renderArrear();newDBill();renderDiff();await fetchBills();renderBills();renderDBills()}
-function onEmp(k,v){emps[sel].emp[k]=v;dirty(sel);renderBill()}
+async function selEmp(i,force){if(!force&&i!==sel&&dirtyBills()&&!confirm('The open bills have unsaved changes. Switch employee and discard them?\n(Cancel, then use Save All to keep them.)')){renderPT();return}sel=i;newBill();const e=emps[sel];$('nm').value=e.emp.name;$('ds').value=e.emp.desig;$('of').value=e.emp.office;$('sig').value=e.emp.sig;$('cf').value=e.cfms;$('hs').value=e.hrms;$('ad').value=e.hrm;$('dj').value=e.doj||'';$('narr').value='';
+ setEh();renderET();renderPT();renderArrear();newDBill();renderDiff();await fetchBills();renderBills();renderDBills()}
+function onEmp(k,v){emps[sel].emp[k]=v;dirty(sel);renderET();setEh();renderBill();renderDBill()}
 /* ---------- 2. arrear bills ---------- */
 async function fetchBills(){const e=emps[sel];if(!sb||!e||!e.id){bills=[];return}
  const{data,error}=await sb.from('arrear_bills').select('*').eq('pay_id',e.id).order('created_at',{ascending:false});if(error)return msg(error.message,1);bills=data}
@@ -231,11 +320,11 @@ const anyUnsaved=()=>emps.some(e=>e.dirty&&empHas(e))||dirtyBills();
 function updUnsaved(){const u=$('unsaved');if(u)u.textContent=anyUnsaved()?'● Unsaved changes':'✓ All saved'}
 setInterval(updUnsaved,1000);addEventListener('beforeunload',e=>{if(anyUnsaved()){e.preventDefault();e.returnValue=''}});
 async function saveAll(){if(!sb)return msg('Connect Supabase first',1);let ne=0,bad=0,skip=0;
- for(let i=0;i<emps.length;i++){const e=emps[i];if(!e.dirty)continue;if(!(e.hrm.trim()||e.cfms.trim()||e.hrms.trim())){if(empHas(e))skip++;continue}if(await saveEmp(i))ne++;else bad++}
+ for(let i=0;i<emps.length;i++){const e=emps[i];if(!e.dirty)continue;if(!idOk(e)){if(empHas(e))skip++;continue}if(await saveEmp(i))ne++;else bad++}
  const parts=[];if(ne)parts.push(ne+' employee row(s)');
  if(!bad){if(hasA()&&(snapA()!==savedA||!cur.id)){if(await saveBill())parts.push('period bill');else bad++}
   if(!bad&&hasB()&&(snapB()!==savedB||!curD.id)){if(await saveDBill())parts.push('difference bill');else bad++}}
- if(bad)return;msg('Saved: '+(parts.join(', ')||'nothing new to save')+(skip?` · ${skip} row(s) skipped — enter an ID`:''));updUnsaved()}
+ if(bad)return;msg('Saved: '+(parts.join(', ')||'nothing new to save')+(skip?` · ${skip} row(s) skipped — enter a name or ID`:''));updUnsaved()}
 function renderArrear(){const P=Object.keys(secHeads('pay')).filter(h=>h!=='Basic Pay'),D=Object.keys(secHeads('ded')),H0=secHeads('pay'),HD=secHeads('ded'),e0=emps[sel]||newEmp();
  const T={basic:0,pay:{},ded:{},gross:0,dedt:0,net:0,days:0};P.forEach(h=>T.pay[h]=0);D.forEach(h=>T.ded[h]=0);
  let h=`<tr><th>#</th><th>From</th><th>To</th><th>Note</th><th>Days</th><th>Basic Pay</th>${P.map(x=>`<th>${x} ${PCT.includes(x)?'%':'value'}</th><th>${x}</th>`).join('')}<th>Gross</th>${D.map(x=>`<th>${x}</th>`).join('')}<th>Total Ded.</th><th>Net</th><th></th></tr>`;
@@ -270,7 +359,7 @@ function billModel(){const P=secHeads('pay'),D=secHeads('ded'),ph=['Basic Pay',.
  const net=tv[nc-1];
  return{N:nc+2,heads,items,total:['Grand Total:',mt,...tv],hrm:e.hrm,
  title:`Arrear salary bill of ${d.name}${d.desig?', '+d.desig:''}${d.office?', '+d.office:''} for the period from ${dmy(fr)} to ${dmy(to)}`,
- info:[e.hrm?'EmployeeID: '+e.hrm:'',e.cfms?'CFMS ID: '+e.cfms:'',e.hrms?'HRMS ID: '+e.hrms:'',e.doj?'DOJ: '+dmy(e.doj):'',d.name+(d.desig?', '+d.desig:''),'Pay: '+bp,...ex].filter(Boolean).join('\n'),
+ info:[e.hrm?'Aadhar no: '+e.hrm:'',e.cfms?'CFMS ID: '+e.cfms:'',e.hrms?'HRMS EMP ID: '+e.hrms:'',e.doj?'DOJ: '+dmy(e.doj):'',d.name+(d.desig?', '+d.desig:''),'Pay: '+bp,...ex].filter(Boolean).join('\n'),
  narr:d.narr,words:`Rs.${net}/-(Rupees ${words(net)} only)`,sign:d.sig}}
 function renderBill(){const m=billModel();if(!periods.some(p=>diff(p.from,p.to)>0)){$('bill').innerHTML='<p style="color:var(--mu)">Enter arrear period dates to see the bill preview.</p>';return}
  const td=(v,i)=>`<td style="text-align:${i?'right':'left'}">${esc(v)}</td>`;
@@ -278,7 +367,7 @@ function renderBill(){const m=billModel();if(!periods.some(p=>diff(p.from,p.to)>
  <tr><td style="text-align:left;white-space:pre-line;min-width:200px;vertical-align:top">${esc(m.info)}</td><td colspan="${m.N-1}" style="text-align:left;white-space:pre-wrap;vertical-align:top">${esc(m.narr)}</td></tr>
  ${m.items.map(it=>(it.note?`<tr><td colspan="${m.N}" style="text-align:left;white-space:normal;font-weight:600">${esc(it.note)}</td></tr>`:'')+`<tr>${it.cells.map(td).join('')}</tr>`).join('')}
  <tr style="font-weight:700;background:var(--bg)">${m.total.map(td).join('')}</tr></table><p><b>${esc(m.words)}</b></p><div style="text-align:right;white-space:pre-line;font-weight:600">${esc(m.sign)}</div>`}
-function genBill(){renderBill();$('s4').scrollIntoView({behavior:'smooth'})}
+function genBill(){setBt('A');gotab(4)}
 async function xl(){const m=billModel();if(!m.items.length)return msg('Add an arrear period first',1);
  const wb=new ExcelJS.Workbook(),ws=wb.addWorksheet(((details().name||'Bill').replace(/[\\\/\?\*\[\]:]/g,'')).slice(0,30)),N=m.N,bd={style:'thin'},B={top:bd,left:bd,bottom:bd,right:bd};
  ws.columns=[{width:40},{width:12},...m.heads.map(()=>({width:13}))];let r=1;
@@ -297,7 +386,6 @@ async function xl(){const m=billModel();if(!m.items.length)return msg('Add an ar
 /* ---------- pay difference bill ---------- */
 let dbatches=[],curD={id:null,narr:''},dfl={q:'',b:'all',from:'',to:'',view:'all',rep:false};
 const newDP=()=>({from:'',to:'',unit:'days',qty:'',note:'',pct:{}}),newBatch=()=>({dr:{pay:{},pct:{}},tb:{pay:{},pct:{}},periods:[newDP()]}),allP=()=>dbatches.flatMap(b=>b.periods),hasP=(s,h)=>s.pct[h]!==''&&s.pct[h]!=null,sumo=o=>PAY.reduce((t,x)=>t+n(o[x]),0);
-function tab(x){['A','B'].forEach(k=>{$('tab'+k).style.display=k===x?'':'none';$('tb'+k).className=k===x?'':'s'});if(x==='B')renderDiff()}
 function amtOf(s,h){const b=n(s.pay['Basic Pay']);return PCT.includes(h)&&hasP(s,h)?r0(b*n(s.pct[h])/100):n(s.pay[h])}
 function newDBill(){curD={id:null,narr:''};dbatches=[newBatch()];const x=$('dnarr');if(x)x.value='';savedB=snapB()}
 function damt(B){const o={dr:{},tb:{},df:{}};PAY.forEach(h=>{const a=amtOf(B.dr,h),b=amtOf(B.tb,h);o.dr[h]=a;o.tb[h]=b;o.df[h]=b-a});return o}
@@ -383,7 +471,7 @@ function renderDSum(){let shown=0;
  const used=PAY.filter(h=>h==='Basic Pay'||data.some(d=>d.A.dr[h]||d.A.tb[h]||d.A.df[h]||d.ar[h])),sum=o=>used.reduce((t,h)=>t+n(o[h]),0),
  cell=o=>used.map(h=>`<td class="r">${o[h]}</td>`).join('')+`<td class="r"><b>${sum(o)}</b></td>`,
  defs=[['dr','Already drawn',d=>d.A.dr],['tb','To be drawn',d=>d.A.tb],['df','Difference',d=>d.A.df],['ar','Arrear (shown periods)',d=>d.ar]],V=dfl.view,sl=V==='all'?defs:defs.filter(x=>x[0]===V);
- let h=`<div style="color:var(--mu);margin-bottom:6px">Batch-wise summary — ${data.length} of ${dbatches.length} batches, ${shown} of ${allP().length} periods shown. Drawn / to-be-drawn / difference are the batch's base pay particulars.</div><table><tr><th style="text-align:left">Batch</th><th>Periods</th><th style="text-align:left">Date range</th><th style="text-align:left">Particulars</th>${used.map(x=>`<th>${x}</th>`).join('')}<th>Total</th></tr>`;
+ let h=`<div style="color:var(--mu);margin-bottom:6px">Batch-wise summary — ${data.length} of ${dbatches.length} batches, ${shown} of ${allP().length} periods shown <span class="tip" tabindex="0" title="Already drawn / To be drawn / Difference show the batch's base pay particulars; the Arrear row and totals add up only the periods shown.">ⓘ</span></div><table><tr><th style="text-align:left">Batch</th><th>Periods</th><th style="text-align:left">Date range</th><th style="text-align:left">Particulars</th>${used.map(x=>`<th>${x}</th>`).join('')}<th>Total</th></tr>`;
  data.forEach(d=>sl.forEach(([k,lab,get],j)=>{h+=`<tr${k==='ar'?' style="font-weight:700;background:var(--bg)"':''}>${j===0?`<td rowspan="${sl.length}" style="text-align:left;vertical-align:top">Batch ${d.bi+1}</td><td rowspan="${sl.length}" style="vertical-align:top">${d.n}</td><td rowspan="${sl.length}" style="text-align:left;vertical-align:top">${d.rng}</td>`:''}<td style="text-align:left">${lab}</td>${cell(get(d))}</tr>`}));
  if(V==='all'||V==='ar'){const t={};used.forEach(h=>t[h]=data.reduce((s,d)=>s+d.ar[h],0));h+=`<tr style="font-weight:700;background:var(--bg)"><td colspan="3">Total arrear (shown)</td><td style="text-align:left">Arrear</td>${cell(t)}</tr>`}
  if(!data.length)h+=`<tr><td colspan="${used.length+5}" style="text-align:left;color:var(--mu)">Nothing matches the search / filter.</td></tr>`;
@@ -393,7 +481,7 @@ function renderDiff(){let tot=0,h='';syncF();
   h+=`<div class="card"><div class="bar" style="margin:0 0 8px"><b>Batch ${bi+1} — pay particulars (common to its periods)</b><button class="s" onclick="fillDrawn(${bi})" title="Copy the selected employee's pay drawing into Already drawn">⇩ Drawn from Pay Drawing</button><button class="s" onclick="copyDrawn(${bi})" title="Copy Already drawn into To be drawn">⇩ Copy to To-be-drawn</button><button class="d" onclick="delBatch(${bi})">× Batch</button></div>
   <div class="sc">${payTable(B,A,(t,k,x)=>`setDp(${bi},'${t}','${k}','${x}',this.value)`)}</div>`;
   const cs=B.periods.map(p=>dcomp(p,B)),used=PAY.filter(x=>x==='Basic Pay'||cs.some(c=>c.A.df[x]!==0)),T={};used.forEach(x=>T[x]=0);let dys=0,bt=0;
-  h+=`<div style="margin:10px 0 4px"><b>Periods</b> <span style="color:var(--mu)">— arrear per head = difference × period (Days: ÷ 31 × days · Months: × months). ✎ gives a period its own pay particulars (e.g. a different DA %, risk allowance or half pay).</span></div><div class="sc"><table><tr><th>#</th><th>From</th><th>To</th><th>Unit</th><th>Days</th><th>Months</th><th>No. (blank = auto)</th><th>Note</th>${PCT.map(h=>`<th>${h} %</th>`).join('')}${used.map(x=>`<th>${x}</th>`).join('')}<th>Total</th><th></th></tr>`;
+  h+=`<div style="margin:10px 0 4px"><b>Periods</b> <span class="tip" tabindex="0" title="Arrear per head = difference × period (Days: ÷ 31 × days · Months: × months).&#10;✎ gives a period its own pay particulars (for example a different risk allowance or half pay); DA / HRA / IR % can be set per period in the columns.">ⓘ</span></div><div class="sc"><table><tr><th>#</th><th>From</th><th>To</th><th>Unit</th><th>Days</th><th>Months</th><th>No. (blank = auto)</th><th>Note</th>${PCT.map(h=>`<th>${h} %</th>`).join('')}${used.map(x=>`<th>${x}</th>`).join('')}<th>Total</th><th></th></tr>`;
   B.periods.forEach((p,i)=>{if(!matchP(B,bi,p))return;const c=cs[i];bt+=c.gross;dys+=c.days;used.forEach(x=>T[x]+=c.ar[x]);
    h+=`<tr><td>${i+1}</td><td><input type="date" value="${p.from}" onchange="setDpK(${bi},${i},'from',this.value)"></td><td><input type="date" value="${p.to}" onchange="setDpK(${bi},${i},'to',this.value)"></td>
    <td><select style="min-width:90px" onchange="setDpK(${bi},${i},'unit',this.value)"><option value="days"${p.unit==='days'?' selected':''}>Days</option><option value="months"${p.unit==='months'?' selected':''}>Months</option></select></td>
@@ -416,12 +504,12 @@ function diffModel(){const e=emps[sel]||newEmp(),d=details(),F=dfl.rep,bs=dbatch
  fr=ps.map(p=>p.from).filter(Boolean).sort()[0],to=ps.map(p=>p.to).filter(Boolean).sort().pop();
  return{N:used.length+2,hdr:['ID & Name and Designation',...used,'Total'],rows,total:['Grand Total (Arrear):',...tv,tot],hrm:e.hrm,
  title:`Arrear bill (difference of pay) of ${d.name}${d.desig?', '+d.desig:''}${d.office?', '+d.office:''} for the period from ${dmy(fr)} to ${dmy(to)}`,
- info:[e.hrm?'EmployeeID: '+e.hrm:'',e.cfms?'CFMS ID: '+e.cfms:'',e.hrms?'HRMS ID: '+e.hrms:'',e.doj?'DOJ: '+dmy(e.doj):'',d.name+(d.desig?', '+d.desig:'')].filter(Boolean).join('\n'),
+ info:[e.hrm?'Aadhar no: '+e.hrm:'',e.cfms?'CFMS ID: '+e.cfms:'',e.hrms?'HRMS EMP ID: '+e.hrms:'',e.doj?'DOJ: '+dmy(e.doj):'',d.name+(d.desig?', '+d.desig:'')].filter(Boolean).join('\n'),
  narr:curD.narr,words:`Rs.${tot}/-(Rupees ${words(tot)} only)`,sign:d.sig}}
 function openDBill(id,go){const b=bills.find(x=>x.id===id);if(!b)return;const d=b.details||{};curD={id,narr:d.narr||''};$('dnarr').value=curD.narr;savedB='';
  dbatches=dfBatches(d.diff).map(x=>({dr:x.dr||{pay:{},pct:{}},tb:x.tb||{pay:{},pct:{}},periods:(x.periods||[]).map(p=>({...newDP(),from:p.from,to:p.to,unit:p.unit,qty:p.qty,note:p.note,pct:p.pct||{},...(p.own?{own:p.own}:{})}))}));
  dbatches.forEach(B=>{if(!B.periods.length)B.periods=[newDP()]});if(!dbatches.length)dbatches=[newBatch()];
- savedB=snapB();renderDiff();renderDBills();go?$('dbill').scrollIntoView({behavior:'smooth'}):msg('Editing saved bill — press Save Bill to update')}
+ savedB=snapB();renderDiff();renderDBills();go?(setBt('B'),gotab(4)):msg('Editing saved bill — press Save Bill to update')}
 async function saveDBill(){if(!sb)return msg('Connect Supabase first',1);const e=emps[sel];if(!e.id||e.dirty){if(!await saveEmp(sel))return}
  const tot=dbatches.reduce((t,B)=>t+B.periods.reduce((u,p)=>u+dcomp(p,B).gross,0),0),
  b={pay_id:e.id,emp_hrm_id:e.hrm,cfms_id:e.cfms,payments:[],deductions:[],net_payable:0,arrear_periods:[],total_arrear:tot,details:{...details(),type:'diff',narr:curD.narr,diff:{batches:dbatches}}};

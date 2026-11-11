@@ -2842,6 +2842,19 @@
       renderVisitors_(r);
     } catch (e) { /* ignore */ }
   }
+  // Live refresh: read the counter (without counting) every 15s while the tab is visible,
+  // and again whenever the tab regains focus.
+  async function refreshVisitors_() {
+    try {
+      if (document.hidden) return;
+      const res = await db().rpc('record_visit', { p_count: false, p_new_visitor: false });
+      if (res.error || !res.data) return;
+      renderVisitors_(Array.isArray(res.data) ? res.data[0] : res.data);
+    } catch (e) { /* ignore */ }
+  }
+  setInterval(refreshVisitors_, 15000);
+  document.addEventListener('visibilitychange', refreshVisitors_);
+  window.addEventListener('focus', refreshVisitors_);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', recordVisit_);
   else recordVisit_();
 

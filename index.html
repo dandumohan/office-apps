@@ -164,7 +164,9 @@ const ICONS={
   spacing:'<path d="M4 4v16h16"/><circle cx="9" cy="9" r="1.4"/><circle cx="15" cy="9" r="1.4"/><circle cx="9" cy="15" r="1.4"/><circle cx="15" cy="15" r="1.4"/>',
   expense:'<path d="M3 7a2 2 0 0 1 2-2h12v4"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2z"/><path d="M16 14.5h.01"/>',
   arrear:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 11h6M9 14.5h3.5"/>',
-  kanban:'<rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/>'
+  kanban:'<rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/>',
+  rename:'<path d="M6 3h8l4 4v5"/><path d="M6 3v18h6"/><path d="M14 3v4h4"/><path d="M14 21l1-3.5 5.2-5.2a1.4 1.4 0 0 1 2 2L17 19.5z"/>',
+  supabase:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>'
 };
 const GROUPS=[
   {title:'Accounts and estimates', apps:[
@@ -186,6 +188,10 @@ const GROUPS=[
     {id:'reports', name:'Mreports', sub:'Accounts reports (PDF)', path:'Macc_rpt.html', desc:'Generate accounts reports as PDF.'},
     {id:'monthly', name:'Reports generator', sub:'Monthly reports', path:'Reports_Generator.html', desc:'Generate monthly reports for the Social Forestry Division.'},
     {id:'kanban', name:'Kanban board', sub:'Task board', path:'Mkanban.html', desc:'Track tasks on a board.'}
+  ]},
+  {title:'Tools', apps:[
+    {id:'rename', name:'File rename console', sub:'Rename and sort files', path:'rename_tool.html', desc:'Rename files with a naming template and sort them into M1, M2 and M3 subject folders. Works in the browser; needs Chrome or Edge to move files on disk.'},
+    {id:'supabase', name:'Supabase backup menu', sub:'Ubuntu script (download)', path:'supabase-menu-gui.sh', dl:true, desc:'Graphical menu for Supabase backup, restore and crontab. A shell script for Ubuntu: download it, then run chmod +x supabase-menu-gui.sh and ./supabase-menu-gui.sh.'}
   ]}
 ];
 const ALL=GROUPS.flatMap(g=>g.apps);
@@ -200,7 +206,7 @@ const reduce=()=>window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)
 
 /* ---- page: one section per group; the tabs jump to them ---- */
 function tile(a){
-  return '<a class="tile" href="'+a.path+'" data-id="'+a.id+'" title="'+esc(a.desc)+'">'+
+  return '<a class="tile" href="'+a.path+'"'+(a.dl?' download':'')+' data-id="'+a.id+'" title="'+esc(a.desc)+'">'+
     '<span class="t-title">'+esc(a.name)+'</span><span class="t-sub">'+esc(a.sub)+'</span>'+
     '<span class="t-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">'+ICONS[a.id]+'</svg></span>'+
     (a.id===last?'<span class="t-last">Last opened</span>':'')+'</a>';
@@ -254,7 +260,7 @@ function fillPanel(){
   $('aaLeft').innerHTML=items.map(it=>'<li><button type="button" data-k="'+it.key+'"'+(it.key===sel?' aria-current="true"':'')+'>'+esc(it.title)+'</button></li>').join('');
   const cur=items.find(it=>it.key===sel)||items[0];
   $('aaHead').textContent=cur.title;
-  $('aaLinks').innerHTML=cur.apps.map(a=>'<li><a href="'+a.path+'" data-id="'+a.id+'" title="'+esc(a.desc)+'">'+esc(a.name)+'</a></li>').join('');
+  $('aaLinks').innerHTML=cur.apps.map(a=>'<li><a href="'+a.path+'"'+(a.dl?' download':'')+' data-id="'+a.id+'" title="'+esc(a.desc)+'">'+esc(a.name)+'</a></li>').join('');
 }
 function openPanel(){
   closeSearchQuiet(); fillPanel(); $('allApps').hidden=false; $('homeBtn').setAttribute('aria-expanded','true'); measure();
@@ -292,7 +298,9 @@ if(want&&find(want)) openApp(want);
 <li><a href="plant_spacing.html">Plant spacing</a></li>
 <li><a href="Macc_rpt.html">Mreports</a></li>
 <li><a href="Reports_Generator.html">Reports generator</a></li>
-<li><a href="Mkanban.html">Kanban board</a></li></ul></main>
+<li><a href="Mkanban.html">Kanban board</a></li>
+<li><a href="rename_tool.html">File rename console</a></li>
+<li><a href="supabase-menu-gui.sh" download>Supabase backup menu (script)</a></li></ul></main>
 </noscript>
 </body>
 </html>

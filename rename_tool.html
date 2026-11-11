@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Rename Console</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root{
+  --kraft:#e8dfc8;
+  --kraft-dark:#d9cca5;
+  --card:#fbf8f1;
+  --ink:#2b2a28;
+  --muted:#8c8471;
+  --green:#3b5f45;
+  --green-dark:#2a4432;
+  --stamp-red:#a63d2f;
+  --line:#c9bd9c;
+  --c1:#3b5f45;
+  --c2:#7a5230;
+  --c3:#3d5a73;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--kraft);
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(43,42,40,0.06) 1px, transparent 0);
+  background-size: 22px 22px;
+  color:var(--ink);
+  font-family:'IBM Plex Sans', sans-serif;
+  min-height:100vh;
+  padding:32px 20px 60px;
+}
+
+.wrap{max-width:1040px;margin:0 auto;}
+
+.tabhead{
+  display:flex;
+  align-items:flex-end;
+  gap:6px;
+  margin-bottom:-1px;
+  position:relative;
+  z-index:2;
+}
+.tab{
+  background:var(--green);
+  color:#f2ede0;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;
+  letter-spacing:.08em;
+  padding:8px 16px 10px;
+  border-radius:6px 6px 0 0;
+  text-transform:uppercase;
+  font-weight:600;
+}
+.tab.ghost{ background:var(--kraft-dark); color:var(--muted); }
+.tab.live{ background:var(--stamp-red); color:#fff; }
+
+.folder{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:0 10px 10px 10px;
+  box-shadow:0 1px 0 rgba(43,42,40,0.04), 0 12px 30px -18px rgba(43,42,40,0.35);
+  position:relative;
+  z-index:1;
+}
+
+header.title{ padding:28px 32px 20px; border-bottom:1px dashed var(--line); }
+header.title h1{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:22px; font-weight:700; margin:0 0 6px; letter-spacing:-0.01em;
+}
+header.title p{ margin:0; color:var(--muted); font-size:13.5px; line-height:1.5; max-width:620px; }
+
+section{padding:24px 32px;border-bottom:1px dashed var(--line);}
+section:last-child{border-bottom:none;}
+
+.stepno{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px;height:20px; background:var(--ink); color:var(--card);
+  font-family:'IBM Plex Mono',monospace; font-size:11px; border-radius:3px; margin-right:8px;
+}
+.steplabel{
+  font-family:'IBM Plex Mono',monospace; font-size:11.5px; text-transform:uppercase;
+  letter-spacing:.1em; color:var(--muted); display:flex; align-items:center; margin-bottom:16px;
+}
+
+label.field{
+  display:block; font-size:12px; color:var(--muted); margin-bottom:5px;
+  font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.04em;
+}
+
+input[type=text]{
+  width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:6px;
+  background:#fff; font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:var(--ink); outline:none;
+}
+input[type=text]:focus{border-color:var(--green);}
+select{
+  padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:#fff;
+  font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink);
+}
+
+.row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
+.row > div{flex:1;min-width:160px;}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.chip{
+  font-family:'IBM Plex Mono',monospace; font-size:11px; background:var(--kraft-dark);
+  border:1px solid var(--line); color:var(--ink); padding:4px 9px; border-radius:20px;
+  cursor:pointer; user-select:none;
+}
+.chip:hover{background:var(--green);color:#fff;border-color:var(--green);}
+
+.destline{
+  font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--green-dark);
+  background:#eef2ec; border:1px solid #cfdbd0; border-radius:6px; padding:9px 12px; margin-top:14px;
+}
+
+.dz{
+  border:2px dashed var(--line); border-radius:10px; padding:26px; text-align:center;
+  cursor:pointer; transition:border-color .15s, background .15s; font-family:'IBM Plex Mono',monospace;
+}
+.dz:hover, .dz.drag{border-color:var(--green); background:#f2efe3;}
+.dz .big{font-size:13.5px;color:var(--ink);font-weight:600;}
+.dz .small{font-size:11.5px;color:var(--muted);margin-top:4px;}
+.dz input{display:none;}
+
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center;}
+button{
+  font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600; letter-spacing:.03em;
+  text-transform:uppercase; padding:10px 16px; border-radius:6px; border:1px solid var(--ink);
+  background:var(--ink); color:var(--card); cursor:pointer;
+}
+button.secondary{ background:transparent; color:var(--ink); border:1px solid var(--line); }
+button.secondary:hover{border-color:var(--ink);}
+button:disabled{opacity:.4;cursor:not-allowed;}
+button.go{background:var(--green);border-color:var(--green-dark);}
+button.go:hover{background:var(--green-dark);}
+
+/* watch toggle */
+.watchbar{
+  display:flex; align-items:center; gap:12px; margin-top:16px; padding:12px 14px;
+  background:var(--kraft-dark); border-radius:8px; flex-wrap:wrap;
+}
+.switch{position:relative;width:38px;height:21px;flex:none;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;cursor:pointer;inset:0;background:#b8ac89;border-radius:20px;transition:.15s;}
+.slider:before{content:"";position:absolute;height:15px;width:15px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;}
+.switch input:checked + .slider{background:var(--green);}
+.switch input:checked + .slider:before{transform:translateX(17px);}
+.watchlabel{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;}
+.watchbar .small{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+
+/* ---- stats panel ---- */
+.statmeta{
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;
+  background:#fff; border:1px solid var(--line); border-radius:8px;
+  padding:9px 13px; margin-bottom:10px;
+  font-family:'IBM Plex Mono',monospace; font-size:12px;
+}
+.statmeta .folderline{color:var(--ink);font-weight:600;}
+.statmeta .folderline .fname{color:var(--green-dark);}
+.statmeta .updatedline{color:var(--muted);font-size:11px;}
+.statspanel{
+  display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;
+}
+.stattile{
+  flex:1; min-width:150px;
+  background:var(--kraft-dark); border:1px solid var(--line); border-radius:8px;
+  padding:10px 12px;
+  font-family:'IBM Plex Mono',monospace;
+}
+.stattile .num{font-size:20px;font-weight:700;color:var(--ink);line-height:1;}
+.stattile .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;}
+.statfolders{
+  background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+  font-family:'IBM Plex Mono',monospace; font-size:11.5px; flex:2; min-width:220px;
+}
+.statfolders .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.statfolders .frow{display:flex;justify-content:space-between;padding:2px 0;color:var(--ink);}
+.statfolders .frow span:last-child{color:var(--green-dark);font-weight:600;}
+.statfolders .none{color:var(--muted);}
+
+/* ---- unified sorting frame (Unsorted + Box 1/2/3) ---- */
+.sortingFrame{
+  background:#fdf6ec; border:1px dashed #c7a97a; border-radius:12px;
+  padding:14px; margin-bottom:14px;
+}
+.sortingHeader{
+  display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:12px;
+}
+.sortingHeader > span:first-child{
+  font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:700; color:var(--stamp-red);
+}
+.sortingHeader .inboxNote{
+  font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted);
+}
+.sortingGrid{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+
+.unsortedHeader{
+  display:flex; align-items:center; gap:8px; margin-bottom:8px;
+  font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:700; color:var(--stamp-red);
+}
+.unsortedFilterBar{
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  margin-bottom:8px;
+}
+.unsortedFilterBar input[type=text]{
+  flex:2; min-width:160px;
+  padding:7px 9px; border:1px solid var(--line); border-radius:6px; background:#fff;
+  font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink);
+}
+.unsortedFilterBar select{
+  flex:1; min-width:110px;
+  padding:7px 8px; border:1px solid var(--line); border-radius:6px; background:#fff;
+  font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink);
+}
+.unsortedFilterBar button{
+  padding:7px 12px; font-size:11px; flex:none;
+}
+.unsortedPanel{
+  background:#fff; border:1px dashed #c7a97a; border-radius:10px; overflow:hidden;
+}
+.unsortedTable{ width:100%; border-collapse:collapse; font-family:'IBM Plex Mono',monospace; font-size:12px; }
+.unsortedTable thead th{
+  text-align:left; padding:7px 10px; background:var(--kraft-dark); color:var(--muted);
+  font-size:10px; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--line);
+}
+.unsortedTable tbody tr{ border-bottom:1px solid #ece4cf; height:32px; }
+.unsortedTable tbody tr.filled:hover{ background:#f5f1e5; }
+.unsortedTable tbody tr.blankrow td{ color:transparent; }
+.unsortedTable td{ padding:5px 10px; vertical-align:middle; }
+.unsortedTable td.fname{ word-break:break-all; }
+.unsortedTable td.excludedname{ color:var(--muted); text-decoration:line-through; }
+.unsortedTable .inc input{ accent-color:var(--green); }
+.unsortedTable .movebtns{ display:flex; gap:3px; }
+.unsortedTable .movebtns{ display:flex; gap:3px; }
+.unsortedTable .movebtns button{
+  padding:2px 7px; font-size:10px; border-radius:4px;
+  background:transparent; color:var(--muted); border:1px solid var(--line);
+}
+.unsortedTable .movebtns button:hover{border-color:var(--ink);color:var(--ink);}
+.bulkMoveBar{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:9px 10px; background:var(--kraft-dark); border-top:1px solid var(--line);
+  font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+}
+.bulkMoveLabel{ color:var(--muted); }
+.bulkMoveBtn{
+  padding:5px 10px; font-size:10.5px; border-radius:5px;
+  background:#fff; color:var(--ink); border:1px solid var(--line);
+}
+.bulkMoveBtn:hover:not(:disabled){ border-color:var(--ink); }
+.bulkMoveBtn:disabled{ opacity:.4; cursor:not-allowed; }
+.unsortedEmptyRow td{
+  text-align:center; color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:16px;
+}
+.unsortedPager{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  padding:8px 10px; background:var(--kraft-dark); border-top:1px solid var(--line);
+  font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+}
+.unsortedPager button{
+  padding:4px 10px; font-size:11px; border-radius:5px;
+  background:transparent; color:var(--ink); border:1px solid var(--line);
+}
+.unsortedPager button:disabled{ opacity:.35; cursor:not-allowed; }
+.unsortedPager button:hover:not(:disabled){ border-color:var(--ink); }
+
+.sortcol{
+  flex:1; min-width:230px;
+  background:#fff; border:1px solid var(--line); border-radius:10px;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.colHeader{
+  padding:10px 12px; border-bottom:2px solid var(--ci-color, var(--muted));
+  background:var(--kraft-dark);
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+}
+.colHeader .headtop{display:flex;align-items:center;gap:6px;width:100%;}
+.boxnum{
+  font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:700;
+  color:#fff; background:var(--ci-color, var(--muted)); width:20px; height:20px;
+  display:flex; align-items:center; justify-content:center; border-radius:50%; flex:none;
+}
+.prefixtag{
+  font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:700;
+  color:var(--ci-color, var(--muted)); flex:none;
+}
+.colHeader input{
+  flex:1; min-width:60px; border:none; background:transparent; font-family:'IBM Plex Mono',monospace;
+  font-weight:700; font-size:13px; color:var(--ink); padding:4px 2px; outline:none;
+  border-bottom:1px dashed transparent;
+}
+.colHeader input:focus{border-bottom:1px dashed var(--ink);}
+.colHeader input.empty::placeholder{color:var(--stamp-red);}
+.subjectPickSelect{
+  width:100%;
+  padding:5px 6px; border:1px solid var(--line); border-radius:5px; background:#fff;
+  font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink);
+}
+.compCount{
+  font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#fff;
+  background:var(--ci-color, var(--muted)); padding:2px 7px; border-radius:10px; flex:none;
+}
+
+/* ---- file-list dropdown + detail panel (used by every column) ---- */
+.filelistwrap{ padding:10px; }
+.fileListSelect{
+  width:100%;
+  padding:7px 8px; border:1px solid var(--line); border-radius:6px; background:#fff;
+  font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink);
+}
+.filedetail{
+  margin-top:8px; border:1px solid var(--line); border-radius:7px; background:var(--card);
+  padding:9px 10px; font-family:'IBM Plex Mono',monospace; min-height:64px;
+}
+.filedetail.excluded{opacity:.55;}
+.filedetail .detailname{font-size:11.5px;color:var(--muted);text-decoration:line-through;text-decoration-color:var(--stamp-red);word-break:break-all;}
+.filedetail .detailnew{font-size:11.5px;color:var(--green-dark);font-weight:600;margin-top:2px;word-break:break-all;}
+.filedetail .detailctrls{display:flex;align-items:center;justify-content:space-between;margin-top:8px;flex-wrap:wrap;gap:6px;}
+.filedetail .inc{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted);}
+.filedetail .inc input{accent-color:var(--green);}
+.filedetail .emptynote{
+  color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:11.5px; text-align:center; padding:12px 4px;
+}
+.movebtns{display:flex;gap:3px;}
+.movebtns button{
+  padding:2px 7px; font-size:10px; border-radius:4px;
+  background:transparent; color:var(--muted); border:1px solid var(--line);
+}
+.movebtns button.current{background:var(--ink);color:#fff;border-color:var(--ink);cursor:default;}
+.movebtns button:hover:not(.current){border-color:var(--ink);color:var(--ink);}
+
+.applyrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center;}
+
+.status{margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);min-height:18px;}
+.status.ok{color:var(--green-dark);}
+.status.err{color:var(--stamp-red);}
+
+.stamp{
+  display:inline-block; border:2px solid var(--stamp-red); color:var(--stamp-red);
+  font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:11px; letter-spacing:.08em;
+  padding:4px 10px; border-radius:4px; transform:rotate(-4deg); margin-left:8px;
+  animation:stampin .25s ease-out;
+}
+@keyframes stampin{ from{transform:rotate(-4deg) scale(1.8);opacity:0;} to{transform:rotate(-4deg) scale(1);opacity:1;} }
+
+.logHeader{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-top:12px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--muted);
+}
+.logHeader button{ padding:5px 10px; font-size:10.5px; }
+.log{
+  margin-top:6px; max-height:150px; overflow-y:auto; border:1px solid var(--line); border-radius:6px;
+  background:#fffefb; font-family:'IBM Plex Mono',monospace; font-size:11px;
+}
+.log .entry{padding:6px 10px;border-bottom:1px solid #ece4cf;color:var(--muted);}
+.log .entry:last-child{border-bottom:none;}
+.log .entry .t{color:var(--green-dark);margin-right:6px;}
+.log .entry.err .t{color:var(--stamp-red);}
+
+.footnote{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5;}
+code{background:var(--kraft-dark);padding:1px 5px;border-radius:3px;font-size:11px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="tabhead">
+    <div class="tab">Rename Console</div>
+    <div class="tab ghost" id="modeTab">mode: —</div>
+  </div>
+
+  <div class="folder">
+    <header class="title">
+      <h1>SF_CTR file renamer</h1>
+      <p>Point this at a folder, set a naming template, then sort files into up to three subject compartments and drag them between compartments as needed. Applying renames each file, creates (or reuses) its subject folder, and moves it there.</p>
+    </header>
+
+    <!-- STEP 1: template -->
+    <section>
+      <div class="steplabel"><span class="stepno">1</span>Naming template</div>
+
+      <label class="field">Pattern</label>
+      <input type="text" id="pattern" value="SF_CTR_{YEAR}_{MONTH}_{SUBJECT}_{NAME}{EXT}">
+      <div class="chips" id="chipRow"></div>
+
+      <div class="row" style="margin-top:16px;">
+        <div>
+          <label class="field">Year</label>
+          <input type="text" id="yearField">
+        </div>
+        <div>
+          <label class="field">Month</label>
+          <input type="text" id="monthField">
+        </div>
+      </div>
+      <div class="footnote">Tokens: <code>{YEAR}</code> <code>{MONTH}</code> <code>{SUBJECT}</code> <code>{NAME}</code> <code>{EXT}</code> <code>{COUNTER}</code></div>
+      <div class="destline">Each compartment is its own root folder — <b>M1</b>, <b>M2</b>, <b>M3</b> — created on disk if it doesn't exist yet. Files sorted into a compartment move into a subject-named folder underneath it, e.g. <b>/M1/Invoices/</b>, and that subject also fills the <code>{SUBJECT}</code> token in the filename.</div>
+    </section>
+
+    <!-- STEP 2: folder -->
+    <section>
+      <div class="steplabel"><span class="stepno">2</span>Choose the folder to watch</div>
+
+      <div class="dz" id="dz">
+        <div class="big" id="dzBig">Open the folder that contains the files to rename</div>
+        <div class="small">Everything happens locally in your browser — nothing is uploaded.</div>
+        <input type="file" id="fileInput" multiple>
+      </div>
+
+      <div class="btnrow">
+        <button class="secondary" id="pickFolderBtn">Open a folder</button>
+        <button class="secondary" id="pickFilesBtn">Choose files instead (no live move)</button>
+        <button class="secondary" id="rescanBtn" disabled>Rescan now</button>
+        <button class="secondary" id="clearBtn">Clear list</button>
+      </div>
+      <div class="footnote" id="capNote"></div>
+
+      <div class="watchbar" id="watchbar" style="display:none;">
+        <label class="switch">
+          <input type="checkbox" id="watchToggle">
+          <span class="slider"></span>
+        </label>
+        <span class="watchlabel">Auto-watch this folder</span>
+        <select id="watchInterval">
+          <option value="5000">every 5s</option>
+          <option value="15000" selected>every 15s</option>
+          <option value="30000">every 30s</option>
+          <option value="60000">every 60s</option>
+        </select>
+        <span class="small" id="watchStatus">off</span>
+      </div>
+    </section>
+
+    <!-- STEP 3: stats + compartments -->
+    <section>
+      <div class="steplabel"><span class="stepno">3</span>Sort files &amp; commit</div>
+
+      <div class="statmeta" id="statsMeta"></div>
+      <div class="statspanel" id="statsPanel"></div>
+
+      <div class="sortingFrame" id="sortingFrame">
+        <div class="sortingHeader">
+          <span>Sort files into a box</span>
+          <span class="inboxNote">Move files between boxes freely — this is just a preview. Nothing is renamed or moved on disk until you commit.</span>
+        </div>
+        <div class="sortingGrid" id="sortingGrid">
+          <!-- Box 1/2/3 columns injected by JS -->
+        </div>
+
+        <div class="unsortedHeader">
+          <span>Unsorted</span>
+          <span class="compCount" id="unsortedCountBadge" style="background:var(--stamp-red)">0</span>
+        </div>
+        <div class="unsortedFilterBar">
+          <input type="text" id="unsortedSearch" placeholder="Search by filename…">
+          <select id="unsortedExtFilter">
+            <option value="">All types</option>
+          </select>
+          <select id="unsortedStatusFilter">
+            <option value="all">All files</option>
+            <option value="included">Included only</option>
+            <option value="excluded">Excluded only</option>
+          </select>
+          <button class="secondary" id="unsortedClearFilters">Clear</button>
+        </div>
+        <div class="unsortedPanel" id="unsortedPanel">
+          <!-- paginated file table injected by JS -->
+        </div>
+      </div>
+
+      <div class="applyrow">
+        <button class="go" id="applyBtn" disabled>Commit — create subject folders &amp; move files</button>
+      </div>
+      <div class="status" id="status"></div>
+      <div class="logHeader" id="logHeader" style="display:none;">
+        <span>Activity log</span>
+        <button class="secondary" id="downloadLogBtn">Download log (.txt)</button>
+      </div>
+      <div class="log" id="log" style="display:none;"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const now = new Date();
+document.getElementById('yearField').value = now.getFullYear();
+document.getElementById('monthField').value = MONTHS[now.getMonth()];
+
+const chipRow = document.getElementById('chipRow');
+["{YEAR}","{MONTH}","{SUBJECT}","{NAME}","{EXT}","{COUNTER}"].forEach(tok=>{
+  const c = document.createElement('div');
+  c.className = 'chip'; c.textContent = tok;
+  c.onclick = ()=>{
+    const p = document.getElementById('pattern');
+    p.value = p.value + tok;
+    renderAll();
+  };
+  chipRow.appendChild(c);
+});
+
+// ---- state ----
+let items = [];              // {kind, name, file|handle, include, compartment}
+let dirHandle = null;
+let knownNames = new Set();
+let watchTimer = null;
+let existingFolderStats = {M1:{}, M2:{}, M3:{}}; // {M1:{subject:fileCount, ...}, M2:{...}, M3:{...}}
+let lastUpdated = null;
+function touchUpdated(){ lastUpdated = new Date(); }
+const COMP_COLORS = ['var(--c1)','var(--c2)','var(--c3)'];
+let compartmentSubjects = ['', '', ''];
+let suppressBlurRemember = false; // true only while WE are tearing down/rebuilding the DOM mid-keystroke
+const MFOLDERS = ['M1', 'M2', 'M3'];
+let subjectHistoryByComp = [new Set(), new Set(), new Set()];
+function rememberSubject(compIdx, name){
+  if(compIdx < 0 || compIdx > 2) return;
+  if(name && name.trim()) subjectHistoryByComp[compIdx].add(name.trim());
+}
+const supportsFSAccess = 'showDirectoryPicker' in window;
+
+const modeTab = document.getElementById('modeTab');
+const capNote = document.getElementById('capNote');
+const watchbar = document.getElementById('watchbar');
+const rescanBtn = document.getElementById('rescanBtn');
+
+if(supportsFSAccess){
+  modeTab.textContent = 'mode: live folder';
+  capNote.textContent = "Open a folder to rename files in place and move them into subject subfolders. \"Choose files instead\" works too, but without a folder handle it can only give you a downloadable zip with the folder structure inside.";
+} else {
+  modeTab.textContent = 'mode: download only';
+  capNote.textContent = "This browser can't open folders directly. Choose files below and you'll get a zip download with subject folders already structured inside.";
+  document.getElementById('pickFolderBtn').disabled = true;
+}
+
+const dz = document.getElementById('dz');
+const fileInput = document.getElementById('fileInput');
+document.getElementById('pickFilesBtn').onclick = ()=> fileInput.click();
+dz.onclick = (e)=>{ if(e.target.tagName!=='BUTTON') fileInput.click(); };
+fileInput.onchange = (e)=> addFiles([...e.target.files]);
+
+['dragover','dragenter'].forEach(ev=> dz.addEventListener(ev, e=>{e.preventDefault(); dz.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=> dz.addEventListener(ev, e=>{e.preventDefault(); dz.classList.remove('drag');}));
+dz.addEventListener('drop', e=>{
+  const files = [...e.dataTransfer.files];
+  if(files.length) addFiles(files);
+});
+
+function addFiles(fileList){
+  stopWatch();
+  dirHandle = null;
+  watchbar.style.display = 'none';
+  rescanBtn.disabled = true;
+  existingFolderStats = {M1:{}, M2:{}, M3:{}};
+  fileList.forEach(f=>{
+    if(!items.find(i=>i.kind==='file' && i.name===f.name)){
+      items.push({kind:'file', name:f.name, file:f, include:true, compartment:-1});
+    }
+  });
+  touchUpdated();
+  renderAll();
+}
+
+async function countFilesIn(handle){
+  let n = 0;
+  for await (const entry of handle.values()){
+    if(entry.kind === 'file') n++;
+  }
+  return n;
+}
+
+async function scanMFolderStructure(){
+  const structure = {M1:{}, M2:{}, M3:{}};
+  for(let i=0;i<3;i++){
+    const mName = MFOLDERS[i];
+    try{
+      const mDir = await dirHandle.getDirectoryHandle(mName, {create:false});
+      for await (const [subName, subEntry] of mDir.entries()){
+        if(subEntry.kind === 'directory'){
+          structure[mName][subName] = await countFilesIn(subEntry);
+          subjectHistoryByComp[i].add(subName);
+        }
+      }
+    }catch(e){
+      // M-folder doesn't exist yet on disk — nothing to report
+    }
+  }
+  return structure;
+}
+
+async function scanRootFolder(silent){
+  if(!dirHandle) return;
+  const foundFiles = [];
+  for await (const [name, entry] of dirHandle.entries()){
+    if(entry.kind === 'file'){
+      foundFiles.push(entry);
+    }
+    // directories at root (including M1/M2/M3) are never treated as files to rename
+  }
+  existingFolderStats = await scanMFolderStructure();
+  touchUpdated();
+
+  const prev = {};
+  items.forEach(i=> prev[i.name] = {include:i.include, compartment:i.compartment});
+
+  const newlyFound = [];
+  items = foundFiles.map(entry=>{
+    if(!knownNames.has(entry.name)) newlyFound.push(entry.name);
+    knownNames.add(entry.name);
+    const p = prev[entry.name];
+    return {
+      kind:'handle', name:entry.name, handle:entry,
+      include: p ? p.include : true,
+      compartment: p ? p.compartment : -1
+    };
+  });
+
+  renderAll();
+  if(!silent){
+    setStatus(`Rescanned — ${items.length} file(s) in folder.`, '');
+  }
+  return newlyFound;
+}
+
+document.getElementById('pickFolderBtn').onclick = async ()=>{
+  try{
+    dirHandle = await window.showDirectoryPicker();
+    knownNames = new Set();
+    items = [];
+    await scanRootFolder(true);
+    watchbar.style.display = 'flex';
+    rescanBtn.disabled = false;
+    setStatus(`Opened folder — ${items.length} file(s) found.`, '');
+  }catch(err){
+    if(err.name !== 'AbortError') setStatus('Could not open folder: '+err.message, 'err');
+  }
+};
+
+rescanBtn.onclick = ()=> scanRootFolder(false);
+
+document.getElementById('clearBtn').onclick = ()=>{
+  stopWatch();
+  items = []; dirHandle = null; fileInput.value=''; knownNames = new Set(); existingFolderStats = {};
+  watchbar.style.display = 'none';
+  rescanBtn.disabled = true;
+  document.getElementById('watchToggle').checked = false;
+  renderAll();
+  setStatus('', '');
+};
+
+// ---- watch mode ----
+const watchToggle = document.getElementById('watchToggle');
+const watchStatusEl = document.getElementById('watchStatus');
+watchToggle.onchange = ()=>{ if(watchToggle.checked) startWatch(); else stopWatch(); };
+document.getElementById('watchInterval').onchange = ()=>{
+  if(watchToggle.checked){ stopWatch(true); startWatch(); }
+};
+
+function startWatch(){
+  if(!dirHandle) return;
+  const ms = +document.getElementById('watchInterval').value;
+  watchStatusEl.textContent = 'watching…';
+  modeTab.classList.add('live'); modeTab.textContent = 'mode: watching';
+  watchTimer = setInterval(async ()=>{
+    const newlyFound = await scanRootFolder(true);
+    if(newlyFound && newlyFound.length){
+      logLine(`Found ${newlyFound.length} new file(s) — waiting to be sorted into a compartment: ${newlyFound.join(', ')}`, false);
+    }
+    if(items.some(i=> i.include && i.compartment !== -1)){
+      await applyRenameMove(true);
+    }
+  }, ms);
+}
+function stopWatch(keepToggle){
+  if(watchTimer){ clearInterval(watchTimer); watchTimer = null; }
+  watchStatusEl.textContent = 'off';
+  modeTab.classList.remove('live');
+  modeTab.textContent = dirHandle ? 'mode: live folder' : (supportsFSAccess ? 'mode: live folder' : 'mode: download only');
+  if(!keepToggle) watchToggle.checked = false;
+}
+
+function pad(n, len){ n=String(n); while(n.length<len) n='0'+n; return n; }
+function splitName(name){
+  const idx = name.lastIndexOf('.');
+  if(idx <= 0) return {base:name, ext:''};
+  return {base:name.slice(0,idx), ext:name.slice(idx)};
+}
+function sanitize(s){ return (s||'').trim().replace(/\s+/g,'_').replace(/[\/\\:*?"<>|]/g,''); }
+
+function subjectTextFor(idx){
+  if(idx < 0) return 'Unsorted';
+  return sanitize(compartmentSubjects[idx]) || 'Unsorted';
+}
+function mFolderFor(idx){ return MFOLDERS[idx]; } // 'M1' / 'M2' / 'M3'
+
+function buildName(pattern, item, index){
+  const {base, ext} = splitName(item.name);
+  const year = document.getElementById('yearField').value || now.getFullYear();
+  const month = document.getElementById('monthField').value || MONTHS[now.getMonth()];
+  const subject = subjectTextFor(item.compartment);
+  let out = pattern
+    .replaceAll('{YEAR}', sanitize(String(year)))
+    .replaceAll('{MONTH}', sanitize(String(month)))
+    .replaceAll('{SUBJECT}', subject)
+    .replaceAll('{NAME}', sanitize(base))
+    .replaceAll('{EXT}', ext)
+    .replaceAll('{COUNTER}', pad(index+1, 3));
+  return out.replace(/_+/g,'_');
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+const sortingGrid = document.getElementById('sortingGrid');
+const applyBtn = document.getElementById('applyBtn');
+const statsPanel = document.getElementById('statsPanel');
+const statsMeta = document.getElementById('statsMeta');
+
+function renderAll(){
+  renderStatsMeta();
+  renderStats();
+  renderBoard();
+}
+
+function renderStatsMeta(){
+  let folderName;
+  if(dirHandle){
+    folderName = dirHandle.name || '(selected folder)';
+  } else if(items.length){
+    folderName = '(individual files — no folder selected)';
+  } else {
+    folderName = '(none selected)';
+  }
+  const updatedText = lastUpdated ? lastUpdated.toLocaleString() : '—';
+  statsMeta.innerHTML = `
+    <span class="folderline">Folder: <span class="fname">${escapeHtml(folderName)}</span></span>
+    <span class="updatedline">Last updated: ${escapeHtml(updatedText)}</span>
+  `;
+}
+
+function renderStats(){
+  const total = items.length;
+  const inboxCount = items.filter(i=>i.compartment===-1).length;
+  const compCounts = [0,0,0];
+  items.forEach(i=> { if(i.compartment>=0) compCounts[i.compartment]++; });
+
+  let tiles = `
+    <div class="stattile"><div class="num">${total}</div><div class="lbl">files pending</div></div>
+    <div class="stattile" style="border-color:var(--stamp-red)"><div class="num">${inboxCount}</div><div class="lbl">needs sorting</div></div>
+  `;
+  for(let i=0;i<3;i++){
+    const lbl = MFOLDERS[i] + (compartmentSubjects[i].trim() ? ' / '+sanitize(compartmentSubjects[i]) : '');
+    tiles += `<div class="stattile" style="border-color:${COMP_COLORS[i]}"><div class="num">${compCounts[i]}</div><div class="lbl">${escapeHtml(lbl)}</div></div>`;
+  }
+
+  let folderHtml = `<div class="lbl">Existing folders on disk</div>`;
+  if(!dirHandle){
+    folderHtml += `<div class="none">Open a folder to see this</div>`;
+  } else {
+    let any = false;
+    MFOLDERS.forEach(m=>{
+      const subs = existingFolderStats[m] || {};
+      const subNames = Object.keys(subs).sort();
+      if(subNames.length){
+        any = true;
+        subNames.forEach(s=>{
+          folderHtml += `<div class="frow"><span>/${escapeHtml(m)}/${escapeHtml(s)}/</span><span>${subs[s]} file${subs[s]===1?'':'s'}</span></div>`;
+        });
+      }
+    });
+    if(!any) folderHtml += `<div class="none">None yet — created when you apply</div>`;
+  }
+
+  statsPanel.innerHTML = tiles + `<div class="statfolders">${folderHtml}</div>`;
+}
+
+// remembers which file is the "active" one shown in each box's detail panel
+let selectedFileIdx = { comp0: null, comp1: null, comp2: null };
+
+function assignCompartment(idx, comp){
+  // preview only — this just moves the file between boxes in the UI.
+  // nothing is renamed or written to disk until the Commit button is clicked.
+  items[idx].compartment = comp;
+  touchUpdated();
+  renderAll();
+}
+
+// renders one compartment box as a dropdown of files + a detail panel for whichever is selected.
+// if the box is empty, nothing is rendered here at all (no "-- no files --" dropdown, no empty-state box).
+function renderFileScope(scopeKey, compartmentValue, wrapEl, showNewName){
+  const scopeItems = items.filter(i=>i.compartment===compartmentValue);
+
+  if(scopeItems.length === 0){
+    wrapEl.innerHTML = '';
+    wrapEl.style.display = 'none';
+    return;
+  }
+  wrapEl.style.display = '';
+  wrapEl.innerHTML = `<select class="fileListSelect" data-c="${compartmentValue}"></select><div class="filedetail" data-c="${compartmentValue}"></div>`;
+  const selectEl = wrapEl.querySelector('.fileListSelect');
+  const detailEl = wrapEl.querySelector('.filedetail');
+
+  selectEl.innerHTML = scopeItems.map(item=>{
+    const idx = items.indexOf(item);
+    const label = (showNewName ? `${item.name}  →  ${item._newName}` : item.name) + (item.include ? '' : '  (excluded)');
+    return `<option value="${idx}">${escapeHtml(label)}</option>`;
+  }).join('');
+
+  // keep the previous selection if it's still in this scope, otherwise default to the first item
+  let sel = selectedFileIdx[scopeKey];
+  const stillValid = sel !== null && scopeItems.some(i=> items.indexOf(i) === sel);
+  if(!stillValid){
+    sel = items.indexOf(scopeItems[0]);
+    selectedFileIdx[scopeKey] = sel;
+  }
+  selectEl.value = sel;
+
+  const item = items[sel];
+  detailEl.className = 'filedetail' + (item.include ? '' : ' excluded');
+  const newNameLine = showNewName
+    ? `<div class="detailnew">${escapeHtml(item._newName)}</div>`
+    : `<div class="detailnew" style="color:var(--muted);font-weight:400;">choose a compartment to name it</div>`;
+  detailEl.innerHTML = `
+    <div class="detailname">${escapeHtml(item.name)}</div>
+    ${newNameLine}
+    <div class="detailctrls">
+      <label class="inc"><input type="checkbox" class="incbox" data-idx="${sel}" ${item.include?'checked':''}> include</label>
+      <div class="movebtns">
+        ${[0,1,2].map(n=>`<button data-idx="${sel}" data-move="${n}" class="${n===item.compartment?'current':''}">${n+1}</button>`).join('')}
+      </div>
+    </div>
+  `;
+
+  selectEl.onchange = ()=>{
+    selectedFileIdx[scopeKey] = +selectEl.value;
+    renderAll();
+  };
+}
+
+const UNSORTED_ROWS_PER_PAGE = 15;
+let unsortedPage = 0;
+let unsortedSearchTerm = '';
+let unsortedExtFilterValue = '';
+let unsortedStatusFilterValue = 'all';
+
+function fileExt(name){
+  const idx = name.lastIndexOf('.');
+  return idx > 0 ? name.slice(idx+1).toLowerCase() : '';
+}
+
+function renderUnsortedPanel(){
+  const allUnsorted = items.filter(i=>i.compartment===-1);
+  document.getElementById('unsortedCountBadge').textContent = allUnsorted.length;
+
+  // populate the extension dropdown from what's actually present, preserving the current selection
+  const extSelect = document.getElementById('unsortedExtFilter');
+  const extsPresent = [...new Set(allUnsorted.map(i=>fileExt(i.name)).filter(Boolean))].sort();
+  const extOptionsHtml = `<option value="">All types</option>` +
+    extsPresent.map(e=>`<option value="${escapeHtml(e)}">.${escapeHtml(e)}</option>`).join('');
+  if(extSelect.innerHTML !== extOptionsHtml) extSelect.innerHTML = extOptionsHtml;
+  extSelect.value = unsortedExtFilterValue;
+  document.getElementById('unsortedSearch').value = unsortedSearchTerm;
+  document.getElementById('unsortedStatusFilter').value = unsortedStatusFilterValue;
+
+  // apply filters
+  const term = unsortedSearchTerm.trim().toLowerCase();
+  const unsortedItems = allUnsorted.filter(item=>{
+    if(term && !item.name.toLowerCase().includes(term)) return false;
+    if(unsortedExtFilterValue && fileExt(item.name) !== unsortedExtFilterValue) return false;
+    if(unsortedStatusFilterValue === 'included' && !item.include) return false;
+    if(unsortedStatusFilterValue === 'excluded' && item.include) return false;
+    return true;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(unsortedItems.length / UNSORTED_ROWS_PER_PAGE));
+  if(unsortedPage >= totalPages) unsortedPage = totalPages - 1;
+  if(unsortedPage < 0) unsortedPage = 0;
+
+  const start = unsortedPage * UNSORTED_ROWS_PER_PAGE;
+  const pageItems = unsortedItems.slice(start, start + UNSORTED_ROWS_PER_PAGE);
+
+  let rows = '';
+  pageItems.forEach(item=>{
+    const idx = items.indexOf(item);
+    rows += `
+      <tr class="filled">
+        <td class="inc"><input type="checkbox" class="incbox" data-idx="${idx}" ${item.include?'checked':''}></td>
+        <td class="fname${item.include?'':' excludedname'}">${escapeHtml(item.name)}</td>
+        <td>
+          <div class="movebtns">
+            ${[0,1,2].map(n=>`<button data-idx="${idx}" data-move="${n}">${n+1}</button>`).join('')}
+          </div>
+        </td>
+      </tr>`;
+  });
+  // pad with blank rows so every page keeps the same minimum height (15 rows)
+  for(let i=pageItems.length; i<UNSORTED_ROWS_PER_PAGE; i++){
+    rows += `<tr class="blankrow"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`;
+  }
+  if(unsortedItems.length === 0){
+    const msg = allUnsorted.length === 0 ? 'All sorted — nothing waiting.' : 'No files match this search/filter.';
+    rows = `<tr class="unsortedEmptyRow"><td colspan="3">${escapeHtml(msg)}</td></tr>` +
+      Array(UNSORTED_ROWS_PER_PAGE - 1).fill('<tr class="blankrow"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>').join('');
+  }
+
+  const filterActive = term || unsortedExtFilterValue || unsortedStatusFilterValue !== 'all';
+  const countLabel = filterActive
+    ? `${unsortedItems.length} of ${allUnsorted.length} match`
+    : `${unsortedItems.length} file${unsortedItems.length===1?'':'s'}`;
+
+  const pagerHtml = totalPages > 1 ? `
+    <div class="unsortedPager">
+      <button id="unsortedPrev" ${unsortedPage===0?'disabled':''}>&larr; Prev</button>
+      <span>Page ${unsortedPage+1} of ${totalPages} (${countLabel})</span>
+      <button id="unsortedNext" ${unsortedPage>=totalPages-1?'disabled':''}>Next &rarr;</button>
+    </div>` : '';
+
+  const bulkBarHtml = `
+    <div class="bulkMoveBar">
+      <span class="bulkMoveLabel">Move this page (${pageItems.length}) to:</span>
+      ${[0,1,2].map(n=>`<button class="bulkMoveBtn" data-scope="page" data-box="${n}" ${pageItems.length===0?'disabled':''}>&rarr; Box ${n+1}</button>`).join('')}
+    </div>
+    <div class="bulkMoveBar">
+      <span class="bulkMoveLabel">Move ${filterActive?'all filtered':'all unsorted'} (${unsortedItems.length}) to:</span>
+      ${[0,1,2].map(n=>`<button class="bulkMoveBtn" data-scope="filtered" data-box="${n}" ${unsortedItems.length===0?'disabled':''}>&rarr; Box ${n+1}</button>`).join('')}
+    </div>`;
+
+  document.getElementById('unsortedPanel').innerHTML = `
+    <table class="unsortedTable">
+      <thead><tr><th style="width:36px;"></th><th>File name</th><th style="width:110px;">Move to</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${pagerHtml}
+    ${bulkBarHtml}
+  `;
+
+  const prevBtn = document.getElementById('unsortedPrev');
+  const nextBtn = document.getElementById('unsortedNext');
+  if(prevBtn) prevBtn.onclick = ()=>{ unsortedPage--; renderAll(); };
+  if(nextBtn) nextBtn.onclick = ()=>{ unsortedPage++; renderAll(); };
+
+  document.querySelectorAll('.bulkMoveBtn').forEach(btn=>{
+    btn.onclick = ()=>{
+      const box = +btn.dataset.box;
+      const targets = btn.dataset.scope === 'page' ? pageItems : unsortedItems;
+      targets.forEach(i=>{ i.compartment = box; });
+      touchUpdated();
+      renderAll();
+    };
+  });
+
+  document.getElementById('unsortedSearch').oninput = (e)=>{
+    unsortedSearchTerm = e.target.value;
+    unsortedPage = 0;
+    renderAll();
+    const fresh = document.getElementById('unsortedSearch');
+    fresh.focus();
+    fresh.setSelectionRange(fresh.value.length, fresh.value.length);
+  };
+  extSelect.onchange = (e)=>{ unsortedExtFilterValue = e.target.value; unsortedPage = 0; renderAll(); };
+  document.getElementById('unsortedStatusFilter').onchange = (e)=>{ unsortedStatusFilterValue = e.target.value; unsortedPage = 0; renderAll(); };
+  document.getElementById('unsortedClearFilters').onclick = ()=>{
+    unsortedSearchTerm = ''; unsortedExtFilterValue = ''; unsortedStatusFilterValue = 'all'; unsortedPage = 0;
+    renderAll();
+  };
+}
+
+function renderBoard(){
+  const pattern = document.getElementById('pattern').value.trim();
+
+  // recompute preview names for every sorted item up front (needed for dropdown labels)
+  items.forEach((item, idx)=>{
+    if(item.compartment >= 0) item._newName = buildName(pattern, item, idx);
+  });
+
+  sortingGrid.innerHTML = '';
+
+  // ---- Box 1 / 2 / 3 columns ----
+  for(let c=0;c<3;c++){
+    const col = document.createElement('div');
+    col.className = 'sortcol';
+    col.style.setProperty('--ci-color', COMP_COLORS[c]);
+
+    const compCount = items.filter(i=>i.compartment===c).length;
+    const isEmpty = !compartmentSubjects[c].trim();
+
+    col.innerHTML = `
+      <div class="colHeader">
+        <div class="headtop">
+          <span class="boxnum">${c+1}</span>
+          <span class="prefixtag">${MFOLDERS[c]}</span>
+          <span class="compCount">${compCount}</span>
+        </div>
+        <div class="headtop">
+          <input type="text" class="compSubjectInput${isEmpty?' empty':''}" data-c="${c}" placeholder="type a subject" value="${escapeHtml(compartmentSubjects[c])}">
+        </div>
+        <select class="subjectPickSelect" data-c="${c}">
+          <option value="">Previous subjects in ${MFOLDERS[c]} ▾</option>
+          ${[...subjectHistoryByComp[c]].sort((a,b)=>a.localeCompare(b)).map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filelistwrap"></div>
+    `;
+    sortingGrid.appendChild(col);
+
+    renderFileScope('comp'+c, c, col.querySelector('.filelistwrap'), true);
+  }
+
+  // ---- Unsorted table ----
+  renderUnsortedPanel();
+
+  document.querySelectorAll('.incbox').forEach(cb=>{
+    cb.onchange = ()=>{ items[+cb.dataset.idx].include = cb.checked; renderAll(); };
+  });
+
+  document.querySelectorAll('.movebtns button').forEach(btn=>{
+    btn.onclick = ()=>{
+      const i = +btn.dataset.idx, m = +btn.dataset.move;
+      assignCompartment(i, m);
+    };
+  });
+
+  sortingGrid.querySelectorAll('.compSubjectInput').forEach(inp=>{
+    inp.oninput = ()=>{
+      const c = +inp.dataset.c;
+      const cursorPos = inp.selectionStart;
+      compartmentSubjects[c] = inp.value;
+      touchUpdated();
+      suppressBlurRemember = true;
+      renderAll();
+      suppressBlurRemember = false;
+      const fresh = sortingGrid.querySelector(`.compSubjectInput[data-c="${c}"]`);
+      if(fresh){
+        fresh.focus();
+        fresh.setSelectionRange(cursorPos, cursorPos);
+      }
+    };
+    inp.onblur = ()=>{
+      if(suppressBlurRemember) return; // this blur was just our own re-render tearing the field down, not the user leaving it
+      rememberSubject(+inp.dataset.c, inp.value);
+      renderAll();
+    };
+    inp.onkeydown = (e)=>{
+      if(e.key === 'Enter'){ inp.blur(); }
+    };
+  });
+
+  sortingGrid.querySelectorAll('.subjectPickSelect').forEach(sel=>{
+    sel.onchange = ()=>{
+      const c = +sel.dataset.c;
+      if(!sel.value) return;
+      compartmentSubjects[c] = sel.value;
+      rememberSubject(c, sel.value);
+      touchUpdated();
+      renderAll();
+    };
+  });
+
+  applyBtn.disabled = items.length === 0;
+}
+
+['pattern','yearField','monthField'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderAll);
+});
+
+function setStatus(msg, cls){
+  const el = document.getElementById('status');
+  el.className = 'status' + (cls?(' '+cls):'');
+  el.textContent = msg;
+}
+
+let logEntries = []; // {time, msg, isErr} — kept in memory so the log can be exported/persisted
+let lastPersistedLogIndex = 0;
+
+function logLine(msg, isErr){
+  const log = document.getElementById('log');
+  const header = document.getElementById('logHeader');
+  log.style.display = 'block';
+  header.style.display = 'flex';
+  const t = new Date();
+  logEntries.push({time:t, msg, isErr:!!isErr});
+  const div = document.createElement('div');
+  div.className = 'entry' + (isErr?' err':'');
+  div.innerHTML = `<span class="t">${t.toLocaleTimeString()}</span>${escapeHtml(msg)}`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function formatLogEntries(entries){
+  return entries.map(e=> `[${e.time.toLocaleString()}]${e.isErr?' [WARN]':''} ${e.msg}`).join('\n');
+}
+
+function downloadLogFile(){
+  if(logEntries.length === 0) return;
+  const text = formatLogEntries(logEntries) + '\n';
+  const blob = new Blob([text], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+  a.href = url; a.download = `rename_log_${stamp}.txt`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('downloadLogBtn').onclick = downloadLogFile;
+
+// appends any log lines generated since the last persist into rename_log.txt in the root of the opened folder.
+// existing content is never overwritten — new lines are appended after it.
+async function persistNewLogEntriesToDisk(){
+  if(!dirHandle) return;
+  const newEntries = logEntries.slice(lastPersistedLogIndex);
+  if(newEntries.length === 0) return;
+  try{
+    let existingText = '';
+    try{
+      const existingHandle = await dirHandle.getFileHandle('rename_log.txt', {create:false});
+      const file = await existingHandle.getFile();
+      existingText = await file.text();
+      if(existingText && !existingText.endsWith('\n')) existingText += '\n';
+    }catch(e){
+      // no log file on disk yet — start a fresh one
+    }
+    const fileHandle = await dirHandle.getFileHandle('rename_log.txt', {create:true});
+    const writable = await fileHandle.createWritable();
+    await writable.write(existingText + formatLogEntries(newEntries) + '\n');
+    await writable.close();
+    lastPersistedLogIndex = logEntries.length;
+  }catch(e){
+    // don't let a logging failure interrupt the actual file operations
+    console.error('Could not write rename_log.txt:', e);
+  }
+}
+
+async function uniqueNameIn(targetDirHandle, desiredName){
+  const {base, ext} = splitName(desiredName);
+  let candidate = desiredName;
+  let n = 2;
+  while(true){
+    try{
+      await targetDirHandle.getFileHandle(candidate, {create:false});
+      candidate = `${base}_${n}${ext}`;
+      n++;
+    }catch(e){
+      return candidate;
+    }
+  }
+}
+
+function groupByCompartment(list){
+  const groups = {}; // {compIdx: [items]}
+  list.forEach(item=>{
+    const key = item.compartment;
+    if(!groups[key]) groups[key] = [];
+    groups[key].push(item);
+  });
+  return groups;
+}
+
+applyBtn.onclick = ()=> applyRenameMove(false);
+
+async function applyRenameMove(silent){
+  const allSelected = items.filter(i=>i.include);
+  const unsorted = allSelected.filter(i=> i.compartment === -1);
+  const sorted = allSelected.filter(i=> i.compartment !== -1);
+  const withSubject = sorted.filter(i=> compartmentSubjects[i.compartment].trim());
+  const missingSubject = sorted.filter(i=> !compartmentSubjects[i.compartment].trim());
+
+  if(unsorted.length){
+    logLine(`${unsorted.length} file(s) still waiting in the Inbox — sort them into a compartment first: ${unsorted.map(i=>i.name).join(', ')}`, true);
+  }
+  if(missingSubject.length){
+    logLine(`Skipped ${missingSubject.length} file(s) in a compartment with no subject set: ${missingSubject.map(i=>i.name).join(', ')}`, true);
+  }
+
+  const selected = withSubject.filter(i=>i.kind==='handle');
+  const selectedPlain = withSubject.filter(i=>i.kind==='file');
+
+  if(dirHandle){
+    if(selected.length === 0){
+      if(!silent) setStatus(unsorted.length ? 'Some files are still waiting in the Inbox to be sorted.' : (missingSubject.length ? 'Every checked file is in a compartment with no subject.' : 'No files selected.'), 'err');
+      await persistNewLogEntriesToDisk();
+      return;
+    }
+    applyBtn.disabled = true;
+    if(!silent) setStatus('Working…', '');
+
+    try{
+      const groups = groupByCompartment(selected);
+      let done = 0;
+      const movedPaths = [];
+      for(const compIdxStr of Object.keys(groups)){
+        const compIdx = +compIdxStr;
+        const mName = mFolderFor(compIdx);
+        const subjectName = subjectTextFor(compIdx);
+        // create (or reuse) the M-folder, then create (or reuse) the subject folder inside it —
+        // existing folders and their contents are never wiped
+        const mDir = await dirHandle.getDirectoryHandle(mName, {create:true});
+        const targetDir = await mDir.getDirectoryHandle(subjectName, {create:true});
+        const pathLabel = `/${mName}/${subjectName}/`;
+        movedPaths.push(pathLabel);
+        for(const item of groups[compIdxStr]){
+          const fileHandle = item.handle;
+          const file = await fileHandle.getFile();
+          const safeName = await uniqueNameIn(targetDir, item._newName);
+          const newHandle = await targetDir.getFileHandle(safeName, {create:true});
+          const writable = await newHandle.createWritable();
+          await writable.write(await file.arrayBuffer());
+          await writable.close();
+          await dirHandle.removeEntry(item.name);
+          knownNames.delete(item.name);
+          logLine(`${item.name} → ${pathLabel}${safeName}`, false);
+          done++;
+        }
+      }
+      const folderList = movedPaths.join(', ');
+      if(!silent){
+        setStatus(`Renamed and moved ${done} file(s) into ${folderList}.`, 'ok');
+        const stamp = document.createElement('span');
+        stamp.className = 'stamp'; stamp.textContent = 'DONE';
+        document.getElementById('status').appendChild(stamp);
+      } else {
+        setStatus(`Auto-moved ${done} new file(s) into ${folderList}.`, 'ok');
+      }
+      await scanRootFolder(true);
+    }catch(err){
+      logLine('Error: '+err.message, true);
+      if(!silent) setStatus('Something went wrong: '+err.message, 'err');
+    }finally{
+      await persistNewLogEntriesToDisk();
+      applyBtn.disabled = false;
+    }
+    return;
+  }
+
+  if(selectedPlain.length === 0){
+    if(!silent) setStatus(unsorted.length ? 'Some files are still waiting in the Inbox to be sorted.' : (missingSubject.length ? 'Every checked file is in a compartment with no subject.' : 'No files selected.'), 'err');
+    return;
+  }
+  applyBtn.disabled = true;
+  setStatus('Working…', '');
+  try{
+    await ensureJSZip();
+    const zip = new JSZip();
+    const groups = groupByCompartment(selectedPlain);
+    const folderList = [];
+    Object.keys(groups).forEach(compIdxStr=>{
+      const compIdx = +compIdxStr;
+      const mName = mFolderFor(compIdx);
+      const subjectName = subjectTextFor(compIdx);
+      const folder = zip.folder(mName).folder(subjectName);
+      folderList.push(`/${mName}/${subjectName}/`);
+      groups[compIdxStr].forEach(item=> folder.file(item._newName, item.file));
+    });
+    const blob = await zip.generateAsync({type:'blob'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `renamed_files.zip`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    setStatus(`Downloaded ${selectedPlain.length} renamed file(s) inside ${folderList.join(', ')} (as a zip).`, 'ok');
+  }catch(err){
+    setStatus('Something went wrong: '+err.message, 'err');
+  }finally{
+    applyBtn.disabled = false;
+  }
+}
+
+function ensureJSZip(){
+  return new Promise((resolve,reject)=>{
+    if(window.JSZip) return resolve();
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = resolve;
+    s.onerror = ()=>reject(new Error('Could not load zip library'));
+    document.head.appendChild(s);
+  });
+}
+
+renderAll();
+</script>
+</body>
+</html>

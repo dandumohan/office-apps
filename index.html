@@ -100,6 +100,28 @@ main{padding:6px 50px 30vh}
 .aa-links a{display:block;padding:.5rem 1rem;color:var(--link);text-decoration:none;font-size:14px}
 .aa-links a:hover{background:#f3f6fa;text-decoration:underline}
 
+/* login screen + signed-in user */
+body.locked header,body.locked main,body.locked #allApps,body.locked #dim{display:none}
+#login{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px;background:linear-gradient(180deg,#b1c8e0 0,#c9d9ea 40%,#dfe7f0 100%)}
+#login[hidden]{display:none}
+.lcard{width:min(380px,100%);background:#fff;border-radius:6px;padding:26px 26px 22px;box-shadow:0 0 0 1px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.18)}
+.lcard .lbrand{font-weight:700;font-size:20px;letter-spacing:.05em;color:#8c2f00}
+.lcard .lbrand span{margin-left:.35em;font-weight:400;color:#9a3412}
+.lcard .lsub{margin:2px 0 18px;color:var(--nav-soft);font-size:13px}
+.lcard h2{margin:0 0 14px;font:400 18px/1.3 var(--font)}
+.lcard label{display:block;margin:10px 0 4px;font-size:13px;color:var(--muted)}
+.lcard input{width:100%;height:36px;padding:.4rem .6rem;font:14px var(--font);color:var(--ink);background:#fff;border:1px solid #6b7f95;border-radius:3px}
+.lcard .lerr{min-height:1.2em;margin:10px 0 0;color:#b00;font-size:13px}
+.lcard .lgo{width:100%;height:38px;margin-top:8px;background:var(--link);color:#fff;font-weight:700;border-radius:4px}
+.lcard .lgo:hover{background:#085caf}
+.lcard .lgo[disabled]{opacity:.6;cursor:default}
+.who{display:flex;align-items:center;gap:.6rem;font-size:13px;color:var(--nav);white-space:nowrap}
+.who b{font-weight:700}
+.who .role{padding:1px 8px;border-radius:10px;background:rgba(255,255,255,.6);font-size:12px;text-transform:capitalize}
+.signout{padding:.3rem .6rem;border-radius:4px;color:var(--nav);font-size:13px;border:1px solid rgba(47,79,115,.4)}
+.signout:hover{background:rgba(255,255,255,.45)}
+@media (max-width:40rem){ .who b{display:none} }
+
 @media (max-width:40rem){
   :root{--shell-h:58px}
   .shell{padding:0 14px;gap:.75rem}
@@ -118,7 +140,20 @@ main{padding:6px 50px 30vh}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}.dmn-orbit,.dmn-petals,.dmn-dot{animation:none}}
 </style>
 </head>
-<body>
+<body class="locked">
+<div id="login">
+  <form class="lcard" id="loginForm" novalidate>
+    <div class="lbrand">DMN<span>SOFT</span></div>
+    <p class="lsub">Office applications, SF Division, Chittoor</p>
+    <h2>Sign in</h2>
+    <label for="lEmail">Email</label>
+    <input id="lEmail" type="email" autocomplete="username" required>
+    <label for="lPass">Password</label>
+    <input id="lPass" type="password" autocomplete="current-password" required>
+    <p class="lerr" id="lErr" role="alert"></p>
+    <button class="lgo" id="lGo" type="submit">Sign in</button>
+  </form>
+</div>
 <h1 class="sr-only">Office applications, SF Division, Chittoor</h1>
 
 <header id="hdr">
@@ -129,6 +164,7 @@ main{padding:6px 50px 30vh}
     <button id="homeBtn" class="homebtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="allApps">Home
       <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4"/></svg></button>
     <div class="spacer"></div>
+    <div class="who" id="who" hidden><b id="whoName"></b><span class="role" id="whoRole"></span><button class="signout" id="signOut" type="button">Sign out</button></div>
     <form class="searchbox" id="searchForm" role="search">
       <input id="q" type="search" placeholder="Search In: Apps" aria-label="Search in applications" autocomplete="off">
       <button class="go" type="submit" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg></button>
@@ -150,6 +186,7 @@ main{padding:6px 50px 30vh}
 
 <main id="page"></main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 /* To add an application: copy its file to the repository and add one line below. */
 const ICONS={
@@ -168,7 +205,7 @@ const ICONS={
   rename:'<path d="M6 3h8l4 4v5"/><path d="M6 3v18h6"/><path d="M14 3v4h4"/><path d="M14 21l1-3.5 5.2-5.2a1.4 1.4 0 0 1 2 2L17 19.5z"/>',
   supabase:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>'
 };
-const GROUPS=[
+const ALL_GROUPS=[
   {title:'Accounts and estimates', apps:[
     {id:'tokens', name:'Token dashboard', sub:'Tokens, budget, vouchers', path:'Mtokenboard.html', desc:'Tokens, budget, APOs, estimates, vouchers, Mbook, withdrawals, nursery, personnel, vehicle and procurement in one place.'},
     {id:'fsr', name:'FSR estimate entry', sub:'Estimates from FSR items', path:'Mestimate.html', desc:'Prepare estimates from FSR items, with task rates and amounts. Sign in with your token dashboard email and password.'},
@@ -194,7 +231,64 @@ const GROUPS=[
     {id:'supabase', name:'Supabase backup menu', sub:'Ubuntu script (download)', path:'supabase-menu-gui.sh', dl:true, desc:'Graphical menu for Supabase backup, restore and crontab. A shell script for Ubuntu: download it, then run chmod +x supabase-menu-gui.sh and ./supabase-menu-gui.sh.'}
   ]}
 ];
-const ALL=GROUPS.flatMap(g=>g.apps);
+
+/* ---- sign-in settings ---- */
+const SUPABASE_URL='https://ewnrcnfyiulrjritaeam.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3bnJjbmZ5aXVscmpyaXRhZWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTEwMDYsImV4cCI6MjEwNzc2NzAwNn0.rbJNPpBgS4k2uKxM9Igk6S7rN_FL3gZcoJu-8jkgeD8';   /* Project Settings > API > anon public (safe in a web page) */
+const sb=window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true}}):null;
+/* Which tiles each role sees. Use the app ids from the list above. '*' = everything.
+   A user whose profile also carries an "apps" list gets exactly that list instead. */
+const ROLE_APPS={
+  admin:'*',
+  accounts:['tokens','fsr','expense','arrear','reports','monthly'],
+  office:['dms','proceedings','reports','monthly','kanban'],
+  field:['plantation','nursery','spacing','reports'],
+  viewer:['reports','spacing']
+};
+let GROUPS=[], ALL=[], user=null;
+function allowedIds(u){
+  if(Array.isArray(u.apps)&&u.apps.length) return u.apps;
+  const r=ROLE_APPS[u.role]; if(r==='*') return ALL_GROUPS.flatMap(g=>g.apps.map(a=>a.id));
+  return r||[];
+}
+function applyRole(u){
+  const ok=new Set(allowedIds(u));
+  GROUPS=ALL_GROUPS.map(g=>({title:g.title,apps:g.apps.filter(a=>ok.has(a.id))})).filter(g=>g.apps.length);
+  ALL=GROUPS.flatMap(g=>g.apps);
+}
+const pickCol=(row,names)=>{ for(const n of names) if(row[n]!==undefined&&row[n]!==null) return row[n]; };
+async function loadUser(au){
+  let {data:p,error}=await sb.from('profiles').select('*').eq('id',au.id).maybeSingle();
+  if(!p&&!error) ({data:p,error}=await sb.from('profiles').select('*').ilike('email',au.email).maybeSingle());
+  if(error) throw new Error('Could not read your profile: '+error.message);
+  if(!p) throw new Error('No profile found for this user.');
+  const now=Date.now();
+  const from=pickCol(p,['valid_from','validity_start','start_date','from_date']);
+  const to=pickCol(p,['valid_to','valid_until','validity_end','end_date','to_date']);
+  if(from&&now<new Date(String(from)).getTime()) throw new Error('Your access has not started yet.');
+  if(to&&now>new Date(String(to)).getTime()+86399999) throw new Error('Your access has expired.');
+  let perms=p.permissions;
+  if(typeof perms==='string'){ try{ perms=JSON.parse(perms); }catch(e){} }
+  const role=String(p.role??(typeof perms==='string'?perms:(perms&&perms.role))??'').trim().toLowerCase().replace(/[\s-]+/g,'_');
+  let apps=null;
+  if(perms&&Array.isArray(perms.apps)) apps=perms.apps;
+  else if(Array.isArray(p.apps)) apps=p.apps;
+  else if(Array.isArray(perms)) apps=perms.map(String);
+  return {name:p.name||au.email, email:p.email||au.email, role, apps, raw:{cols:Object.keys(p), permissions:p.permissions}};
+}
+async function signIn(email,password){
+  if(!sb) throw new Error('Sign-in service could not load. Check your internet connection.');
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error||!data.user){
+    const m=(error&&error.message)||'';
+    if(/invalid login credentials/i.test(m)) throw new Error('Wrong user name or password');
+    if(/api key|apikey|jwt/i.test(m)||/PASTE_YOUR/.test(SUPABASE_ANON_KEY)) throw new Error('The Supabase anon key in index.html is missing or wrong ('+(m||'no key')+').');
+    if(/not confirmed/i.test(m)) throw new Error('This email is not confirmed yet in Supabase (Authentication > Users).');
+    throw new Error(m||'Could not sign in. Try again.');
+  }
+  try{ return await loadUser(data.user); }
+  catch(e){ await sb.auth.signOut(); throw e; }
+}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let last=''; try{ last=localStorage.getItem('officeLauncherLast')||''; }catch(e){}
@@ -213,14 +307,14 @@ function tile(a){
 }
 const NOTE='<p class="note">Each application asks you to sign in when it opens.</p>';
 function showSections(){
+  if(!GROUPS.length){ $('page').innerHTML='<p class="empty" role="status">No applications are assigned to your account yet. Please contact the administrator.</p><p class="note">Signed in as '+esc(user?user.email||user.name:'')+'. Role received: “'+esc(user&&user.role?user.role:'(empty)')+'”. App list received: '+esc(user&&user.apps?user.apps.join(', '):'(none)')+'. Known roles: '+esc(Object.keys(ROLE_APPS).join(', '))+'.</p><p class="note">Profile columns: '+esc(user&&user.raw?user.raw.cols.join(', '):'')+'. permissions = '+esc(user&&user.raw?JSON.stringify(user.raw.permissions):'')+'</p>'; return; }
   $('page').innerHTML=GROUPS.map((g,i)=>'<section class="sec" id="sec'+i+'" aria-labelledby="h'+i+'"><h2 class="sec-title" id="h'+i+'">'+esc(g.title)+'</h2><div class="tiles">'+g.apps.map(tile).join('')+'</div></section>').join('')+NOTE;
 }
-$('tabs').innerHTML=GROUPS.map((g,i)=>'<button class="tab" type="button" data-i="'+i+'">'+esc(g.title)+'</button>').join('');
 let active=0, lock=0;
 function setActive(i){ active=i; document.querySelectorAll('.tab').forEach((b,k)=>{ if(k===i) b.setAttribute('aria-current','true'); else b.removeAttribute('aria-current'); }); const t=document.querySelector('.tab[aria-current]'); if(t&&t.scrollIntoView&&!searching()) t.scrollIntoView({block:'nearest',inline:'nearest'}); }
 function measure(){ document.documentElement.style.setProperty('--hdr',$('hdr').offsetHeight+'px'); document.documentElement.style.setProperty('--shell-h',$('shell').offsetHeight+'px'); }
 function spy(){
-  if(searching()||Date.now()<lock) return;
+  if(!GROUPS.length||searching()||Date.now()<lock) return;
   const y=$('hdr').offsetHeight+30; let cur=0;
   GROUPS.forEach((_,i)=>{ const el=$('sec'+i); if(el&&el.getBoundingClientRect().top<=y) cur=i; });
   if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-2) cur=GROUPS.length-1;
@@ -280,27 +374,38 @@ document.addEventListener('keydown',e=>{
   else if(searching()){ closeSearch(); $('searchOpen').focus(); }
 });
 
-showSections(); measure(); setActive(0); spy();
-/* direct link: index.html?app=kanban opens that application straight away */
-const want=new URLSearchParams(location.search).get('app');
-if(want&&find(want)) openApp(want);
+function startApp(u){
+  user=u; applyRole(u);
+  document.body.classList.remove('locked'); $('login').hidden=true;
+  $('whoName').textContent=u.name; $('whoRole').textContent=u.role||'no role'; $('who').hidden=false;
+  $('tabs').innerHTML=GROUPS.map((g,i)=>'<button class="tab" type="button" data-i="'+i+'">'+esc(g.title)+'</button>').join('');
+  showSections(); measure(); setActive(0); spy();
+  /* direct link: index.html?app=kanban opens that application, only if this user may use it */
+  const want=new URLSearchParams(location.search).get('app');
+  if(want&&find(want)) openApp(want);
+}
+function showLogin(){
+  user=null; GROUPS=[]; ALL=[]; closePanel(); if(searching()) closeSearch();
+  $('who').hidden=true; $('page').innerHTML=''; $('tabs').innerHTML='';
+  document.body.classList.add('locked'); $('login').hidden=false;
+  $('lPass').value=''; $('lErr').textContent=''; $('lEmail').focus();
+}
+$('loginForm').onsubmit=async e=>{
+  e.preventDefault();
+  const em=$('lEmail').value.trim(), pw=$('lPass').value;
+  if(!em||!pw){ $('lErr').textContent='Enter your email and password.'; return; }
+  $('lGo').disabled=true; $('lErr').textContent='';
+  try{ const u=await signIn(em,pw); startApp(u); }
+  catch(err){ $('lErr').textContent=err.message||'Could not sign in. Try again.'; }
+  finally{ $('lGo').disabled=false; }
+};
+$('signOut').onclick=async()=>{ try{ if(sb) await sb.auth.signOut(); }catch(e){} showLogin(); };
+/* keep the person signed in across page reloads while the Supabase session is valid */
+(async()=>{
+  try{ if(sb){ const {data}=await sb.auth.getSession(); if(data.session){ startApp(await loadUser(data.session.user)); return; } } }catch(e){}
+  $('lEmail').focus();
+})();
 </script>
-<noscript>
-<main><h2>Applications</h2><ul>
-<li><a href="Mtokenboard.html">Token dashboard</a></li>
-<li><a href="Mestimate.html">FSR estimate entry</a></li>
-<li><a href="ExpenseTracker.html">Expense &amp; cash tracker</a></li>
-<li><a href="arrear_bill_app.html">Arrear bill</a></li>
-<li><a href="Mfile.html">Document management</a></li>
-<li><a href="Mproceedings.html">Proceedings builder</a></li>
-<li><a href="Mplantation.html">Plantation tracker</a></li>
-<li><a href="Mnursery.html">Seedling portal</a></li>
-<li><a href="plant_spacing.html">Plant spacing</a></li>
-<li><a href="Macc_rpt.html">Mreports</a></li>
-<li><a href="Reports_Generator.html">Reports generator</a></li>
-<li><a href="Mkanban.html">Kanban board</a></li>
-<li><a href="rename_tool.html">File rename console</a></li>
-<li><a href="supabase-menu-gui.sh" download>Supabase backup menu (script)</a></li></ul></main>
-</noscript>
+<noscript><main><p>JavaScript is required to sign in to the office applications.</p></main></noscript>
 </body>
 </html>

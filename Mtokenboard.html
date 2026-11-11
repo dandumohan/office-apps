@@ -102,6 +102,12 @@
       font-size: 12px; padding: 8px 10px; border-radius: var(--radius-sm);
       margin-bottom: 14px; display: none;
     }
+    /* ---- Visitor counter ---- */
+    .visitor-counter { margin-top: 18px; text-align: center; font-size: 12px; color: var(--muted); }
+    .visitor-counter b { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .visitor-chip { font-size: 12px; color: var(--muted); padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; white-space: nowrap; }
+    .visitor-chip b { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .visitor-counter:empty, .visitor-chip:empty { display: none; }
     /* ---- User management (admin) ---- */
     /* ---- Notifications (replace the browser's plain alert / confirm / prompt boxes) ---- */
     .nt-overlay { position: fixed; inset: 0; background: rgba(20, 20, 43, 0.45); display: flex; align-items: center; justify-content: center; z-index: 20000; padding: 16px; animation: nt-fade 0.15s ease-out; }
@@ -491,6 +497,7 @@
       <div class="login-logo">TD</div>
       <div class="login-title">Token Dashboard</div>
       <div class="login-subtitle" id="loginSubtitle">Sign in to manage advance &amp; expenditure tokens</div>
+      <div class="visitor-counter" data-visitors title="Total visits to this site"></div>
 
       <div class="login-tabs" id="loginTabs">
         <button type="button" id="tabPwd" class="active" onclick="setLoginMode('password')">Email &amp; Password</button>
@@ -551,6 +558,7 @@
         <div class="app-title">Token Dashboard</div>
       </div>
       <div class="app-header-right">
+        <span class="visitor-chip" data-visitors title="Total visits to this site"></span>
         <span class="user-chip" id="userChip" style="cursor:pointer;" title="Click to see how you are signed in" onclick="showWhoAmI()"></span>
         <button class="btn-ghost" id="voucherSuiteExportBtn" onclick="exportForVoucherSuite()" title="Download this workbook as .xlsx for the Voucher Suite PDF tool (vouchers, Form-61, Cash Book, etc.)">Export for Voucher Suite</button>
         <button class="btn-ghost" id="userMgmtBtn" style="display:none;" onclick="openUserManagement()" title="Add, edit, activate/deactivate and delete users">Users</button>
@@ -2808,6 +2816,34 @@
     });
     return _sbClient;
   }
+
+  /* ---------- visitor counter ----------
+     Calls the record_visit() RPC (see visitor_counter.sql). A visit is counted once per browser
+     session; a "unique visitor" is a browser that has never been counted before (localStorage).
+     Failures are silent: the counter never blocks or breaks the app. */
+  function renderVisitors_(r) {
+    if (!r) return;
+    const fmt = n => Number(n || 0).toLocaleString('en-IN');
+    const html = '\u{1F441} <b>' + fmt(r.total_visits) + '</b> visits \u00B7 <b>' + fmt(r.unique_visitors) + '</b> visitors';
+    document.querySelectorAll('[data-visitors]').forEach(el => { el.innerHTML = html; });
+  }
+  async function recordVisit_() {
+    try {
+      let counted = false, isNew = false;
+      try { counted = sessionStorage.getItem('td_visit_counted') === '1'; } catch (e) {}
+      try { isNew = !localStorage.getItem('td_visitor_id'); } catch (e) {}
+      const res = await db().rpc('record_visit', { p_count: !counted, p_new_visitor: !counted && isNew });
+      if (res.error || !res.data) return;
+      const r = Array.isArray(res.data) ? res.data[0] : res.data;
+      if (!counted) {
+        try { sessionStorage.setItem('td_visit_counted', '1'); } catch (e) {}
+        try { if (isNew) localStorage.setItem('td_visitor_id', String(Date.now())); } catch (e) {}
+      }
+      renderVisitors_(r);
+    } catch (e) { /* ignore */ }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', recordVisit_);
+  else recordVisit_();
 
   /* ---------- small helpers ---------- */
   const S_ = v => (v === null || v === undefined) ? '' : String(v);

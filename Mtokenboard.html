@@ -2855,6 +2855,8 @@
   setInterval(refreshVisitors_, 15000);
   document.addEventListener('visibilitychange', refreshVisitors_);
   window.addEventListener('focus', refreshVisitors_);
+  window.addEventListener('pageshow', refreshVisitors_);   // mobile back/forward cache restores
+  window.addEventListener('online', refreshVisitors_);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', recordVisit_);
   else recordVisit_();
 
@@ -6874,7 +6876,7 @@
     el.innerHTML = '<option value="">All</option>' + schemeList(estimateCache.map(e => e.Scheme)).map(v => `<option value="${String(v).replace(/"/g, '&quot;')}">${v}</option>`).join('');
     if (cur) el.value = cur; el.dataset.populated = '1';
   }
-  function bootApp() { loadSchemeMaster().then(() => { fillEstSchemeList_(); bootAppData_(); }, bootAppData_); }
+  function bootApp() { refreshVisitors_(); loadSchemeMaster().then(() => { fillEstSchemeList_(); bootAppData_(); }, bootAppData_); }
   function bootAppData_() {
     // Estimates load first since Advance's Trans_id dropdown is sourced from them.
     gsr().withSuccessHandler(rows => {

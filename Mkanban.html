@@ -136,7 +136,46 @@
         .pinbar-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
         .pinbar-toggle { font-size: 12px; font-weight: 600; }
         .pinbar-body { display: flex; gap: 12px; overflow-x: auto; padding: 10px 0 4px; }
-        #pinned { position: sticky; top: 8px; z-index: 20; margin-bottom: 16px; }
+        #topStack { position: sticky; top: 8px; z-index: 20; }
+        #pinned { margin-bottom: 16px; }
+
+        /* ---------- Slip sections ---------- */
+        .slip-boxes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; margin-top: 12px; }
+        @media (max-width: 860px) { .slip-boxes { grid-template-columns: 1fr; } }
+        .slip-box { background: var(--col); border: 1.5px dashed transparent; border-radius: 12px; padding: 14px; min-height: 120px; transition: border-color .15s, background .15s; }
+        .slip-box.drag-over { border-color: var(--accent); background: var(--accent-soft); }
+        .slip-box .sec-head { margin-bottom: 12px; }
+        .slip-box .slip { position: relative; margin-bottom: 10px; cursor: grab; }
+        .slip-box .slip .slip-text { padding-right: 26px; }
+        .slip-grip { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 6px; color: #9a8200; font-size: 18px; line-height: 1; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+        .slip-grip:hover { background: rgba(122, 95, 0, .1); }
+        .slip.dragging { opacity: .35; }
+        .slip-ghost { position: fixed; z-index: 1000; margin: 0 !important; pointer-events: none; opacity: .95; transform: rotate(2deg); box-shadow: 0 12px 28px rgba(23, 32, 51, .25); cursor: grabbing; }
+        body.slip-dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; }
+        .slip-move { height: 24px; max-width: 96px; border: 1px solid #eedd8c; border-radius: 6px; background: #fffdf0; color: #7a5f00; font: inherit; font-size: 12px; font-weight: 600; padding: 0 4px; }
+
+        /* ---------- Tabs ---------- */
+        .tabs { display: flex; gap: 4px; margin-bottom: 18px; padding: 4px; background: var(--col); border-radius: 12px; width: fit-content; max-width: 100%; overflow-x: auto; }
+        .tab { display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 8px 18px; border-radius: 9px; font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+        .tab:hover { background: rgba(255, 255, 255, .55); }
+        .tab[aria-selected="true"] { background: #fff; color: var(--accent); box-shadow: 0 1px 3px rgba(23, 32, 51, .12); }
+        .tab .count { background: rgba(23, 32, 51, .08); }
+        .tab[aria-selected="true"] .count { background: var(--accent-soft); color: var(--accent); }
+
+        /* ---------- Processing ticker (top, rotates every 30s) ---------- */
+        .procbar { position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding: 10px 14px; background: #fff7e8; border: 1px solid #ecd3a0; border-left: 4px solid var(--prog); border-radius: 12px; box-shadow: 0 8px 24px rgba(23, 32, 51, .12); }
+        .proc-label { display: flex; align-items: center; gap: 8px; flex-shrink: 0; font-size: 12px; font-weight: 600; color: #7a4d0a; }
+        .proc-label .count { background: rgba(180, 116, 26, .15); color: #7a4d0a; }
+        .proc-item { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; animation: procIn .4s ease; }
+        .proc-title { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .proc-due { flex-shrink: 0; font-size: 12px; color: var(--muted); }
+        .proc-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .proc-pos { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 34px; text-align: center; }
+        .proc-timer { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--prog); transform-origin: left; animation: procTimer 30s linear forwards; }
+        @keyframes procIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+        @keyframes procTimer { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+        @media (max-width: 560px) { .procbar { flex-wrap: wrap; } .proc-due { display: none; } }
+        @media (prefers-reduced-motion: reduce) { .proc-item { animation: none; } }
 
         /* ---------- Dashboard ---------- */
         .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
@@ -238,9 +277,20 @@
             </div>
         </header>
 
-        <!-- Pinned slips: stay on top of the screen while scrolling -->
-        <div id="pinned" class="hidden"></div>
+        <nav class="tabs" role="tablist" aria-label="Sections">
+            <button id="tabbtn-dashboard" role="tab" onclick="setTab('dashboard')" class="tab"></button>
+            <button id="tabbtn-tasks" role="tab" onclick="setTab('tasks')" class="tab"></button>
+            <button id="tabbtn-slips" role="tab" onclick="setTab('slips')" class="tab"></button>
+        </nav>
 
+        <!-- Pinned slips: stay on top of the screen while scrolling -->
+        <div id="topStack">
+            <!-- Processing tasks: one at a time, changes every 30 seconds -->
+            <div id="procBar" class="hidden"></div>
+            <div id="pinned" class="hidden"></div>
+        </div>
+
+        <div id="tab-tasks" class="tabpane hidden">
         <section class="panel">
             <h2 class="panel-title">New task</h2>
             <div class="task-form">
@@ -276,21 +326,6 @@
             </div>
         </section>
 
-        <!-- Noting slips -->
-        <section class="panel">
-            <div id="notesHead"></div>
-            <div id="notesBody">
-                <div class="slip-form">
-                    <input id="noteText" class="input" placeholder="Jot something down..." onkeydown="if(event.key==='Enter')addNote()">
-                    <button onclick="addNote()" class="btn btn-slip">Add slip</button>
-                </div>
-                <div id="noteList" class="slip-grid"></div>
-            </div>
-        </section>
-
-        <!-- Dashboard -->
-        <section id="dashboard" class="panel"></section>
-
         <div class="board">
             <div id="tasks" class="col"></div>
             <div id="processing" class="col"></div>
@@ -299,6 +334,34 @@
 
         <!-- Tasks Box: sits under the board -->
         <div id="box" class="box-panel"></div>
+        </div>
+
+        <div id="tab-slips" class="tabpane hidden">
+        <!-- Noting slips -->
+        <section class="panel">
+            <div id="notesHead"></div>
+            <div id="notesBody">
+                <div class="slip-form">
+                    <input id="noteText" class="input" placeholder="Jot something down..." onkeydown="if(event.key==='Enter')addNote()">
+                    <select id="noteSection" class="input" style="width:140px;flex-shrink:0" aria-label="Section">
+                        <option value="office">Office</option>
+                        <option value="general" selected>General</option>
+                        <option value="personal">Personal</option>
+                    </select>
+                    <button onclick="addNote()" class="btn btn-slip">Add slip</button>
+                </div>
+                <p id="noteMsg" class="status"></p>
+                <div id="noteList" class="slip-boxes"></div>
+            </div>
+        </section>
+
+        </div>
+
+        <div id="tab-dashboard" class="tabpane">
+        <!-- Dashboard -->
+        <section id="dashboard" class="panel"></section>
+
+        </div>
     </div>
 
     <script>
@@ -333,7 +396,8 @@
         async function loadNotes() {
             const { data: rows, error } = await sb.from('notes').select('*').order('created_at', { ascending: false });
             if (error) { setStatus('Slips load failed: ' + error.message, true); return; }
-            notes = rows.map(r => ({ id: r.id, text: r.text, pinned: !!r.pinned }));
+            const local = noteSecLocal();
+            notes = rows.map(r => ({ id: r.id, text: r.text, pinned: !!r.pinned, section: secOf(r.section || local[r.id]) }));
             renderNotes();
             // One-time move of slips saved earlier in this browser into Supabase
             try {
@@ -345,14 +409,106 @@
             } catch (e) {}
         }
 
+        // ---------- Slip sections: Office / General / Personal ----------
+        const NOTE_SECTIONS = [
+            { key: 'office', label: 'Office', tone: 'slate' },
+            { key: 'general', label: 'General', tone: 'note' },
+            { key: 'personal', label: 'Personal', tone: 'done' }
+        ];
+        const secOf = k => NOTE_SECTIONS.some(x => x.key === k) ? k : 'general';
+        // Browser copy of each slip's section: used when the notes table has no "section" column yet
+        function noteSecLocal() { try { return JSON.parse(localStorage.getItem('kanban_note_sections')) || {}; } catch (e) { return {}; } }
+        function saveNoteSec(id, sec) {
+            const m = noteSecLocal(); m[id] = sec;
+            try { localStorage.setItem('kanban_note_sections', JSON.stringify(m)); } catch (e) {}
+        }
+        function noteMsg(msg, isError) {
+            const el = document.getElementById('noteMsg');
+            el.textContent = msg || ''; el.className = 'status' + (isError ? ' is-error' : '');
+        }
+        const NOTE_SYNC_HINT = 'Sections are saved in this browser only. To sync them, add a text column named "section" to the notes table in Supabase.';
+
         async function addNote() {
             const el = document.getElementById('noteText');
             if (!el.value.trim()) return;
-            const { error } = await sb.from('notes').insert({ text: el.value.trim(), pinned: false });
-            if (error) { setStatus('Add slip failed: ' + error.message, true); return; }
+            const sec = secOf(document.getElementById('noteSection').value);
+            let res = await sb.from('notes').insert({ text: el.value.trim(), pinned: false, section: sec }).select('id');
+            if (res.error) {
+                // "section" column missing: save the slip without it and remember the section locally
+                res = await sb.from('notes').insert({ text: el.value.trim(), pinned: false }).select('id');
+                if (res.error) { setStatus('Add slip failed: ' + res.error.message, true); noteMsg('Add slip failed: ' + res.error.message, true); return; }
+                noteMsg(NOTE_SYNC_HINT, true);
+            }
+            if (res.data && res.data[0]) saveNoteSec(res.data[0].id, sec);
             el.value = '';
             loadNotes();
         }
+
+        async function moveNote(id, sec) {
+            const n = notes.find(x => x.id === id); sec = secOf(sec);
+            if (!n || n.section === sec) return;
+            n.section = sec; saveNoteSec(id, sec); renderNotes();
+            const { error } = await sb.from('notes').update({ section: sec }).eq('id', id);
+            noteMsg(error ? NOTE_SYNC_HINT : '', !!error);
+        }
+        // Pointer-based drag & drop (works with mouse, pen and touch)
+        let dragState = null;
+        function dragBoxAt(x, y) { const el = document.elementFromPoint(x, y); return el ? el.closest('.slip-box') : null; }
+        function dragClear() {
+            document.querySelectorAll('.slip-box.drag-over').forEach(b => b.classList.remove('drag-over'));
+        }
+        function dragEnd() {
+            if (!dragState) return;
+            if (dragState.ghost) dragState.ghost.remove();
+            if (dragState.el) dragState.el.classList.remove('dragging');
+            document.body.classList.remove('slip-dragging');
+            dragClear();
+            dragState = null;
+        }
+        document.addEventListener('pointerdown', e => {
+            if (e.button !== 0) return;
+            const el = e.target.closest('.slip[data-id]');
+            if (!el || el.classList.contains('slip-compact')) return;
+            if (e.target.closest('button, select, input')) return;
+            // Touch: only the grip starts a drag (so the page can still scroll). Mouse: anywhere on the slip.
+            if (e.pointerType !== 'mouse' && !e.target.closest('.slip-grip')) return;
+            dragState = { id: el.dataset.id, el, x: e.clientX, y: e.clientY, started: false, ghost: null };
+        });
+        document.addEventListener('pointermove', e => {
+            if (!dragState) return;
+            const st = dragState;
+            if (!st.started) {
+                if (Math.hypot(e.clientX - st.x, e.clientY - st.y) < 6) return;
+                st.started = true;
+                const r = st.el.getBoundingClientRect();
+                st.dx = e.clientX - r.left; st.dy = e.clientY - r.top;
+                st.ghost = st.el.cloneNode(true);
+                st.ghost.classList.add('slip-ghost');
+                st.ghost.style.width = r.width + 'px';
+                document.body.appendChild(st.ghost);
+                st.el.classList.add('dragging');
+                document.body.classList.add('slip-dragging');
+            }
+            e.preventDefault();
+            st.ghost.style.left = (e.clientX - st.dx) + 'px';
+            st.ghost.style.top = (e.clientY - st.dy) + 'px';
+            dragClear();
+            const box = dragBoxAt(e.clientX, e.clientY);
+            if (box) box.classList.add('drag-over');
+            // auto-scroll when near the top or bottom of the screen
+            if (e.clientY < 70) window.scrollBy(0, -14);
+            else if (e.clientY > window.innerHeight - 70) window.scrollBy(0, 14);
+        });
+        document.addEventListener('pointerup', e => {
+            if (!dragState) return;
+            if (dragState.started) {
+                const box = dragBoxAt(e.clientX, e.clientY);
+                const id = dragState.id;
+                dragEnd();
+                if (box) moveNote(id, box.dataset.sec);
+            } else dragState = null;
+        });
+        document.addEventListener('pointercancel', dragEnd);
         async function pinNote(id) {
             const n = notes.find(x => x.id === id); if (!n) return;
             const { error } = await sb.from('notes').update({ pinned: !n.pinned }).eq('id', id);
@@ -374,9 +530,14 @@
         }
 
         function slip(n, compact) {
-            return `<div class="slip ${compact ? 'slip-compact' : ''}">
+            const moveSel = compact ? '' : `<select class="slip-move" onchange="moveNote('${n.id}', this.value)" aria-label="Move slip to section" title="Move to section">
+                    ${NOTE_SECTIONS.map(x => `<option value="${x.key}" ${x.key === n.section ? 'selected' : ''}>${x.key === n.section ? '' : 'Move to '}${x.label}</option>`).join('')}
+                </select>`;
+            return `<div class="slip ${compact ? 'slip-compact' : ''}" ${compact ? '' : `data-id="${n.id}"`}>
+                ${compact ? '' : `<span class="slip-grip" title="Drag to another section" aria-label="Drag handle">⠿</span>`}
                 <p class="slip-text">${esc(n.text)}</p>
                 <div class="slip-actions">
+                    ${moveSel}
                     <button onclick="pinNote('${n.id}')" title="${n.pinned ? 'Unpin' : 'Pin on top'}" class="${n.pinned ? 'is-pinned' : ''}">${n.pinned ? 'Unpin' : 'Pin'}</button>
                     <button onclick="editNote('${n.id}')">Edit</button>
                     <button onclick="delNote('${n.id}')" class="danger">Delete</button>
@@ -395,16 +556,50 @@
                 </button>
                 ${show.pinned ? `<div class="pinbar-body">${pinned.map(n => slip(n, true)).join('')}</div>` : ''}
             </div>` : '';
+            renderTabs();
             document.getElementById('notesHead').innerHTML = header('Noting slips', 'note', 'notes', notes.length);
             document.getElementById('notesBody').classList.toggle('hidden', !show.notes);
             const rest = notes.filter(n => !n.pinned);
-            document.getElementById('noteList').innerHTML = rest.length ? rest.map(n => slip(n, false)).join('')
-                : `<p class="empty">${notes.length ? 'All slips are pinned on top.' : 'No slips yet. Add one above.'}</p>`;
+            document.getElementById('noteList').innerHTML = NOTE_SECTIONS.map(sec => {
+                const items = rest.filter(n => n.section === sec.key);
+                return `<div class="slip-box" data-sec="${sec.key}">
+                    <div class="sec-head"><h3 class="sec-title"><span class="dot dot-${sec.tone}"></span>${sec.label}<span class="count">${items.length}</span></h3></div>
+                    ${items.length ? items.map(n => slip(n, false)).join('') : `<p class="empty">No slips here. Drag one in or use "Move to".</p>`}
+                </div>`;
+            }).join('');
         }
 
         function toggleMonth(key) { monthOpen[key] = monthOpen[key] === false; saveMonthState(); render(); }
         function toggleMBox(key) { mbox[key] = !mbox[key]; saveMonthState(); render(); }
         try { Object.assign(show, JSON.parse(localStorage.getItem('kanban_show_v3')) || {}); } catch (e) {}
+        show.notes = true; show.dashboard = true;   // always open inside their tabs
+
+        // ---------- Tabs: Tasks / Slips / Dashboard ----------
+        const TABS = ['dashboard', 'tasks', 'slips'];
+        let tab = 'dashboard';
+        try { const t = localStorage.getItem('kanban_tab'); if (TABS.includes(t)) tab = t; } catch (e) {}
+
+        function setTab(t) {
+            tab = t;
+            try { localStorage.setItem('kanban_tab', t); } catch (e) {}
+            renderTabs();
+            window.scrollTo({ top: 0 });
+        }
+
+        function renderTabs() {
+            const counts = {
+                tasks: data.filter(i => i.s !== 'completed').length,
+                slips: notes.length,
+                dashboard: undefined
+            };
+            const labels = { tasks: 'Tasks', slips: 'Slips', dashboard: 'Dashboard' };
+            TABS.forEach(t => {
+                const b = document.getElementById('tabbtn-' + t);
+                b.setAttribute('aria-selected', t === tab);
+                b.innerHTML = labels[t] + (counts[t] === undefined ? '' : `<span class="count">${counts[t]}</span>`);
+                document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+            });
+        }
 
         function toggleBoard(key) {
             show[key] = !show[key];
@@ -413,12 +608,13 @@
         }
 
         function header(label, tone, key, count) {
-            const on = show[key];
+            const fixed = key === 'notes' || key === 'dashboard';
+            const on = fixed ? true : show[key];
             return `<div class="sec-head ${on ? 'open' : ''}">
                 <h3 class="sec-title"><span class="dot dot-${tone}"></span>${label}${count === undefined ? '' : `<span class="count">${count}</span>`}</h3>
-                <button onclick="toggleBoard('${key}')" role="switch" aria-checked="${on}" aria-label="${on ? 'Collapse' : 'Expand'} ${label}" title="${on ? 'Collapse' : 'Expand'}" class="switch">
+                ${fixed ? '' : `<button onclick="toggleBoard('${key}')" role="switch" aria-checked="${on}" aria-label="${on ? 'Collapse' : 'Expand'} ${label}" title="${on ? 'Collapse' : 'Expand'}" class="switch">
                     <span class="knob"></span>
-                </button>
+                </button>`}
             </div>`;
         }
 
@@ -744,7 +940,54 @@
                 ${renderMonthBoxes()}`);
         }
 
+        // ---------- Processing ticker: cycles through processing tasks every 30 seconds ----------
+        const PROC_INTERVAL = 30000;
+        let procIdx = 0, procTimer = null;
+
+        function procItems() { return data.filter(i => i.s === 'processing' && !i.boxed); }
+
+        function renderProc(restart) {
+            const el = document.getElementById('procBar');
+            const items = procItems();
+            if (!items.length) {
+                el.classList.add('hidden'); el.innerHTML = '';
+                clearInterval(procTimer); procTimer = null;
+                return;
+            }
+            if (procIdx >= items.length) procIdx = 0;
+            const it = items[procIdx];
+            const multi = items.length > 1;
+            el.classList.remove('hidden');
+            el.innerHTML = `<div class="procbar p-${it.p}">
+                <span class="proc-label"><span class="dot dot-prog"></span>Processing<span class="count">${items.length}</span></span>
+                <div class="proc-item" aria-live="polite">
+                    <p class="proc-title" title="${esc(it.t)}">${esc(it.t)}</p>
+                    <span class="proc-due">Due <b>${esc(it.d)}</b></span>
+                    <span class="pill pill-${it.p}">${it.p.charAt(0).toUpperCase() + it.p.slice(1)}</span>
+                </div>
+                ${multi ? `<div class="proc-nav">
+                    <button onclick="procStep(-1)" class="icon-btn" aria-label="Previous processing task">←</button>
+                    <span class="proc-pos">${procIdx + 1}/${items.length}</span>
+                    <button onclick="procStep(1)" class="icon-btn" aria-label="Next processing task">→</button>
+                </div>` : ''}
+                ${multi ? `<div class="proc-timer"></div>` : ''}
+            </div>`;
+            if (restart || !procTimer) {
+                clearInterval(procTimer);
+                procTimer = multi ? setInterval(() => procStep(1), PROC_INTERVAL) : null;
+            }
+        }
+
+        function procStep(dir) {
+            const n = procItems().length;
+            if (!n) return;
+            procIdx = (procIdx + dir + n) % n;
+            renderProc(true);
+        }
+
         function render() {
+            renderTabs();
+            renderProc();
             renderNotes();
             renderDashboard();
             const defs = { tasks: ['Tasks list', 'todo'], processing: ['Processing', 'prog'], completed: ['Completed', 'done'] };
@@ -834,6 +1077,7 @@
                 }
             } else {
                 data = [];
+                renderProc();
                 notes = []; renderNotes();
                 if (channel) { sb.removeChannel(channel); channel = null; }
             }

@@ -7,7 +7,7 @@
     <title>Kanban Board</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -30,6 +30,13 @@
             --high: #c23b2e;
             --med: #c48a12;
             --low: #3a7bd5;
+            --yellow: #ffe56b;
+            --yellow-hover: #ffd93d;
+            --peach: #ffc6a5;
+            --lime: #ddefa9;
+            --lav: #c8b4f5;
+            --ink-dark: #1f1e1c;
+            --head: 'Bree Serif', Georgia, serif;
         }
 
         .hidden { display: none !important; }
@@ -39,7 +46,7 @@
             margin: 0;
             background: var(--bg);
             color: var(--ink);
-            font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             font-size: 14px;
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
@@ -139,6 +146,29 @@
         #topStack { position: sticky; top: 8px; z-index: 20; }
         #pinned { margin-bottom: 16px; }
 
+        /* ---------- Note composer ---------- */
+        .composer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 1px 2px rgba(23,32,51,.05); overflow: hidden; }
+        .composer-text { display: block; width: 100%; min-height: 84px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font: inherit; font-size: 14px; color: var(--ink); background: #fff; }
+        .composer-text:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+        .composer-body { padding: 12px; }
+        .composer-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+        .chip-btn { height: 36px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink-2); font-size: 12px; font-weight: 600; }
+        .chip-btn:hover { background: #f6f7f9; border-color: #cdd3dc; }
+        .draft-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--muted); position: relative; cursor: default; }
+        .draft-tag::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #e8822a; }
+        .draft-tag:hover::after { content: 'Saved privately in this browser'; position: absolute; left: 0; bottom: 140%; white-space: nowrap; background: #fff; color: #000; border: 1px solid #999; padding: 4px 8px; font-size: 13px; font-weight: 400; z-index: 20; }
+        .composer-foot .sec-sel { height: 36px; width: 120px; margin-left: auto; }
+        .btn-note { height: 40px; padding: 0 18px; border-radius: 10px; border: 1.5px solid #3b2d00; background: #ffe066; color: #1f1700; font-size: 14px; font-weight: 700; box-shadow: 0 2px 0 rgba(59,45,0,.35); display: inline-flex; align-items: center; gap: 6px; }
+        .btn-note:hover { background: #ffd84a; }
+        .att-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .att { position: relative; }
+        .att img { height: 64px; border-radius: 8px; border: 1px solid var(--line); display: block; }
+        .att button { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; border: 0; background: #172033; color: #fff; font-size: 12px; line-height: 1; }
+        .slip-img { display: block; max-width: 100%; max-height: 180px; border-radius: 6px; margin-top: 8px; }
+        .box-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 0; color: var(--muted); font-size: 13px; font-weight: 600; }
+        .box-empty button { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--ink-2); font-size: 22px; line-height: 1; }
+        .box-empty button:hover { background: #f6f7f9; }
+
         /* ---------- Slip sections ---------- */
         .slip-boxes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; margin-top: 12px; }
         @media (max-width: 860px) { .slip-boxes { grid-template-columns: 1fr; } }
@@ -234,6 +264,51 @@
         .login-msg { margin: 16px 0 0; min-height: 18px; text-align: center; font-size: 13px; color: var(--muted); }
 
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+        /* ---------- Fibo-style font + colours on the light theme ---------- */
+        .brand, .panel-title, .sec-title, .login-card h1, .stat-num, .subhead, .pinbar-title, .proc-label { font-family: var(--head); font-weight: 400; }
+        .brand { font-size: 20px; }
+        .panel-title { font-size: 18px; }
+        .sec-title { font-size: 16px; }
+        .stat-num { font-size: 30px; }
+        .brand-mark { background: var(--yellow); border: 1.5px solid var(--ink-dark); }
+        .brand-mark svg { fill: var(--ink-dark); }
+        .btn-primary, .btn-slip, .btn-note { background: var(--yellow); color: var(--ink-dark); border: 1.5px solid var(--ink-dark); box-shadow: 2px 2px 0 var(--ink-dark); font-weight: 700; }
+        .btn-primary:hover, .btn-slip:hover, .btn-note:hover { background: var(--yellow-hover); }
+        .tab[aria-selected="true"] { background: var(--yellow); color: var(--ink-dark); box-shadow: 0 0 0 1.5px var(--ink-dark); }
+        .tab[aria-selected="true"] .count { background: rgba(31, 30, 28, .12); color: var(--ink-dark); }
+        .draft-tag::before { background: #e8822a; }
+
+        /* Slips: pastel sticky notes per section */
+        .slip { background: var(--peach); border: 1.5px solid var(--ink-dark); box-shadow: 2px 2px 0 rgba(31, 30, 28, .55); }
+        .slip-box[data-sec="office"] .slip { background: var(--lav); }
+        .slip-box[data-sec="general"] .slip { background: var(--peach); }
+        .slip-box[data-sec="personal"] .slip { background: var(--lime); }
+        .slip-compact { background: var(--yellow); }
+        .slip-text { color: var(--ink-dark); font-weight: 500; }
+        .slip-actions button, .slip-grip { color: #3b2d00; }
+        .slip-move { background: rgba(255, 255, 255, .6); border-color: rgba(31, 30, 28, .35); color: var(--ink-dark); }
+        .dot-slate { background: var(--lav); } .dot-note { background: var(--peach); } .dot-done { background: var(--lime); }
+        .slip-box .dot, .brand-mark + * { }
+        .dot-slate, .dot-note { border: 1px solid rgba(31, 30, 28, .45); }
+
+        /* ---------- Column colours: Tasks = lavender, Processing = peach, Completed = lime ---------- */
+        #tasks, .mbox-tasks { --tone: var(--lav); --tone-soft: #f1ecfc; }
+        #processing, .mbox-processing { --tone: var(--peach); --tone-soft: #fff0e7; }
+        #completed, .mbox-completed { --tone: var(--lime); --tone-soft: #f4fadf; }
+        #tasks, #processing, #completed { background: var(--tone-soft); border: 1.5px solid var(--tone); }
+        #tasks > .sec-head, #processing > .sec-head, #completed > .sec-head { background: var(--tone); border: 1.5px solid var(--ink-dark); border-radius: 10px; padding: 8px 12px; color: var(--ink-dark); }
+        #tasks .sec-title, #processing .sec-title, #completed .sec-title { color: var(--ink-dark); }
+        #tasks .count, #processing .count, #completed .count { background: rgba(255, 255, 255, .75); color: var(--ink-dark); }
+        #tasks .sec-head .dot, #processing .sec-head .dot, #completed .sec-head .dot { display: none; }
+        .mbox-tasks, .mbox-processing, .mbox-completed { background: var(--tone-soft); border-color: var(--tone); }
+        .mbox-tasks .mbox-head, .mbox-processing .mbox-head, .mbox-completed .mbox-head { background: var(--tone); border: 1.5px solid var(--ink-dark); border-radius: 8px; padding: 6px 10px; }
+        .mbox-tasks .mbox-head.open, .mbox-processing .mbox-head.open, .mbox-completed .mbox-head.open { margin-bottom: 12px; }
+        .mbox-tasks .mbox-toggle, .mbox-processing .mbox-toggle, .mbox-completed .mbox-toggle { color: var(--ink-dark); }
+        .mbox-tasks .sec-title .dot, .mbox-processing .sec-title .dot, .mbox-completed .sec-title .dot { display: none; }
+        .mbox-tasks .count, .mbox-processing .count, .mbox-completed .count { background: rgba(255, 255, 255, .75); color: var(--ink-dark); }
+        .mbox-tasks .mgroup, .mbox-processing .mgroup, .mbox-completed .mgroup { background: var(--tone); color: var(--ink-dark); }
+        .mbox-tasks .mgroup .count, .mbox-processing .mgroup .count, .mbox-completed .mgroup .count { background: transparent; }
     </style>
 </head>
 
@@ -293,28 +368,27 @@
         <div id="tab-tasks" class="tabpane hidden">
         <section class="panel">
             <h2 class="panel-title">New task</h2>
-            <div class="task-form">
-                <div class="f-wide">
-                    <label class="lbl" for="t">Task</label>
-                    <input id="t" class="input" placeholder="What needs doing?" onkeydown="if(event.key==='Enter')add()">
+            <div class="composer">
+                <div class="composer-body">
+                    <textarea id="t" class="composer-text" placeholder="What needs doing?" oninput="saveTaskDraft()" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();add()}"></textarea>
+                    <div id="taskAttRow" class="att-row"></div>
+                    <div class="composer-foot">
+                        <button type="button" class="chip-btn" onclick="document.getElementById('taskImg').click()">🖼 Add image</button>
+                        <input id="taskImg" type="file" accept="image/*" hidden onchange="pickImage(this, taskAtt, renderTaskAtt)">
+                        <button type="button" class="chip-btn" onclick="addGif(taskAtt, renderTaskAtt)">GIF</button>
+                        <span class="draft-tag">Private draft</span>
+                    </div>
+                    <div class="composer-foot">
+                        <label class="chip-btn" for="d" style="gap:8px">Due <input id="d" type="date" style="border:0;background:none;font:inherit;color:inherit"></label>
+                        <label class="chip-btn" for="cd" style="gap:8px">Completion <input id="cd" type="date" style="border:0;background:none;font:inherit;color:inherit"></label>
+                        <select id="p" class="input sec-sel" aria-label="Priority" style="margin-left:auto">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                        <button type="button" onclick="add()" class="btn-note">+ Add task</button>
+                    </div>
                 </div>
-                <div>
-                    <label class="lbl" for="d">Due date</label>
-                    <input id="d" type="date" class="input">
-                </div>
-                <div>
-                    <label class="lbl" for="cd">Completion date</label>
-                    <input id="cd" type="date" class="input">
-                </div>
-                <div>
-                    <label class="lbl" for="p">Priority</label>
-                    <select id="p" class="input">
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                    </select>
-                </div>
-                <button onclick="add()" class="btn btn-primary">Add task</button>
             </div>
             <div class="panel-foot">
                 <p id="status" class="status"></p>
@@ -341,14 +415,23 @@
         <section class="panel">
             <div id="notesHead"></div>
             <div id="notesBody">
-                <div class="slip-form">
-                    <input id="noteText" class="input" placeholder="Jot something down..." onkeydown="if(event.key==='Enter')addNote()">
-                    <select id="noteSection" class="input" style="width:140px;flex-shrink:0" aria-label="Section">
-                        <option value="office">Office</option>
-                        <option value="general" selected>General</option>
-                        <option value="personal">Personal</option>
-                    </select>
-                    <button onclick="addNote()" class="btn btn-slip">Add slip</button>
+                <div class="composer">
+                    <div class="composer-body">
+                        <textarea id="noteText" class="composer-text" placeholder="Write a note…" oninput="saveDraft()" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();addNote()}"></textarea>
+                        <div id="attRow" class="att-row"></div>
+                        <div class="composer-foot">
+                            <button type="button" class="chip-btn" onclick="document.getElementById('noteImg').click()">🖼 Add image</button>
+                            <input id="noteImg" type="file" accept="image/*" hidden onchange="pickImage(this)">
+                            <button type="button" class="chip-btn" onclick="addGif()">GIF</button>
+                            <span class="draft-tag">Private draft</span>
+                            <select id="noteSection" class="input sec-sel" aria-label="Section">
+                                <option value="office">Office</option>
+                                <option value="general" selected>General</option>
+                                <option value="personal">Personal</option>
+                            </select>
+                            <button type="button" onclick="addNote()" class="btn-note">+ Add note</button>
+                        </div>
+                    </div>
                 </div>
                 <p id="noteMsg" class="status"></p>
                 <div id="noteList" class="slip-boxes"></div>
@@ -428,19 +511,62 @@
         }
         const NOTE_SYNC_HINT = 'Sections are saved in this browser only. To sync them, add a text column named "section" to the notes table in Supabase.';
 
+        // ---------- Composer: private draft, images, GIFs ----------
+        let attachments = [];
+        const IMG_RE = /\[\[img:([^\]]+)\]\]/g;
+        const safeImg = u => /^(data:image\/|https?:\/\/)/i.test(u);
+        function splitNote(t) {
+            const imgs = []; const text = (t || '').replace(IMG_RE, (m, u) => { if (safeImg(u)) imgs.push(u); return ''; }).trim();
+            return { text, imgs };
+        }
+        function saveDraft() { try { localStorage.setItem('kanban_note_draft', document.getElementById('noteText').value); } catch (e) {} }
+        function restoreDraft() { try { const d = localStorage.getItem('kanban_note_draft'); if (d) document.getElementById('noteText').value = d; } catch (e) {} }
+        function attHtml(list, fn) {
+            return list.map((u, i) =>
+                `<div class="att"><img src="${esc(u)}" alt="attachment"><button type="button" onclick="${list === attachments ? 'attachments' : 'taskAtt'}.splice(${i},1);${fn}()" aria-label="Remove">×</button></div>`).join('');
+        }
+        function renderAtt() { document.getElementById('attRow').innerHTML = attHtml(attachments, 'renderAtt'); }
+        let taskAtt = [];
+        function renderTaskAtt() { document.getElementById('taskAttRow').innerHTML = attHtml(taskAtt, 'renderTaskAtt'); }
+        function saveTaskDraft() { try { localStorage.setItem('kanban_task_draft', document.getElementById('t').value); } catch (e) {} }
+        function restoreTaskDraft() { try { const d = localStorage.getItem('kanban_task_draft'); if (d) document.getElementById('t').value = d; } catch (e) {} }
+        function pickImage(input, list = attachments, done = renderAtt) {
+            const f = input.files && input.files[0]; input.value = '';
+            if (!f) return;
+            const r = new FileReader();
+            r.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const k = Math.min(1, 640 / Math.max(img.width, img.height));
+                    const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                    list.push(c.toDataURL('image/jpeg', 0.75)); done();
+                };
+                img.src = r.result;
+            };
+            r.readAsDataURL(f);
+        }
+        function addGif(list = attachments, done = renderAtt) {
+            const u = prompt('Paste a GIF link (https://...):');
+            if (!u) return;
+            if (!safeImg(u.trim()) || u.includes(']')) { noteMsg('That does not look like a valid image link.', true); return; }
+            list.push(u.trim()); done();
+        }
+
         async function addNote() {
             const el = document.getElementById('noteText');
-            if (!el.value.trim()) return;
+            if (!el.value.trim() && !attachments.length) return;
+            const full = (el.value.trim() + attachments.map(u => `\n[[img:${u}]]`).join('')).trim();
             const sec = secOf(document.getElementById('noteSection').value);
-            let res = await sb.from('notes').insert({ text: el.value.trim(), pinned: false, section: sec }).select('id');
+            let res = await sb.from('notes').insert({ text: full, pinned: false, section: sec }).select('id');
             if (res.error) {
                 // "section" column missing: save the slip without it and remember the section locally
-                res = await sb.from('notes').insert({ text: el.value.trim(), pinned: false }).select('id');
-                if (res.error) { setStatus('Add slip failed: ' + res.error.message, true); noteMsg('Add slip failed: ' + res.error.message, true); return; }
+                res = await sb.from('notes').insert({ text: full, pinned: false }).select('id');
+                if (res.error) { setStatus('Add note failed: ' + res.error.message, true); noteMsg('Add note failed: ' + res.error.message, true); return; }
                 noteMsg(NOTE_SYNC_HINT, true);
             }
             if (res.data && res.data[0]) saveNoteSec(res.data[0].id, sec);
-            el.value = '';
+            el.value = ''; attachments = []; renderAtt(); saveDraft();
             loadNotes();
         }
 
@@ -517,9 +643,10 @@
         }
         async function editNote(id) {
             const n = notes.find(x => x.id === id); if (!n) return;
-            const t = prompt('Edit slip:', n.text);
-            if (!t || !t.trim()) return;
-            const { error } = await sb.from('notes').update({ text: t.trim() }).eq('id', id);
+            const parts = splitNote(n.text);
+            const t = prompt('Edit note:', parts.text);
+            if (t === null || (!t.trim() && !parts.imgs.length)) return;
+            const { error } = await sb.from('notes').update({ text: (t.trim() + parts.imgs.map(u => `\n[[img:${u}]]`).join('')).trim() }).eq('id', id);
             if (error) { setStatus('Edit slip failed: ' + error.message, true); return; }
             loadNotes();
         }
@@ -535,7 +662,7 @@
                 </select>`;
             return `<div class="slip ${compact ? 'slip-compact' : ''}" ${compact ? '' : `data-id="${n.id}"`}>
                 ${compact ? '' : `<span class="slip-grip" title="Drag to another section" aria-label="Drag handle">⠿</span>`}
-                <p class="slip-text">${esc(n.text)}</p>
+                ${(() => { const p = splitNote(n.text); return (p.text ? `<p class="slip-text">${esc(p.text)}</p>` : '') + p.imgs.map(u => `<img class="slip-img" src="${esc(u)}" alt="">`).join(''); })()}
                 <div class="slip-actions">
                     ${moveSel}
                     <button onclick="pinNote('${n.id}')" title="${n.pinned ? 'Unpin' : 'Pin on top'}" class="${n.pinned ? 'is-pinned' : ''}">${n.pinned ? 'Unpin' : 'Pin'}</button>
@@ -564,7 +691,7 @@
                 const items = rest.filter(n => n.section === sec.key);
                 return `<div class="slip-box" data-sec="${sec.key}">
                     <div class="sec-head"><h3 class="sec-title"><span class="dot dot-${sec.tone}"></span>${sec.label}<span class="count">${items.length}</span></h3></div>
-                    ${items.length ? items.map(n => slip(n, false)).join('') : `<p class="empty">No slips here. Drag one in or use "Move to".</p>`}
+                    ${items.length ? items.map(n => slip(n, false)).join('') : `<div class="box-empty"><button type="button" onclick="document.getElementById('noteSection').value='${sec.key}';document.getElementById('noteText').focus()" aria-label="Add note">+</button>No notes yet</div>`}
                 </div>`;
             }).join('');
         }
@@ -656,13 +783,14 @@
 
         async function add() {
             let t = document.getElementById('t'), d = document.getElementById('d'), p = document.getElementById('p');
-            if (!t.value.trim()) return;
+            if (!t.value.trim() && !taskAtt.length) return;
+            const fullT = (t.value.trim() + taskAtt.map(u => `\n[[img:${u}]]`).join('')).trim();
             let date = d.value ? new Date(d.value) : new Date();
             let fmt = `${date.getDate().toString().padStart(2,'0')}-${(date.getMonth()+1).toString().padStart(2,'0')}-${date.getFullYear()}`;
             const cdEl = document.getElementById('cd');
-            const { error } = await sb.from('tasks').insert({ title: t.value.trim(), due_date: fmt, completion_date: cdEl.value || null, priority: p.value, status: 'tasks', boxed: false, date_history: [] });
+            const { error } = await sb.from('tasks').insert({ title: fullT, due_date: fmt, completion_date: cdEl.value || null, priority: p.value, status: 'tasks', boxed: false, date_history: [] });
             if (error) { setStatus('Add failed: ' + error.message, true); return; }
-            t.value = ''; cdEl.value = '';
+            t.value = ''; cdEl.value = ''; taskAtt = []; renderTaskAtt(); saveTaskDraft();
             load();
         }
 
@@ -672,8 +800,9 @@
             let history = [...item.history];
             let update = {};
 
-            let newT = prompt("Edit Task (leave blank to keep current):", item.t);
-            if (newT && newT.trim() !== "") update.title = newT.trim();
+            const tp = splitNote(item.t);
+            let newT = prompt("Edit Task (leave blank to keep current):", tp.text);
+            if (newT && newT.trim() !== "") update.title = (newT.trim() + tp.imgs.map(u => `\n[[img:${u}]]`).join('')).trim();
 
             let newD = prompt("Update Date (DD-MM-YYYY) - Previous will be saved:", item.d);
             if (newD && newD.trim() !== "" && newD !== item.d) {
@@ -743,7 +872,8 @@
             const prioLabel = item.p.charAt(0).toUpperCase() + item.p.slice(1);
             const stageLabel = { tasks: 'Tasks list', processing: 'Processing', completed: 'Completed' }[s] || s;
             div.innerHTML = `
-                <p class="card-title">${esc(item.t)}${item.cc > 0 ? `<span class="badge-c">C${item.cc}</span>` : ''}</p>
+                <p class="card-title">${esc(splitNote(item.t).text)}${item.cc > 0 ? `<span class="badge-c">C${item.cc}</span>` : ''}</p>
+                ${splitNote(item.t).imgs.map(u => `<img class="slip-img" src="${esc(u)}" alt="">`).join('')}
                 <div class="meta">
                     <span>Due <b>${esc(item.d)}</b></span>
                     ${item.cd ? `<span>Completion <b>${esc(item.cd)}</b></span>` : ''}
@@ -857,7 +987,7 @@
                             const dateTxt = i.cd ? `Completion ${esc(i.cd)}` : `Due ${esc(i.d)}`;
                             const prioLabel = i.p.charAt(0).toUpperCase() + i.p.slice(1);
                             return `<div class="mrow p-${i.p}">
-                                <p class="mrow-title">${esc(i.t)}</p>
+                                <p class="mrow-title">${esc(splitNote(i.t).text)}</p>
                                 <p class="mrow-meta"><span>${dateTxt}</span><span>${prioLabel}</span></p>
                             </div>`;
                         }).join('') : '';
@@ -869,7 +999,7 @@
                         </div>`;
                     }).join('') : `<p class="empty">No tasks</p>`;
                 }
-                return `<div class="mbox">
+                return `<div class="mbox mbox-${def.key}">
                     <button onclick="toggleMBox('${def.key}')" class="mbox-head ${open ? 'open' : ''}" aria-expanded="${open}">
                         <span class="sec-title"><span class="dot dot-${def.tone}"></span>${def.label}<span class="count">${items.length}</span></span>
                         <span class="mbox-toggle">${open ? 'Collapse' : 'Expand'}</span>
@@ -961,7 +1091,7 @@
             el.innerHTML = `<div class="procbar p-${it.p}">
                 <span class="proc-label"><span class="dot dot-prog"></span>Processing<span class="count">${items.length}</span></span>
                 <div class="proc-item" aria-live="polite">
-                    <p class="proc-title" title="${esc(it.t)}">${esc(it.t)}</p>
+                    <p class="proc-title" title="${esc(splitNote(it.t).text)}">${esc(splitNote(it.t).text)}</p>
                     <span class="proc-due">Due <b>${esc(it.d)}</b></span>
                     <span class="pill pill-${it.p}">${it.p.charAt(0).toUpperCase() + it.p.slice(1)}</span>
                 </div>
@@ -1108,6 +1238,7 @@
         sb.auth.onAuthStateChange((event, session) => {
             if (['INITIAL_SESSION', 'SIGNED_IN', 'SIGNED_OUT'].includes(event)) showApp(session);
         });
-    </script>
+    restoreDraft(); restoreTaskDraft();
+</script>
 </body>
 </html>

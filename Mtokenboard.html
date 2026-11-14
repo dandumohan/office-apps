@@ -63,6 +63,12 @@
     }
     select { width: 100%; }
 
+    /* Date fields are exactly as wide as a date (never stretched to the column) */
+    input[type=date] { width: auto !important; min-width: 0; flex: 0 0 auto; align-self: flex-start; justify-self: start; }
+    /* Page-number fields: room for 4 digits only */
+    input.pg4 { width: calc(4ch + 42px); min-width: 0; flex: 0 0 auto; align-self: flex-start; justify-self: start; }
+    .field-pair > .field-row:has(> input.pg4) { flex: 0 0 auto; min-width: 0; }
+
     /* ============ LOGIN SCREEN ============ */
     .login-wrap {
       min-height: 100vh;
@@ -322,6 +328,31 @@
     .field-row { display: flex; flex-direction: column; gap: 5px; }
     .field-row label { font-weight: 600; font-size: 12px; color: var(--ink); }
     .field-pair { display: flex; gap: 12px; flex-wrap: wrap; }
+    /* Mbook tab layout */
+    /* Attach Mbook: block 1 takes all the spare width; blocks 2 and 3 are exactly as wide as their content */
+    .mbi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+    .mb-grid { display: grid; grid-template-columns: minmax(360px, 1fr) max-content max-content; gap: 16px; align-items: start; }
+    .mb-panel.mb-fit { width: max-content; max-width: 100%; }
+    .mb-panel.mb-fit .field-pair { flex-wrap: nowrap; }
+    .mb-panel.mb-fit .field-pair > .field-row { flex: 0 0 auto; min-width: 0; }
+    .mb-panel.mb-fit .field-pair > .field-row > input[type=text] { width: 180px; }
+    @media (max-width: 1100px) { .mb-grid { grid-template-columns: 1fr; } .mb-panel.mb-fit { width: auto; } }
+    .mb-panel { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+    .mb-panel-title { margin: 0 0 2px; padding-bottom: 8px; border-bottom: 1px solid var(--border); font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--brand); }
+    .mb-meas-grid { display: flex; flex-direction: column; gap: 12px; }
+    .mb-meas-grid:empty { display: none; }
+    .mb-panel .mb-opts { margin: 0; background: #f6f8fb; }
+    .mb-panel.mb-fit .mb-opts { display: grid; grid-template-columns: 1fr; gap: 6px; }
+    .mb-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .mb-actions .btn-row { display: flex; gap: 10px; margin: 0 !important; }
+    .mb-actions .status { flex: 1 1 220px; min-height: 0; }
+    .mb-note { margin: -4px 0 12px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .mb-usage-bar { margin-bottom: 14px; }
+    .mb-usage-bar > div[style*="display:flex"] { margin-bottom: 0 !important; }
+    .mb-opts { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; margin: 2px 0 12px; padding: 8px 12px; background: #f6f8fb; border: 1px solid var(--border); border-radius: 8px; }
+    .mb-opts .mb-opts-title { font-weight: 600; font-size: 12px; color: var(--ink); }
+    .mb-opts label.mb-opt { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; cursor: pointer; margin: 0; }
+    .mb-opts label.mb-opt input { width: auto; margin: 0; }
     .field-pair > .field-row { flex: 1 1 160px; min-width: 160px; }
     .field-row label.pink { color: var(--accent); }
     .field-row label.blue-label { color: #2255aa; }
@@ -749,12 +780,13 @@
         </div>
 
         <div class="btn-row">
-          <button class="action" onclick="updateAdvanceRecord()">Update</button>
-          <button class="action" onclick="deleteAdvanceRecord()">Delete</button>
-          <button class="action primary" onclick="saveAdvance()">Save</button>
-          <button class="action" onclick="clearAdvanceForm()">ADD</button>
+          <button class="action" id="adv_btn_update" onclick="updateAdvanceRecord()">Update</button>
+          <button class="action" id="adv_btn_delete" onclick="deleteAdvanceRecord()">Delete</button>
+          <button class="action primary" id="adv_btn_save" onclick="saveAdvance()">Save</button>
+          <button class="action" id="adv_btn_add" onclick="clearAdvanceForm()">ADD</button>
         </div>
         <div class="status" id="adv_status"></div>
+        <div id="adv_role_note" style="font-size: 12px; color: var(--muted); margin-top: 6px;"></div>
       </div>
 
       <div class="card">
@@ -899,6 +931,7 @@
         </div>
 
         <div class="btn-row">
+          <button class="action" id="exp_btn_update" onclick="updateExpenditureRecord()">Update</button>
           <button class="action primary" onclick="saveExpenditure()">Save</button>
           <button class="action" onclick="clearExpForm()">ADD</button>
         </div>
@@ -1060,6 +1093,7 @@
         </div>
 
         <div class="btn-row">
+          <button class="action" id="adj_btn_update" onclick="updateAdjustmentRecord()">Update</button>
           <button class="action primary" onclick="saveAdjustment()">Save</button>
           <button class="action" onclick="clearAdjForm()">ADD</button>
         </div>
@@ -1359,18 +1393,17 @@
         <div class="card-head">
           <h2 class="section-title">Issue Mbook (one time)</h2>
         </div>
-        <div class="voucher-form-split" id="mbook_issue_host" style="max-width: 760px;"></div>
+        <div class="voucher-form-split" id="mbook_issue_host"></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="mbook_attach_card">
         <div class="card-head">
-          <h2 class="section-title">Mbook</h2>
+          <h2 class="section-title">Attach Mbook</h2>
           <button class="icon-btn" title="Refresh" onclick="refreshMbookScreen()">&#8635;</button>
         </div>
-
-        <div class="voucher-form-split">
-          <div class="voucher-form-side">
-            <div class="scheme-card-title" style="font-size:13px; margin-bottom:4px;">Attach Mbook</div>
+        <div class="mb-grid">
+          <div class="mb-panel">
+            <div class="mb-panel-title">Mbook &amp; Estimates</div>
             <div class="field-row">
               <label>Attached Scheme</label>
               <select id="mb_attached_scheme" onchange="loadMbookEstimateOptions()">
@@ -1392,9 +1425,12 @@
               <label>Attached Estimate Tasks <span class="stat-label">(from that estimate's vouchers)</span></label>
               <select id="mb_attached_task" onchange="showMbookPageInfo()"><option value="">Select estimate(s) first</option></select>
             </div>
+          </div>
+          <div class="mb-panel mb-fit">
+            <div class="mb-panel-title">Pages, Payee &amp; Work Period</div>
             <div class="field-pair">
-              <div class="field-row"><label>Attached Page From</label><input type="number" id="mb_att_page_from" min="0" value="0" oninput="showMbookPageInfo()"></div>
-              <div class="field-row"><label>Attached Page To</label><input type="number" id="mb_att_page_to" min="0" value="0" oninput="showMbookPageInfo()"></div>
+              <div class="field-row"><label>Attached Page From</label><input type="number" class="pg4" id="mb_att_page_from" min="0" max="9999" value="0" oninput="showMbookPageInfo()"></div>
+              <div class="field-row"><label>Attached Page To</label><input type="number" class="pg4" id="mb_att_page_to" min="0" max="9999" value="0" oninput="showMbookPageInfo()"></div>
             </div>
             <div class="field-row">
               <label>Payee Name</label>
@@ -1405,7 +1441,17 @@
               <div class="field-row"><label>Work From Date</label><input type="date" id="mb_work_from_date"></div>
               <div class="field-row"><label>Work To Date</label><input type="date" id="mb_work_to_date"></div>
             </div>
-            <div class="field-pair">
+          </div>
+          <div class="mb-panel mb-fit">
+            <div class="mb-panel-title">Measurement Details</div>
+            <div class="mb-opts" role="group" aria-label="Measurement details">
+              <span class="mb-opts-title">Include:</span>
+              <label class="mb-opt"><input type="checkbox" id="mb_cb_meas" onchange="mbSyncGroups()"> Measurement Detail</label>
+              <label class="mb-opt"><input type="checkbox" id="mb_cb_check" onchange="mbSyncGroups()"> Check Measurement</label>
+              <label class="mb-opt"><input type="checkbox" id="mb_cb_test" onchange="mbSyncGroups()"> Test Check Detail</label>
+            </div>
+            <div class="mb-meas-grid">
+              <div class="field-pair" id="mb_grp_meas" style="display:none;">
               <div class="field-row">
                 <label>Measured By</label>
                 <input type="text" id="mb_measured_by" list="mb_measured_by_list" placeholder="Select or type new">
@@ -1413,7 +1459,7 @@
               </div>
               <div class="field-row"><label>Measured Date</label><input type="date" id="mb_measured_dt"></div>
             </div>
-            <div class="field-pair">
+            <div class="field-pair" id="mb_grp_check" style="display:none;">
               <div class="field-row">
                 <label>Check Measured By</label>
                 <input type="text" id="mb_check_measured_by" list="mb_check_measured_by_list" placeholder="Select or type new">
@@ -1421,7 +1467,7 @@
               </div>
               <div class="field-row"><label>Check Measured Date</label><input type="date" id="mb_check_measured_dt"></div>
             </div>
-            <div class="field-pair">
+            <div class="field-pair" id="mb_grp_test" style="display:none;">
               <div class="field-row">
                 <label>Test Checked By</label>
                 <input type="text" id="mb_test_checked_by" list="mb_test_checked_by_list" placeholder="Select or type new">
@@ -1429,46 +1475,66 @@
               </div>
               <div class="field-row"><label>Test Checked Date</label><input type="date" id="mb_test_checked_dt"></div>
             </div>
-            <div class="btn-row" style="margin-top:10px;">
+            </div>
+          </div>
+        </div>
+        <div class="mb-actions">
+          <div class="btn-row" style="margin-top:10px;">
               <button class="action primary" onclick="saveMbookEntry()">Save Attachment</button>
               <button class="action" onclick="cancelMbookAttachmentEdit()">Cancel / New</button>
             </div>
             <div class="status" id="mb_status_msg"></div>
-          <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Existing Mbook Attachments</div>
-          <input type="search" id="mb_list_search" placeholder="Search attachments (estimate, task, voucher, Mbook, payee, names...)" oninput="renderMbookList(mbookAttachmentsCache)" style="width:100%; margin-bottom:6px;">
-          <div class="list-wrap" style="max-height:320px;">
-            <table class="grid">
-              <thead><tr><th>Estimate</th><th>Task</th><th>Voucher No</th><th>MBook No</th><th>Page From</th><th>Page To</th><th>Payee Name</th><th>Work From</th><th>Work To</th><th>Measured By</th><th>Measured Dt</th><th>Check Measured By</th><th>Check Measured Dt</th><th>Test Checked By</th><th>Test Checked Dt</th><th>Actions</th></tr></thead>
-              <tbody id="mb_list_table"></tbody>
-            </table>
-          </div>
-          </div>
-
-
         </div>
+      </div>
 
-          <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Mbook Stats <span class="stat-label">(Mbook-wise attachment details)</span></div>
-          <div class="list-wrap" style="max-height:320px;">
-            <table class="grid">
-              <thead><tr><th>Mbook No</th><th>Scheme</th><th>Pages</th><th>Attachments</th><th>Estimates</th><th>Estimate Nos</th><th>Pages Used</th><th>Last Page Used</th><th>Pages Available</th><th>Latest Measurement</th></tr></thead>
-              <tbody id="mb_stats_table"></tbody>
-            </table>
-          </div>
+      <div class="card" id="mbook_list_card">
+        <div class="card-head">
+          <h2 class="section-title">Existing Mbook Attachments</h2>
+          <button class="icon-btn" title="Refresh" onclick="refreshMbookScreen()">&#8635;</button>
+        </div>
+        <input type="search" id="mb_list_search" placeholder="Search attachments (estimate, task, voucher, Mbook, payee, names...)" oninput="renderMbookList(mbookAttachmentsCache)" style="width:100%; margin-bottom:10px;">
+        <div class="list-wrap" style="max-height:360px;">
+          <table class="grid">
+            <thead><tr><th>Estimate</th><th>Task</th><th>Voucher No</th><th>MBook No</th><th>Page From</th><th>Page To</th><th>Payee Name</th><th>Work From</th><th>Work To</th><th>Measured By</th><th>Measured Dt</th><th>Check Measured By</th><th>Check Measured Dt</th><th>Test Checked By</th><th>Test Checked Dt</th><th>Actions</th></tr></thead>
+            <tbody id="mb_list_table"></tbody>
+          </table>
+        </div>
+      </div>
 
-          <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Mbook Usage <span class="stat-label">(Pages Used = (OB - 1) + Used Since OB; Next Page = Pages Used + 1; Pages Available = Total Pages - Pages Used)</span></div>
+      <div class="card" id="mbook_stats_card">
+        <div class="card-head">
+          <h2 class="section-title">Mbook Stats</h2>
+        </div>
+        <div class="mb-note">(Mbook-wise attachment details)</div>
+        <div class="list-wrap" style="max-height:320px;">
+          <table class="grid">
+            <thead><tr><th>Mbook No</th><th>Scheme</th><th>Pages</th><th>Attachments</th><th>Estimates</th><th>Estimate Nos</th><th>Pages Used</th><th>Last Page Used</th><th>Pages Available</th><th>Latest Measurement</th></tr></thead>
+            <tbody id="mb_stats_table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" id="mbook_usage_card">
+        <div class="card-head">
+          <h2 class="section-title">Mbook Usage</h2>
+        </div>
+        <div class="mb-note">(Pages Used = (OB - 1) + Used Since OB; Next Page = Pages Used + 1; Pages Available = Total Pages - Pages Used)</div>
+        <div class="mb-panel mb-usage-bar">
+          <div class="mb-panel-title">Opening balance (OB)</div>
           <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; margin-bottom:6px;">
             <div class="field-row" style="min-width:150px;"><label>Mbook No</label><select id="mbu_ob_mbook"></select></div>
-            <div class="field-row" style="min-width:120px;"><label>OB Page No</label><input type="number" id="mbu_ob_page" min="1" step="1"></div>
+            <div class="field-row" style="min-width:120px;"><label>OB Page No</label><input type="number" class="pg4" id="mbu_ob_page" min="1" max="9999" step="1"></div>
             <div class="field-row" style="min-width:150px;"><label>OB Date</label><input type="date" id="mbu_ob_date"></div>
             <button class="action primary" style="width:auto;" onclick="saveMbuOb()">Update OB</button>
           </div>
           <div class="status" id="mbu_status_msg"></div>
-          <div class="list-wrap" style="max-height:240px;">
-            <table class="grid">
-              <thead><tr><th>Mbook No</th><th>Total Pages</th><th>OB Page</th><th>OB Date</th><th>Pages Used</th><th>Used Since OB</th><th>Next Page</th><th>Pages Available</th><th>OB Entries</th></tr></thead>
-              <tbody id="mb_usage_table"></tbody>
-            </table>
-          </div>
+        </div>
+        <div class="list-wrap" style="max-height:260px;">
+          <table class="grid">
+            <thead><tr><th>Mbook No</th><th>Total Pages</th><th>OB Page</th><th>OB Date</th><th>Pages Used</th><th>Used Since OB</th><th>Next Page</th><th>Pages Available</th><th>OB Entries</th></tr></thead>
+            <tbody id="mb_usage_table"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -2453,6 +2519,9 @@
 <div id="mt_wacb_holder" style="display:none;">
 <div id="mt_mbi_block" class="voucher-form-side">
             <div class="scheme-card-title" style="font-size:13px; margin-bottom:4px;">Issue Mbook <span class="stat-label">(one-time, per physical book)</span></div>
+            <div class="mbi-grid">
+              <div class="mb-panel">
+                <div class="mb-panel-title">Scheme, Estimate &amp; Year</div>
             <div class="field-row">
               <label>Scheme</label>
               <select id="mbi_scheme" onchange="loadMbiEstimateOptions()"><option value="">Select scheme</option></select>
@@ -2465,10 +2534,13 @@
               <label>Year</label>
               <select id="mbi_year"></select>
             </div>
+              </div>
+              <div class="mb-panel">
+                <div class="mb-panel-title">Mbook Details &amp; Opening Balance</div>
             <div class="field-row"><label>Mbook No</label><input type="text" id="mbi_no"></div>
             <div class="field-pair">
-              <div class="field-row"><label>Pages From</label><input type="number" id="mbi_pages_from" value="1"></div>
-              <div class="field-row"><label>Pages To</label><input type="number" id="mbi_pages_to" value="0"></div>
+              <div class="field-row"><label>Pages From</label><input type="number" class="pg4" id="mbi_pages_from" min="0" max="9999" value="1"></div>
+              <div class="field-row"><label>Pages To</label><input type="number" class="pg4" id="mbi_pages_to" min="0" max="9999" value="0"></div>
             </div>
             <div class="field-pair">
               <div class="field-row">
@@ -2480,13 +2552,16 @@
             </div>
             <div class="scheme-card-title" style="font-size:12px; margin:10px 0 4px;">Opening Balance (OB) <span class="stat-label">(add as many times as needed; the latest OB Date is used)</span></div>
             <div class="field-pair">
-              <div class="field-row"><label>OB Page No</label><input type="number" id="mbi_ob_page" min="1" step="1"></div>
+              <div class="field-row"><label>OB Page No</label><input type="number" class="pg4" id="mbi_ob_page" min="1" max="9999" step="1"></div>
               <div class="field-row"><label>OB Date</label><input type="date" id="mbi_ob_date"></div>
             </div>
             <div class="btn-row" style="margin-top:6px;"><button class="action" onclick="addMbiOb()">Add OB</button></div>
             <div class="list-wrap" style="max-height:130px; margin-top:6px;">
               <table class="grid"><thead><tr><th>OB Page No</th><th>OB Date</th><th></th></tr></thead><tbody id="mbi_ob_table"></tbody></table>
             </div>
+              </div>
+            </div>
+            <div class="mb-actions">
             <div class="btn-row" style="margin-top:10px;">
               <button class="action" onclick="updateMbookIssuedRecord()">Update</button>
               <button class="action" onclick="deleteMbookIssuedRecord()">Delete</button>
@@ -2494,6 +2569,7 @@
               <button class="action" onclick="clearMbookIssuedForm()">New</button>
             </div>
             <div class="status" id="mbi_status_msg"></div>
+            </div>
 
             <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Issued Mbooks <span class="stat-label">(click a row to edit)</span></div>
             <div class="list-wrap" style="max-height:200px;">
@@ -3100,13 +3176,43 @@
   }
   API_.getAdvanceTokenForBatch = (estiNo, batchNo) => findAdvanceTokenNo_(estiNo, batchNo);
 
-  API_.addAdvance = async d => ({ success: true, id: await insertRow_('advance', 'tid', toDb_.advance(d)) });
-  API_.updateAdvance = d => updateRow_('advance', 'tid', d.tid, toDb_.advance(d));
-  API_.deleteAdvance = tid => deleteRow_('advance', 'tid', tid);
+  /* Advance Token: full create / edit / delete on every field is for administrators only.
+     Flip a flag to false to give that operation back to everyone who holds the Tokens (Advance) permission. */
+  const ADV_ADMIN_ONLY = { create: false, fullEdit: true, delete: true, expAdjUpdate: true };   // expAdjUpdate: Update on Expenditure / Adjustment tokens
+  const ADV_CREDITED_COLS_ = ['credited', 'credited_date', 'credited_amt', 'credited_account_no'];
+  API_.addAdvance = async d => {
+    if (ADV_ADMIN_ONLY.create && !authIsAdmin) throw new Error('Access restricted: only an administrator can add advance tokens.');
+    return { success: true, id: await insertRow_('advance', 'tid', toDb_.advance(d)) };
+  };
+  API_.updateAdvance = d => {
+    const obj = toDb_.advance(d);
+    if (ADV_ADMIN_ONLY.fullEdit && !authIsAdmin) {                       // everyone else may only change the Credited fields
+      const keep = {}; ADV_CREDITED_COLS_.forEach(k => { if (k in obj) keep[k] = obj[k]; });
+      return updateRow_('advance', 'tid', d.tid, keep);
+    }
+    return updateRow_('advance', 'tid', d.tid, obj);
+  };
+  API_.deleteAdvance = tid => {
+    if (ADV_ADMIN_ONLY.delete && !authIsAdmin) throw new Error('Access restricted: only an administrator can delete advance tokens.');
+    return deleteRow_('advance', 'tid', tid);
+  };
+  // How many expenditure / adjustment records point at this advance Token_No.
+  API_.countAdvanceTokenUsage = async tokenNo => {
+    const one = async t => { const r = await db().from(t).select('adv_token_no', { count: 'exact', head: true }).eq('adv_token_no', S_(tokenNo)); if (r.error) throw new Error(r.error.message); return r.count || 0; };
+    return (await one('expenditure')) + (await one('adjustment'));
+  };
 
   API_.getExpenditureData = () => list_('expenditure');
   API_.addExpenditure = async d => ({ success: true, id: await insertRow_('expenditure', 'eid', toDb_.expenditure(d)) });
+  API_.updateExpenditure = d => {
+    if (ADV_ADMIN_ONLY.expAdjUpdate && !authIsAdmin) throw new Error('Access restricted: only an administrator can update expenditure tokens.');
+    return updateRow_('expenditure', 'eid', d.eid, toDb_.expenditure(d));
+  };
   API_.getAdjustmentData = () => list_('adjustment');
+  API_.updateAdjustment = d => {
+    if (ADV_ADMIN_ONLY.expAdjUpdate && !authIsAdmin) throw new Error('Access restricted: only an administrator can update adjustment tokens.');
+    return updateRow_('adjustment', 'aid', d.aid, toDb_.adjustment(d));
+  };
   API_.addAdjustment = async d => ({ success: true, id: await insertRow_('adjustment', 'aid', toDb_.adjustment(d)) });
 
   API_.getTokenNumbers = async () => {
@@ -4586,7 +4692,7 @@
   secR_('Procurement', ['getProcurementData']); secW_('Procurement', 'A', ['addProcurement']); secW_('Procurement', 'E', ['updateProcurement']); secW_('Procurement', 'D', ['deleteProcurement']);
   secR_('Services', ['getServicesData']); secW_('Services', 'A', ['addService']); secW_('Services', 'E', ['updateService']); secW_('Services', 'D', ['deleteService']);
   secR_('Budget', ['getBudgetData']); secR_(null, ['getQtrOptions', 'getEstimateStatusOptions']); secW_('Budget', 'A', ['addBudget']); secW_('Budget', 'E', ['updateBudget', 'saveQtrOptions']); secW_('Budget', 'D', ['deleteBudget']);
-  secR_('Tokens (Advance)', ['getAdvanceData', 'getAdjustmentData']); secW_('Tokens (Advance)', 'A', ['addAdvance', 'addAdjustment']); secW_('Tokens (Advance)', 'E', ['updateAdvance']); secW_('Tokens (Advance)', 'D', ['deleteAdvance']);
+  secR_('Tokens (Advance)', ['getAdvanceData', 'getAdjustmentData', 'countAdvanceTokenUsage']); secW_('Tokens (Advance)', 'A', ['addAdvance', 'addAdjustment']); secW_('Tokens (Advance)', 'E', ['updateAdvance', 'updateExpenditure', 'updateAdjustment']); secW_('Tokens (Advance)', 'D', ['deleteAdvance']);
   secR_('Estimate Tasks', ['getEstiTaskData', 'getEstiTaskDataForFundApplication']); secW_('Estimate Tasks', 'A', ['addEstiTask']); secW_('Estimate Tasks', 'E', ['updateEstiTask']); secW_('Estimate Tasks', 'D', ['deleteEstiTask']);
   secR_('Vouchers', ['getVoucherData']); secW_('Vouchers', 'A', ['addVoucherDetail', 'saveVoucherPlan']); secW_('Vouchers', 'E', ['updateVoucherDetail', 'saveVoucherSettings']); secW_('Vouchers', 'D', ['deleteVoucherDetail']);
   secG_('Vouchers', ['generateVoucherPdf', 'generateAllVouchersPdf']);
@@ -4785,6 +4891,7 @@
       const first = accBtns.find(b => b.style.display !== 'none');
       if (first) showAccTab(first.dataset.acc);
     }
+    if (typeof applyAdvanceRoleUI_ === 'function') applyAdvanceRoleUI_();
   }
 
 
@@ -6695,6 +6802,26 @@
     }).deleteMbookIssued(mbiId);
   }
 
+  // The Measured / Check Measured / Test Checked name + date pairs show only for the options ticked above them.
+  document.addEventListener('input', e => {
+    const t = e.target;
+    if (t && t.classList && t.classList.contains('pg4') && String(t.value).length > 4) t.value = String(t.value).slice(0, 4);
+  });
+  function mbSyncGroups() {
+    [['mb_cb_meas', 'mb_grp_meas'], ['mb_cb_check', 'mb_grp_check'], ['mb_cb_test', 'mb_grp_test']].forEach(([c, g]) => {
+      document.getElementById(g).style.display = document.getElementById(c).checked ? '' : 'none';
+    });
+  }
+  // Ticks the options that already have details (used when an existing attachment is loaded, and to reset on Cancel / New).
+  function mbTickFromValues() {
+    const has = (...ids) => ids.some(i => (document.getElementById(i).value || '').trim() !== '');
+    document.getElementById('mb_cb_meas').checked = has('mb_measured_by', 'mb_measured_dt');
+    document.getElementById('mb_cb_check').checked = has('mb_check_measured_by', 'mb_check_measured_dt');
+    document.getElementById('mb_cb_test').checked = has('mb_test_checked_by', 'mb_test_checked_dt');
+    mbSyncGroups();
+  }
+  mbSyncGroups();
+
   function saveMbookEntry() {
     const editingVchId = document.getElementById('mb_payee_name').dataset.editingVchId;
 
@@ -6703,12 +6830,14 @@
     const payeeName = document.getElementById('mb_payee_name').value;
     const workFromDate = document.getElementById('mb_work_from_date').value;
     const workToDate = document.getElementById('mb_work_to_date').value;
-    const measuredBy = document.getElementById('mb_measured_by').value;
-    const measuredDt = document.getElementById('mb_measured_dt').value;
-    const checkMeasuredBy = document.getElementById('mb_check_measured_by').value;
-    const checkMeasuredDt = document.getElementById('mb_check_measured_dt').value;
-    const testCheckedBy = document.getElementById('mb_test_checked_by').value;
-    const testCheckedDt = document.getElementById('mb_test_checked_dt').value;
+    // only the ticked options are saved; an unticked one is saved blank
+    const optOn = id => document.getElementById(id).checked;
+    const measuredBy = optOn('mb_cb_meas') ? document.getElementById('mb_measured_by').value : '';
+    const measuredDt = optOn('mb_cb_meas') ? document.getElementById('mb_measured_dt').value : '';
+    const checkMeasuredBy = optOn('mb_cb_check') ? document.getElementById('mb_check_measured_by').value : '';
+    const checkMeasuredDt = optOn('mb_cb_check') ? document.getElementById('mb_check_measured_dt').value : '';
+    const testCheckedBy = optOn('mb_cb_test') ? document.getElementById('mb_test_checked_by').value : '';
+    const testCheckedDt = optOn('mb_cb_test') ? document.getElementById('mb_test_checked_dt').value : '';
     const issuedId = document.getElementById('mb_issued_select').value;
     const issuedRec = mbookIssuedCache.find(r => String(r.MBI_id) === String(issuedId));
 
@@ -6815,6 +6944,7 @@
     document.getElementById('mb_check_measured_dt').value = r.Check_Measured_Date || '';
     document.getElementById('mb_test_checked_by').value = r.Test_Checked_By || '';
     document.getElementById('mb_test_checked_dt').value = r.Test_Checked_Date || '';
+    mbTickFromValues();
 
     document.getElementById('mb_payee_name').dataset.editingVchId = r.Vch_id;
     setStatus('mb_status_msg', 'Editing attachment on Voucher #' + r.Voucher_No + '. Adjust fields and click Save Attachment.');
@@ -6835,6 +6965,7 @@
     document.getElementById('mb_check_measured_dt').value = '';
     document.getElementById('mb_test_checked_by').value = '';
     document.getElementById('mb_test_checked_dt').value = '';
+    mbTickFromValues();
     setStatus('mb_status_msg', '');
   }
 
@@ -6962,6 +7093,8 @@
   let advanceCache = [];
   let expenditureCache = [];
   let adjustmentCache = [];
+  let selectedExpEid = '';
+  let selectedAdjAid = '';
 
   function getCreditedTokens() {
     const set = new Set();
@@ -7012,7 +7145,23 @@
     return budgetSum - advSum;
   }
 
+  const advAllowed_ = op => !!authIsAdmin || !ADV_ADMIN_ONLY[op];
+  function applyAdvanceRoleUI_() {
+    const show = (id, on) => { const b = document.getElementById(id); if (b) b.style.display = on ? '' : 'none'; };
+    show('adv_btn_delete', advAllowed_('delete'));
+    show('adv_btn_save', advAllowed_('create'));
+    show('adv_btn_add', advAllowed_('create'));
+    show('exp_btn_update', advAllowed_('expAdjUpdate'));
+    show('adj_btn_update', advAllowed_('expAdjUpdate'));
+    const note = document.getElementById('adv_role_note');
+    if (note) note.textContent = authIsAdmin
+      ? 'Administrator: you can add, edit (all fields) and delete advance tokens.'
+      : (ADV_ADMIN_ONLY.fullEdit ? 'For an existing token only the Credited fields can be changed. Editing the other fields and deleting a token are for administrators.' : '');
+  }
+  applyAdvanceRoleUI_();
+
   function saveAdvance() {
+    if (!advAllowed_('create')) { setStatus('adv_status', 'Only an administrator can add advance tokens.', true); return; }
     const data = {
       trans_id: document.getElementById('adv_trans_id').value,
       token_no: document.getElementById('adv_token_no').value,
@@ -7062,6 +7211,7 @@
       scheme: document.getElementById('adv_scheme').value,
       hoa: document.getElementById('adv_hoa').value
     };
+    if (authIsAdmin && !data.token_no) { setStatus('adv_status', 'Token_No is required', true); return; }
     if (!data.dt) { setStatus('adv_status', 'Token_dt (date) is required', true); return; }
     if (!data.scheme) { setStatus('adv_status', 'Select a Scheme', true); return; }
     if (!data.hoa) { setStatus('adv_status', 'Select a Hoa', true); return; }
@@ -7079,20 +7229,35 @@
       setStatus('adv_status', `Exceeds budget for this Hoa. Available: ${available}`, true);
       return;
     }
-    gsr().withSuccessHandler(res => {
+    const doUpdate = () => gsr().withSuccessHandler(res => {
       setStatus('adv_status', 'Updated.');
       refreshAdvanceTable();
     }).updateAdvance(data);
+    // An administrator may rename a Token_No only while nothing else refers to it.
+    const orig = advanceCache.find(r => String(r.Tid) === String(tid));
+    if (authIsAdmin && orig && String(orig.Token_No).trim() !== String(data.token_no).trim()) {
+      gsr().withSuccessHandler(n => {
+        if (n > 0) { setStatus('adv_status', 'Token_No cannot be changed: ' + n + ' expenditure/adjustment record(s) use it.', true); return; }
+        doUpdate();
+      }).countAdvanceTokenUsage(orig.Token_No);
+    } else doUpdate();
   }
 
   function deleteAdvanceRecord() {
     const tid = document.getElementById('adv_trans_id').dataset.tid;
     if (!tid) { setStatus('adv_status', 'Select a record from the list first', true); return; }
-    gsr().withSuccessHandler(res => {
-      setStatus('adv_status', 'Deleted.');
-      clearAdvanceForm();
-      refreshAdvanceTable();
-    }).deleteAdvance(tid);
+    if (!advAllowed_('delete')) { setStatus('adv_status', 'Only an administrator can delete advance tokens.', true); return; }
+    const orig = advanceCache.find(r => String(r.Tid) === String(tid));
+    const tok = orig ? orig.Token_No : document.getElementById('adv_token_no').value;
+    gsr().withSuccessHandler(n => {
+      if (n > 0) { setStatus('adv_status', 'Cannot delete: ' + n + ' expenditure/adjustment record(s) use Token_No ' + tok + '. Remove those first.', true); return; }
+      if (!confirm('Delete advance token ' + tok + '? This cannot be undone.')) return;
+      gsr().withSuccessHandler(res => {
+        setStatus('adv_status', 'Deleted.');
+        clearAdvanceForm();
+        refreshAdvanceTable();
+      }).deleteAdvance(tid);
+    }).countAdvanceTokenUsage(tok);
   }
 
   function populateAdvSchemeHoaDropdowns() {
@@ -7586,8 +7751,8 @@
     document.getElementById('adv_credited_amt').value = r.Credited_Amt;
     fillAdvCreditedAccountOptions(r.Credited_Account_No || '');
 
-    // Editing an existing record: only the Credited fields can be changed.
-    setAdvanceFormEditable(false);
+    // Editing an existing record: an administrator can change every field; everyone else only the Credited ones.
+    setAdvanceFormEditable(!!authIsAdmin && !!ADV_ADMIN_ONLY.fullEdit);
     renderAdvanceTable(filterByScheme(advanceCache, document.getElementById('bud_filter_scheme_adv').value));
     refreshAutosize();
   }
@@ -7632,7 +7797,8 @@
     const existingExp = expenditureCache
       .filter(e => String(e.Adv_Token_No) === String(tokenNo))
       .reduce((s, e) => s + (Number(e.Amount) || 0), 0);
-    const balance = advAmt - existingExp;
+    const own = selectedExpEid ? expenditureCache.find(e => String(e.Eid) === String(selectedExpEid) && String(e.Adv_Token_No) === String(tokenNo)) : null;
+    const balance = advAmt - existingExp + (own ? Number(own.Amount) || 0 : 0);      // while editing, the record's own amount is not "spent" yet
     hintEl.textContent = 'Balance available: ' + inr(balance);
     hintEl.style.color = balance <= 0 ? 'var(--danger)' : 'var(--success)';
   }
@@ -7670,7 +7836,83 @@
     }).addExpenditure(data);
   }
 
+  // Shows the saved value in a dropdown even if the list no longer offers it (e.g. filtered by scheme).
+  function ensureSelectOption_(sel, value) {
+    value = String(value == null ? '' : value);
+    if (value && !Array.from(sel.options).some(o => o.value === value)) {
+      const o = document.createElement('option'); o.value = value; o.textContent = value; sel.appendChild(o);
+    }
+    sel.value = value;
+  }
+  function withExpenditure_(cb) {
+    if (loadedTabs.expenditure) { cb(expenditureCache); return; }
+    gsr().withSuccessHandler(rows => { expenditureCache = rows; loadedTabs.expenditure = true; cb(rows); }).getExpenditureData();
+  }
+  function withAdjustments_(cb) {
+    if (loadedTabs.adjustment) { cb(adjustmentCache); return; }
+    gsr().withSuccessHandler(rows => { adjustmentCache = rows; loadedTabs.adjustment = true; cb(rows); }).getAdjustmentData();
+  }
+  const sumAmt_ = (rows, tok, tokKey, amtKey, skipKey, skipId) => rows
+    .filter(r => String(r[tokKey]) === String(tok) && !(skipKey && String(r[skipKey]) === String(skipId)))
+    .reduce((s, r) => s + (Number(r[amtKey]) || 0), 0);
+
+  function loadExpenditureIntoForm(r) {
+    selectedExpEid = r.Eid;
+    ensureSelectOption_(document.getElementById('exp_token_no'), r.Adv_Token_No);
+    document.getElementById('exp_amount').value = r.Amount;
+    document.getElementById('exp_dt').value = r.Dt;
+    updateExpBalancePreview();
+    renderExpenditureTable(filterExpenditureByScheme(document.getElementById('bud_filter_scheme_exp').value));
+    setStatus('exp_status', advAllowed_('expAdjUpdate') ? 'Editing Eid ' + r.Eid + '. Change the fields and press Update.' : 'Eid ' + r.Eid + ' (view only: updating is for administrators).');
+  }
+
+  function updateExpenditureRecord() {
+    if (!advAllowed_('expAdjUpdate')) { setStatus('exp_status', 'Only an administrator can update expenditure tokens.', true); return; }
+    const eid = selectedExpEid;
+    if (!eid) { setStatus('exp_status', 'Select a record from the list first', true); return; }
+    const data = {
+      eid: eid,
+      adv_token_no: document.getElementById('exp_token_no').value,
+      amount: document.getElementById('exp_amount').value,
+      dt: document.getElementById('exp_dt').value
+    };
+    if (!data.adv_token_no) { setStatus('exp_status', 'Select Adv_Token_No', true); return; }
+    if (!data.dt) { setStatus('exp_status', 'Exp_dt (date) is required', true); return; }
+    const newAmt = Number(data.amount) || 0;
+    if (newAmt <= 0) { setStatus('exp_status', 'Exp_Amount must be greater than 0', true); return; }
+
+    const linkedAdv = findAdvanceByToken(data.adv_token_no);
+    const advAmt = linkedAdv ? Number(linkedAdv.Amount) || 0 : 0;
+    const available = advAmt - sumAmt_(expenditureCache, data.adv_token_no, 'Adv_Token_No', 'Amount', 'Eid', eid);   // everything else spent on this token
+    if (newAmt > available) { setStatus('exp_status', `Expenditure exceeds advance token amount. Available: ${available}`, true); return; }
+    data.scheme = linkedAdv ? linkedAdv.Scheme : '';
+    data.hoa = linkedAdv ? linkedAdv.Hoa : '';
+
+    const orig = expenditureCache.find(e => String(e.Eid) === String(eid));
+    withAdjustments_(adjRows => {
+      // adjustments already booked against a token must stay covered by its expenditure
+      const adjOn = t => sumAmt_(adjRows, t, 'Adv_Token_No', 'Adj_Amt');
+      const expAfter = newAmt + sumAmt_(expenditureCache, data.adv_token_no, 'Adv_Token_No', 'Amount', 'Eid', eid);
+      if (expAfter < adjOn(data.adv_token_no)) { setStatus('exp_status', `Adjustments of ${adjOn(data.adv_token_no)} are recorded against this token; its expenditure cannot fall below that.`, true); return; }
+      if (orig && String(orig.Adv_Token_No) !== String(data.adv_token_no)) {
+        const oldAfter = sumAmt_(expenditureCache, orig.Adv_Token_No, 'Adv_Token_No', 'Amount', 'Eid', eid);
+        if (oldAfter < adjOn(orig.Adv_Token_No)) { setStatus('exp_status', `Token ${orig.Adv_Token_No} has adjustments recorded; its expenditure cannot fall below ${adjOn(orig.Adv_Token_No)}.`, true); return; }
+      }
+      gsr().withSuccessHandler(res => {
+        if (res && res.success === false) { setStatus('exp_status', res.message || 'Update failed', true); return; }
+        setStatus('exp_status', 'Updated.');
+        clearExpForm();
+        refreshAdvanceTable();
+        refreshExpenditureTable(true);
+      }).withFailureHandler(err => {
+        setStatus('exp_status', 'Update error: ' + err.message, true);
+      }).updateExpenditure(data);
+    });
+  }
+
   function clearExpForm() {
+    selectedExpEid = '';
+    Array.from(document.querySelectorAll('#exp_table tr')).forEach(tr => { tr.style.background = ''; });
     document.getElementById('exp_amount').value = 0;
     document.getElementById('exp_dt').value = '';
     // Esti_no/Task deliberately NOT reset here — consecutive expenditure
@@ -7729,6 +7971,9 @@
       }
       const tr = document.createElement('tr');
       tr.innerHTML = `<td>${r.Eid}</td><td>${r.Adv_Token_No}</td><td>${inr(r.Amount)}</td><td>${r.Dt}</td><td>${scheme}</td><td>${hoa}</td>`;
+      tr.style.cursor = 'pointer'; tr.title = 'Click to edit';
+      if (String(r.Eid) === String(selectedExpEid)) tr.style.background = '#eef4ff';
+      tr.onclick = () => loadExpenditureIntoForm(r);
       tbody.appendChild(tr);
     });
     renderExpenditureStatsBreakdown(rows);
@@ -7796,7 +8041,55 @@
       .addAdjustment(data);
   }
 
+  function loadAdjustmentIntoForm(r) {
+    selectedAdjAid = r.Aid;
+    ensureSelectOption_(document.getElementById('adj_adv_token_no'), r.Adv_Token_No);
+    loadAdvTokenSummary();
+    document.getElementById('adj_token_no').value = r.Adj_Token_No;
+    document.getElementById('adj_amt').value = r.Adj_Amt;
+    document.getElementById('adj_date').value = r.Adj_Date;
+    refreshAutosize();
+    renderAdjustmentTable(filterAdjustmentByScheme(document.getElementById('bud_filter_scheme_adj').value));
+    setStatus('adj_status', advAllowed_('expAdjUpdate') ? 'Editing Aid ' + r.Aid + '. Change the fields and press Update.' : 'Aid ' + r.Aid + ' (view only: updating is for administrators).');
+  }
+
+  function updateAdjustmentRecord() {
+    if (!advAllowed_('expAdjUpdate')) { setStatus('adj_status', 'Only an administrator can update adjustment tokens.', true); return; }
+    const aid = selectedAdjAid;
+    if (!aid) { setStatus('adj_status', 'Select a record from the list first', true); return; }
+    const data = {
+      aid: aid,
+      adv_token_no: document.getElementById('adj_adv_token_no').value,
+      adj_token_no: document.getElementById('adj_token_no').value,
+      adj_amt: document.getElementById('adj_amt').value,
+      adj_date: document.getElementById('adj_date').value
+    };
+    if (!data.adv_token_no) { setStatus('adj_status', 'Select Adv_Token_No', true); return; }
+    if (!data.adj_date) { setStatus('adj_status', 'Adj_Date is required', true); return; }
+    const newAmt = Number(data.adj_amt) || 0;
+    const linkedAdv = findAdvanceByToken(data.adv_token_no);
+    data.scheme = linkedAdv ? linkedAdv.Scheme : '';
+    data.hoa = linkedAdv ? linkedAdv.Hoa : '';
+    withExpenditure_(expRows => {
+      const expAmt = sumAmt_(expRows, data.adv_token_no, 'Adv_Token_No', 'Amount');
+      const otherAdj = sumAmt_(adjustmentCache, data.adv_token_no, 'Adv_Token_No', 'Adj_Amt', 'Aid', aid);   // every other adjustment on this token
+      const available = expAmt - otherAdj;
+      if (newAmt > available) { setStatus('adj_status', `Adjustment exceeds expenditure amount. Available: ${available}`, true); return; }
+      gsr().withSuccessHandler(res => {
+        if (res && res.success === false) { setStatus('adj_status', res.message || 'Update failed', true); return; }
+        setStatus('adj_status', 'Updated.');
+        clearAdjForm();
+        refreshAdvanceTable();
+        refreshAdjustmentTable(true);
+      }).withFailureHandler(err => {
+        setStatus('adj_status', 'Update error: ' + err.message, true);
+      }).updateAdjustment(data);
+    });
+  }
+
   function clearAdjForm() {
+    selectedAdjAid = '';
+    Array.from(document.querySelectorAll('#adj_table tr')).forEach(tr => { tr.style.background = ''; });
     document.getElementById('adj_token_no').value = '';
     document.getElementById('adj_amt').value = 0;
     document.getElementById('adj_date').value = '';
@@ -7837,6 +8130,9 @@
       }
       const tr = document.createElement('tr');
       tr.innerHTML = `<td>${r.Aid}</td><td>${r.Adv_Token_No}</td><td>${r.Adj_Token_No}</td><td>${inr(r.Adj_Amt)}</td><td>${r.Adj_Date}</td><td>${scheme}</td><td>${hoa}</td>`;
+      tr.style.cursor = 'pointer'; tr.title = 'Click to edit';
+      if (String(r.Aid) === String(selectedAdjAid)) tr.style.background = '#eef4ff';
+      tr.onclick = () => loadAdjustmentIntoForm(r);
       tbody.appendChild(tr);
     });
     renderAdjustmentStatsBreakdown(rows);
@@ -9207,8 +9503,8 @@
             <datalist id="mbook_no_list_${estId}">${mbookDatalistHtml}</datalist>
           </div>
           <div class="field-pair">
-            <div class="field-row"><label>Page From</label><input type="number" min="0" id="vch_new_page_from"></div>
-            <div class="field-row"><label>Page To</label><input type="number" min="0" id="vch_new_page_to"></div>
+            <div class="field-row"><label>Page From</label><input type="number" class="pg4" min="0" max="9999" id="vch_new_page_from"></div>
+            <div class="field-row"><label>Page To</label><input type="number" class="pg4" min="0" max="9999" id="vch_new_page_to"></div>
           </div>
           <div class="field-row"><label>Work Done From Date</label><input type="date" id="vch_new_from_date"></div>
           <div class="field-row"><label>Work Done To Date</label><input type="date" id="vch_new_to_date"></div>
@@ -12499,8 +12795,9 @@ function __tableSorter(){
   new MutationObserver(sched).observe(d.documentElement,{childList:true,subtree:true});
   scan();
 }
-function __withSorter(h){ return h+'<script>('+__tableSorter.toString()+')();<\/script>'; }
-function __sorterIntoFrame(f){ try{ var w=f.contentWindow, s=w.document.createElement('script'); s.textContent='('+__tableSorter.toString()+')();'; w.document.body.appendChild(s); }catch(e){} }
+var __DATE_CSS='input[type=date]{width:auto!important;min-width:0;flex:0 0 auto;align-self:flex-start;justify-self:start}';
+function __withSorter(h){ return h+'<style>'+__DATE_CSS+'</style><script>('+__tableSorter.toString()+')();<\/script>'; }
+function __sorterIntoFrame(f){ try{ var w=f.contentWindow, st=w.document.createElement('style'); st.textContent=__DATE_CSS; w.document.head.appendChild(st); var s=w.document.createElement('script'); s.textContent='('+__tableSorter.toString()+')();'; w.document.body.appendChild(s); }catch(e){} }
 __tableSorter();
 </script>
 <script>
@@ -12568,7 +12865,7 @@ __tableSorter();
       return out;
     }
     var tb=card.querySelector('tbody[id$="_list_table"]')||card.querySelector('tbody');
-    if(tb) return [[/Issue/i.test(title)?'Issued':(/Record|Status|Event|Dashboard/i.test(title)?'Records':'Rows'),String(countRows(tb))]];
+    if(tb) return [[/Issue/i.test(title)?'Issued':(/Attachment/i.test(title)?'Attachments':(/Mbook (Stats|Usage)/i.test(title)?'Mbooks':(/Record|Status|Event|Dashboard/i.test(title)?'Records':'Rows'))),String(countRows(tb))]];
     return card.querySelector('input,select,textarea')?'form':[];
   }
   function render(card){
@@ -12605,6 +12902,7 @@ __tableSorter();
   });
 
   function toggleFrom(e,h){
+    if(e.target.closest('.band-grip')) return;
     if(e.target.closest('button,a,input,select,textarea,label')&&e.target.closest('.card-head')===h&&e.target!==h) return;
     var card=h.parentElement; setOpen(card,card.classList.contains('coll'));
   }
@@ -12627,11 +12925,115 @@ __tableSorter();
     s.forEach(function(p){ if(p[0].value!==p[1]){ var c=p[0].closest('.card'); if(c&&c.classList.contains('coll')){ setOpen(c,true); first=first||c; } } });
     if(first&&first.scrollIntoView) first.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
-  Object.keys(window).filter(function(n){ return /^load\w+IntoForm$/.test(n)||n==='editRecord'; }).forEach(function(n){
+  Object.keys(window).filter(function(n){ return /^load\w+IntoForm$/.test(n)||n==='editRecord'||n==='editMbookAttachment'; }).forEach(function(n){
     var f=window[n]; if(typeof f!=='function'||f.__coll) return;
     var w=function(){ var s=snap(), r=f.apply(this,arguments); openChanged(s); setTimeout(function(){ openChanged(s); },350); setTimeout(function(){ openChanged(s); },1200); return r; };
     w.__coll=1; window[n]=w;
   });
+
+  /* ---- move bands (sections) up and down within their tab; the order is remembered in this browser ---- */
+  (function(){
+    var css='.band-grip{flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px;height:26px;margin:-2px 2px -2px -8px;border-radius:5px;color:var(--muted);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;opacity:.55;font-size:15px;letter-spacing:-3px;line-height:1}'
+     +'.band-grip::before{content:"\\22EE\\22EE"}'
+     +'.band-grip:hover,.band-grip:focus-visible{opacity:1;background:rgba(15,23,42,.07);outline:none}'
+     +'.card.band-dragging{position:relative;z-index:50;box-shadow:0 14px 34px rgba(16,24,40,.28)!important;transition:none!important}'
+     +'body.band-moving,body.band-moving *{cursor:grabbing!important;user-select:none!important;-webkit-user-select:none!important}'
+     +'.band-tools{display:none;justify-content:flex-end;margin:0 0 8px}'
+     +'.band-tools.on{display:flex}'
+     +'.band-tools button{font-size:12px;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:999px;padding:3px 12px;cursor:pointer}'
+     +'.band-tools button:hover{color:var(--brand);border-color:var(--brand)}';
+    var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
+
+    var LS='tbBandOrder:';
+    function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+    function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+    function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+    function cardsOf(sc){ return Array.prototype.slice.call(sc.querySelectorAll(':scope>.card.has-coll')); }
+    function visible(c){ var r=c.getBoundingClientRect(); return r.height>0||r.width>0; }
+    function keyOf(c){ return c.id||String(((c.querySelector(':scope>.card-head .section-title')||{}).textContent)||'').trim(); }
+
+    var screens=Array.prototype.filter.call(document.querySelectorAll('.screen'),function(sc){ return cardsOf(sc).length>1; });
+    var defaults={}, tools={};
+    screens.forEach(function(sc){ defaults[sc.id]=cardsOf(sc).map(keyOf); });
+
+    function applyOrder(sc,keys){
+      var cur=cardsOf(sc), want=[];
+      keys.forEach(function(k){ var c=cur.filter(function(x){ return keyOf(x)===k; })[0]; if(c&&want.indexOf(c)<0) want.push(c); });
+      cur.forEach(function(c){ if(want.indexOf(c)<0) want.push(c); });
+      for(var i=0;i<want.length;i++){
+        if(cur[i]!==want[i]){ sc.insertBefore(want[i],cur[i]); cur.splice(cur.indexOf(want[i]),1); cur.splice(i,0,want[i]); }
+      }
+    }
+    function save(sc){
+      var keys=cardsOf(sc).map(keyOf), isDefault=JSON.stringify(keys)===JSON.stringify(defaults[sc.id]);
+      if(isDefault) lsDel(LS+sc.id); else lsSet(LS+sc.id,JSON.stringify(keys));
+      if(tools[sc.id]) tools[sc.id].classList.toggle('on',!isDefault);
+    }
+
+    screens.forEach(function(sc){
+      cardsOf(sc).forEach(function(c){
+        var head=c.querySelector(':scope>.card-head'); if(!head||head.querySelector('.band-grip')) return;
+        var g=document.createElement('span'); g.className='band-grip'; g.setAttribute('role','button'); g.tabIndex=0;
+        g.setAttribute('aria-label','Move this section'); g.title='Drag to move this section (or press Up / Down while this handle is focused)';
+        head.insertBefore(g,head.firstChild);
+      });
+      var t=document.createElement('div'); t.className='band-tools';
+      var b=document.createElement('button'); b.type='button'; b.textContent='\u21BA Reset section order';
+      b.onclick=function(){ applyOrder(sc,defaults[sc.id]); save(sc); };
+      t.appendChild(b); sc.insertBefore(t,sc.firstChild); tools[sc.id]=t;
+      var raw=lsGet(LS+sc.id);
+      if(raw){ try{ applyOrder(sc,JSON.parse(raw)); }catch(e){} }
+      save(sc);
+    });
+
+    /* drag with mouse, pen or finger */
+    var drag=null;
+    document.addEventListener('pointerdown',function(e){
+      var g=e.target.closest&&e.target.closest('.band-grip'); if(!g||(e.button!==undefined&&e.button>0)) return;
+      var card=g.closest('.card.has-coll'); if(!card) return;
+      e.preventDefault();
+      drag={card:card,sc:card.parentElement,grab:e.clientY-card.getBoundingClientRect().top,id:e.pointerId,grip:g,start:cardsOf(card.parentElement).map(keyOf).join('|')};
+      try{ g.setPointerCapture(e.pointerId); }catch(x){}
+      card.classList.add('band-dragging'); document.body.classList.add('band-moving');
+    });
+    document.addEventListener('pointermove',function(e){
+      if(!drag||e.pointerId!==drag.id) return;
+      var card=drag.card, sc=drag.sc;
+      var others=cardsOf(sc).filter(function(c){ return c!==card&&visible(c); });
+      var before=null;
+      for(var i=0;i<others.length;i++){ var r=others[i].getBoundingClientRect(); if(e.clientY<r.top+r.height/2){ before=others[i]; break; } }
+      if(others.length){
+        var ref=before||others[others.length-1].nextSibling;
+        if(before?card.nextElementSibling!==before:cardsOf(sc).filter(visible).pop()!==card) sc.insertBefore(card,ref);
+      }
+      card.style.transform='none';
+      var natural=card.getBoundingClientRect().top;
+      card.style.transform='translateY('+(e.clientY-drag.grab-natural)+'px)';
+      if(e.clientY<70) window.scrollBy(0,-14); else if(e.clientY>window.innerHeight-70) window.scrollBy(0,14);
+    });
+    function endDrag(e){
+      if(!drag||(e&&e.pointerId!==drag.id)) return;
+      var d=drag; drag=null;
+      d.card.classList.remove('band-dragging'); d.card.style.transform=''; document.body.classList.remove('band-moving');
+      try{ d.grip.releasePointerCapture(d.id); }catch(x){}
+      if(cardsOf(d.sc).map(keyOf).join('|')!==d.start) save(d.sc);
+    }
+    document.addEventListener('pointerup',endDrag);
+    document.addEventListener('pointercancel',endDrag);
+
+    /* keyboard: Up / Down on a focused handle */
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='ArrowUp'&&e.key!=='ArrowDown') return;
+      var g=e.target.closest&&e.target.closest('.band-grip'); if(!g) return;
+      var card=g.closest('.card.has-coll'), sc=card.parentElement;
+      var list=cardsOf(sc).filter(visible); if(list.length<2) list=cardsOf(sc);
+      var idx=list.indexOf(card), tgt=list[idx+(e.key==='ArrowUp'?-1:1)];
+      e.preventDefault(); if(!tgt) return;
+      if(e.key==='ArrowUp') sc.insertBefore(card,tgt); else sc.insertBefore(card,tgt.nextSibling);
+      save(sc); g.focus(); if(card.scrollIntoView) card.scrollIntoView({block:'nearest'});
+    });
+  })();
 })();
 </script>
 </body>

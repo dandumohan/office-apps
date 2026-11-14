@@ -309,6 +309,19 @@
         .mbox-tasks .count, .mbox-processing .count, .mbox-completed .count { background: rgba(255, 255, 255, .75); color: var(--ink-dark); }
         .mbox-tasks .mgroup, .mbox-processing .mgroup, .mbox-completed .mgroup { background: var(--tone); color: var(--ink-dark); }
         .mbox-tasks .mgroup .count, .mbox-processing .mgroup .count, .mbox-completed .mgroup .count { background: transparent; }
+
+        /* ---------- Slip paper: ruled / unruled ---------- */
+        .paper-toggle { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 12px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 12px; font-weight: 600; color: var(--muted); }
+        .paper-toggle span { padding: 0 8px; }
+        .paper-toggle button { border: 0; background: none; padding: 6px 12px; border-radius: 8px; font: inherit; color: var(--ink-2); cursor: pointer; }
+        .paper-toggle button[aria-pressed="true"] { background: var(--yellow); color: var(--ink-dark); box-shadow: 0 0 0 1.5px var(--ink-dark); }
+        body.slips-ruled .slip .slip-text { line-height: 22px; }
+        body.slips-ruled .slip {
+            background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 21px, rgba(31, 30, 28, .28) 21px, rgba(31, 30, 28, .28) 22px) !important;
+            background-position: 0 12px !important;
+            background-repeat: repeat-y !important;
+            padding-bottom: 14px;
+        }
     </style>
 </head>
 
@@ -434,6 +447,11 @@
                     </div>
                 </div>
                 <p id="noteMsg" class="status"></p>
+                <div class="paper-toggle" role="group" aria-label="Slip paper style">
+                    <span>Paper</span>
+                    <button type="button" id="paperUnruled" onclick="setSlipStyle('unruled')" aria-pressed="true">Unruled</button>
+                    <button type="button" id="paperRuled" onclick="setSlipStyle('ruled')" aria-pressed="false">Ruled</button>
+                </div>
                 <div id="noteList" class="slip-boxes"></div>
             </div>
         </section>
@@ -1238,7 +1256,14 @@
         sb.auth.onAuthStateChange((event, session) => {
             if (['INITIAL_SESSION', 'SIGNED_IN', 'SIGNED_OUT'].includes(event)) showApp(session);
         });
-    restoreDraft(); restoreTaskDraft();
+    function setSlipStyle(v) {
+            document.body.classList.toggle('slips-ruled', v === 'ruled');
+            document.getElementById('paperRuled').setAttribute('aria-pressed', v === 'ruled');
+            document.getElementById('paperUnruled').setAttribute('aria-pressed', v !== 'ruled');
+            try { localStorage.setItem('kanban_slip_style', v); } catch (e) {}
+        }
+        try { setSlipStyle(localStorage.getItem('kanban_slip_style') === 'ruled' ? 'ruled' : 'unruled'); } catch (e) {}
+        restoreDraft(); restoreTaskDraft();
 </script>
 </body>
 </html>

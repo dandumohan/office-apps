@@ -330,6 +330,62 @@
     .field-pair { display: flex; gap: 12px; flex-wrap: wrap; }
     /* Mbook tab layout */
     /* Attach Mbook: block 1 takes all the spare width; blocks 2 and 3 are exactly as wide as their content */
+    /* Record layouts: Rows / Grid / Full text */
+    .lay-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 24px; margin: 4px 0 12px; }
+    .lay-label { display: block; margin-bottom: 6px; font: 600 11px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .16em; color: var(--muted); }
+    .lay-tabs { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: #fff; }
+    .lay-tab { padding: 9px 22px; background: #fff; border: 0; border-right: 1px solid var(--border); border-bottom: 3px solid transparent; font: 600 14px var(--font, inherit); color: var(--ink); cursor: pointer; }
+    .lay-tab:last-child { border-right: 0; }
+    .lay-tab:hover { background: #f3f6fa; }
+    .lay-tab.active { color: var(--brand); border-bottom-color: var(--brand); background: #f6f9fd; }
+    .lay-sort select { width: auto; min-width: 190px; }
+    .lay-sort label { display: block; margin-bottom: 6px; font: 600 11px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .16em; color: var(--muted); text-transform: uppercase; }
+    .lay-count { flex: 1 1 100%; font-size: 13px; color: var(--muted); }
+    .lay-count b { color: var(--ink); font-weight: 600; }
+    .rec-cards { display: grid; gap: 16px; }
+    .rec-cards.rec-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+    .rec-cards.rec-full { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); }
+    .rec-card { display: flex; flex-direction: column; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: box-shadow .15s ease, border-color .15s ease, transform .15s ease; }
+    .rec-card:hover { box-shadow: 0 6px 18px rgba(16, 24, 40, .12); transform: translateY(-1px); }
+    .rec-card:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .rec-card.selected { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(29, 78, 216, .18); }
+    .rec-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 12px; background: #eef2f7; border-bottom: 1px solid var(--border); font: 11px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+    .rec-dots { display: inline-flex; gap: 5px; }
+    .rec-dots i { width: 8px; height: 8px; border-radius: 50%; background: #b9c2cf; }
+    .rec-dots i:first-child { background: var(--brand); }
+    .rec-body { padding: 16px 18px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .rec-title { font: 400 28px/1.15 Georgia, 'Times New Roman', serif; color: var(--ink); overflow-wrap: anywhere; }
+    .rec-rule { height: 1px; background: linear-gradient(90deg, rgba(0,0,0,.18), rgba(0,0,0,0)); margin: 2px 0 4px; }
+    .rec-sub { font-size: 13.5px; color: var(--ink); }
+    .rec-amt { font: 600 18px/1.2 var(--font, inherit); color: var(--brand); }
+    .rec-words { font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.4; }
+    .rec-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+    .rec-badge { padding: 2px 9px; border: 1px solid #d9a600; border-radius: 3px; background: #fff7d6; color: #8a6500; font-size: 12px; font-weight: 600; }
+    .rec-badge.q { border-color: #8db3e8; background: #eaf2ff; color: #1d4ed8; }
+    .rec-date { margin-left: 2px; font: 12px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+    .rec-grid .rec-title { font-size: 19px; }
+    .rec-grid .rec-body { padding: 12px 14px 14px; gap: 6px; }
+    .rec-grid .rec-amt { font-size: 15px; }
+    .rec-grid .rec-words { display: none; }
+    /* row actions dropdown (kebab menu) */
+    .row-kebab { width: 30px; height: 30px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 20px; line-height: 1; font-weight: 700; cursor: pointer; }
+    .row-kebab:hover, .row-kebab[aria-expanded="true"] { background: rgba(15, 23, 42, .08); color: var(--ink); }
+    .row-kebab:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+    .rec-bar-r { display: inline-flex; align-items: center; gap: 6px; }
+    .rec-bar .row-kebab { width: 26px; height: 24px; margin: -3px -6px -3px 0; font-size: 18px; }
+    td.rowmenu-cell { width: 44px; text-align: right; white-space: nowrap; }
+    .row-menu { position: fixed; z-index: 3000; min-width: 188px; padding: 6px 0; background: #fff; border: 1px solid #1f2d3d; border-radius: 10px; box-shadow: 0 10px 28px rgba(16, 24, 40, .20); }
+    .row-menu-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 16px; background: none; border: 0; text-align: left; font: 14px var(--font, inherit); color: var(--ink); cursor: pointer; }
+    .row-menu-item svg { width: 15px; height: 15px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .row-menu-item:hover, .row-menu-item:focus-visible { background: #f1f5f9; outline: none; }
+    .row-menu-item.danger { color: var(--danger); }
+    .row-menu-item.danger:hover, .row-menu-item.danger:focus-visible { background: #fdecea; }
+    .rec-kv { display: flex; justify-content: space-between; gap: 10px; padding-top: 6px; border-top: 1px dashed var(--border); font-size: 13px; color: var(--muted); }
+    .rec-kv b { color: var(--ink); font-weight: 600; }
+    .rec-kv b.pos { color: var(--success); }
+    .rec-kv b.neg { color: var(--danger); }
+    .rec-grid .rec-opt { display: none; }
+    .rec-empty { padding: 28px; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: var(--radius); }
     .mbi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
     .mb-grid { display: grid; grid-template-columns: minmax(360px, 1fr) max-content max-content; gap: 16px; align-items: start; }
     .mb-panel.mb-fit { width: max-content; max-width: 100%; }
@@ -796,7 +852,7 @@
         </div>
         <div class="list-wrap">
           <table class="grid">
-            <thead><tr><th>Tid</th><th>Trans_id</th><th>Token no</th><th>Amount</th><th>Dt</th><th>Credit_dt</th><th>Credited_Amt</th><th>Credited_Account_No</th><th>Scheme</th><th>Hoa</th></tr></thead>
+            <thead><tr><th>Tid</th><th>Trans_id</th><th>Token no</th><th>Amount</th><th>Dt</th><th>Credit_dt</th><th>Credited_Amt</th><th>Credited_Account_No</th><th>Scheme</th><th>Hoa</th><th></th></tr></thead>
             <tbody id="adv_table"></tbody>
           </table>
         </div>
@@ -945,7 +1001,7 @@
         </div>
         <div class="list-wrap">
           <table class="grid">
-            <thead><tr><th>Eid</th><th>token</th><th>amt</th><th>dt</th><th>Scheme</th><th>Hoa</th></tr></thead>
+            <thead><tr><th>Eid</th><th>token</th><th>amt</th><th>dt</th><th>Scheme</th><th>Hoa</th><th></th></tr></thead>
             <tbody id="exp_table"></tbody>
           </table>
         </div>
@@ -1107,7 +1163,7 @@
         </div>
         <div class="list-wrap">
           <table class="grid">
-            <thead><tr><th>Aid</th><th>token</th><th>A_token</th><th>A_amt</th><th>A_dt</th><th>Scheme</th><th>Hoa</th></tr></thead>
+            <thead><tr><th>Aid</th><th>token</th><th>A_token</th><th>A_amt</th><th>A_dt</th><th>Scheme</th><th>Hoa</th><th></th></tr></thead>
             <tbody id="adj_table"></tbody>
           </table>
         </div>
@@ -1612,9 +1668,33 @@
             </select>
           </div>
         </div>
-        <div class="list-wrap">
+        <div class="lay-bar">
+          <div>
+            <span class="lay-label">LAYOUT</span>
+            <div class="lay-tabs" id="apo_layout_tabs" role="group" aria-label="Layout">
+              <button type="button" class="lay-tab active" data-lay="rows" onclick="setApoLayout('rows')">Rows</button>
+              <button type="button" class="lay-tab" data-lay="grid" onclick="setApoLayout('grid')">Grid</button>
+              <button type="button" class="lay-tab" data-lay="full" onclick="setApoLayout('full')">Full text</button>
+            </div>
+          </div>
+          <div class="lay-sort" id="apo_sort_wrap" style="display:none;">
+            <label for="apo_card_sort">Sort by</label>
+            <select id="apo_card_sort" onchange="apoLayout.render(apoLayout.last)">
+              <option value="default">Default order</option>
+              <option value="appr_desc">Approved: high to low</option>
+              <option value="appr_asc">Approved: low to high</option>
+              <option value="bal_desc">Balance: high to low</option>
+              <option value="scheme">Scheme A to Z</option>
+              <option value="year_desc">Year: newest first</option>
+              <option value="dt_desc">Approved date: newest first</option>
+            </select>
+          </div>
+          <div class="lay-count" id="apo_count_line"></div>
+        </div>
+        <div id="apo_cards" class="rec-cards rec-grid" style="display:none;"></div>
+        <div class="list-wrap" id="apo_rows_wrap">
           <table class="grid">
-            <thead><tr><th>APO_id</th><th>Year</th><th>Scheme</th><th>Approved</th><th>Released</th><th>Balance</th><th>Approved Dt</th><th>Reference</th></tr></thead>
+            <thead><tr><th>APO_id</th><th>Year</th><th>Scheme</th><th>Approved</th><th>Released</th><th>Balance</th><th>Approved Dt</th><th>Reference</th><th></th></tr></thead>
             <tbody id="apo_table"></tbody>
           </table>
         </div>
@@ -1737,9 +1817,32 @@
             </select>
           </div>
         </div>
-        <div class="list-wrap">
+        <div class="lay-bar">
+          <div>
+            <span class="lay-label">LAYOUT</span>
+            <div class="lay-tabs" id="bud_layout_tabs" role="group" aria-label="Layout">
+              <button type="button" class="lay-tab active" data-lay="rows" onclick="setBudgetLayout('rows')">Rows</button>
+              <button type="button" class="lay-tab" data-lay="grid" onclick="setBudgetLayout('grid')">Grid</button>
+              <button type="button" class="lay-tab" data-lay="full" onclick="setBudgetLayout('full')">Full text</button>
+            </div>
+          </div>
+          <div class="lay-sort" id="bud_sort_wrap" style="display:none;">
+            <label for="bud_card_sort">Sort by</label>
+            <select id="bud_card_sort" onchange="renderBudgetCards_(budLastRows)">
+              <option value="default">Default order</option>
+              <option value="amt_desc">Amount: high to low</option>
+              <option value="amt_asc">Amount: low to high</option>
+              <option value="scheme">Scheme A to Z</option>
+              <option value="year_desc">Year: newest first</option>
+              <option value="dt_desc">Date: newest first</option>
+            </select>
+          </div>
+          <div class="lay-count" id="bud_count_line"></div>
+        </div>
+        <div id="bud_cards" class="rec-cards rec-grid" style="display:none;"></div>
+        <div class="list-wrap" id="bud_rows_wrap">
           <table class="grid">
-            <thead><tr><th>Budget_id</th><th>Year</th><th>Scheme</th><th>HOA</th><th>QTR</th><th>AMT</th><th>Dt</th></tr></thead>
+            <thead><tr><th>Budget_id</th><th>Year</th><th>Scheme</th><th>HOA</th><th>QTR</th><th>AMT</th><th>Dt</th><th></th></tr></thead>
             <tbody id="bud_table"></tbody>
           </table>
         </div>
@@ -1947,7 +2050,7 @@
 
         <div class="list-wrap" style="margin-top: 10px;">
           <table class="grid">
-            <thead><tr><th>Type</th><th>Date</th><th>From</th><th>To</th><th>Reference No</th><th>Details</th><th>Remarks</th></tr></thead>
+            <thead><tr><th>Type</th><th>Date</th><th>From</th><th>To</th><th>Reference No</th><th>Details</th><th>Remarks</th><th></th></tr></thead>
             <tbody id="pers_events_table"></tbody>
           </table>
         </div>
@@ -1981,7 +2084,7 @@
             <thead><tr>
               <th>Employee Name</th><th>HRMS ID</th><th>CFMS ID</th><th>Gender</th><th>DOB</th>
               <th>Cadre</th><th>Native District</th><th>Joining Station</th><th>Relieving Station</th>
-            </tr></thead>
+            <th></th></tr></thead>
             <tbody id="pers_table"></tbody>
           </table>
         </div>
@@ -2156,7 +2259,7 @@
 
         <div class="list-wrap" style="margin-top: 10px;">
           <table class="grid">
-            <thead><tr><th>Type</th><th>Date</th><th>From</th><th>To</th><th>Amount</th><th>Reference No</th><th>Details</th><th>Remarks</th></tr></thead>
+            <thead><tr><th>Type</th><th>Date</th><th>From</th><th>To</th><th>Amount</th><th>Reference No</th><th>Details</th><th>Remarks</th><th></th></tr></thead>
             <tbody id="veh_events_table"></tbody>
           </table>
         </div>
@@ -2190,7 +2293,7 @@
             <thead><tr>
               <th>Vehicle No</th><th>Type</th><th>Make/Model</th><th>Fuel</th><th>Status</th>
               <th>Allotted To</th><th>Driver</th><th>RC Validity</th><th>Insurance Expiry</th>
-            </tr></thead>
+            <th></th></tr></thead>
             <tbody id="veh_table"></tbody>
           </table>
         </div>
@@ -2276,7 +2379,7 @@
             <thead><tr>
               <th>Item</th><th>Qnty</th><th>Rate</th><th>Amount</th><th>Date of Purchase</th>
               <th>Firm Name</th><th>Proceedings Details</th><th>Proceedings Date</th>
-            </tr></thead>
+            <th></th></tr></thead>
             <tbody id="proc_table"></tbody>
           </table>
         </div>
@@ -2339,7 +2442,7 @@
         </div>
         <div class="list-wrap">
           <table class="grid">
-            <thead><tr><th>Service</th><th>Service Date</th><th>Order Details</th><th>Order Date</th></tr></thead>
+            <thead><tr><th>Service</th><th>Service Date</th><th>Order Details</th><th>Order Date</th><th></th></tr></thead>
             <tbody id="svc_table"></tbody>
           </table>
         </div>
@@ -2574,7 +2677,7 @@
             <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Issued Mbooks <span class="stat-label">(click a row to edit)</span></div>
             <div class="list-wrap" style="max-height:200px;">
               <table class="grid">
-                <thead><tr><th>Year</th><th>Mbook No</th><th>Pages</th><th>Issue Date</th><th>Issued By</th><th>Scheme</th><th>Estimate</th></tr></thead>
+                <thead><tr><th>Year</th><th>Mbook No</th><th>Pages</th><th>Issue Date</th><th>Issued By</th><th>Scheme</th><th>Estimate</th><th></th></tr></thead>
                 <tbody id="mbi_list_table"></tbody>
               </table>
             </div>
@@ -2601,7 +2704,7 @@
             <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Accounts <span class="stat-label">(click a row to edit)</span></div>
             <div class="list-wrap" style="max-height:220px;">
               <table class="grid">
-                <thead><tr><th>Bank</th><th>Branch</th><th>Place</th><th>Account No</th><th>IFSC</th><th>Name of Account</th><th>Drawing Authorities</th><th>Cheque Books</th></tr></thead>
+                <thead><tr><th>Bank</th><th>Branch</th><th>Place</th><th>Account No</th><th>IFSC</th><th>Name of Account</th><th>Drawing Authorities</th><th>Cheque Books</th><th></th></tr></thead>
                 <tbody id="wa_list_table"></tbody>
               </table>
             </div>
@@ -2624,7 +2727,7 @@
             <div class="scheme-card-title" style="font-size:13px; margin-top:16px; margin-bottom:6px;">Cheque Books of selected account <span class="stat-label">(click a row to edit)</span></div>
             <div class="list-wrap" style="max-height:220px;">
               <table class="grid">
-                <thead><tr><th>Cheque Book No</th><th>Leaves From</th><th>Leaves To</th><th>No. of Leaves</th><th>Used Leaves</th><th>Balance Leaves</th><th>Next Leaf No</th></tr></thead>
+                <thead><tr><th>Cheque Book No</th><th>Leaves From</th><th>Leaves To</th><th>No. of Leaves</th><th>Used Leaves</th><th>Balance Leaves</th><th>Next Leaf No</th><th></th></tr></thead>
                 <tbody id="cb_list_table"></tbody>
               </table>
             </div>
@@ -4787,6 +4890,8 @@
   let authEmail = null;
   let authIdentity = '';
   let authIsAdmin = false;
+  window.__isAdmin = () => !!authIsAdmin;          // read by the copy protection (also from the embedded screens)
+  const COPY_GUARD = { hideWorkbookExport: false };   // true: only administrators see "Export for Voucher Suite" (whole-workbook download)
   let authPerms = null;            // { module: 'VAED' } for the signed-in user; null = full access
   const PERM_MODULES_ = ['APOs', 'Estimate', 'FSR', 'Expenditure', 'Budget', 'Tokens (Advance)', 'Estimate Tasks', 'Vouchers', 'Mbook', 'Withdraw', 'Withdrawal Accounts', 'Cheque Books', 'Fund Application', 'Reports', 'Personnel', 'Personnel Events', 'Vehicle', 'Vehicle Events', 'Procurement', 'Services', 'Plantation'];
 
@@ -4882,7 +4987,7 @@
     const nurBtn = document.querySelector('#topNav .tab-btn[data-top="nursery"]');
     if (nurBtn) nurBtn.style.display = permCan('Plantation', 'V') ? '' : 'none';
     const exp = document.getElementById('voucherSuiteExportBtn');
-    if (exp) exp.style.display = canReports ? '' : 'none';
+    if (exp) exp.style.display = (canReports && (authIsAdmin || !COPY_GUARD.hideWorkbookExport)) ? '' : 'none';
     // if the tab currently open is now hidden, move to one that is visible
     const activeTop = document.querySelector('#topNav .tab-btn.active');
     if (activeTop && activeTop.style.display === 'none') showTopTab('accounts');
@@ -4892,6 +4997,11 @@
       if (first) showAccTab(first.dataset.acc);
     }
     if (typeof applyAdvanceRoleUI_ === 'function') applyAdvanceRoleUI_();
+    // copy protection follows the signed-in user (main page and embedded screens)
+    if (window.__copyGuardSync) {
+      window.__copyGuardSync();
+      Array.from(document.querySelectorAll('iframe')).forEach(f => { try { if (f.contentWindow.__copyGuardSync) f.contentWindow.__copyGuardSync(); } catch (e) {} });
+    }
   }
 
 
@@ -6224,6 +6334,7 @@
       if (String(document.getElementById('mbi_no').dataset.mbiId || '') === String(r.MBI_id)) tr.classList.add('row-selected');
       tr.innerHTML = `<td>${r.Year}</td><td>${r.MBook_No}</td><td>${r.Pages_From}-${r.Pages_To}</td><td>${r.Issue_Date}</td><td>${r.Issued_By}</td><td>${r.Scheme || ''}</td><td>${r.Esti_no || ''}</td>`;
       tr.onclick = () => loadMbookIssuedIntoForm(r);
+      rowKebab_(tr, 'mbi', r);
       tbody.appendChild(tr);
     });
   }
@@ -6329,6 +6440,7 @@
       if (String(document.getElementById('cb_book_no').dataset.cbId || '') === String(r.CB_id)) tr.classList.add('row-selected');
       tr.innerHTML = `<td>${r.Cheque_Book_No}</td><td>${r.Leaves_No_From}</td><td>${r.Leaves_No_To}</td><td>${r.No_Of_Leaves}</td><td>${r.Used_Leaves}</td><td>${r.Balance_Leaves}</td><td>${r.Leaves_No_Next || '&mdash;'}</td>`;
       tr.onclick = () => loadChequeBookIntoForm(r);
+      rowKebab_(tr, 'cb', r);
       tbody.appendChild(tr);
     });
   }
@@ -6442,6 +6554,7 @@
       if (String(document.getElementById('wa_bank').dataset.waId || '') === String(r.WA_id)) tr.classList.add('row-selected');
       tr.innerHTML = `<td>${r.Bank}</td><td>${r.Branch}</td><td>${r.Place}</td><td>${r.Account_No}</td><td>${r.IFSC_Code}</td><td>${r.Name_of_Account}</td><td>${r.Drawing_Authorities}</td><td>${r.No_of_Cheque_Books_Issued}</td>`;
       tr.onclick = () => loadWithdrawalAccountIntoForm(r);
+      rowKebab_(tr, 'wa', r);
       tbody.appendChild(tr);
     });
   }
@@ -7378,6 +7491,7 @@
       if (selectedAdvTid && String(r.Tid) === String(selectedAdvTid)) tr.classList.add('row-selected');
       tr.innerHTML = `<td>${r.Tid}</td><td>${r.Trans_id}</td><td>${r.Token_No}</td><td>${inr(r.Amount)}</td><td>${r.Dt}</td><td>${r.Credited_Date}</td><td>${inr(r.Credited_Amt)}</td><td>${r.Credited_Account_No || ''}</td><td>${r.Scheme}</td><td>${r.Hoa}</td>`;
       tr.onclick = () => loadAdvanceIntoForm(r);
+      rowKebab_(tr, 'advance', r);
       tbody.appendChild(tr);
     });
     renderAdvanceStatsBreakdown(rows);
@@ -7974,6 +8088,7 @@
       tr.style.cursor = 'pointer'; tr.title = 'Click to edit';
       if (String(r.Eid) === String(selectedExpEid)) tr.style.background = '#eef4ff';
       tr.onclick = () => loadExpenditureIntoForm(r);
+      rowKebab_(tr, 'exp', r);
       tbody.appendChild(tr);
     });
     renderExpenditureStatsBreakdown(rows);
@@ -8133,6 +8248,7 @@
       tr.style.cursor = 'pointer'; tr.title = 'Click to edit';
       if (String(r.Aid) === String(selectedAdjAid)) tr.style.background = '#eef4ff';
       tr.onclick = () => loadAdjustmentIntoForm(r);
+      rowKebab_(tr, 'adj', r);
       tbody.appendChild(tr);
     });
     renderAdjustmentStatsBreakdown(rows);
@@ -11221,6 +11337,7 @@
       tr.innerHTML = `<td>${r.Procurement_Item}</td><td>${r.Qty}</td><td>${inr(r.Rate)}</td><td>${inr(r.Amount)}</td><td>${r.Date_Of_Purchase || ''}</td>
         <td>${r.Firm_Name || ''}</td><td>${r.Approval_Proceedings_Details || ''}</td><td>${r.Proceedings_Date || ''}</td>`;
       tr.onclick = () => loadProcurementIntoForm(r);
+      rowKebab_(tr, 'proc', r);
       tbody.appendChild(tr);
     });
     if (!rows.length) tbody.innerHTML = '<tr><td colspan="8" class="linked-empty">No procurement records match.</td></tr>';
@@ -11347,6 +11464,7 @@
       tr.style.cursor = 'pointer';
       tr.innerHTML = `<td>${r.Service_Type}</td><td>${r.Service_Date || ''}</td><td>${r.Order_Details || ''}</td><td>${r.Order_Date || ''}</td>`;
       tr.onclick = () => loadServiceIntoForm(r);
+      rowKebab_(tr, 'svc', r);
       tbody.appendChild(tr);
     });
     if (!rows.length) tbody.innerHTML = '<tr><td colspan="4" class="linked-empty">No service records match.</td></tr>';
@@ -11466,6 +11584,7 @@
       tr.innerHTML = `<td>${r.Vehicle_No}</td><td>${r.Vehicle_Type || ''}</td><td>${r.Make_Model || ''}</td><td>${r.Fuel_Type || ''}</td><td>${r.Status || ''}</td>
         <td>${r.Allotted_To || ''}</td><td>${r.Driver_Name || ''}</td><td>${r.RC_Validity_Date || ''}</td><td>${r.Insurance_Expiry_Date || ''}</td>`;
       tr.onclick = () => loadVehicleIntoForm(r);
+      rowKebab_(tr, 'veh', r);
       tbody.appendChild(tr);
     });
     if (!rows.length) tbody.innerHTML = '<tr><td colspan="9" class="linked-empty">No vehicle records match.</td></tr>';
@@ -11545,6 +11664,7 @@
       tr.style.cursor = 'pointer';
       tr.innerHTML = `<td>${e.Event_Type || ''}</td><td>${e.Event_Date || ''}</td><td>${e.From_Value || ''}</td><td>${e.To_Value || ''}</td><td>${Number(e.Amount) ? inr(e.Amount) : ''}</td><td>${e.Reference_No || ''}</td><td>${e.Details || ''}</td><td>${e.Remarks || ''}</td>`;
       tr.onclick = () => loadVehicleEventIntoForm(e);
+      rowKebab_(tr, 'vehev', e);
       tbody.appendChild(tr);
     });
     if (!rows.length) tbody.innerHTML = '<tr><td colspan="8" class="linked-empty">No events recorded yet for this vehicle.</td></tr>';
@@ -11728,6 +11848,7 @@
         <td>${r.Joining_Station_Name || ''}${r.Joining_Station_Date ? ' (' + r.Joining_Station_Date + ')' : ''}</td>
         <td>${relieving}</td>`;
       tr.onclick = () => loadPersonnelIntoForm(r);
+      rowKebab_(tr, 'pers', r);
       tbody.appendChild(tr);
     });
     if (!rows.length) tbody.innerHTML = '<tr><td colspan="9" class="linked-empty">No personnel records match.</td></tr>';
@@ -11809,6 +11930,7 @@
       tr.style.cursor = 'pointer';
       tr.innerHTML = `<td>${e.Event_Type || ''}</td><td>${e.Event_Date || ''}</td><td>${e.From_Value || ''}</td><td>${e.To_Value || ''}</td><td>${e.Reference_No || ''}</td><td>${e.Details || ''}</td><td>${e.Remarks || ''}</td>`;
       tr.onclick = () => loadPersonnelEventIntoForm(e);
+      rowKebab_(tr, 'persev', e);
       tbody.appendChild(tr);
     });
     if (!rows.length) tbody.innerHTML = '<tr><td colspan="7" class="linked-empty">No events recorded yet for this employee.</td></tr>';
@@ -12102,6 +12224,239 @@
     if (!Object.keys(byScheme).length) tbody.innerHTML = '<tr><td colspan="10" class="linked-empty">No APO records yet.</td></tr>';
   }
 
+  /* ---------- Row actions dropdown (the "⋮" menu) ---------- */
+  const ROW_ICONS_ = {
+    plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+    edit: '<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+    copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
+    trash: '<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>'
+  };
+  let rowMenuEl_ = null, rowMenuBtn_ = null;
+  function closeRowMenu_() {
+    if (rowMenuEl_) { rowMenuEl_.remove(); rowMenuEl_ = null; }
+    if (rowMenuBtn_) { rowMenuBtn_.setAttribute('aria-expanded', 'false'); rowMenuBtn_ = null; }
+  }
+  function openRowMenu_(btn, items) {
+    closeRowMenu_();
+    const list = (items || []).filter(i => !i.hidden);
+    if (!list.length) return;
+    const m = document.createElement('div');
+    m.className = 'row-menu'; m.setAttribute('role', 'menu');
+    list.forEach(it => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'row-menu-item' + (it.danger ? ' danger' : ''); b.setAttribute('role', 'menuitem');
+      b.innerHTML = (ROW_ICONS_[it.icon] || '') + '<span></span>';
+      b.lastChild.textContent = it.label;
+      b.onclick = ev => { ev.stopPropagation(); closeRowMenu_(); it.run(); };
+      m.appendChild(b);
+    });
+    document.body.appendChild(m);
+    const r = btn.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
+    let left = Math.min(Math.max(8, r.right - w), window.innerWidth - w - 8);
+    let top = r.bottom + 6; if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+    m.style.left = left + 'px'; m.style.top = top + 'px';
+    rowMenuEl_ = m; rowMenuBtn_ = btn; btn.setAttribute('aria-expanded', 'true');
+    const first = m.querySelector('.row-menu-item'); if (first) first.focus({ preventScroll: true });
+  }
+  function makeKebab_(rec, build) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'row-kebab'; b.title = 'Actions'; b.textContent = '\u22EE';
+    b.setAttribute('aria-label', 'Actions'); b.setAttribute('aria-haspopup', 'menu'); b.setAttribute('aria-expanded', 'false');
+    b.onclick = ev => { ev.stopPropagation(); if (rowMenuBtn_ === b) { closeRowMenu_(); return; } openRowMenu_(b, build(rec)); };
+    b.onkeydown = ev => ev.stopPropagation();          // Enter / Space on the button must not also open the row
+    return b;
+  }
+  document.addEventListener('mousedown', e => { if (rowMenuEl_ && !rowMenuEl_.contains(e.target) && !(e.target.closest && e.target.closest('.row-kebab'))) closeRowMenu_(); }, true);
+  document.addEventListener('keydown', e => {
+    if (!rowMenuEl_) return;
+    if (e.key === 'Escape') { const b = rowMenuBtn_; closeRowMenu_(); if (b) b.focus(); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const items = Array.from(rowMenuEl_.querySelectorAll('.row-menu-item')), i = items.indexOf(document.activeElement);
+      items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus({ preventScroll: true });
+    } else if (e.key === 'Tab') closeRowMenu_();
+  }, true);
+  window.addEventListener('scroll', closeRowMenu_, true);
+  window.addEventListener('resize', closeRowMenu_);
+
+  /* ---------- ⋮ menu for the other record lists ---------- */
+  const rowEl_ = id => document.getElementById(id);
+  const ROW_MENU_ = {
+    budget:  { mod: 'Budget', noun: 'budget record', field: 'bud_id', confirm: true,
+               load: r => loadBudgetIntoForm(r), clear: () => clearBudgetForm(), del: () => deleteBudgetRecord(),
+               dup: r => { loadBudgetIntoForm(r); const e = rowEl_('bud_id'); e.value = ''; e.dataset.id = ''; markBudgetCardSelected_(''); } },
+    advance: { mod: 'Tokens (Advance)', noun: 'advance token', field: 'adv_scheme',
+               load: r => loadAdvanceIntoForm(r), clear: () => clearAdvanceForm(), del: () => deleteAdvanceRecord(),
+               canAdd: () => advAllowed_('create'), canDel: () => advAllowed_('delete') },
+    exp:     { mod: 'Tokens (Advance)', noun: 'expenditure token', field: 'exp_token_no',
+               load: r => loadExpenditureIntoForm(r), clear: () => clearExpForm(), canEdit: () => advAllowed_('expAdjUpdate'),
+               dup: r => { loadExpenditureIntoForm(r); selectedExpEid = ''; Array.from(document.querySelectorAll('#exp_table tr')).forEach(t => { t.style.background = ''; }); updateExpBalancePreview(); } },
+    adj:     { mod: 'Tokens (Advance)', noun: 'adjustment token', field: 'adj_adv_token_no',
+               load: r => loadAdjustmentIntoForm(r), clear: () => clearAdjForm(), canEdit: () => advAllowed_('expAdjUpdate'),
+               dup: r => { loadAdjustmentIntoForm(r); selectedAdjAid = ''; Array.from(document.querySelectorAll('#adj_table tr')).forEach(t => { t.style.background = ''; }); } },
+    mbi:     { mod: 'Mbook', noun: 'issued Mbook', field: 'mbi_no', confirm: true,
+               load: r => loadMbookIssuedIntoForm(r), clear: () => clearMbookIssuedForm(), del: () => deleteMbookIssuedRecord() },
+    cb:      { mod: 'Cheque Books', noun: 'cheque book', field: 'cb_book_no',
+               load: r => loadChequeBookIntoForm(r), clear: () => clearChequeBookForm(), del: () => deleteChequeBookRecord() },
+    wa:      { mod: 'Withdrawal Accounts', noun: 'withdrawal account', field: 'wa_bank', confirm: true,
+               load: r => loadWithdrawalAccountIntoForm(r), clear: () => clearWithdrawalAccountForm(), del: () => deleteWithdrawalAccountRecord() },
+    proc:    { mod: 'Procurement', noun: 'procurement record', field: 'proc_id',
+               load: r => loadProcurementIntoForm(r), clear: () => clearProcurementForm(), del: () => deleteProcurementRecord() },
+    svc:     { mod: 'Services', noun: 'service record', field: 'svc_id',
+               load: r => loadServiceIntoForm(r), clear: () => clearServiceForm(), del: () => deleteServiceRecord() },
+    veh:     { mod: 'Vehicle', noun: 'vehicle', field: 'veh_id',
+               load: r => loadVehicleIntoForm(r), clear: () => clearVehicleForm(), del: () => deleteVehicleRecord() },
+    pers:    { mod: 'Personnel', noun: 'personnel record', field: 'pers_id',
+               load: r => loadPersonnelIntoForm(r), clear: () => clearPersonnelForm(), del: () => deletePersonnelRecord() },
+    vehev:   { mod: 'Vehicle Events', noun: 'vehicle event', field: 'vevt_type',
+               load: r => loadVehicleEventIntoForm(r), clear: () => clearVehicleEventForm(), del: () => deleteVehicleEventRecord() },
+    persev:  { mod: 'Personnel Events', noun: 'personnel event', field: 'pevt_type',
+               load: r => loadPersonnelEventIntoForm(r), clear: () => clearPersonnelEventForm(), del: () => deletePersonnelEventRecord() }
+  };
+  function rowMenuItems_(key, r) {
+    const c = ROW_MENU_[key];
+    const canA = permCan(c.mod, 'A') && (!c.canAdd || c.canAdd());
+    const canE = permCan(c.mod, 'E') && (!c.canEdit || c.canEdit());
+    const canD = !!c.del && permCan(c.mod, 'D') && (!c.canDel || c.canDel());
+    return [
+      { label: 'New ' + c.noun, icon: 'plus', hidden: !canA, run: () => { c.clear(); openCardOf_(c.field); } },
+      { label: canE ? 'Edit' : 'View', icon: 'edit', run: () => { c.load(r); openCardOf_(c.field); } },
+      { label: 'Duplicate as new', icon: 'copy', hidden: !(c.dup && canA), run: () => { c.dup(r); openCardOf_(c.field); showToast('info', 'Copy loaded. Change what you need and press Save to add it as a new ' + c.noun + '.'); } },
+      { label: 'Remove', icon: 'trash', danger: true, hidden: !canD, run: async () => {
+          c.load(r);
+          await new Promise(res => setTimeout(res, 0));
+          if (c.confirm && !(await askConfirm('Delete this ' + c.noun + '? This action cannot be undone.', { title: 'Delete', confirmText: 'Delete', danger: true }))) return;
+          await c.del();
+        } }
+    ];
+  }
+  function rowKebab_(tr, key, rec) {
+    const mc = document.createElement('td'); mc.className = 'rowmenu-cell';
+    mc.appendChild(makeKebab_(rec, x => rowMenuItems_(key, x)));
+    tr.appendChild(mc);
+  }
+
+  /* ---------- Rows / Grid / Full text layouts (cards) for a records list ---------- */
+  function makeRecordLayout_(c) {
+    let layout = 'rows', selected = '', last = [];
+    try { const v = localStorage.getItem(c.storeKey); if (v === 'grid' || v === 'full' || v === 'rows') layout = v; } catch (e) { }
+    const $ = id => document.getElementById(id);
+    const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    const api = {
+      esc,
+      get last() { return last; },
+      set(v) { layout = v; try { localStorage.setItem(c.storeKey, v); } catch (e) { } api.apply(); },
+      apply() {
+        Array.from(document.querySelectorAll('#' + c.tabsId + ' .lay-tab')).forEach(b => b.classList.toggle('active', b.dataset.lay === layout));
+        const cards = $(c.cardsId), wrap = $(c.wrapId), sort = $(c.sortWrapId);
+        if (!cards || !wrap) return;
+        const asCards = layout !== 'rows';
+        wrap.style.display = asCards ? 'none' : '';
+        cards.style.display = asCards ? 'grid' : 'none';
+        if (sort) sort.style.display = asCards ? '' : 'none';
+        cards.classList.toggle('rec-grid', layout === 'grid');
+        cards.classList.toggle('rec-full', layout === 'full');
+      },
+      mark(id) {
+        selected = (id == null) ? '' : String(id);
+        Array.from(document.querySelectorAll('#' + c.cardsId + ' .rec-card')).forEach(el => el.classList.toggle('selected', el.dataset.id === selected));
+      },
+      render(rows) {
+        last = rows || [];
+        const box = $(c.cardsId); if (!box) return;
+        const mode = ($(c.sortId) || {}).value || 'default';
+        const list = last.slice();
+        if (c.sorters && c.sorters[mode]) list.sort(c.sorters[mode]);
+        box.innerHTML = '';
+        if (!list.length) box.innerHTML = '<div class="rec-empty" style="grid-column:1/-1;">' + esc(c.emptyText) + '</div>';
+        list.forEach(r => {
+          const card = document.createElement('div');
+          card.className = 'rec-card'; card.tabIndex = 0; card.setAttribute('role', 'button'); card.dataset.id = String(c.idOf(r));
+          card.title = c.cardTitle;
+          card.innerHTML = '<div class="rec-bar"><span class="rec-dots"><i></i><i></i><i></i></span><span class="rec-bar-r"><span>' + esc(c.label) + ' /' + esc(c.idOf(r)) + '</span></span></div><div class="rec-body">' + c.body(r, esc) + '</div>';
+          if (c.menu) card.querySelector('.rec-bar-r').appendChild(makeKebab_(r, c.menu));
+          card.onclick = () => c.onPick(r);
+          card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.onPick(r); } };
+          box.appendChild(card);
+        });
+        api.mark(selected);
+      },
+      count(rows) { const el = $(c.countId); if (el) el.innerHTML = c.countHtml(rows, esc); }
+    };
+    return api;
+  }
+
+  const apoNum_ = v => Number(v) || 0, apoTime_ = v => { const t = new Date(v).getTime(); return isNaN(t) ? 0 : t; };
+  const apoLayout = makeRecordLayout_({
+    storeKey: 'tbApoLayout', tabsId: 'apo_layout_tabs', cardsId: 'apo_cards', wrapId: 'apo_rows_wrap', sortWrapId: 'apo_sort_wrap', sortId: 'apo_card_sort', countId: 'apo_count_line',
+    label: 'APO', idOf: r => r.APO_id, emptyText: 'No APO records match the filters.', cardTitle: 'Click to edit this APO record',
+    sorters: {
+      appr_desc: (a, b) => apoNum_(b.APO_Approved_Amt) - apoNum_(a.APO_Approved_Amt),
+      appr_asc: (a, b) => apoNum_(a.APO_Approved_Amt) - apoNum_(b.APO_Approved_Amt),
+      bal_desc: (a, b) => apoNum_(b.Balance_Budget_To_Be_Received) - apoNum_(a.Balance_Budget_To_Be_Received),
+      scheme: (a, b) => String(a.Scheme).localeCompare(String(b.Scheme), undefined, { numeric: true, sensitivity: 'base' }),
+      year_desc: (a, b) => String(b.Year).localeCompare(String(a.Year), undefined, { numeric: true }),
+      dt_desc: (a, b) => apoTime_(b.Approved_Dt) - apoTime_(a.Approved_Dt)
+    },
+    body: (r, esc) => {
+      const bal = apoNum_(r.Balance_Budget_To_Be_Received);
+      let words = ''; try { words = amountInWordsIndian(apoNum_(r.APO_Approved_Amt)); } catch (e) { }
+      return '<div class="rec-title">' + esc(r.Scheme) + '</div><div class="rec-rule"></div>' +
+        (r.Approval_Reference ? '<div class="rec-sub rec-opt">Reference: ' + esc(r.Approval_Reference) + '</div>' : '') +
+        '<div class="rec-amt">Approved ' + esc(inr(r.APO_Approved_Amt)) + '</div>' +
+        (words ? '<div class="rec-words">' + esc(words) + '</div>' : '') +
+        '<div class="rec-kv rec-opt"><span>Released so far</span><b>' + esc(inr(r.Budget_Released_So_Far)) + '</b></div>' +
+        '<div class="rec-kv"><span>Balance to be received</span><b class="' + (bal > 0 ? 'pos' : (bal < 0 ? 'neg' : '')) + '">' + esc(inr(bal)) + '</b></div>' +
+        '<div class="rec-meta"><span class="rec-badge">' + esc(r.Year) + '</span><span class="rec-date">' + esc(r.Approved_Dt || '') + '</span></div>';
+    },
+    onPick: r => loadApoIntoForm(r),
+    menu: r => apoMenuItems_(r),
+    countHtml: (rows, esc) => {
+      const total = (typeof apoCache !== 'undefined' && apoCache) ? apoCache.length : rows.length;
+      const appr = rows.reduce((t, r) => t + apoNum_(r.APO_Approved_Amt), 0), bal = rows.reduce((t, r) => t + apoNum_(r.Balance_Budget_To_Be_Received), 0);
+      return '<b>' + rows.length + '</b> of ' + total + ' matching APO records &middot; Approved <b>' + esc(inr(appr)) + '</b> &middot; Balance <b>' + esc(inr(bal)) + '</b>';
+    }
+  });
+  function setApoLayout(v) { apoLayout.set(v); }
+
+  // opens the (possibly collapsed) section that holds a form field
+  function openCardOf_(fieldId) {
+    const el = document.getElementById(fieldId), card = el && el.closest('.card');
+    if (!card) return;
+    if (card.classList.contains('coll')) {
+      card.classList.remove('coll');
+      const h = card.querySelector(':scope > .card-head'); if (h) h.setAttribute('aria-expanded', 'true');
+    }
+    if (card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function apoMenuItems_(r) {
+    const canA = permCan('APOs', 'A'), canE = permCan('APOs', 'E'), canD = permCan('APOs', 'D');
+    return [
+      { label: 'New APO', icon: 'plus', hidden: !canA, run: () => { clearApoForm(); openCardOf_('apo_id'); } },
+      { label: canE ? 'Edit' : 'View', icon: 'edit', run: () => { loadApoIntoForm(r); openCardOf_('apo_id'); } },
+      { label: 'Duplicate as new', icon: 'copy', hidden: !canA, run: () => duplicateApo_(r) },
+      { label: 'Remove', icon: 'trash', danger: true, hidden: !canD, run: () => deleteApoRow_(r) }
+    ];
+  }
+  function duplicateApo_(r) {
+    loadApoIntoForm(r);
+    const idEl = document.getElementById('apo_id');
+    idEl.value = ''; idEl.dataset.id = '';                 // no id: Save adds it as a new APO
+    apoLayout.mark('');
+    setStatus('apo_status', 'Copy of APO ' + r.APO_id + '. Change what you need and press Save to add it as a new APO.');
+    openCardOf_('apo_id');
+  }
+  async function deleteApoRow_(r) {
+    if (!(await askConfirm('Delete APO ' + r.APO_id + ' (' + r.Scheme + ', ' + r.Year + ')? This action cannot be undone.', { title: 'Delete APO', confirmText: 'Delete', danger: true }))) return;
+    gsr().withSuccessHandler(res => {
+      if (!res || !res.success) { showToast('error', (res && res.message) || 'Unable to delete. Please try again.'); return; }
+      showToast('success', 'APO ' + r.APO_id + ' deleted.');
+      if (String(document.getElementById('apo_id').dataset.id) === String(r.APO_id)) clearApoForm();
+      refreshApoTable(true);
+    }).withFailureHandler(apoFail_).deleteApo(r.APO_id);
+  }
+  apoLayout.apply();
+
   function renderApoTable(rows) {
     const tbody = document.getElementById('apo_table');
     tbody.innerHTML = '';
@@ -12112,10 +12467,13 @@
       tr.innerHTML = `<td>${r.APO_id}</td><td>${r.Year}</td><td>${r.Scheme}</td><td>${inr(r.APO_Approved_Amt)}</td><td>${inr(r.Budget_Released_So_Far)}</td>
         <td style="font-weight:700; color:${balance > 0 ? 'var(--success)' : (balance < 0 ? 'var(--danger)' : 'var(--muted)')};">${inr(balance)}</td>
         <td>${r.Approved_Dt || ''}</td><td>${r.Approval_Reference || ''}</td>`;
+      const mc = document.createElement('td'); mc.className = 'rowmenu-cell'; mc.appendChild(makeKebab_(r, apoMenuItems_)); tr.appendChild(mc);
       tr.onclick = () => loadApoIntoForm(r);
       tbody.appendChild(tr);
     });
-    if (!rows.length) tbody.innerHTML = '<tr><td colspan="8" class="linked-empty">No APO records match.</td></tr>';
+    if (!rows.length) tbody.innerHTML = '<tr><td colspan="9" class="linked-empty">No APO records match.</td></tr>';
+    apoLayout.render(rows);
+    apoLayout.count(rows);
   }
 
   function applyApoFilters() {
@@ -12194,6 +12552,7 @@
     document.getElementById('apo_approval_reference').value = r.Approval_Reference;
     updateApoBalancePreview();
     refreshAutosize();
+    apoLayout.mark(r.APO_id);
   }
 
   function clearApoForm() {
@@ -12211,6 +12570,7 @@
     document.getElementById('apo_released_hint').textContent = 'Select a Year and Scheme to total the amount released from the Budget tab.';
     updateApoBalancePreview();
     refreshAutosize();
+    apoLayout.mark('');
   }
 
   function apoFail_(err) {
@@ -12460,6 +12820,72 @@
     BUDGET_STATS_EMBED_SUFFIXES.forEach(suffix => applyBudgetFiltersFor(suffix));
   }
 
+  /* ---------- Budget Records layouts: Rows (table) / Grid (cards) / Full text (large cards) ---------- */
+  let budLayout = 'rows', budSelectedId = '', budLastRows = [];
+  try { const v = localStorage.getItem('tbBudgetLayout'); if (v === 'grid' || v === 'full' || v === 'rows') budLayout = v; } catch (e) { }
+  const recEsc_ = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function setBudgetLayout(v) {
+    budLayout = v;
+    try { localStorage.setItem('tbBudgetLayout', v); } catch (e) { }
+    applyBudgetLayout_();
+  }
+  function applyBudgetLayout_() {
+    Array.from(document.querySelectorAll('#bud_layout_tabs .lay-tab')).forEach(b => b.classList.toggle('active', b.dataset.lay === budLayout));
+    const cards = document.getElementById('bud_cards'), wrap = document.getElementById('bud_rows_wrap'), sort = document.getElementById('bud_sort_wrap');
+    if (!cards || !wrap) return;
+    const asCards = budLayout !== 'rows';
+    wrap.style.display = asCards ? 'none' : '';
+    cards.style.display = asCards ? 'grid' : 'none';
+    if (sort) sort.style.display = asCards ? '' : 'none';
+    cards.classList.toggle('rec-grid', budLayout === 'grid');
+    cards.classList.toggle('rec-full', budLayout === 'full');
+  }
+  function markBudgetCardSelected_(id) {
+    budSelectedId = (id == null) ? '' : String(id);
+    Array.from(document.querySelectorAll('#bud_cards .rec-card')).forEach(c => c.classList.toggle('selected', c.dataset.id === budSelectedId));
+  }
+  function renderBudgetCards_(rows) {
+    budLastRows = rows || [];
+    const box = document.getElementById('bud_cards'); if (!box) return;
+    const mode = (document.getElementById('bud_card_sort') || {}).value || 'default';
+    const list = budLastRows.slice();
+    const num = v => Number(v) || 0, time = v => { const t = new Date(v).getTime(); return isNaN(t) ? 0 : t; };
+    if (mode === 'amt_desc') list.sort((a, b) => num(b.Amt) - num(a.Amt));
+    else if (mode === 'amt_asc') list.sort((a, b) => num(a.Amt) - num(b.Amt));
+    else if (mode === 'scheme') list.sort((a, b) => String(a.Scheme).localeCompare(String(b.Scheme), undefined, { numeric: true, sensitivity: 'base' }));
+    else if (mode === 'year_desc') list.sort((a, b) => String(b.Year).localeCompare(String(a.Year), undefined, { numeric: true }));
+    else if (mode === 'dt_desc') list.sort((a, b) => time(b.Dt) - time(a.Dt));
+    box.innerHTML = '';
+    if (!list.length) { box.innerHTML = '<div class="rec-empty" style="grid-column:1/-1;">No budget records match the filters.</div>'; }
+    list.forEach(r => {
+      let words = ''; try { words = amountInWordsIndian(num(r.Amt)); } catch (e) { }
+      const card = document.createElement('div');
+      card.className = 'rec-card'; card.tabIndex = 0; card.setAttribute('role', 'button'); card.dataset.id = String(r.Budget_id);
+      card.title = 'Click to edit this budget record';
+      card.innerHTML =
+        '<div class="rec-bar"><span class="rec-dots"><i></i><i></i><i></i></span><span class="rec-bar-r"><span>Budget /' + recEsc_(r.Budget_id) + '</span></span></div>' +
+        '<div class="rec-body">' +
+          '<div class="rec-title">' + recEsc_(r.Scheme) + '</div><div class="rec-rule"></div>' +
+          '<div class="rec-sub">HOA: ' + recEsc_(r.Hoa) + '</div>' +
+          '<div class="rec-amt">' + recEsc_(inr(r.Amt)) + '</div>' +
+          (words ? '<div class="rec-words">' + recEsc_(words) + '</div>' : '') +
+          '<div class="rec-meta"><span class="rec-badge">' + recEsc_(r.Year) + '</span><span class="rec-badge q">' + recEsc_(r.Qtr) + '</span><span class="rec-date">' + recEsc_(r.Dt) + '</span></div>' +
+        '</div>';
+      card.querySelector('.rec-bar-r').appendChild(makeKebab_(r, x => rowMenuItems_('budget', x)));
+      card.onclick = () => loadBudgetIntoForm(r);
+      card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); loadBudgetIntoForm(r); } };
+      box.appendChild(card);
+    });
+    markBudgetCardSelected_(budSelectedId);
+  }
+  function renderBudgetCountLine_(rows) {
+    const el = document.getElementById('bud_count_line'); if (!el) return;
+    const total = (typeof budgetCache !== 'undefined' && budgetCache) ? budgetCache.length : rows.length;
+    const sum = rows.reduce((t, r) => t + (Number(r.Amt) || 0), 0);
+    el.innerHTML = '<b>' + rows.length + '</b> of ' + total + ' matching budget records &middot; Total <b>' + recEsc_(inr(sum)) + '</b>';
+  }
+
   function renderBudgetTable(rows) {
     const tbody = document.getElementById('bud_table');
     tbody.innerHTML = '';
@@ -12468,9 +12894,13 @@
       tr.style.cursor = 'pointer';
       tr.innerHTML = `<td>${r.Budget_id}</td><td>${r.Year}</td><td>${r.Scheme}</td><td>${r.Hoa}</td><td>${r.Qtr}</td><td>${inr(r.Amt)}</td><td>${r.Dt}</td>`;
       tr.onclick = () => loadBudgetIntoForm(r);
+      rowKebab_(tr, 'budget', r);
       tbody.appendChild(tr);
     });
+    renderBudgetCards_(rows);
+    renderBudgetCountLine_(rows);
   }
+  applyBudgetLayout_();
 
   function refreshBudgetTable(force) {
     gsr().withSuccessHandler(rows => {
@@ -12613,6 +13043,7 @@
     document.getElementById('bud_amt').value = r.Amt;
     document.getElementById('bud_dt').value = r.Dt;
     refreshAutosize();
+    markBudgetCardSelected_(r.Budget_id);
   }
 
   function clearBudgetForm() {
@@ -12627,6 +13058,7 @@
     document.getElementById('bud_amt').value = 0;
     document.getElementById('bud_dt').value = '';
     refreshAutosize();
+    markBudgetCardSelected_('');
   }
 
   function saveBudget() {
@@ -12796,9 +13228,48 @@ function __tableSorter(){
   scan();
 }
 var __DATE_CSS='input[type=date]{width:auto!important;min-width:0;flex:0 0 auto;align-self:flex-start;justify-self:start}';
-function __withSorter(h){ return h+'<style>'+__DATE_CSS+'</style><script>('+__tableSorter.toString()+')();<\/script>'; }
-function __sorterIntoFrame(f){ try{ var w=f.contentWindow, st=w.document.createElement('style'); st.textContent=__DATE_CSS; w.document.head.appendChild(st); var s=w.document.createElement('script'); s.textContent='('+__tableSorter.toString()+')();'; w.document.body.appendChild(s); }catch(e){} }
+function __withSorter(h){ return h+'<style>'+__DATE_CSS+'</style><script>('+__tableSorter.toString()+')();('+__copyGuard.toString()+')();<\/script>'; }
+function __sorterIntoFrame(f){ try{ var w=f.contentWindow, st=w.document.createElement('style'); st.textContent=__DATE_CSS; w.document.head.appendChild(st); var s=w.document.createElement('script'); s.textContent='('+__tableSorter.toString()+')();('+__copyGuard.toString()+')();'; w.document.body.appendChild(s); }catch(e){} }
 __tableSorter();
+
+/* Copy protection: everyone except an administrator cannot copy or cut screen content or tables (select, Ctrl+C, right-click, drag). Typing and pasting into fields still work. */
+function __copyGuard(){
+  if(window.__cgInit) return; window.__cgInit=true;
+  var d=document, root=d.documentElement;
+  function isAdmin(){
+    try{
+      if(typeof window.__isAdmin==='function') return !!window.__isAdmin();
+      if(window.parent&&window.parent!==window&&typeof window.parent.__isAdmin==='function') return !!window.parent.__isAdmin();
+    }catch(e){}
+    return false;
+  }
+  var st=d.createElement('style');
+  st.textContent='html.cg-on,html.cg-on *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}'
+    +'html.cg-on input,html.cg-on textarea,html.cg-on [contenteditable=""],html.cg-on [contenteditable="true"]{-webkit-user-select:text!important;user-select:text!important}';
+  (d.head||root).appendChild(st);
+  function on(){ return !isAdmin(); }
+  function sync(){ root.classList.toggle('cg-on',on()); }
+  window.__copyGuardSync=sync; sync();
+  function inField(t){ return !!(t&&t.closest&&t.closest('input,textarea,[contenteditable=""],[contenteditable="true"]')); }
+  ['copy','cut'].forEach(function(ev){
+    d.addEventListener(ev,function(e){ if(!on()) return; e.preventDefault(); try{ e.clipboardData.setData('text/plain',''); }catch(x){} },true);
+  });
+  d.addEventListener('contextmenu',function(e){ if(on()&&!inField(e.target)) e.preventDefault(); },true);
+  d.addEventListener('dragstart',function(e){ if(on()) e.preventDefault(); },true);
+  d.addEventListener('selectstart',function(e){ if(on()&&!inField(e.target)) e.preventDefault(); },true);
+  d.addEventListener('keydown',function(e){
+    sync(); if(!on()) return;
+    var k=String(e.key||'').toLowerCase(), mod=e.ctrlKey||e.metaKey;
+    if((mod&&(k==='c'||k==='x'||k==='insert'||(k==='a'&&!inField(e.target))))||(e.shiftKey&&k==='delete')) e.preventDefault();
+  },true);
+  d.addEventListener('pointerdown',sync,true);
+  d.addEventListener('selectionchange',function(){
+    if(!on()) return;
+    var sel=d.getSelection&&d.getSelection();
+    if(sel&&sel.rangeCount&&!sel.isCollapsed){ var n=sel.anchorNode, el=n&&(n.nodeType===1?n:n.parentElement); if(!inField(el)) sel.removeAllRanges(); }
+  });
+}
+__copyGuard();
 </script>
 <script>
 /* Every section (card) in every tab is collapsible: collapsed by default, click the heading to expand; the collapsed bar shows summary stats */

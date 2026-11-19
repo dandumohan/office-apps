@@ -386,6 +386,11 @@
     .rec-kv b.neg { color: var(--danger); }
     .rec-grid .rec-opt { display: none; }
     .rec-empty { padding: 28px; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: var(--radius); }
+    .mbi-grid > .mb-panel.mb-wide { grid-column: 1 / -1; }
+    .bt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 16px; align-items: start; }
+    .bt-grid .bt-desc { grid-column: 1 / -1; }
+    td.bt-dep { color: var(--success); font-weight: 600; }
+    td.bt-wd { color: var(--danger); font-weight: 600; }
     .mbi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
     .mb-grid { display: grid; grid-template-columns: minmax(360px, 1fr) max-content max-content; gap: 16px; align-items: start; }
     .mb-panel.mb-fit { width: max-content; max-width: 100%; }
@@ -677,6 +682,7 @@
       <button class="tab-btn" data-acc="mbook" onclick="showAccTab('mbook')">Mbook</button>
       <button class="tab-btn" data-acc="overview" onclick="showAccTab('overview')">Overview</button>
       <button class="tab-btn" data-acc="acc" onclick="showAccTab('acc')">Acc</button>
+      <button class="tab-btn" data-acc="bank" onclick="showAccTab('bank')">Bank</button>
       <button class="tab-btn" data-acc="mreports" onclick="showAccTab('mreports')">Mreports</button>
     </div>
 
@@ -1591,6 +1597,54 @@
             <tbody id="mb_usage_table"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <div class="screen" id="screen-bank">
+      <div class="card" id="bank_card">
+        <div class="card-head">
+          <h2 class="section-title">Withdrawal Accounts &amp; Cheque Books</h2>
+          <button class="icon-btn" title="Refresh" onclick="refreshBankScreen()">&#8635;</button>
+        </div>
+        <div class="voucher-form-split" id="bank_host"></div>
+      </div>
+
+      <div class="card" id="bank_txn_card">
+        <div class="card-head">
+          <h2 class="section-title">Bank Transactions</h2>
+          <button class="icon-btn" title="Refresh" onclick="refreshBankTransactions()">&#8635;</button>
+        </div>
+        <div class="mb-note" id="bt_account_label">Select an account to see and add its bank transactions.</div>
+        <button type="button" class="action" id="bt_show_accounts" style="display:none; margin: -2px 0 12px;" onclick="setBankAccountsBand_(true)">Show Withdrawal Accounts &amp; Cheque Books</button>
+                <div class="bt-grid">
+                  <div class="field-row"><label>Account</label><select id="bt_account" onchange="onBtAccountChange()"><option value="">Select account</option></select></div>
+                  <div class="field-row"><label>Year</label><select id="bt_year"></select></div>
+                  <div class="field-row"><label>OB_Amt</label><input type="number" step="0.01" id="bt_ob_amt" value="0"></div>
+                  <div class="field-row"><label>OB_Date</label><input type="date" id="bt_ob_date"></div>
+                  <div class="field-row"><label>Trans_Date</label><input type="date" id="bt_trans_date"></div>
+                  <div class="field-row"><label>Transaction</label>
+                    <select id="bt_txn"><option value="">--select--</option><option value="Withdrawn">Withdrawn</option><option value="Deposit">Deposit</option></select></div>
+                  <div class="field-row"><label>Trans_Amt</label><input type="number" step="0.01" min="0" id="bt_trans_amt" value="0"></div>
+                  <div class="field-row"><label>Trans_Type</label>
+                    <select id="bt_trans_type"><option value="">--select--</option><option>Token Amount</option><option>Interest</option><option>DD Amount</option><option>Cheque</option><option>Deposit Direct</option></select></div>
+                  <div class="field-row bt-desc"><label>Trans_Description</label><input type="text" id="bt_description" placeholder="Description of the transaction"></div>
+                </div>
+                <div class="btn-row" style="margin-top:4px;">
+                  <button class="action" onclick="updateBankTransactionRecord()">Update</button>
+                  <button class="action" onclick="deleteBankTransactionRecord()">Delete</button>
+                  <button class="action primary" onclick="saveBankTransaction()">Save</button>
+                  <button class="action" onclick="clearBankTransactionForm()">New</button>
+                </div>
+                <div class="status" id="bt_status_msg"></div>
+
+                <div class="scheme-card-title" style="font-size:13px; margin-top:12px; margin-bottom:6px;">Bank Transactions of selected account <span class="stat-label">(click a row to edit)</span></div>
+                <div class="list-wrap" style="max-height:300px;">
+                  <table class="grid">
+                    <thead><tr><th>Year</th><th>Trans_Date</th><th>Transaction</th><th>Trans_Type</th><th>Trans_Amt</th><th>Trans_Description</th><th>OB_Amt</th><th>OB_Date</th><th></th></tr></thead>
+                    <tbody id="bt_list_table"></tbody>
+                  </table>
+                </div>
+                <div class="lay-count" id="bt_totals"></div>
       </div>
     </div>
 
@@ -2684,7 +2738,9 @@
 
 </div>
           <div class="voucher-form-side" id="mt_wacb_block">
-            <div class="scheme-card-title" style="font-size:13px; margin-bottom:4px;">Master Withdrawal Accounts</div>
+            <div class="mbi-grid">
+              <div class="mb-panel">
+                <div class="mb-panel-title">Withdrawal Accounts</div>
             <div class="field-row"><label>Bank</label><input type="text" id="wa_bank"></div>
             <div class="field-row"><label>Branch</label><input type="text" id="wa_branch"></div>
             <div class="field-row"><label>Place</label><input type="text" id="wa_place"></div>
@@ -2692,6 +2748,7 @@
             <div class="field-row"><label>IFSC Code</label><input type="text" id="wa_ifsc"></div>
             <div class="field-row"><label>Name of the Account</label><input type="text" id="wa_name_of_account"></div>
             <div class="field-row"><label>Drawing Authorities</label><input type="text" id="wa_drawing_authorities"></div>
+            <div class="field-row"><label>Scheme</label><select id="wa_scheme"><option value="">Select scheme</option></select></div>
             <div class="field-row"><label>No. of Cheque Books Issued</label><input type="number" id="wa_cheque_books" value="0"></div>
             <div class="btn-row" style="margin-top:10px;">
               <button class="action" onclick="updateWithdrawalAccountRecord()">Update</button>
@@ -2704,12 +2761,13 @@
             <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Accounts <span class="stat-label">(click a row to edit)</span></div>
             <div class="list-wrap" style="max-height:220px;">
               <table class="grid">
-                <thead><tr><th>Bank</th><th>Branch</th><th>Place</th><th>Account No</th><th>IFSC</th><th>Name of Account</th><th>Drawing Authorities</th><th>Cheque Books</th><th></th></tr></thead>
+                <thead><tr><th>Bank</th><th>Branch</th><th>Place</th><th>Account No</th><th>IFSC</th><th>Name of Account</th><th>Drawing Authorities</th><th>Scheme</th><th>Cheque Books</th><th></th></tr></thead>
                 <tbody id="wa_list_table"></tbody>
               </table>
             </div>
-
-            <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:4px;">Cheque Books <span class="stat-label" id="cb_account_label">(select an account above)</span></div>
+              </div>
+              <div class="mb-panel">
+                <div class="mb-panel-title">Cheque Books <span class="stat-label" id="cb_account_label" style="text-transform:none; letter-spacing:0; font-weight:400;">(select an account above)</span></div>
             <div class="field-row"><label>Cheque Book No</label><input type="text" id="cb_book_no"></div>
             <div class="field-pair">
               <div class="field-row"><label>Leaves No From</label><input type="text" inputmode="numeric" id="cb_leaves_from" oninput="updateChequeBookLeafCount()"></div>
@@ -2730,6 +2788,8 @@
                 <thead><tr><th>Cheque Book No</th><th>Leaves From</th><th>Leaves To</th><th>No. of Leaves</th><th>Used Leaves</th><th>Balance Leaves</th><th>Next Leaf No</th><th></th></tr></thead>
                 <tbody id="cb_list_table"></tbody>
               </table>
+            </div>
+              </div>
             </div>
           </div>
 </div>
@@ -3143,7 +3203,8 @@
     voucher: { table: 'voucher_details', pk: 'vch_id', cols: [['Vch_id', 'vch_id', 'id'], ['Esti_no', 'esti_no', 's'], ['Task_no', 'task_no', 'n'], ['Voucher_No', 'voucher_no', 's'], ['Voucher_Date', 'voucher_date', 'd'], ['Voucher_Details', 'voucher_details', 's'], ['Voucher_Amount', 'voucher_amount', 'n'], ['Qnty', 'qnty', 'n'], ['MBook_no', 'mbook_no', 's'], ['Page_from', 'page_from', 'p'], ['Page_to', 'page_to', 'p'], ['Payee_Name', 'payee_name', 's'], ['Work_From_Date', 'work_from_date', 'd'], ['Work_To_Date', 'work_to_date', 'd'], ['Measured_By', 'measured_by', 's'], ['Measurement_Date', 'measurement_date', 'd'], ['Check_Measured_By', 'check_measured_by', 's'], ['Check_Measurement_Date', 'check_measurement_date', 'd'], ['Test_Checked_By', 'test_checked_by', 's'], ['Test_Check_Date', 'test_check_date', 'd'], ['Drawn_Amount', 'drawn_amount', 'n'], ['Adv_Token_No', 'adv_token_no', 's'], ['Drawn_Date', 'drawn_date', 'd'], ['Batch_No', 'batch_no', 's']] },
     fund: { table: 'fund_application', pk: 'fa_id', cols: [['FA_id', 'fa_id', 'id'], ['Esti_no', 'esti_no', 's'], ['Task_no', 'task_no', 'n'], ['Task_Description', 'task_description', 's'], ['Qnty', 'qnty', 'n'], ['Unit', 'unit', 's'], ['Rate', 'rate', 'n'], ['Per', 'per', 's'], ['Amount', 'amount', 'n'], ['Batch_No', 'batch_no', 's'], ['Application_Date', 'application_date', 'd'], ['Token_no', 'token_no', 's']] },
     withdrawn: { table: 'withdrawn_details', pk: 'wd_id', cols: [['WD_id', 'wd_id', 'id'], ['Esti_no', 'esti_no', 's'], ['Advance_Token_No', 'advance_token_no', 's'], ['Credited_Status', 'credited_status', 's'], ['Withdrawn_Date', 'withdrawn_date', 'd'], ['Withdrawn_Amount', 'withdrawn_amount', 'n'], ['Withdrawn_Cheque_No', 'withdrawn_cheque_no', 's']] },
-    account: { table: 'withdrawal_accounts', pk: 'wa_id', cols: [['WA_id', 'wa_id', 'id'], ['Bank', 'bank', 's'], ['Branch', 'branch', 's'], ['Place', 'place', 's'], ['Account_No', 'account_no', 's'], ['IFSC_Code', 'ifsc_code', 's'], ['Name_of_Account', 'name_of_account', 's'], ['Drawing_Authorities', 'drawing_authorities', 's'], ['No_of_Cheque_Books_Issued', 'no_of_cheque_books_issued', 'n']] },
+    account: { table: 'withdrawal_accounts', pk: 'wa_id', cols: [['WA_id', 'wa_id', 'id'], ['Bank', 'bank', 's'], ['Branch', 'branch', 's'], ['Place', 'place', 's'], ['Account_No', 'account_no', 's'], ['IFSC_Code', 'ifsc_code', 's'], ['Name_of_Account', 'name_of_account', 's'], ['Drawing_Authorities', 'drawing_authorities', 's'], ['Scheme', 'scheme', 's'], ['No_of_Cheque_Books_Issued', 'no_of_cheque_books_issued', 'n']] },
+    bankTxn: { table: 'bank_transactions', pk: 'bt_id', cols: [['BT_id', 'bt_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Year', 'year', 's'], ['OB_Amt', 'ob_amt', 'n'], ['OB_Date', 'ob_date', 'd'], ['Trans_Date', 'trans_date', 'd'], ['Transaction', 'txn', 's'], ['Trans_Amt', 'trans_amt', 'n'], ['Trans_Type', 'trans_type', 's'], ['Trans_Description', 'trans_description', 's']] },
     cheque: { table: 'cheque_books', pk: 'cb_id', cols: [['CB_id', 'cb_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Cheque_Book_No', 'cheque_book_no', 's'], ['Leaves_No_From', 'leaves_no_from', 's'], ['Leaves_No_To', 'leaves_no_to', 's']] },
     mbi: { table: 'mbook_issued', pk: 'mbi_id', cols: [['MBI_id', 'mbi_id', 'id'], ['Year', 'year', 's'], ['MBook_No', 'mbook_no', 's'], ['Pages_From', 'pages_from', 'n'], ['Pages_To', 'pages_to', 'n'], ['Issue_Date', 'issue_date', 'd'], ['Issued_By', 'issued_by', 's'], ['Scheme', 'scheme', 's'], ['Esti_no', 'esti_no', 's']] }
     , mbob: { table: 'mbook_ob', pk: 'ob_id', cols: [['OB_id', 'ob_id', 'id'], ['MBook_No', 'mbook_no', 's'], ['OB_Page', 'ob_page', 'n'], ['OB_Date', 'ob_date', 'd']] }
@@ -3182,7 +3243,11 @@
     vehicleEvent: d => ({ vehicle_id: I_(d.vehicle_id), event_type: T_(d.event_type), event_date: T_(d.event_date), from_value: S_(d.from_value), to_value: S_(d.to_value), amount: N_(d.amount), reference_no: S_(d.reference_no), details: S_(d.details), remarks: S_(d.remarks) }),
     procurement: d => { const q = N_(d.qty), r = N_(d.rate); return { procurement_item: T_(d.procurement_item), qty: q, rate: r, amount: q * r, date_of_purchase: T_(d.date_of_purchase), firm_name: S_(d.firm_name), approval_proceedings_details: S_(d.approval_proceedings_details), proceedings_date: T_(d.proceedings_date) }; },
     service: d => ({ service_type: T_(d.service_type), service_date: T_(d.service_date), order_details: S_(d.order_details), order_date: T_(d.order_date) }),
-    account: d => ({ bank: S_(d.bank), branch: S_(d.branch), place: S_(d.place), account_no: T_(d.account_no), ifsc_code: S_(d.ifsc_code), name_of_account: S_(d.name_of_account), drawing_authorities: S_(d.drawing_authorities), no_of_cheque_books_issued: N_(d.no_of_cheque_books_issued) }),
+    account: d => {
+      const o = { bank: S_(d.bank), branch: S_(d.branch), place: S_(d.place), account_no: T_(d.account_no), ifsc_code: S_(d.ifsc_code), name_of_account: S_(d.name_of_account), drawing_authorities: S_(d.drawing_authorities), no_of_cheque_books_issued: N_(d.no_of_cheque_books_issued) };
+      if (T_(d.scheme) || d.clear_scheme) o.scheme = S_(d.scheme);     // the scheme column is only touched when a scheme is chosen (or removed)
+      return o;
+    },
     mbi: d => ({ year: S_(d.year), mbook_no: S_(d.mbook_no), pages_from: N_(d.pages_from), pages_to: N_(d.pages_to), issue_date: D_(d.issue_date), issued_by: S_(d.issued_by), scheme: S_(d.scheme), esti_no: S_(d.esti_no) })
   };
 
@@ -3776,8 +3841,31 @@
   API_.deleteWithdrawalAccount = async id => {
     const books = await list_('cheque', q => q.eq('wa_id', Number(id)));
     if (books.length) return { success: false, message: 'This account still has cheque books — delete them first.' };
+    try {
+      const txns = await list_('bankTxn', q => q.eq('wa_id', Number(id)));
+      if (txns.length) return { success: false, message: 'This account still has bank transactions — delete them first.' };
+    } catch (e) { /* the bank_transactions table has not been created yet */ }
     return deleteRow_('withdrawal_accounts', 'wa_id', id, 'Withdrawal account not found');
   };
+
+  /* ---------- Bank transactions (per withdrawal account) ---------- */
+  const BANK_TXN_KINDS_ = ['Withdrawn', 'Deposit'];
+  const BANK_TXN_TYPES_ = ['Token Amount', 'Interest', 'DD Amount', 'Cheque', 'Deposit Direct'];
+  const bankTxnDb_ = d => ({ wa_id: I_(d.wa_id), year: T_(d.year), ob_amt: N_(d.ob_amt), ob_date: D_(d.ob_date), trans_date: D_(d.trans_date), txn: T_(d.txn), trans_amt: N_(d.trans_amt), trans_type: T_(d.trans_type), trans_description: T_(d.trans_description) });
+  async function validateBankTxn_(d) {
+    const accts = await list_('account', q => q.eq('wa_id', Number(d.wa_id)));
+    if (!accts.length) return 'Select an account first.';
+    if (!T_(d.year)) return 'Year is required.';
+    if (!T_(d.trans_date)) return 'Trans_Date is required.';
+    if (!BANK_TXN_KINDS_.includes(T_(d.txn))) return 'Select Transaction (Withdrawn or Deposit).';
+    if (!BANK_TXN_TYPES_.includes(T_(d.trans_type))) return 'Select a Trans_Type.';
+    if (!(N_(d.trans_amt) > 0)) return 'Trans_Amt must be greater than 0.';
+    return '';
+  }
+  API_.getBankTransactionsData = waId => list_('bankTxn', (waId !== undefined && waId !== null && waId !== '') ? (q => q.eq('wa_id', Number(waId))) : null);
+  API_.addBankTransaction = async d => { const e = await validateBankTxn_(d); if (e) return { success: false, message: e }; return { success: true, id: await insertRow_('bank_transactions', 'bt_id', bankTxnDb_(d)) }; };
+  API_.updateBankTransaction = async d => { const e = await validateBankTxn_(d); if (e) return { success: false, message: e }; return updateRow_('bank_transactions', 'bt_id', d.bt_id, bankTxnDb_(d), 'Bank transaction not found'); };
+  API_.deleteBankTransaction = id => deleteRow_('bank_transactions', 'bt_id', id, 'Bank transaction not found');
 
   API_.getChequeBooksData = async waId => {
     const rows = await fetchAll_('v_cheque_books', 'cb_id', (waId !== undefined && waId !== null && waId !== '') ? (q => q.eq('wa_id', Number(waId))) : null);
@@ -4801,7 +4889,7 @@
   secG_('Vouchers', ['generateVoucherPdf', 'generateAllVouchersPdf']);
   secR_('Mbook', ['getMbookIssuedData', 'getMbookData', 'getMbookUsageSummary', 'getMbookObData']); secW_('Mbook', 'A', ['addMbookIssued', 'saveMbookDataToVouchers', 'addMbookOb']); secW_('Mbook', 'E', ['updateMbookIssued', 'updateVoucherMbookFields']); secW_('Mbook', 'D', ['deleteMbookIssued', 'clearVoucherMbookFields', 'deleteMbookOb']);
   secR_('Withdraw', ['getWithdrawnDetailsData']); secW_('Withdraw', 'A', ['addWithdrawnDetail']); secW_('Withdraw', 'E', ['updateWithdrawnDetail']); secW_('Withdraw', 'D', ['deleteWithdrawnDetail']);
-  secR_('Withdrawal Accounts', ['getWithdrawalAccountsData']); secW_('Withdrawal Accounts', 'A', ['addWithdrawalAccount']); secW_('Withdrawal Accounts', 'E', ['updateWithdrawalAccount']); secW_('Withdrawal Accounts', 'D', ['deleteWithdrawalAccount']);
+  secR_('Withdrawal Accounts', ['getWithdrawalAccountsData', 'getBankTransactionsData']); secW_('Withdrawal Accounts', 'A', ['addWithdrawalAccount', 'addBankTransaction']); secW_('Withdrawal Accounts', 'E', ['updateWithdrawalAccount', 'updateBankTransaction']); secW_('Withdrawal Accounts', 'D', ['deleteWithdrawalAccount', 'deleteBankTransaction']);
   secR_('Cheque Books', ['getChequeBooksData']); secW_('Cheque Books', 'A', ['addChequeBook']); secW_('Cheque Books', 'E', ['updateChequeBook']); secW_('Cheque Books', 'D', ['deleteChequeBook']);
   secR_('Fund Application', ['getFundApplicationData']); secW_('Fund Application', 'A', ['saveFundApplicationPlan', 'addFundApplication']); secW_('Fund Application', 'E', ['updateFundApplication', 'updateFundApplicationBatch']); secW_('Fund Application', 'D', ['deleteFundApplication', 'deleteFundApplicationBatch']);
   secG_('Reports', ['generateTokensReportPdf', 'generateAccReportPdf', 'generateEstimateReportPdf', 'generateBudgetAdvanceReportPdf', 'exportWorkbookForVoucherSuite']);
@@ -4972,9 +5060,9 @@
 
   // Hides the tabs / buttons of modules the signed-in user may not view.
   function applyPermissionsToUI() {
-    const accMap = { apo: 'APOs', budget: 'Budget', estimate: 'Estimate', fsrest: 'FSR', mbook: 'Mbook', tokens: 'Tokens (Advance)' };
+    const accMap = { apo: 'APOs', budget: 'Budget', estimate: 'Estimate', fsrest: 'FSR', mbook: 'Mbook', tokens: 'Tokens (Advance)', bank: 'Withdrawal Accounts' };
     const accBtns = Array.from(document.querySelectorAll('#acctNav .tab-btn'));
-    accBtns.forEach(b => { const m = accMap[b.dataset.acc]; b.style.display = (!m || permCan(m, 'V')) ? '' : 'none'; });
+    accBtns.forEach(b => { const m = accMap[b.dataset.acc]; b.style.display = (!m || permCan(m, 'V') || (b.dataset.acc === 'bank' && permCan('Cheque Books', 'V'))) ? '' : 'none'; });
     const repBtn = document.querySelector('#topNav .tab-btn[data-top="reports"]');
     const canReports = permCan('Reports', 'V');
     if (repBtn) repBtn.style.display = canReports ? '' : 'none';
@@ -5387,13 +5475,13 @@
       if (!blk) return;
       if (view === v && box) box.appendChild(blk);
       else {
-        const home = (v === 'mbi' && document.getElementById('mbook_issue_host')) || hold;   /* Issue Mbook goes back to the Mbook tab */
+        const home = document.getElementById(v === 'mbi' ? 'mbook_issue_host' : 'bank_host') || hold;   /* Issue Mbook goes back to the Mbook tab, Withdrawal Accounts & Cheque Books to the Bank tab */
         if (home) home.appendChild(blk);
       }
     });
     if (window.__collRenderAll) window.__collRenderAll();
   }
-  (function () { const b = document.getElementById('mt_mbi_block'), h = document.getElementById('mbook_issue_host'); if (b && h) h.appendChild(b); })();
+  [['mt_mbi_block', 'mbook_issue_host'], ['mt_wacb_block', 'bank_host']].forEach(([b, h]) => { const be = document.getElementById(b), he = document.getElementById(h); if (be && he) he.appendChild(be); });
   let mtCur = 'org', mtRows = [], mtEdit = null, mtArm = null, mtPage = 0, mtBuilt = false;
   const MT_PAGE = 50;
   const mtEsc = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -6221,6 +6309,7 @@
     else if (currentAcc === 'fsrest') screenName = 'fsrest';
     else if (currentAcc === 'fundapp') screenName = 'report-fundapp';
     else if (currentAcc === 'acc') screenName = 'report-acc';
+    else if (currentAcc === 'bank') screenName = 'bank';
     else if (currentAcc === 'mreports') screenName = 'report-mreports';
     else if (currentAcc === 'estimate') screenName = 'estimate';
     else if (currentAcc === 'mbook') screenName = 'mbook';
@@ -6241,6 +6330,7 @@
       if (screenName === 'fsrest') loadFsrFrame();
       if (screenName === 'estimate') refreshEstimateTable(false);
       if (screenName === 'mbook') refreshMbookScreen();
+      if (screenName === 'bank') refreshBankScreen();
       if (screenName === 'apo') refreshApoTable(false);
       if (screenName === 'budget') refreshBudgetTable(false);
       if (screenName === 'report-acc') renderAccReport();
@@ -6445,6 +6535,8 @@
     });
   }
 
+  function refreshBankScreen() { populateWaScheme_(); populateBtYearOptions_(); refreshWithdrawalAccountsList(); refreshChequeBooks(); refreshBankTransactions(); }
+
   function refreshChequeBooks() {
     const waId = selectedWaId();
     if (!waId) { chequeBooksCache = []; renderChequeBooksList([]); return; }
@@ -6545,14 +6637,14 @@
     if (!tbody) return;
     tbody.innerHTML = '';
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="linked-empty">No withdrawal accounts yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="linked-empty">No withdrawal accounts yet.</td></tr>';
       return;
     }
     rows.forEach(r => {
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
       if (String(document.getElementById('wa_bank').dataset.waId || '') === String(r.WA_id)) tr.classList.add('row-selected');
-      tr.innerHTML = `<td>${r.Bank}</td><td>${r.Branch}</td><td>${r.Place}</td><td>${r.Account_No}</td><td>${r.IFSC_Code}</td><td>${r.Name_of_Account}</td><td>${r.Drawing_Authorities}</td><td>${r.No_of_Cheque_Books_Issued}</td>`;
+      tr.innerHTML = `<td>${r.Bank}</td><td>${r.Branch}</td><td>${r.Place}</td><td>${r.Account_No}</td><td>${r.IFSC_Code}</td><td>${r.Name_of_Account}</td><td>${r.Drawing_Authorities}</td><td>${r.Scheme || ''}</td><td>${r.No_of_Cheque_Books_Issued}</td>`;
       tr.onclick = () => loadWithdrawalAccountIntoForm(r);
       rowKebab_(tr, 'wa', r);
       tbody.appendChild(tr);
@@ -6568,10 +6660,13 @@
     document.getElementById('wa_ifsc').value = r.IFSC_Code || '';
     document.getElementById('wa_name_of_account').value = r.Name_of_Account || '';
     document.getElementById('wa_drawing_authorities').value = r.Drawing_Authorities || '';
+    populateWaScheme_(r.Scheme || '');
     document.getElementById('wa_cheque_books').value = r.No_of_Cheque_Books_Issued || 0;
     renderWithdrawalAccountsList(withdrawalAccountsCache);
     clearChequeBookForm();
     refreshChequeBooks();
+    clearBankTransactionForm();
+    refreshBankTransactions();
   }
 
   function clearWithdrawalAccountForm() {
@@ -6579,11 +6674,14 @@
     ['wa_bank', 'wa_branch', 'wa_place', 'wa_account_no', 'wa_ifsc', 'wa_name_of_account', 'wa_drawing_authorities'].forEach(id => {
       document.getElementById(id).value = '';
     });
+    populateWaScheme_('');
     document.getElementById('wa_cheque_books').value = 0;
     setStatus('wa_status_msg', '');
     renderWithdrawalAccountsList(withdrawalAccountsCache);
     clearChequeBookForm();
     refreshChequeBooks();
+    clearBankTransactionForm();
+    refreshBankTransactions();
   }
 
   function waFormData_() {
@@ -6595,6 +6693,7 @@
       ifsc_code: document.getElementById('wa_ifsc').value,
       name_of_account: document.getElementById('wa_name_of_account').value,
       drawing_authorities: document.getElementById('wa_drawing_authorities').value,
+      scheme: document.getElementById('wa_scheme').value,
       no_of_cheque_books_issued: document.getElementById('wa_cheque_books').value
     };
   }
@@ -6603,6 +6702,7 @@
     gsrCall('getWithdrawalAccountsData').then(rows => {
       withdrawalAccountsCache = rows || [];
       renderWithdrawalAccountsList(withdrawalAccountsCache);
+      populateBtAccountOptions_();
     });
   }
 
@@ -6627,6 +6727,8 @@
     if (!waId) { setStatus('wa_status_msg', 'Click a row in the list first', true); return; }
     const data = waFormData_();
     data.wa_id = waId;
+    const prevAcct = withdrawalAccountsCache.find(a => String(a.WA_id) === String(waId));
+    data.clear_scheme = !data.scheme && !!(prevAcct && prevAcct.Scheme);
     if (!data.bank) { setStatus('wa_status_msg', 'Bank is required', true); return; }
 
     setStatus('wa_status_msg', 'Updating...');
@@ -6653,6 +6755,182 @@
       setStatus('wa_status_msg', 'Unable to delete. Reason: ' + (err && err.message ? err.message : err), true);
     }).deleteWithdrawalAccount(waId);
   }
+
+
+  /* ============================================================
+     BANK TRANSACTIONS (Bank tab, per selected withdrawal account)
+     ============================================================ */
+  let bankTxnCache = [];
+  const btEl_ = id => document.getElementById(id);
+  const btSelectedId_ = () => String(btEl_('bt_year').dataset.btId || '');
+
+  // Scheme dropdown on the account form (values from the Scheme master)
+  function populateWaScheme_(selected) {
+    const sel = document.getElementById('wa_scheme'); if (!sel) return;
+    const keep = selected !== undefined ? selected : sel.value;
+    const list = schemeList();
+    if (keep && !list.includes(keep)) list.push(keep);      // an older record's scheme that is no longer in the master
+    sel.innerHTML = '<option value="">Select scheme</option>' + list.map(v => '<option value="' + String(v).replace(/"/g, '&quot;') + '">' + String(v).replace(/</g, '&lt;') + '</option>').join('');
+    sel.value = keep || '';
+  }
+  function btFyList_() {
+    const now = new Date(), start = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1, out = [];
+    for (let y = start - 5; y <= start + 1; y++) out.push(y + '-' + String(y + 1).slice(-2));
+    return out;
+  }
+  function populateBtYearOptions_(selected) {
+    const sel = btEl_('bt_year'); if (!sel) return;
+    const keep = selected !== undefined ? selected : sel.value;
+    const list = btFyList_(); if (keep && !list.includes(keep)) list.push(keep);
+    sel.innerHTML = '<option value="">--select--</option>' + list.map(v => '<option value="' + v + '">' + v + '</option>').join('');
+    const cur = list[5];                                       // current financial year
+    sel.value = keep || cur || '';
+  }
+  function populateBtAccountOptions_() {
+    const sel = btEl_('bt_account'); if (!sel) return;
+    const wa = selectedWaId();
+    sel.innerHTML = '<option value="">Select account</option>' + withdrawalAccountsCache.map(a =>
+      '<option value="' + a.WA_id + '">' + String(a.Bank || '').replace(/</g, '&lt;') + ' - ' + String(a.Account_No || '').replace(/</g, '&lt;') + (a.Scheme ? ' (' + String(a.Scheme).replace(/</g, '&lt;') + ')' : '') + '</option>').join('');
+    sel.value = wa;
+  }
+  // The Withdrawal Accounts & Cheque Books band is hidden while an account is chosen in the Bank Transactions band.
+  function setBankAccountsBand_(show) {
+    const card = document.getElementById('bank_card'); if (!card) return;
+    card.style.display = show ? '' : 'none';
+    card.dataset.hiddenByBank = show ? '' : '1';
+    const b = document.getElementById('bt_show_accounts'); if (b) b.style.display = show ? 'none' : '';
+  }
+  function onBtAccountChange() {
+    const id = btEl_('bt_account').value;
+    if (!id) { setBankAccountsBand_(true); clearWithdrawalAccountForm(); return; }
+    const acct = withdrawalAccountsCache.find(a => String(a.WA_id) === String(id));
+    if (acct) { loadWithdrawalAccountIntoForm(acct); setBankAccountsBand_(false); }
+  }
+
+  function renderBankTransactions(rows) {
+    const tbody = btEl_('bt_list_table'); if (!tbody) return;
+    const waId = selectedWaId();
+    const acct = withdrawalAccountsCache.find(a => String(a.WA_id) === waId);
+    btEl_('bt_account_label').textContent = acct ? 'Selected account: ' + (acct.Bank || '') + ' - ' + (acct.Account_No || '') + (acct.Scheme ? '  |  Scheme: ' + acct.Scheme : '') : 'Select an account to see and add its bank transactions.';
+    btEl_('bt_account').value = waId;
+    const tot = btEl_('bt_totals');
+    if (!waId) { tbody.innerHTML = '<tr><td colspan="9" class="linked-empty">Select an account to see its bank transactions.</td></tr>'; tot.innerHTML = ''; return; }
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="9" class="linked-empty">No bank transactions for this account yet.</td></tr>'; tot.innerHTML = ''; return; }
+    const list = rows.slice().sort((a, b) => String(b.Trans_Date).localeCompare(String(a.Trans_Date)) || (Number(b.BT_id) - Number(a.BT_id)));
+    tbody.innerHTML = '';
+    let dep = 0, wd = 0;
+    list.forEach(r => {
+      const isDep = r.Transaction === 'Deposit'; if (isDep) dep += Number(r.Trans_Amt) || 0; else wd += Number(r.Trans_Amt) || 0;
+      const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      if (btSelectedId_() === String(r.BT_id)) tr.classList.add('row-selected');
+      const esc = v => String(v == null ? '' : v).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+      tr.innerHTML = '<td>' + esc(r.Year) + '</td><td>' + esc(r.Trans_Date) + '</td><td>' + esc(r.Transaction) + '</td><td>' + esc(r.Trans_Type) + '</td><td class="' + (isDep ? 'bt-dep' : 'bt-wd') + '">' + esc(inr(r.Trans_Amt)) + '</td><td>' + esc(r.Trans_Description) + '</td><td>' + esc(inr(r.OB_Amt)) + '</td><td>' + esc(r.OB_Date) + '</td>';
+      tr.onclick = () => loadBankTransactionIntoForm(r);
+      rowKebab_(tr, 'bt', r);
+      tbody.appendChild(tr);
+    });
+    tot.innerHTML = '<b>' + list.length + '</b> transactions &middot; Deposits <b>' + inr(dep) + '</b> &middot; Withdrawn <b>' + inr(wd) + '</b> &middot; Net <b>' + inr(dep - wd) + '</b>';
+  }
+  function refreshBankTransactions() {
+    const waId = selectedWaId();
+    if (!waId) { bankTxnCache = []; renderBankTransactions([]); return; }
+    gsrCall('getBankTransactionsData', waId).then(rows => {
+      bankTxnCache = rows || [];
+      renderBankTransactions(bankTxnCache);
+    }).catch(() => setStatus('bt_status_msg', 'The bank transactions could not be loaded. Has the bank_transactions table been created?', true));
+  }
+  function loadBankTransactionIntoForm(r) {
+    btEl_('bt_year').dataset.btId = r.BT_id;
+    populateBtYearOptions_(r.Year || '');
+    btEl_('bt_ob_amt').value = r.OB_Amt || 0;
+    btEl_('bt_ob_date').value = r.OB_Date || '';
+    btEl_('bt_trans_date').value = r.Trans_Date || '';
+    btEl_('bt_txn').value = r.Transaction || '';
+    btEl_('bt_trans_amt').value = r.Trans_Amt || 0;
+    btEl_('bt_trans_type').value = r.Trans_Type || '';
+    btEl_('bt_description').value = r.Trans_Description || '';
+    renderBankTransactions(bankTxnCache);
+  }
+  function clearBankTransactionForm() {
+    if (!btEl_('bt_year')) return;
+    btEl_('bt_year').dataset.btId = '';
+    populateBtYearOptions_('');
+    btEl_('bt_ob_amt').value = 0;
+    btEl_('bt_ob_date').value = '';
+    btEl_('bt_trans_date').value = '';
+    btEl_('bt_txn').value = '';
+    btEl_('bt_trans_amt').value = 0;
+    btEl_('bt_trans_type').value = '';
+    btEl_('bt_description').value = '';
+    setStatus('bt_status_msg', '');
+    Array.from(document.querySelectorAll('#bt_list_table tr.row-selected')).forEach(t => t.classList.remove('row-selected'));
+  }
+  function btFormData_() {
+    return {
+      wa_id: selectedWaId(),
+      year: btEl_('bt_year').value,
+      ob_amt: btEl_('bt_ob_amt').value,
+      ob_date: btEl_('bt_ob_date').value,
+      trans_date: btEl_('bt_trans_date').value,
+      txn: btEl_('bt_txn').value,
+      trans_amt: btEl_('bt_trans_amt').value,
+      trans_type: btEl_('bt_trans_type').value,
+      trans_description: btEl_('bt_description').value
+    };
+  }
+  function btCheck_(d) {
+    if (!d.wa_id) return 'Select an account first';
+    if (!d.year) return 'Year is required';
+    if (!d.trans_date) return 'Trans_Date is required';
+    if (!d.txn) return 'Select Transaction (Withdrawn or Deposit)';
+    if (!d.trans_type) return 'Select a Trans_Type';
+    if (!(Number(d.trans_amt) > 0)) return 'Trans_Amt must be greater than 0';
+    return '';
+  }
+  function saveBankTransaction() {
+    const data = btFormData_(), err = btCheck_(data);
+    if (err) { setStatus('bt_status_msg', err, true); return; }
+    setStatus('bt_status_msg', 'Saving...');
+    gsr().withSuccessHandler(res => {
+      if (!res || !res.success) { setStatus('bt_status_msg', (res && res.message) || 'Unable to save. Please try again.', true); return; }
+      clearBankTransactionForm();
+      setStatus('bt_status_msg', 'Saved.');
+      refreshBankTransactions();
+    }).withFailureHandler(e => {
+      setStatus('bt_status_msg', 'Unable to save. Reason: ' + (e && e.message ? e.message : e), true);
+    }).addBankTransaction(data);
+  }
+  function updateBankTransactionRecord() {
+    const id = btSelectedId_();
+    if (!id) { setStatus('bt_status_msg', 'Click a row in the list first', true); return; }
+    const data = btFormData_(), err = btCheck_(data);
+    if (err) { setStatus('bt_status_msg', err, true); return; }
+    data.bt_id = id;
+    setStatus('bt_status_msg', 'Updating...');
+    gsr().withSuccessHandler(res => {
+      if (!res || !res.success) { setStatus('bt_status_msg', (res && res.message) || 'Unable to update. Please try again.', true); return; }
+      setStatus('bt_status_msg', 'Updated.');
+      refreshBankTransactions();
+    }).withFailureHandler(e => {
+      setStatus('bt_status_msg', 'Unable to update. Reason: ' + (e && e.message ? e.message : e), true);
+    }).updateBankTransaction(data);
+  }
+  async function deleteBankTransactionRecord() {
+    const id = btSelectedId_();
+    if (!id) { setStatus('bt_status_msg', 'Click a row in the list first', true); return; }
+    if (!(await askConfirm('Delete this bank transaction? This action cannot be undone.', { title: 'Delete', confirmText: 'Delete', danger: true }))) return;
+    setStatus('bt_status_msg', 'Deleting...');
+    gsr().withSuccessHandler(res => {
+      if (!res || !res.success) { setStatus('bt_status_msg', (res && res.message) || 'Unable to delete. Please try again.', true); return; }
+      clearBankTransactionForm();
+      setStatus('bt_status_msg', 'Deleted.');
+      refreshBankTransactions();
+    }).withFailureHandler(e => {
+      setStatus('bt_status_msg', 'Unable to delete. Reason: ' + (e && e.message ? e.message : e), true);
+    }).deleteBankTransaction(id);
+  }
+  populateBtYearOptions_();
 
   // Rows here come from Voucher Details (see getMbookData on the backend),
   // not a separate Mbook attachment sheet — one row per voucher that has
@@ -12310,6 +12588,9 @@
                load: r => loadPersonnelIntoForm(r), clear: () => clearPersonnelForm(), del: () => deletePersonnelRecord() },
     vehev:   { mod: 'Vehicle Events', noun: 'vehicle event', field: 'vevt_type',
                load: r => loadVehicleEventIntoForm(r), clear: () => clearVehicleEventForm(), del: () => deleteVehicleEventRecord() },
+    bt:      { mod: 'Withdrawal Accounts', noun: 'bank transaction', field: 'bt_year', confirm: false,
+               load: r => loadBankTransactionIntoForm(r), clear: () => clearBankTransactionForm(), del: () => deleteBankTransactionRecord(),
+               dup: r => { loadBankTransactionIntoForm(r); btEl_('bt_year').dataset.btId = ''; Array.from(document.querySelectorAll('#bt_list_table tr.row-selected')).forEach(t => t.classList.remove('row-selected')); } },
     persev:  { mod: 'Personnel Events', noun: 'personnel event', field: 'pevt_type',
                load: r => loadPersonnelEventIntoForm(r), clear: () => clearPersonnelEventForm(), del: () => deletePersonnelEventRecord() }
   };
@@ -12423,6 +12704,7 @@
   function openCardOf_(fieldId) {
     const el = document.getElementById(fieldId), card = el && el.closest('.card');
     if (!card) return;
+    if (card.dataset.hiddenByBank === '1') setBankAccountsBand_(true);      // a form in the accounts band is being opened: bring the band back
     if (card.classList.contains('coll')) {
       card.classList.remove('coll');
       const h = card.querySelector(':scope > .card-head'); if (h) h.setAttribute('aria-expanded', 'true');
@@ -13336,7 +13618,7 @@ __copyGuard();
       return out;
     }
     var tb=card.querySelector('tbody[id$="_list_table"]')||card.querySelector('tbody');
-    if(tb) return [[/Issue/i.test(title)?'Issued':(/Attachment/i.test(title)?'Attachments':(/Mbook (Stats|Usage)/i.test(title)?'Mbooks':(/Record|Status|Event|Dashboard/i.test(title)?'Records':'Rows'))),String(countRows(tb))]];
+    if(tb) return [[/Issue/i.test(title)?'Issued':(/Transaction/i.test(title)?'Transactions':(/Withdrawal/i.test(title)?'Accounts':(/Attachment/i.test(title)?'Attachments':(/Mbook (Stats|Usage)/i.test(title)?'Mbooks':(/Record|Status|Event|Dashboard/i.test(title)?'Records':'Rows'))))),String(countRows(tb))]];
     return card.querySelector('input,select,textarea')?'form':[];
   }
   function render(card){

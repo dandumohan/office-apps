@@ -389,6 +389,15 @@
     .mbi-grid > .mb-panel.mb-wide { grid-column: 1 / -1; }
     .bt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 16px; align-items: start; }
     .bt-grid .bt-desc { grid-column: 1 / -1; }
+    .bt-ob-strip { display: flex; flex-wrap: wrap; gap: 10px 14px; margin: 0 0 10px; }
+    .bt-ob-card { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; padding: 8px 14px; border: 1px solid; border-radius: 8px; font-size: 13px; }
+    .bt-ob-card .k { font: 700 11px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .12em; text-transform: uppercase; }
+    .bt-ob-card .amt { font-size: 17px; font-weight: 700; }
+    .bt-ob-card.begin { background: #eaf2ff; border-color: #8db3e8; color: #1d4ed8; }
+    .bt-ob-card.latest { background: #e8f6ee; border-color: #86c9a0; color: #1b7f3b; }
+    .bt-ob-card.latest.neg { background: #fdecea; border-color: #e3a29b; color: #b42318; }
+    .bt-ob-opt { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
+    .bt-ob-opt input { width: auto; margin: 0; }
     td.bt-dep { color: var(--success); font-weight: 600; }
     td.bt-wd { color: var(--danger); font-weight: 600; }
     .mbi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
@@ -1616,11 +1625,21 @@
         </div>
         <div class="mb-note" id="bt_account_label">Select an account to see and add its bank transactions.</div>
         <button type="button" class="action" id="bt_show_accounts" style="display:none; margin: -2px 0 12px;" onclick="setBankAccountsBand_(true)">Show Withdrawal Accounts &amp; Cheque Books</button>
+        <div class="stats-board" style="margin-bottom: 14px;">
+          <div class="stat-card stat-highlight" title="Last recorded OB plus deposits minus withdrawals made after that OB date"><div class="stat-label">Latest OB_Amt</div><div class="stat-value" id="bt_latest_ob_amt">-</div><div class="stat-words" id="bt_latest_ob_words"></div></div>
+          <div class="stat-card" title="The date up to which the latest OB_Amt is calculated"><div class="stat-label">Latest OB_Date</div><div class="stat-value" id="bt_latest_ob_date">-</div></div>
+          <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value" id="bt_count">0</div></div>
+          <div class="stat-card wide"><div class="stat-label">How it is calculated</div><div class="stat-value" id="bt_ob_basis" style="font-size: 13px; font-weight: 400;">Select an account.</div></div>
+        </div>
                 <div class="bt-grid">
                   <div class="field-row"><label>Account</label><select id="bt_account" onchange="onBtAccountChange()"><option value="">Select account</option></select></div>
                   <div class="field-row"><label>Year</label><select id="bt_year"></select></div>
-                  <div class="field-row"><label>OB_Amt</label><input type="number" step="0.01" id="bt_ob_amt" value="0"></div>
-                  <div class="field-row"><label>OB_Date</label><input type="date" id="bt_ob_date"></div>
+                  <div class="field-row bt-desc">
+                    <label class="bt-ob-opt"><input type="checkbox" id="bt_ob_on" onchange="btObToggled_()"> Record / change opening balance (OB)</label>
+                    <div class="mb-note" id="bt_ob_note" style="margin: 2px 0 0;"></div>
+                  </div>
+                  <div class="field-row bt-ob-field"><label>OB_Amt</label><input type="number" step="0.01" id="bt_ob_amt" value="0"></div>
+                  <div class="field-row bt-ob-field"><label>OB_Date</label><input type="date" id="bt_ob_date"></div>
                   <div class="field-row"><label>Trans_Date</label><input type="date" id="bt_trans_date"></div>
                   <div class="field-row"><label>Transaction</label>
                     <select id="bt_txn"><option value="">--select--</option><option value="Withdrawn">Withdrawn</option><option value="Deposit">Deposit</option></select></div>
@@ -1638,9 +1657,13 @@
                 <div class="status" id="bt_status_msg"></div>
 
                 <div class="scheme-card-title" style="font-size:13px; margin-top:12px; margin-bottom:6px;">Bank Transactions of selected account <span class="stat-label">(click a row to edit)</span></div>
+                <div class="bt-ob-strip">
+                  <div class="bt-ob-card begin" title="The first opening balance recorded for this account"><span class="k">Beginning OB</span><span class="amt" id="bt_begin_ob_amt">-</span><span class="dt">OB_Dt: <b id="bt_begin_ob_date">-</b></span></div>
+                  <div class="bt-ob-card latest" title="Last recorded OB plus deposits minus withdrawals made after that OB date"><span class="k">Latest OB</span><span class="amt" id="bt_strip_latest_amt">-</span><span class="dt">OB_Dt: <b id="bt_strip_latest_date">-</b></span></div>
+                </div>
                 <div class="list-wrap" style="max-height:300px;">
                   <table class="grid">
-                    <thead><tr><th>Year</th><th>Trans_Date</th><th>Transaction</th><th>Trans_Type</th><th>Trans_Amt</th><th>Trans_Description</th><th>OB_Amt</th><th>OB_Date</th><th></th></tr></thead>
+                    <thead><tr><th>Year</th><th>Trans_Date</th><th>Transaction</th><th>Trans_Type</th><th>Trans_Amt</th><th>Trans_Description</th><th></th></tr></thead>
                     <tbody id="bt_list_table"></tbody>
                   </table>
                 </div>
@@ -3852,9 +3875,14 @@
   const BANK_TXN_KINDS_ = ['Withdrawn', 'Deposit'];
   const BANK_TXN_TYPES_ = ['Token Amount', 'Interest', 'DD Amount', 'Cheque', 'Deposit Direct'];
   const bankTxnDb_ = d => ({ wa_id: I_(d.wa_id), year: T_(d.year), ob_amt: N_(d.ob_amt), ob_date: D_(d.ob_date), trans_date: D_(d.trans_date), txn: T_(d.txn), trans_amt: N_(d.trans_amt), trans_type: T_(d.trans_type), trans_description: T_(d.trans_description) });
-  async function validateBankTxn_(d) {
+  async function validateBankTxn_(d, excludeId) {
     const accts = await list_('account', q => q.eq('wa_id', Number(d.wa_id)));
     if (!accts.length) return 'Select an account first.';
+    // Opening balance: optional, except that the account's first entry must carry one (the latest OB is calculated from the last OB).
+    const existing = await list_('bankTxn', q => q.eq('wa_id', Number(d.wa_id)));
+    const hasOb = existing.some(r => r.OB_Date && String(r.BT_id) !== String(excludeId || ''));
+    if (T_(d.ob_date)) { if (T_(d.ob_amt) === '' || isNaN(Number(d.ob_amt))) return 'OB_Amt is required together with OB_Date.'; }
+    else if (!hasOb) return 'OB_Amt and OB_Date are required for the first entry of an account.';
     if (!T_(d.year)) return 'Year is required.';
     if (!T_(d.trans_date)) return 'Trans_Date is required.';
     if (!BANK_TXN_KINDS_.includes(T_(d.txn))) return 'Select Transaction (Withdrawn or Deposit).';
@@ -3863,8 +3891,8 @@
     return '';
   }
   API_.getBankTransactionsData = waId => list_('bankTxn', (waId !== undefined && waId !== null && waId !== '') ? (q => q.eq('wa_id', Number(waId))) : null);
-  API_.addBankTransaction = async d => { const e = await validateBankTxn_(d); if (e) return { success: false, message: e }; return { success: true, id: await insertRow_('bank_transactions', 'bt_id', bankTxnDb_(d)) }; };
-  API_.updateBankTransaction = async d => { const e = await validateBankTxn_(d); if (e) return { success: false, message: e }; return updateRow_('bank_transactions', 'bt_id', d.bt_id, bankTxnDb_(d), 'Bank transaction not found'); };
+  API_.addBankTransaction = async d => { const e = await validateBankTxn_(d, ''); if (e) return { success: false, message: e }; return { success: true, id: await insertRow_('bank_transactions', 'bt_id', bankTxnDb_(d)) }; };
+  API_.updateBankTransaction = async d => { const e = await validateBankTxn_(d, d.bt_id); if (e) return { success: false, message: e }; return updateRow_('bank_transactions', 'bt_id', d.bt_id, bankTxnDb_(d), 'Bank transaction not found'); };
   API_.deleteBankTransaction = id => deleteRow_('bank_transactions', 'bt_id', id, 'Bank transaction not found');
 
   API_.getChequeBooksData = async waId => {
@@ -6807,15 +6835,90 @@
     if (acct) { loadWithdrawalAccountIntoForm(acct); setBankAccountsBand_(false); }
   }
 
+  /* Latest OB: the last recorded OB (latest OB_Date) is the closing balance on that date; every deposit adds to it and every
+     withdrawal takes from it for transactions dated AFTER that OB_Date.  OB_Date shown is the date the balance is calculated up to. */
+  let btLatestCache_ = null;
+  function btComputeLatest_(rows) {
+    const obRows = rows.filter(r => r.OB_Date);
+    if (!obRows.length) return null;
+    const last = obRows.slice().sort((a, b) => String(a.OB_Date).localeCompare(String(b.OB_Date)) || (Number(a.BT_id) - Number(b.BT_id))).pop();
+    let dep = 0, wd = 0, asOn = String(last.OB_Date);
+    rows.forEach(r => {
+      if (!r.Trans_Date || String(r.Trans_Date) <= String(last.OB_Date)) return;
+      const amt = Number(r.Trans_Amt) || 0;
+      if (r.Transaction === 'Deposit') dep += amt; else wd += amt;
+      if (String(r.Trans_Date) > asOn) asOn = String(r.Trans_Date);
+    });
+    const lastAmt = Number(last.OB_Amt) || 0;
+    return { lastAmt, lastDate: String(last.OB_Date), dep, wd, amt: Math.round((lastAmt + dep - wd) * 100) / 100, asOn };
+  }
+  function btComputeBeginning_(rows) {
+    const obRows = rows.filter(r => r.OB_Date);
+    if (!obRows.length) return null;
+    const first = obRows.slice().sort((a, b) => String(a.OB_Date).localeCompare(String(b.OB_Date)) || (Number(a.BT_id) - Number(b.BT_id)))[0];
+    return { amt: Number(first.OB_Amt) || 0, date: String(first.OB_Date) };
+  }
+  function btUpdateStrip_(rows) {
+    const B = selectedWaId() ? btComputeBeginning_(rows || []) : null, L = selectedWaId() ? btComputeLatest_(rows || []) : null;
+    btEl_('bt_begin_ob_amt').textContent = B ? inr(B.amt) : '-';
+    btEl_('bt_begin_ob_date').textContent = B ? B.date : '-';
+    btEl_('bt_strip_latest_amt').textContent = L ? inr(L.amt) : '-';
+    btEl_('bt_strip_latest_date').textContent = L ? L.asOn : '-';
+    btEl_('bt_strip_latest_amt').closest('.bt-ob-card').classList.toggle('neg', !!(L && L.amt < 0));
+  }
+  function btUpdateLatest_(rows) {
+    const L = btComputeLatest_(rows || []);
+    btLatestCache_ = L;
+    btUpdateStrip_(rows);
+    btEl_('bt_count').textContent = String((rows || []).length);
+    if (!selectedWaId()) {
+      btEl_('bt_latest_ob_amt').textContent = '-'; btEl_('bt_latest_ob_words').textContent = ''; btEl_('bt_latest_ob_date').textContent = '-';
+      btEl_('bt_ob_basis').textContent = 'Select an account.'; return;
+    }
+    if (!L) {
+      btEl_('bt_latest_ob_amt').textContent = '-'; btEl_('bt_latest_ob_words').textContent = ''; btEl_('bt_latest_ob_date').textContent = '-';
+      btEl_('bt_ob_basis').textContent = 'No opening balance recorded yet. Enter OB_Amt and OB_Date with the first transaction of this account.'; return;
+    }
+    btEl_('bt_latest_ob_amt').textContent = inr(L.amt);
+    let words = ''; try { words = amountInWordsIndian(Math.abs(Math.round(L.amt))); } catch (e) { }
+    btEl_('bt_latest_ob_words').textContent = words;
+    btEl_('bt_latest_ob_date').textContent = L.asOn;
+    btEl_('bt_ob_basis').textContent = 'Last OB ' + inr(L.lastAmt) + ' on ' + L.lastDate + '  +  Deposits ' + inr(L.dep) + '  \u2212  Withdrawn ' + inr(L.wd) + '  (transactions dated after ' + L.lastDate + ')';
+  }
+  const btHasOb_ = excludeId => bankTxnCache.some(r => r.OB_Date && String(r.BT_id) !== String(excludeId || ''));
+  // OB_Amt / OB_Date are asked for only when needed: always for the first entry of an account, otherwise when the box is ticked.
+  function btSyncOb_() {
+    const on = btEl_('bt_ob_on'), waId = selectedWaId(), note = btEl_('bt_ob_note');
+    const need = !!waId && !btHasOb_(btSelectedId_());
+    const wasForced = on.dataset.forced === '1';
+    if (need) on.checked = true; else if (wasForced) on.checked = false;     // once the account has an OB the box goes back to optional
+    on.dataset.forced = need ? '1' : '';
+    on.disabled = need;
+    Array.from(document.querySelectorAll('.bt-ob-field')).forEach(e => { e.style.display = on.checked ? '' : 'none'; });
+    note.textContent = !waId ? '' : (need
+      ? 'No opening balance is recorded for this account yet, so OB_Amt and OB_Date are required with this entry.'
+      : (on.checked ? 'This entry records a new opening balance (the balance on OB_Date).' : 'Tick to record a new opening balance; otherwise the latest OB is calculated from the last one.'));
+  }
+  function btObToggled_() {
+    const on = btEl_('bt_ob_on');
+    if (on.checked && !btEl_('bt_ob_date').value && btLatestCache_) {            // suggest the current latest OB as the starting point
+      btEl_('bt_ob_amt').value = btLatestCache_.amt;
+      btEl_('bt_ob_date').value = btLatestCache_.asOn;
+    }
+    btSyncOb_();
+  }
+
   function renderBankTransactions(rows) {
     const tbody = btEl_('bt_list_table'); if (!tbody) return;
     const waId = selectedWaId();
     const acct = withdrawalAccountsCache.find(a => String(a.WA_id) === waId);
     btEl_('bt_account_label').textContent = acct ? 'Selected account: ' + (acct.Bank || '') + ' - ' + (acct.Account_No || '') + (acct.Scheme ? '  |  Scheme: ' + acct.Scheme : '') : 'Select an account to see and add its bank transactions.';
     btEl_('bt_account').value = waId;
+    btUpdateLatest_(waId ? rows : []);
+    btSyncOb_();
     const tot = btEl_('bt_totals');
-    if (!waId) { tbody.innerHTML = '<tr><td colspan="9" class="linked-empty">Select an account to see its bank transactions.</td></tr>'; tot.innerHTML = ''; return; }
-    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="9" class="linked-empty">No bank transactions for this account yet.</td></tr>'; tot.innerHTML = ''; return; }
+    if (!waId) { tbody.innerHTML = '<tr><td colspan="7" class="linked-empty">Select an account to see its bank transactions.</td></tr>'; tot.innerHTML = ''; return; }
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" class="linked-empty">No bank transactions for this account yet.</td></tr>'; tot.innerHTML = ''; return; }
     const list = rows.slice().sort((a, b) => String(b.Trans_Date).localeCompare(String(a.Trans_Date)) || (Number(b.BT_id) - Number(a.BT_id)));
     tbody.innerHTML = '';
     let dep = 0, wd = 0;
@@ -6825,7 +6928,7 @@
       tr.style.cursor = 'pointer';
       if (btSelectedId_() === String(r.BT_id)) tr.classList.add('row-selected');
       const esc = v => String(v == null ? '' : v).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-      tr.innerHTML = '<td>' + esc(r.Year) + '</td><td>' + esc(r.Trans_Date) + '</td><td>' + esc(r.Transaction) + '</td><td>' + esc(r.Trans_Type) + '</td><td class="' + (isDep ? 'bt-dep' : 'bt-wd') + '">' + esc(inr(r.Trans_Amt)) + '</td><td>' + esc(r.Trans_Description) + '</td><td>' + esc(inr(r.OB_Amt)) + '</td><td>' + esc(r.OB_Date) + '</td>';
+      tr.innerHTML = '<td>' + esc(r.Year) + '</td><td>' + esc(r.Trans_Date) + '</td><td>' + esc(r.Transaction) + '</td><td>' + esc(r.Trans_Type) + '</td><td class="' + (isDep ? 'bt-dep' : 'bt-wd') + '">' + esc(inr(r.Trans_Amt)) + '</td><td>' + esc(r.Trans_Description) + '</td>';
       tr.onclick = () => loadBankTransactionIntoForm(r);
       rowKebab_(tr, 'bt', r);
       tbody.appendChild(tr);
@@ -6843,14 +6946,16 @@
   function loadBankTransactionIntoForm(r) {
     btEl_('bt_year').dataset.btId = r.BT_id;
     populateBtYearOptions_(r.Year || '');
-    btEl_('bt_ob_amt').value = r.OB_Amt || 0;
+    btEl_('bt_ob_amt').value = r.OB_Date ? (r.OB_Amt || 0) : 0;
     btEl_('bt_ob_date').value = r.OB_Date || '';
+    btEl_('bt_ob_on').checked = !!r.OB_Date;
     btEl_('bt_trans_date').value = r.Trans_Date || '';
     btEl_('bt_txn').value = r.Transaction || '';
     btEl_('bt_trans_amt').value = r.Trans_Amt || 0;
     btEl_('bt_trans_type').value = r.Trans_Type || '';
     btEl_('bt_description').value = r.Trans_Description || '';
     renderBankTransactions(bankTxnCache);
+    btSyncOb_();
   }
   function clearBankTransactionForm() {
     if (!btEl_('bt_year')) return;
@@ -6858,6 +6963,7 @@
     populateBtYearOptions_('');
     btEl_('bt_ob_amt').value = 0;
     btEl_('bt_ob_date').value = '';
+    btEl_('bt_ob_on').checked = false;
     btEl_('bt_trans_date').value = '';
     btEl_('bt_txn').value = '';
     btEl_('bt_trans_amt').value = 0;
@@ -6865,13 +6971,15 @@
     btEl_('bt_description').value = '';
     setStatus('bt_status_msg', '');
     Array.from(document.querySelectorAll('#bt_list_table tr.row-selected')).forEach(t => t.classList.remove('row-selected'));
+    btSyncOb_();
   }
   function btFormData_() {
+    const obOn = btEl_('bt_ob_on').checked;          // an unticked OB is saved as nothing
     return {
       wa_id: selectedWaId(),
       year: btEl_('bt_year').value,
-      ob_amt: btEl_('bt_ob_amt').value,
-      ob_date: btEl_('bt_ob_date').value,
+      ob_amt: obOn ? btEl_('bt_ob_amt').value : 0,
+      ob_date: obOn ? btEl_('bt_ob_date').value : '',
       trans_date: btEl_('bt_trans_date').value,
       txn: btEl_('bt_txn').value,
       trans_amt: btEl_('bt_trans_amt').value,
@@ -6879,8 +6987,10 @@
       trans_description: btEl_('bt_description').value
     };
   }
-  function btCheck_(d) {
+  function btCheck_(d, excludeId) {
     if (!d.wa_id) return 'Select an account first';
+    if (d.ob_date) { if (String(d.ob_amt).trim() === '' || isNaN(Number(d.ob_amt))) return 'OB_Amt is required together with OB_Date'; }
+    else if (!btHasOb_(excludeId)) return 'OB_Amt and OB_Date are required for the first entry of an account';
     if (!d.year) return 'Year is required';
     if (!d.trans_date) return 'Trans_Date is required';
     if (!d.txn) return 'Select Transaction (Withdrawn or Deposit)';
@@ -6889,7 +6999,7 @@
     return '';
   }
   function saveBankTransaction() {
-    const data = btFormData_(), err = btCheck_(data);
+    const data = btFormData_(), err = btCheck_(data, '');
     if (err) { setStatus('bt_status_msg', err, true); return; }
     setStatus('bt_status_msg', 'Saving...');
     gsr().withSuccessHandler(res => {
@@ -6904,7 +7014,7 @@
   function updateBankTransactionRecord() {
     const id = btSelectedId_();
     if (!id) { setStatus('bt_status_msg', 'Click a row in the list first', true); return; }
-    const data = btFormData_(), err = btCheck_(data);
+    const data = btFormData_(), err = btCheck_(data, id);
     if (err) { setStatus('bt_status_msg', err, true); return; }
     data.bt_id = id;
     setStatus('bt_status_msg', 'Updating...');
@@ -12590,7 +12700,7 @@
                load: r => loadVehicleEventIntoForm(r), clear: () => clearVehicleEventForm(), del: () => deleteVehicleEventRecord() },
     bt:      { mod: 'Withdrawal Accounts', noun: 'bank transaction', field: 'bt_year', confirm: false,
                load: r => loadBankTransactionIntoForm(r), clear: () => clearBankTransactionForm(), del: () => deleteBankTransactionRecord(),
-               dup: r => { loadBankTransactionIntoForm(r); btEl_('bt_year').dataset.btId = ''; Array.from(document.querySelectorAll('#bt_list_table tr.row-selected')).forEach(t => t.classList.remove('row-selected')); } },
+               dup: r => { loadBankTransactionIntoForm(r); btEl_('bt_year').dataset.btId = ''; btEl_('bt_ob_on').checked = false; Array.from(document.querySelectorAll('#bt_list_table tr.row-selected')).forEach(t => t.classList.remove('row-selected')); btSyncOb_(); } },
     persev:  { mod: 'Personnel Events', noun: 'personnel event', field: 'pevt_type',
                load: r => loadPersonnelEventIntoForm(r), clear: () => clearPersonnelEventForm(), del: () => deletePersonnelEventRecord() }
   };

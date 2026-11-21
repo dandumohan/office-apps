@@ -396,6 +396,35 @@
     .bt-ob-card.begin { background: #eaf2ff; border-color: #8db3e8; color: #1d4ed8; }
     .bt-ob-card.latest { background: #e8f6ee; border-color: #86c9a0; color: #1b7f3b; }
     .bt-ob-card.latest.neg { background: #fdecea; border-color: #e3a29b; color: #b42318; }
+    .bt-summary { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 14px; }
+    .bt-summary .stat-card.wide { grid-column: 1 / -1; }
+    .stat-card.bt-begin { border-left: 4px solid #3b82f6; }
+    .stat-card.bt-latest { border-left: 4px solid #16a34a; }
+    .stat-card.bt-neg .stat-value { color: var(--danger); }
+    .bt-report-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 14px; padding: 8px 12px; background: #f6f8fb; border: 1px solid var(--border); border-radius: 8px; }
+    .bt-report-bar select { width: auto; min-width: 160px; }
+    .bt-rep-month { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+    .bt-rep-hint { font-size: 12px; color: var(--muted); }
+    .bt-report { position: fixed; inset: 0; z-index: 2500; display: flex; align-items: flex-start; justify-content: center; padding: 24px; overflow: auto; background: rgba(15, 23, 42, .55); }
+    .bt-report-box { width: 100%; max-width: 1100px; padding: 18px 22px 26px; background: #fff; border-radius: 10px; box-shadow: 0 20px 50px rgba(0, 0, 0, .35); }
+    .bt-report .rep-actions { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .bt-report .rep-actions .sp { flex: 1; }
+    .bt-report .rep-sub { margin-bottom: 10px; font-size: 13px; color: var(--muted); }
+    .bt-report .rep-acct { margin: 20px 0 6px; padding: 6px 10px; background: #eef2f7; border-left: 4px solid var(--brand); font-size: 15px; }
+    .bt-report .rep-table { width: 100%; margin: 0 0 12px; border-collapse: collapse; font-size: 12.5px; }
+    .bt-report .rep-table th { padding: 6px 8px; text-align: left; background: #1f2d3d; color: #fff; font-weight: 600; }
+    .bt-report .rep-table td { padding: 5px 8px; border-bottom: 1px solid #d6dde6; vertical-align: top; }
+    .bt-report .rep-table td.n { text-align: right; white-space: nowrap; }
+    .bt-report .rep-table tr.tot td { background: #f1f5f9; border-top: 2px solid #1f2d3d; }
+    @media print {
+      body.bt-printing > *:not(#bt_report_modal) { display: none !important; }
+      body.bt-printing #bt_report_modal { position: static; display: block; padding: 0; background: #fff; overflow: visible; }
+      body.bt-printing .bt-report-box { max-width: none; padding: 0; box-shadow: none; }
+      body.bt-printing .rep-actions { display: none !important; }
+      body.bt-printing .bt-report .rep-table th { background: #1f2d3d !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+    .bt-all-total td { font-weight: 700; background: #f1f5f9; border-top: 2px solid #1f2d3d; }
+    #bt_all_table tr { cursor: pointer; }
     .bt-ob-opt { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
     .bt-ob-opt input { width: auto; margin: 0; }
     td.bt-dep { color: var(--success); font-weight: 600; }
@@ -1618,56 +1647,109 @@
         <div class="voucher-form-split" id="bank_host"></div>
       </div>
 
-      <div class="card" id="bank_txn_card">
+      <div class="card" id="bank_stats_card">
+        <div class="card-head">
+          <h2 class="section-title">Bank Stats</h2>
+          <button class="icon-btn" title="Refresh" onclick="refreshBankTransactions()">&#8635;</button>
+        </div>
+        <div class="mb-note" id="bt_account_label">Select an account to see and add its bank transactions.</div>
+        <button type="button" class="action" id="bt_show_accounts2" style="display:none; margin: -2px 0 12px;" onclick="setBankAccountsBand_(true)">Show Withdrawal Accounts &amp; Cheque Books</button>
+
+        <div class="scheme-card-title" style="font-size:13px; margin: 4px 0 6px;">All accounts</div>
+        <div class="stats-board bt-summary" id="bt_all_board">
+          <div class="stat-card"><div class="stat-label">Accounts</div><div class="stat-value" id="bt_all_accts">0</div><div class="stat-words" id="bt_all_accts_note"></div></div>
+          <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value" id="bt_all_count">0</div></div>
+          <div class="stat-card bt-latest"><div class="stat-label">Total Latest OB_Amt</div><div class="stat-value" id="bt_all_ob">-</div></div>
+          <div class="stat-card" data-chip="1"><div class="stat-label">Total Deposits (tot_amt)</div><div class="stat-value" id="bt_all_tot">-</div></div>
+          <div class="stat-card" data-chip="1"><div class="stat-label">Total Withdrawn</div><div class="stat-value" id="bt_all_wd">-</div></div>
+          <div class="stat-card stat-highlight" data-chip="1"><div class="stat-label">Total CB_Amt</div><div class="stat-value" id="bt_all_cb">-</div><div class="stat-words" id="bt_all_cb_words"></div></div>
+          <div class="stat-card"><div class="stat-label">Latest CB_Dt</div><div class="stat-value" id="bt_all_cbdt" style="font-size:15px;">-</div></div>
+        </div>
+        <div class="list-wrap" style="max-height: 260px; margin-bottom: 16px;">
+          <table class="grid">
+            <thead><tr><th>Account</th><th>Scheme</th><th>Operating by</th><th>Beginning OB</th><th>Latest OB</th><th>Total Deposits (tot_amt)</th><th>Total Withdrawn</th><th>CB_Amt</th><th>CB_Dt</th><th>Transactions</th></tr></thead>
+            <tbody id="bt_all_table"></tbody>
+          </table>
+        </div>
+        <div class="scheme-card-title" style="font-size:13px; margin: 4px 0 6px;">Selected account</div>
+        <div class="stats-board bt-summary">
+          <div class="stat-card"><div class="stat-label">Scheme</div><div class="stat-value" id="bt_sum_scheme" style="font-size:15px;">-</div></div>
+          <div class="stat-card"><div class="stat-label">Account No</div><div class="stat-value" id="bt_sum_acct" style="font-size:15px;">-</div></div>
+          <div class="stat-card"><div class="stat-label">Operating by (Authority office)</div><div class="stat-value" id="bt_sum_operating" style="font-size:15px;">-</div></div>
+          <div class="stat-card"><div class="stat-label">Beginning Month</div><div class="stat-value" id="bt_sum_bmonth" style="font-size:15px;">-</div></div>
+          <div class="stat-card bt-begin"><div class="stat-label">Beginning OB_Amt</div><div class="stat-value" id="bt_sum_bob_amt">-</div></div>
+          <div class="stat-card bt-begin"><div class="stat-label">Beginning OB_Dt</div><div class="stat-value" id="bt_sum_bob_dt" style="font-size:15px;">-</div></div>
+          <div class="stat-card bt-latest" title="The last opening balance recorded for this account"><div class="stat-label">Latest OB_Amt</div><div class="stat-value" id="bt_latest_ob_amt">-</div><div class="stat-words" id="bt_latest_ob_words"></div></div>
+          <div class="stat-card bt-latest"><div class="stat-label">Latest OB_Dt</div><div class="stat-value" id="bt_latest_ob_date" style="font-size:15px;">-</div></div>
+          <div class="stat-card" title="Deposits after the latest OB date plus the latest OB_Amt"><div class="stat-label">Total Deposits (tot_amt)</div><div class="stat-value" id="bt_sum_tot">-</div><div class="stat-words" id="bt_sum_tot_note"></div></div>
+          <div class="stat-card" title="Withdrawals after the latest OB date"><div class="stat-label">Total Withdrawn</div><div class="stat-value" id="bt_sum_wd">-</div></div>
+          <div class="stat-card stat-highlight" title="tot_amt minus Total Withdrawn"><div class="stat-label">CB_Amt</div><div class="stat-value" id="bt_sum_cb">-</div><div class="stat-words" id="bt_sum_cb_words"></div></div>
+          <div class="stat-card" title="Date of the last transaction"><div class="stat-label">CB_Dt</div><div class="stat-value" id="bt_sum_cbdt" style="font-size:15px;">-</div></div>
+          <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value" id="bt_count">0</div></div>
+          <div class="stat-card wide"><div class="stat-label">Token / Cheque details</div><div class="stat-value" id="bt_details" style="font-size:13px; font-weight:400;">Click a transaction below to see its token or cheque details.</div></div>
+          <div class="stat-card wide"><div class="stat-label">How it is calculated</div><div class="stat-value" id="bt_ob_basis" style="font-size:13px; font-weight:400;">Select an account.</div></div>
+        </div>
+        <div class="bt-ob-strip">
+          <div class="bt-ob-card begin" title="The first opening balance recorded for this account"><span class="k">Beginning OB</span><span class="amt" id="bt_begin_ob_amt">-</span><span class="dt">OB_Dt: <b id="bt_begin_ob_date">-</b></span></div>
+          <div class="bt-ob-card latest" title="The last opening balance recorded for this account"><span class="k">Latest OB</span><span class="amt" id="bt_strip_latest_amt">-</span><span class="dt">OB_Dt: <b id="bt_strip_latest_date">-</b></span></div>
+        </div>
+        <div class="lay-count" id="bt_totals"></div>
+      </div>
+
+      <div class="card" id="bank_txn_card" data-chip-fn="btAccountChips_" data-chip-rows="1">
         <div class="card-head">
           <h2 class="section-title">Bank Transactions</h2>
           <button class="icon-btn" title="Refresh" onclick="refreshBankTransactions()">&#8635;</button>
         </div>
-        <div class="mb-note" id="bt_account_label">Select an account to see and add its bank transactions.</div>
         <button type="button" class="action" id="bt_show_accounts" style="display:none; margin: -2px 0 12px;" onclick="setBankAccountsBand_(true)">Show Withdrawal Accounts &amp; Cheque Books</button>
-        <div class="stats-board" style="margin-bottom: 14px;">
-          <div class="stat-card stat-highlight" title="Last recorded OB plus deposits minus withdrawals made after that OB date"><div class="stat-label">Latest OB_Amt</div><div class="stat-value" id="bt_latest_ob_amt">-</div><div class="stat-words" id="bt_latest_ob_words"></div></div>
-          <div class="stat-card" title="The date up to which the latest OB_Amt is calculated"><div class="stat-label">Latest OB_Date</div><div class="stat-value" id="bt_latest_ob_date">-</div></div>
-          <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value" id="bt_count">0</div></div>
-          <div class="stat-card wide"><div class="stat-label">How it is calculated</div><div class="stat-value" id="bt_ob_basis" style="font-size: 13px; font-weight: 400;">Select an account.</div></div>
+        <div class="bt-grid">
+          <div class="field-row"><label>Account</label><select id="bt_account" onchange="onBtAccountChange()"><option value="">Select account</option></select></div>
+          <div class="field-row"><label>Year</label><select id="bt_year"></select></div>
+          <div class="field-row bt-desc">
+            <label class="bt-ob-opt"><input type="checkbox" id="bt_ob_on" onchange="btObToggled_()"> Record / change opening balance (OB)</label>
+            <div class="mb-note" id="bt_ob_note" style="margin: 2px 0 0;"></div>
+          </div>
+          <div class="field-row bt-ob-field"><label>OB_Amt</label><input type="number" step="0.01" id="bt_ob_amt" value="0"></div>
+          <div class="field-row bt-ob-field"><label>OB_Date</label><input type="date" id="bt_ob_date"></div>
+          <div class="field-row"><label>Trans_Date</label><input type="date" id="bt_trans_date"></div>
+          <div class="field-row"><label>Transaction</label>
+            <select id="bt_txn"><option value="">--select--</option><option value="Withdrawn">Withdrawn</option><option value="Deposit">Deposit</option></select></div>
+          <div class="field-row"><label>Trans_Type</label>
+            <select id="bt_trans_type" onchange="btTypeChanged_()"><option value="">--select--</option><option>Token Amount</option><option>Interest</option><option>DD Amount</option><option>Cheque</option><option>Deposit Direct</option></select></div>
+          <div class="field-row" id="bt_link_wrap" style="display:none;"><label id="bt_link_label">Token</label><select id="bt_link" onchange="btLinkChanged_()"></select></div>
+          <div class="field-row"><label>Trans_Amt</label><input type="number" step="0.01" min="0" id="bt_trans_amt" value="0"></div>
+          <div class="field-row bt-desc"><label>Trans_Description</label><input type="text" id="bt_description" placeholder="Description of the transaction"></div>
         </div>
-                <div class="bt-grid">
-                  <div class="field-row"><label>Account</label><select id="bt_account" onchange="onBtAccountChange()"><option value="">Select account</option></select></div>
-                  <div class="field-row"><label>Year</label><select id="bt_year"></select></div>
-                  <div class="field-row bt-desc">
-                    <label class="bt-ob-opt"><input type="checkbox" id="bt_ob_on" onchange="btObToggled_()"> Record / change opening balance (OB)</label>
-                    <div class="mb-note" id="bt_ob_note" style="margin: 2px 0 0;"></div>
-                  </div>
-                  <div class="field-row bt-ob-field"><label>OB_Amt</label><input type="number" step="0.01" id="bt_ob_amt" value="0"></div>
-                  <div class="field-row bt-ob-field"><label>OB_Date</label><input type="date" id="bt_ob_date"></div>
-                  <div class="field-row"><label>Trans_Date</label><input type="date" id="bt_trans_date"></div>
-                  <div class="field-row"><label>Transaction</label>
-                    <select id="bt_txn"><option value="">--select--</option><option value="Withdrawn">Withdrawn</option><option value="Deposit">Deposit</option></select></div>
-                  <div class="field-row"><label>Trans_Amt</label><input type="number" step="0.01" min="0" id="bt_trans_amt" value="0"></div>
-                  <div class="field-row"><label>Trans_Type</label>
-                    <select id="bt_trans_type"><option value="">--select--</option><option>Token Amount</option><option>Interest</option><option>DD Amount</option><option>Cheque</option><option>Deposit Direct</option></select></div>
-                  <div class="field-row bt-desc"><label>Trans_Description</label><input type="text" id="bt_description" placeholder="Description of the transaction"></div>
-                </div>
-                <div class="btn-row" style="margin-top:4px;">
-                  <button class="action" onclick="updateBankTransactionRecord()">Update</button>
-                  <button class="action" onclick="deleteBankTransactionRecord()">Delete</button>
-                  <button class="action primary" onclick="saveBankTransaction()">Save</button>
-                  <button class="action" onclick="clearBankTransactionForm()">New</button>
-                </div>
-                <div class="status" id="bt_status_msg"></div>
+        <div class="btn-row" style="margin-top:4px;">
+          <button class="action" onclick="updateBankTransactionRecord()">Update</button>
+          <button class="action" onclick="deleteBankTransactionRecord()">Delete</button>
+          <button class="action primary" onclick="saveBankTransaction()">Save</button>
+          <button class="action" onclick="clearBankTransactionForm()">New</button>
+        </div>
+        <div class="status" id="bt_status_msg"></div>
 
-                <div class="scheme-card-title" style="font-size:13px; margin-top:12px; margin-bottom:6px;">Bank Transactions of selected account <span class="stat-label">(click a row to edit)</span></div>
-                <div class="bt-ob-strip">
-                  <div class="bt-ob-card begin" title="The first opening balance recorded for this account"><span class="k">Beginning OB</span><span class="amt" id="bt_begin_ob_amt">-</span><span class="dt">OB_Dt: <b id="bt_begin_ob_date">-</b></span></div>
-                  <div class="bt-ob-card latest" title="Last recorded OB plus deposits minus withdrawals made after that OB date"><span class="k">Latest OB</span><span class="amt" id="bt_strip_latest_amt">-</span><span class="dt">OB_Dt: <b id="bt_strip_latest_date">-</b></span></div>
-                </div>
-                <div class="list-wrap" style="max-height:300px;">
-                  <table class="grid">
-                    <thead><tr><th>Year</th><th>Trans_Date</th><th>Transaction</th><th>Trans_Type</th><th>Trans_Amt</th><th>Trans_Description</th><th></th></tr></thead>
-                    <tbody id="bt_list_table"></tbody>
-                  </table>
-                </div>
-                <div class="lay-count" id="bt_totals"></div>
+        <div class="scheme-card-title" style="font-size:13px; margin-top:12px; margin-bottom:6px;">Bank Transactions of selected account <span class="stat-label">(click a row to edit)</span></div>
+        <div class="list-wrap" style="max-height:300px;">
+          <table class="grid">
+            <thead><tr><th>Year</th><th>Trans_Date</th><th>Transaction</th><th>Trans_Type</th><th>Token / Cheque</th><th>Trans_Amt</th><th>Trans_Description</th><th></th></tr></thead>
+            <tbody id="bt_list_table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" id="bank_report_card">
+        <div class="card-head">
+          <h2 class="section-title">Bank Reports</h2>
+        </div>
+        <div class="mb-note">Choose an account scope and a month (leave the month blank for all months), then press Report.</div>
+        <div class="bt-report-bar">
+          <span class="lay-label" style="margin:0;">REPORT</span>
+          <select id="bt_rep_scope"><option value="selected">Selected account</option><option value="all">All accounts</option></select>
+          <label class="bt-rep-month">Month <input type="month" id="bt_rep_month" title="Leave blank for all months"></label>
+          <button type="button" class="action primary" onclick="btRunReport_()">Report</button>
+          <span class="bt-rep-hint">Leave the month blank for all months.</span>
+        </div>
+        <div class="status" id="bt_rep_status"></div>
       </div>
     </div>
 
@@ -2772,6 +2854,7 @@
             <div class="field-row"><label>Name of the Account</label><input type="text" id="wa_name_of_account"></div>
             <div class="field-row"><label>Drawing Authorities</label><input type="text" id="wa_drawing_authorities"></div>
             <div class="field-row"><label>Scheme</label><select id="wa_scheme"><option value="">Select scheme</option></select></div>
+            <div class="field-row"><label>Operating_by_Authority_office</label><select id="wa_operating"><option value="">--select--</option><option>Division</option><option>Range</option></select></div>
             <div class="field-row"><label>No. of Cheque Books Issued</label><input type="number" id="wa_cheque_books" value="0"></div>
             <div class="btn-row" style="margin-top:10px;">
               <button class="action" onclick="updateWithdrawalAccountRecord()">Update</button>
@@ -2784,7 +2867,7 @@
             <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Accounts <span class="stat-label">(click a row to edit)</span></div>
             <div class="list-wrap" style="max-height:220px;">
               <table class="grid">
-                <thead><tr><th>Bank</th><th>Branch</th><th>Place</th><th>Account No</th><th>IFSC</th><th>Name of Account</th><th>Drawing Authorities</th><th>Scheme</th><th>Cheque Books</th><th></th></tr></thead>
+                <thead><tr><th>Bank</th><th>Branch</th><th>Place</th><th>Account No</th><th>IFSC</th><th>Name of Account</th><th>Drawing Authorities</th><th>Scheme</th><th>Operating_by_Authority_office</th><th>Cheque Books</th><th></th></tr></thead>
                 <tbody id="wa_list_table"></tbody>
               </table>
             </div>
@@ -3226,8 +3309,8 @@
     voucher: { table: 'voucher_details', pk: 'vch_id', cols: [['Vch_id', 'vch_id', 'id'], ['Esti_no', 'esti_no', 's'], ['Task_no', 'task_no', 'n'], ['Voucher_No', 'voucher_no', 's'], ['Voucher_Date', 'voucher_date', 'd'], ['Voucher_Details', 'voucher_details', 's'], ['Voucher_Amount', 'voucher_amount', 'n'], ['Qnty', 'qnty', 'n'], ['MBook_no', 'mbook_no', 's'], ['Page_from', 'page_from', 'p'], ['Page_to', 'page_to', 'p'], ['Payee_Name', 'payee_name', 's'], ['Work_From_Date', 'work_from_date', 'd'], ['Work_To_Date', 'work_to_date', 'd'], ['Measured_By', 'measured_by', 's'], ['Measurement_Date', 'measurement_date', 'd'], ['Check_Measured_By', 'check_measured_by', 's'], ['Check_Measurement_Date', 'check_measurement_date', 'd'], ['Test_Checked_By', 'test_checked_by', 's'], ['Test_Check_Date', 'test_check_date', 'd'], ['Drawn_Amount', 'drawn_amount', 'n'], ['Adv_Token_No', 'adv_token_no', 's'], ['Drawn_Date', 'drawn_date', 'd'], ['Batch_No', 'batch_no', 's']] },
     fund: { table: 'fund_application', pk: 'fa_id', cols: [['FA_id', 'fa_id', 'id'], ['Esti_no', 'esti_no', 's'], ['Task_no', 'task_no', 'n'], ['Task_Description', 'task_description', 's'], ['Qnty', 'qnty', 'n'], ['Unit', 'unit', 's'], ['Rate', 'rate', 'n'], ['Per', 'per', 's'], ['Amount', 'amount', 'n'], ['Batch_No', 'batch_no', 's'], ['Application_Date', 'application_date', 'd'], ['Token_no', 'token_no', 's']] },
     withdrawn: { table: 'withdrawn_details', pk: 'wd_id', cols: [['WD_id', 'wd_id', 'id'], ['Esti_no', 'esti_no', 's'], ['Advance_Token_No', 'advance_token_no', 's'], ['Credited_Status', 'credited_status', 's'], ['Withdrawn_Date', 'withdrawn_date', 'd'], ['Withdrawn_Amount', 'withdrawn_amount', 'n'], ['Withdrawn_Cheque_No', 'withdrawn_cheque_no', 's']] },
-    account: { table: 'withdrawal_accounts', pk: 'wa_id', cols: [['WA_id', 'wa_id', 'id'], ['Bank', 'bank', 's'], ['Branch', 'branch', 's'], ['Place', 'place', 's'], ['Account_No', 'account_no', 's'], ['IFSC_Code', 'ifsc_code', 's'], ['Name_of_Account', 'name_of_account', 's'], ['Drawing_Authorities', 'drawing_authorities', 's'], ['Scheme', 'scheme', 's'], ['No_of_Cheque_Books_Issued', 'no_of_cheque_books_issued', 'n']] },
-    bankTxn: { table: 'bank_transactions', pk: 'bt_id', cols: [['BT_id', 'bt_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Year', 'year', 's'], ['OB_Amt', 'ob_amt', 'n'], ['OB_Date', 'ob_date', 'd'], ['Trans_Date', 'trans_date', 'd'], ['Transaction', 'txn', 's'], ['Trans_Amt', 'trans_amt', 'n'], ['Trans_Type', 'trans_type', 's'], ['Trans_Description', 'trans_description', 's']] },
+    account: { table: 'withdrawal_accounts', pk: 'wa_id', cols: [['WA_id', 'wa_id', 'id'], ['Bank', 'bank', 's'], ['Branch', 'branch', 's'], ['Place', 'place', 's'], ['Account_No', 'account_no', 's'], ['IFSC_Code', 'ifsc_code', 's'], ['Name_of_Account', 'name_of_account', 's'], ['Drawing_Authorities', 'drawing_authorities', 's'], ['Scheme', 'scheme', 's'], ['Operating_by', 'operating_by', 's'], ['No_of_Cheque_Books_Issued', 'no_of_cheque_books_issued', 'n']] },
+    bankTxn: { table: 'bank_transactions', pk: 'bt_id', cols: [['BT_id', 'bt_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Year', 'year', 's'], ['OB_Amt', 'ob_amt', 'n'], ['OB_Date', 'ob_date', 'd'], ['Trans_Date', 'trans_date', 'd'], ['Transaction', 'txn', 's'], ['Trans_Amt', 'trans_amt', 'n'], ['Trans_Type', 'trans_type', 's'], ['Token_No', 'token_no', 's'], ['Cheque_Ref', 'cheque_ref', 's'], ['Trans_Description', 'trans_description', 's']] },
     cheque: { table: 'cheque_books', pk: 'cb_id', cols: [['CB_id', 'cb_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Cheque_Book_No', 'cheque_book_no', 's'], ['Leaves_No_From', 'leaves_no_from', 's'], ['Leaves_No_To', 'leaves_no_to', 's']] },
     mbi: { table: 'mbook_issued', pk: 'mbi_id', cols: [['MBI_id', 'mbi_id', 'id'], ['Year', 'year', 's'], ['MBook_No', 'mbook_no', 's'], ['Pages_From', 'pages_from', 'n'], ['Pages_To', 'pages_to', 'n'], ['Issue_Date', 'issue_date', 'd'], ['Issued_By', 'issued_by', 's'], ['Scheme', 'scheme', 's'], ['Esti_no', 'esti_no', 's']] }
     , mbob: { table: 'mbook_ob', pk: 'ob_id', cols: [['OB_id', 'ob_id', 'id'], ['MBook_No', 'mbook_no', 's'], ['OB_Page', 'ob_page', 'n'], ['OB_Date', 'ob_date', 'd']] }
@@ -3269,6 +3352,7 @@
     account: d => {
       const o = { bank: S_(d.bank), branch: S_(d.branch), place: S_(d.place), account_no: T_(d.account_no), ifsc_code: S_(d.ifsc_code), name_of_account: S_(d.name_of_account), drawing_authorities: S_(d.drawing_authorities), no_of_cheque_books_issued: N_(d.no_of_cheque_books_issued) };
       if (T_(d.scheme) || d.clear_scheme) o.scheme = S_(d.scheme);     // the scheme column is only touched when a scheme is chosen (or removed)
+      if (T_(d.operating_by)) o.operating_by = T_(d.operating_by);
       return o;
     },
     mbi: d => ({ year: S_(d.year), mbook_no: S_(d.mbook_no), pages_from: N_(d.pages_from), pages_to: N_(d.pages_to), issue_date: D_(d.issue_date), issued_by: S_(d.issued_by), scheme: S_(d.scheme), esti_no: S_(d.esti_no) })
@@ -3859,8 +3943,9 @@
 
   /* ---------- Withdrawal accounts & cheque books ---------- */
   API_.getWithdrawalAccountsData = () => list_('account');
-  API_.addWithdrawalAccount = async d => ({ success: true, id: await insertRow_('withdrawal_accounts', 'wa_id', toDb_.account(d)) });
-  API_.updateWithdrawalAccount = d => updateRow_('withdrawal_accounts', 'wa_id', d.wa_id, toDb_.account(d), 'Withdrawal account not found');
+  const waOperatingErr_ = d => (['Division', 'Range'].includes(T_(d.operating_by)) ? '' : 'Select Operating_by_Authority_office (Division or Range).');
+  API_.addWithdrawalAccount = async d => { const e = waOperatingErr_(d); if (e) return { success: false, message: e }; return { success: true, id: await insertRow_('withdrawal_accounts', 'wa_id', toDb_.account(d)) }; };
+  API_.updateWithdrawalAccount = async d => { const e = waOperatingErr_(d); if (e) return { success: false, message: e }; return updateRow_('withdrawal_accounts', 'wa_id', d.wa_id, toDb_.account(d), 'Withdrawal account not found'); };
   API_.deleteWithdrawalAccount = async id => {
     const books = await list_('cheque', q => q.eq('wa_id', Number(id)));
     if (books.length) return { success: false, message: 'This account still has cheque books — delete them first.' };
@@ -3874,7 +3959,7 @@
   /* ---------- Bank transactions (per withdrawal account) ---------- */
   const BANK_TXN_KINDS_ = ['Withdrawn', 'Deposit'];
   const BANK_TXN_TYPES_ = ['Token Amount', 'Interest', 'DD Amount', 'Cheque', 'Deposit Direct'];
-  const bankTxnDb_ = d => ({ wa_id: I_(d.wa_id), year: T_(d.year), ob_amt: N_(d.ob_amt), ob_date: D_(d.ob_date), trans_date: D_(d.trans_date), txn: T_(d.txn), trans_amt: N_(d.trans_amt), trans_type: T_(d.trans_type), trans_description: T_(d.trans_description) });
+  const bankTxnDb_ = d => ({ wa_id: I_(d.wa_id), year: T_(d.year), ob_amt: N_(d.ob_amt), ob_date: D_(d.ob_date), trans_date: D_(d.trans_date), txn: T_(d.txn), trans_amt: N_(d.trans_amt), trans_type: T_(d.trans_type), token_no: T_(d.token_no), cheque_ref: T_(d.cheque_ref), trans_description: T_(d.trans_description) });
   async function validateBankTxn_(d, excludeId) {
     const accts = await list_('account', q => q.eq('wa_id', Number(d.wa_id)));
     if (!accts.length) return 'Select an account first.';
@@ -6563,7 +6648,7 @@
     });
   }
 
-  function refreshBankScreen() { populateWaScheme_(); populateBtYearOptions_(); refreshWithdrawalAccountsList(); refreshChequeBooks(); refreshBankTransactions(); }
+  function refreshBankScreen() { populateWaScheme_(); populateBtYearOptions_(); refreshWithdrawalAccountsList(); refreshChequeBooks(); refreshBankTransactions(); btLoadRelated_(); btLoadAll_(); }
 
   function refreshChequeBooks() {
     const waId = selectedWaId();
@@ -6665,14 +6750,14 @@
     if (!tbody) return;
     tbody.innerHTML = '';
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="10" class="linked-empty">No withdrawal accounts yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" class="linked-empty">No withdrawal accounts yet.</td></tr>';
       return;
     }
     rows.forEach(r => {
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
       if (String(document.getElementById('wa_bank').dataset.waId || '') === String(r.WA_id)) tr.classList.add('row-selected');
-      tr.innerHTML = `<td>${r.Bank}</td><td>${r.Branch}</td><td>${r.Place}</td><td>${r.Account_No}</td><td>${r.IFSC_Code}</td><td>${r.Name_of_Account}</td><td>${r.Drawing_Authorities}</td><td>${r.Scheme || ''}</td><td>${r.No_of_Cheque_Books_Issued}</td>`;
+      tr.innerHTML = `<td>${r.Bank}</td><td>${r.Branch}</td><td>${r.Place}</td><td>${r.Account_No}</td><td>${r.IFSC_Code}</td><td>${r.Name_of_Account}</td><td>${r.Drawing_Authorities}</td><td>${r.Scheme || ''}</td><td>${r.Operating_by || ''}</td><td>${r.No_of_Cheque_Books_Issued}</td>`;
       tr.onclick = () => loadWithdrawalAccountIntoForm(r);
       rowKebab_(tr, 'wa', r);
       tbody.appendChild(tr);
@@ -6689,6 +6774,7 @@
     document.getElementById('wa_name_of_account').value = r.Name_of_Account || '';
     document.getElementById('wa_drawing_authorities').value = r.Drawing_Authorities || '';
     populateWaScheme_(r.Scheme || '');
+    document.getElementById('wa_operating').value = r.Operating_by || '';
     document.getElementById('wa_cheque_books').value = r.No_of_Cheque_Books_Issued || 0;
     renderWithdrawalAccountsList(withdrawalAccountsCache);
     clearChequeBookForm();
@@ -6703,6 +6789,7 @@
       document.getElementById(id).value = '';
     });
     populateWaScheme_('');
+    document.getElementById('wa_operating').value = '';
     document.getElementById('wa_cheque_books').value = 0;
     setStatus('wa_status_msg', '');
     renderWithdrawalAccountsList(withdrawalAccountsCache);
@@ -6722,6 +6809,7 @@
       name_of_account: document.getElementById('wa_name_of_account').value,
       drawing_authorities: document.getElementById('wa_drawing_authorities').value,
       scheme: document.getElementById('wa_scheme').value,
+      operating_by: document.getElementById('wa_operating').value,
       no_of_cheque_books_issued: document.getElementById('wa_cheque_books').value
     };
   }
@@ -6738,6 +6826,7 @@
     const data = waFormData_();
     if (!data.bank) { setStatus('wa_status_msg', 'Bank is required', true); return; }
     if (!data.account_no) { setStatus('wa_status_msg', 'Account No is required', true); return; }
+    if (!data.operating_by) { setStatus('wa_status_msg', 'Select Operating_by_Authority_office (Division or Range)', true); return; }
 
     setStatus('wa_status_msg', 'Saving...');
     gsr().withSuccessHandler(res => {
@@ -6758,6 +6847,7 @@
     const prevAcct = withdrawalAccountsCache.find(a => String(a.WA_id) === String(waId));
     data.clear_scheme = !data.scheme && !!(prevAcct && prevAcct.Scheme);
     if (!data.bank) { setStatus('wa_status_msg', 'Bank is required', true); return; }
+    if (!data.operating_by) { setStatus('wa_status_msg', 'Select Operating_by_Authority_office (Division or Range)', true); return; }
 
     setStatus('wa_status_msg', 'Updating...');
     gsr().withSuccessHandler(res => {
@@ -6791,6 +6881,11 @@
   let bankTxnCache = [];
   const btEl_ = id => document.getElementById(id);
   const btSelectedId_ = () => String(btEl_('bt_year').dataset.btId || '');
+  const btEsc_ = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const btYm_ = d => String(d || '').slice(0, 7);
+  const btMonthLabel_ = ym => { const p = String(ym).split('-'); return new Date(Number(p[0]), Number(p[1]) - 1, 1).toLocaleString('default', { month: 'short', year: 'numeric' }); };
+  const btAcct_ = () => withdrawalAccountsCache.find(a => String(a.WA_id) === selectedWaId());
+  const btAcctNo_ = () => { const a = btAcct_(); return a ? String(a.Account_No || '').trim() : ''; };
 
   // Scheme dropdown on the account form (values from the Scheme master)
   function populateWaScheme_(selected) {
@@ -6811,22 +6906,31 @@
     const keep = selected !== undefined ? selected : sel.value;
     const list = btFyList_(); if (keep && !list.includes(keep)) list.push(keep);
     sel.innerHTML = '<option value="">--select--</option>' + list.map(v => '<option value="' + v + '">' + v + '</option>').join('');
-    const cur = list[5];                                       // current financial year
-    sel.value = keep || cur || '';
+    sel.value = keep || list[5] || '';                         // list[5] is the current financial year
+  }
+  // Collapsed bar of the Bank Transactions band: the details of every account (bank, account no, scheme, operating by).
+  function btAccountChips_() {
+    const list = withdrawalAccountsCache || [];
+    if (!list.length) return [['Accounts', 'none yet']];
+    const out = list.slice(0, 8).map(a => [(a.Bank || '') + ' - ' + (a.Account_No || ''), [a.Scheme, a.Operating_by].filter(Boolean).join(' \u00b7 ') || '-']);
+    if (list.length > 8) out.push(['+' + (list.length - 8) + ' more', '']);
+    return out;
   }
   function populateBtAccountOptions_() {
     const sel = btEl_('bt_account'); if (!sel) return;
     const wa = selectedWaId();
     sel.innerHTML = '<option value="">Select account</option>' + withdrawalAccountsCache.map(a =>
-      '<option value="' + a.WA_id + '">' + String(a.Bank || '').replace(/</g, '&lt;') + ' - ' + String(a.Account_No || '').replace(/</g, '&lt;') + (a.Scheme ? ' (' + String(a.Scheme).replace(/</g, '&lt;') + ')' : '') + '</option>').join('');
+      '<option value="' + a.WA_id + '">' + btEsc_(a.Bank) + ' - ' + btEsc_(a.Account_No) + (a.Scheme ? ' (' + btEsc_(a.Scheme) + ')' : '') + '</option>').join('');
     sel.value = wa;
+    btRenderAllStats_();
+    if (window.__collRenderAll) window.__collRenderAll();           // the collapsed bar lists the accounts
   }
   // The Withdrawal Accounts & Cheque Books band is hidden while an account is chosen in the Bank Transactions band.
   function setBankAccountsBand_(show) {
     const card = document.getElementById('bank_card'); if (!card) return;
     card.style.display = show ? '' : 'none';
     card.dataset.hiddenByBank = show ? '' : '1';
-    const b = document.getElementById('bt_show_accounts'); if (b) b.style.display = show ? 'none' : '';
+    ['bt_show_accounts', 'bt_show_accounts2'].forEach(id => { const b = document.getElementById(id); if (b) b.style.display = show ? 'none' : ''; });
   }
   function onBtAccountChange() {
     const id = btEl_('bt_account').value;
@@ -6835,55 +6939,142 @@
     if (acct) { loadWithdrawalAccountIntoForm(acct); setBankAccountsBand_(false); }
   }
 
-  /* Latest OB: the last recorded OB (latest OB_Date) is the closing balance on that date; every deposit adds to it and every
-     withdrawal takes from it for transactions dated AFTER that OB_Date.  OB_Date shown is the date the balance is calculated up to. */
-  let btLatestCache_ = null;
-  function btComputeLatest_(rows) {
-    const obRows = rows.filter(r => r.OB_Date);
-    if (!obRows.length) return null;
-    const last = obRows.slice().sort((a, b) => String(a.OB_Date).localeCompare(String(b.OB_Date)) || (Number(a.BT_id) - Number(b.BT_id))).pop();
-    let dep = 0, wd = 0, asOn = String(last.OB_Date);
-    rows.forEach(r => {
+  /* ---------- related data: tokens credited to the account, cheques drawn on it ---------- */
+  let btAdvRows_ = [], btWdRows_ = [], btRelated_ = { tokens: 'idle', cheques: 'idle' };
+  function btLoadRelated_() {
+    gsrCall('getAdvanceData').then(r => { btAdvRows_ = r || []; btRelated_.tokens = 'ok'; btFillLink_(); }).catch(() => { btRelated_.tokens = 'denied'; });
+    gsrCall('getWithdrawnDetailsData').then(r => { btWdRows_ = r || []; btRelated_.cheques = 'ok'; btFillLink_(); }).catch(() => { btRelated_.cheques = 'denied'; });
+  }
+  function btTokenGroup_(tokenNo) {
+    const rows = btAdvRows_.filter(a => String(a.Token_No) === String(tokenNo));
+    if (!rows.length) return null;
+    const cred = rows.filter(a => a.Credited === 'Yes');
+    const hoas = Array.from(new Set(rows.map(a => a.Hoa).filter(Boolean)));
+    return {
+      token: String(tokenNo), scheme: rows[0].Scheme || '', hoa: hoas.join(', '), tokenDt: rows[0].Dt || '',
+      amount: rows.reduce((t, a) => t + (Number(a.Amount) || 0), 0),
+      credAmt: cred.reduce((t, a) => t + (Number(a.Credited_Amt) || Number(a.Amount) || 0), 0),
+      credDate: (cred.find(a => a.Credited_Date) || {}).Credited_Date || '',
+      acct: String((cred[0] || rows[0]).Credited_Account_No || '').trim()
+    };
+  }
+  const btChequeRow_ = no => btWdRows_.find(w => String(w.Withdrawn_Cheque_No) === String(no) && String(w.Withdrawn_Account_No || '').trim() === btAcctNo_());
+  function btLinkOptions_(type) {
+    const acctNo = btAcctNo_(); if (!acctNo) return [];
+    const others = bankTxnCache.filter(r => String(r.BT_id) !== btSelectedId_());          // what the account's other transactions already use
+    if (type === 'Token Amount') {
+      const used = new Set(others.map(r => String(r.Token_No || '')).filter(Boolean));
+      const nums = Array.from(new Set(btAdvRows_.filter(a => a.Credited === 'Yes' && String(a.Credited_Account_No || '').trim() === acctNo).map(a => String(a.Token_No)))).filter(n => !used.has(n));
+      return nums.map(n => { const g = btTokenGroup_(n); return { value: n, label: n + ' \u00b7 ' + inr(g.credAmt) + (g.credDate ? ' \u00b7 ' + g.credDate : '') + (g.scheme ? ' \u00b7 ' + g.scheme : '') }; });
+    }
+    if (type === 'Cheque') {
+      const used = new Set(others.map(r => String(r.Cheque_Ref || '')).filter(Boolean));
+      return btWdRows_.filter(w => String(w.Withdrawn_Account_No || '').trim() === acctNo && String(w.Withdrawn_Cheque_No || '').trim() !== '' && !used.has(String(w.Withdrawn_Cheque_No)))
+        .map(w => ({ value: String(w.Withdrawn_Cheque_No), label: w.Withdrawn_Cheque_No + ' \u00b7 ' + inr(w.Withdrawn_Amount) + (w.Withdrawn_Date ? ' \u00b7 ' + w.Withdrawn_Date : '') + (w.Esti_no ? ' \u00b7 Est ' + w.Esti_no : '') }));
+    }
+    return [];
+  }
+  // The Token / Cheque dropdown follows Trans_Type: tokens for "Token Amount", cheques for "Cheque", nothing for the rest.
+  function btFillLink_(keep) {
+    const type = btEl_('bt_trans_type').value, wrap = btEl_('bt_link_wrap'), sel = btEl_('bt_link');
+    if (type !== 'Token Amount' && type !== 'Cheque') { wrap.style.display = 'none'; sel.innerHTML = ''; return; }
+    wrap.style.display = '';
+    btEl_('bt_link_label').textContent = type === 'Token Amount' ? 'Token (credited to this account)' : 'Cheque (drawn on this account)';
+    const cur = keep !== undefined ? String(keep) : sel.value;
+    const opts = btLinkOptions_(type);
+    if (cur && !opts.some(o => o.value === cur)) opts.unshift({ value: cur, label: cur });      // e.g. the saved value of the record being edited
+    const denied = type === 'Token Amount' ? btRelated_.tokens === 'denied' : btRelated_.cheques === 'denied';
+    sel.innerHTML = '<option value="">' + (denied ? '(no permission to read these)' : (opts.length ? '--select--' : '(none available for this account)')) + '</option>' +
+      opts.map(o => '<option value="' + btEsc_(o.value) + '">' + btEsc_(o.label) + '</option>').join('');
+    sel.value = cur || '';
+  }
+  // fills the description from the chosen token / cheque, but never over text the user typed
+  function btAutoDesc_(text) {
+    const desc = btEl_('bt_description');
+    if (!desc.value.trim() || desc.dataset.auto === '1') { desc.value = text; desc.dataset.auto = '1'; }
+  }
+  function btTypeChanged_() {
+    const type = btEl_('bt_trans_type').value;
+    btFillLink_('');
+    const desc = btEl_('bt_description');
+    if (desc.dataset.auto === '1') { desc.value = ''; desc.dataset.auto = ''; }                // a description filled in from the previous token / cheque
+    if (!btEl_('bt_txn').value) btEl_('bt_txn').value = type === 'Cheque' ? 'Withdrawn' : (type ? 'Deposit' : '');
+    btShowDetails_(type, '');
+  }
+  function btLinkChanged_() {
+    const type = btEl_('bt_trans_type').value, val = btEl_('bt_link').value;
+    if (val && type === 'Token Amount') {
+      const g = btTokenGroup_(val);
+      if (g) {
+        btEl_('bt_txn').value = 'Deposit'; btEl_('bt_trans_amt').value = g.credAmt || g.amount;
+        if (g.credDate) btEl_('bt_trans_date').value = g.credDate;
+        btAutoDesc_('Token ' + g.token + (g.scheme ? ' - ' + g.scheme : '') + (g.hoa ? ' / ' + g.hoa : ''));
+      }
+    } else if (val && type === 'Cheque') {
+      const w = btChequeRow_(val);
+      if (w) {
+        btEl_('bt_txn').value = 'Withdrawn'; btEl_('bt_trans_amt').value = w.Withdrawn_Amount || 0;
+        if (w.Withdrawn_Date) btEl_('bt_trans_date').value = w.Withdrawn_Date;
+        btAutoDesc_('Cheque ' + val + (w.Esti_no ? ' - Estimate ' + w.Esti_no : '') + (w.Advance_Token_No ? ' - Token ' + w.Advance_Token_No : ''));
+      }
+    }
+    btShowDetails_(type, val);
+  }
+  function btDetailsText_(type, val) {
+    if (type === 'Token Amount') {
+      if (!val) return 'Choose a token from the dropdown to see its details.';
+      const g = btTokenGroup_(val);
+      return g ? ('Token ' + g.token + '  |  Amount ' + inr(g.amount) + '  |  Token date ' + (g.tokenDt || '-') + '  |  Credited ' + inr(g.credAmt) + ' on ' + (g.credDate || '-') + '  |  Scheme ' + (g.scheme || '-') + '  |  HOA ' + (g.hoa || '-'))
+               : ('Token ' + val + ' (details are not available to this user).');
+    }
+    if (type === 'Cheque') {
+      if (!val) return 'Choose a cheque from the dropdown to see its details.';
+      const w = btChequeRow_(val);
+      return w ? ('Cheque ' + val + '  |  Amount ' + inr(w.Withdrawn_Amount) + '  |  Date ' + (w.Withdrawn_Date || '-') + '  |  Estimate ' + (w.Esti_no || '-') + '  |  Token ' + (w.Advance_Token_No || '-') + (w.Name_of_VSS ? '  |  ' + w.Name_of_VSS : ''))
+               : ('Cheque ' + val + ' (details are not available to this user).');
+    }
+    return type ? ('Trans_Type ' + type + ' has no token or cheque details.') : 'Click a transaction below to see its token or cheque details.';
+  }
+  function btShowDetails_(type, val) { btEl_('bt_details').textContent = btDetailsText_(type, val); }
+
+  /* ---------- summary: beginning OB, latest OB, tot_amt, withdrawn, CB ---------- */
+  let btSummary_ = null;
+  function btSummary(rows) {
+    const obs = (rows || []).filter(r => r.OB_Date).slice().sort((a, b) => String(a.OB_Date).localeCompare(String(b.OB_Date)) || (Number(a.BT_id) - Number(b.BT_id)));
+    if (!obs.length) return null;
+    const first = obs[0], last = obs[obs.length - 1];
+    let dep = 0, wd = 0, cbDt = String(last.OB_Date);
+    rows.forEach(r => {                                   // the latest OB is the balance at the end of its date; later transactions are added to it
       if (!r.Trans_Date || String(r.Trans_Date) <= String(last.OB_Date)) return;
       const amt = Number(r.Trans_Amt) || 0;
       if (r.Transaction === 'Deposit') dep += amt; else wd += amt;
-      if (String(r.Trans_Date) > asOn) asOn = String(r.Trans_Date);
+      if (String(r.Trans_Date) > cbDt) cbDt = String(r.Trans_Date);
     });
-    const lastAmt = Number(last.OB_Amt) || 0;
-    return { lastAmt, lastDate: String(last.OB_Date), dep, wd, amt: Math.round((lastAmt + dep - wd) * 100) / 100, asOn };
+    const obAmt = Number(last.OB_Amt) || 0, r2 = v => Math.round(v * 100) / 100;
+    return { beginAmt: Number(first.OB_Amt) || 0, beginDt: String(first.OB_Date), beginMonth: btYm_(first.OB_Date),
+             obAmt, obDt: String(last.OB_Date), dep: r2(dep), wd: r2(wd), tot: r2(obAmt + dep), cb: r2(obAmt + dep - wd), cbDt };
   }
-  function btComputeBeginning_(rows) {
-    const obRows = rows.filter(r => r.OB_Date);
-    if (!obRows.length) return null;
-    const first = obRows.slice().sort((a, b) => String(a.OB_Date).localeCompare(String(b.OB_Date)) || (Number(a.BT_id) - Number(b.BT_id)))[0];
-    return { amt: Number(first.OB_Amt) || 0, date: String(first.OB_Date) };
-  }
-  function btUpdateStrip_(rows) {
-    const B = selectedWaId() ? btComputeBeginning_(rows || []) : null, L = selectedWaId() ? btComputeLatest_(rows || []) : null;
-    btEl_('bt_begin_ob_amt').textContent = B ? inr(B.amt) : '-';
-    btEl_('bt_begin_ob_date').textContent = B ? B.date : '-';
-    btEl_('bt_strip_latest_amt').textContent = L ? inr(L.amt) : '-';
-    btEl_('bt_strip_latest_date').textContent = L ? L.asOn : '-';
-    btEl_('bt_strip_latest_amt').closest('.bt-ob-card').classList.toggle('neg', !!(L && L.amt < 0));
-  }
-  function btUpdateLatest_(rows) {
-    const L = btComputeLatest_(rows || []);
-    btLatestCache_ = L;
-    btUpdateStrip_(rows);
-    btEl_('bt_count').textContent = String((rows || []).length);
-    if (!selectedWaId()) {
-      btEl_('bt_latest_ob_amt').textContent = '-'; btEl_('bt_latest_ob_words').textContent = ''; btEl_('bt_latest_ob_date').textContent = '-';
-      btEl_('bt_ob_basis').textContent = 'Select an account.'; return;
-    }
-    if (!L) {
-      btEl_('bt_latest_ob_amt').textContent = '-'; btEl_('bt_latest_ob_words').textContent = ''; btEl_('bt_latest_ob_date').textContent = '-';
-      btEl_('bt_ob_basis').textContent = 'No opening balance recorded yet. Enter OB_Amt and OB_Date with the first transaction of this account.'; return;
-    }
-    btEl_('bt_latest_ob_amt').textContent = inr(L.amt);
-    let words = ''; try { words = amountInWordsIndian(Math.abs(Math.round(L.amt))); } catch (e) { }
-    btEl_('bt_latest_ob_words').textContent = words;
-    btEl_('bt_latest_ob_date').textContent = L.asOn;
-    btEl_('bt_ob_basis').textContent = 'Last OB ' + inr(L.lastAmt) + ' on ' + L.lastDate + '  +  Deposits ' + inr(L.dep) + '  \u2212  Withdrawn ' + inr(L.wd) + '  (transactions dated after ' + L.lastDate + ')';
+  function btUpdateSummary_(rows) {
+    const acct = btAcct_(), S = acct ? btSummary(rows) : null;
+    btSummary_ = S;
+    const set = (id, v) => { btEl_(id).textContent = v; };
+    set('bt_count', String((rows || []).length));
+    set('bt_sum_scheme', acct && acct.Scheme ? acct.Scheme : '-');
+    set('bt_sum_acct', acct ? (acct.Account_No || '-') : '-');
+    set('bt_sum_operating', acct && acct.Operating_by ? acct.Operating_by : '-');
+    set('bt_sum_bmonth', S ? btMonthLabel_(S.beginMonth) : '-');
+    set('bt_sum_bob_amt', S ? inr(S.beginAmt) : '-'); set('bt_sum_bob_dt', S ? S.beginDt : '-');
+    set('bt_latest_ob_amt', S ? inr(S.obAmt) : '-'); set('bt_latest_ob_date', S ? S.obDt : '-');
+    set('bt_sum_tot', S ? inr(S.tot) : '-'); set('bt_sum_tot_note', S ? 'Deposits ' + inr(S.dep) + ' + OB ' + inr(S.obAmt) : '');
+    set('bt_sum_wd', S ? inr(S.wd) : '-');
+    set('bt_sum_cb', S ? inr(S.cb) : '-'); set('bt_sum_cbdt', S ? S.cbDt : '-');
+    let w1 = '', w2 = ''; try { if (S) { w1 = amountInWordsIndian(Math.abs(Math.round(S.obAmt))); w2 = amountInWordsIndian(Math.abs(Math.round(S.cb))); } } catch (e) { }
+    set('bt_latest_ob_words', w1); set('bt_sum_cb_words', w2);
+    set('bt_begin_ob_amt', S ? inr(S.beginAmt) : '-'); set('bt_begin_ob_date', S ? S.beginDt : '-');
+    set('bt_strip_latest_amt', S ? inr(S.obAmt) : '-'); set('bt_strip_latest_date', S ? S.obDt : '-');
+    btEl_('bt_sum_cb').closest('.stat-card').classList.toggle('bt-neg', !!(S && S.cb < 0));
+    set('bt_ob_basis', !acct ? 'Select an account.' : (!S ? 'No opening balance recorded yet. Enter OB_Amt and OB_Date with the first transaction of this account.'
+      : 'tot_amt = Latest OB ' + inr(S.obAmt) + ' + Deposits ' + inr(S.dep) + '  \u2192  ' + inr(S.tot) + '.   CB_Amt = tot_amt \u2212 Withdrawn ' + inr(S.wd) + '  \u2192  ' + inr(S.cb) + ' as on the last transaction date ' + S.cbDt + '.  Only transactions dated after the latest OB_Dt (' + S.obDt + ') are counted.'));
   }
   const btHasOb_ = excludeId => bankTxnCache.some(r => r.OB_Date && String(r.BT_id) !== String(excludeId || ''));
   // OB_Amt / OB_Date are asked for only when needed: always for the first entry of an account, otherwise when the box is ticked.
@@ -6897,28 +7088,69 @@
     Array.from(document.querySelectorAll('.bt-ob-field')).forEach(e => { e.style.display = on.checked ? '' : 'none'; });
     note.textContent = !waId ? '' : (need
       ? 'No opening balance is recorded for this account yet, so OB_Amt and OB_Date are required with this entry.'
-      : (on.checked ? 'This entry records a new opening balance (the balance on OB_Date).' : 'Tick to record a new opening balance; otherwise the latest OB is calculated from the last one.'));
+      : (on.checked ? 'This entry records a new opening balance (the balance on OB_Date).' : 'Tick to record a new opening balance; otherwise the closing balance (CB) is calculated from the latest one.'));
   }
   function btObToggled_() {
     const on = btEl_('bt_ob_on');
-    if (on.checked && !btEl_('bt_ob_date').value && btLatestCache_) {            // suggest the current latest OB as the starting point
-      btEl_('bt_ob_amt').value = btLatestCache_.amt;
-      btEl_('bt_ob_date').value = btLatestCache_.asOn;
+    if (on.checked && !btEl_('bt_ob_date').value && btSummary_) {            // suggest the current closing balance as the new opening balance
+      btEl_('bt_ob_amt').value = btSummary_.cb;
+      btEl_('bt_ob_date').value = btSummary_.cbDt;
     }
     btSyncOb_();
   }
 
+  /* ---------- stats for ALL accounts (same rules as the selected-account summary) ---------- */
+  let btAllRows_ = [];
+  function btLoadAll_() {
+    gsrCall('getBankTransactionsData').then(r => { btAllRows_ = r || []; btRenderAllStats_(); }).catch(() => { });
+  }
+  function btRenderAllStats_() {
+    const tbody = btEl_('bt_all_table'); if (!tbody) return;
+    const sel = selectedWaId(), set = (id, v) => { btEl_(id).textContent = v; };
+    const per = withdrawalAccountsCache.map(a => { const rows = btAllRows_.filter(r => String(r.WA_id) === String(a.WA_id)); return { a, rows, S: btSummary(rows) }; });
+    const withOb = per.filter(x => x.S);
+    const sum = k => Math.round(withOb.reduce((t, x) => t + x.S[k], 0) * 100) / 100;
+    const lastCb = withOb.reduce((m, x) => (x.S.cbDt > m ? x.S.cbDt : m), '');
+    set('bt_all_accts', String(per.length)); set('bt_all_accts_note', withOb.length + ' with an opening balance');
+    set('bt_all_count', String(btAllRows_.length));
+    set('bt_all_ob', withOb.length ? inr(sum('obAmt')) : '-'); set('bt_all_tot', withOb.length ? inr(sum('tot')) : '-');
+    set('bt_all_wd', withOb.length ? inr(sum('wd')) : '-'); set('bt_all_cb', withOb.length ? inr(sum('cb')) : '-');
+    set('bt_all_cbdt', lastCb || '-');
+    let w = ''; try { if (withOb.length) w = amountInWordsIndian(Math.abs(Math.round(sum('cb')))); } catch (e) { }
+    set('bt_all_cb_words', w);
+    btEl_('bt_all_cb').closest('.stat-card').classList.toggle('bt-neg', withOb.length > 0 && sum('cb') < 0);
+    tbody.innerHTML = '';
+    if (!per.length) { tbody.innerHTML = '<tr><td colspan="10" class="linked-empty">No withdrawal accounts yet.</td></tr>'; return; }
+    per.forEach(x => {
+      const S = x.S, tr = document.createElement('tr');
+      if (String(x.a.WA_id) === sel) tr.classList.add('row-selected');
+      tr.title = 'Click to select this account';
+      tr.innerHTML = '<td>' + btEsc_(x.a.Bank) + ' - ' + btEsc_(x.a.Account_No) + '</td><td>' + btEsc_(x.a.Scheme || '') + '</td><td>' + btEsc_(x.a.Operating_by || '') + '</td>' +
+        (S ? '<td>' + btEsc_(inr(S.beginAmt)) + '<br><small>' + btEsc_(S.beginDt) + '</small></td><td>' + btEsc_(inr(S.obAmt)) + '<br><small>' + btEsc_(S.obDt) + '</small></td><td>' + btEsc_(inr(S.tot)) + '</td><td>' + btEsc_(inr(S.wd)) + '</td><td class="' + (S.cb < 0 ? 'bt-wd' : 'bt-dep') + '">' + btEsc_(inr(S.cb)) + '</td><td>' + btEsc_(S.cbDt) + '</td>'
+           : '<td colspan="6" style="color:var(--muted);">No opening balance recorded</td>') + '<td>' + x.rows.length + '</td>';
+      tr.onclick = () => { loadWithdrawalAccountIntoForm(x.a); setBankAccountsBand_(false); };
+      tbody.appendChild(tr);
+    });
+    if (per.length > 1) {
+      const tr = document.createElement('tr'); tr.className = 'bt-all-total';
+      tr.innerHTML = '<td colspan="3">All accounts</td><td></td><td>' + btEsc_(withOb.length ? inr(sum('obAmt')) : '') + '</td><td>' + btEsc_(withOb.length ? inr(sum('tot')) : '') + '</td><td>' + btEsc_(withOb.length ? inr(sum('wd')) : '') + '</td><td>' + btEsc_(withOb.length ? inr(sum('cb')) : '') + '</td><td>' + btEsc_(lastCb) + '</td><td>' + btAllRows_.length + '</td>';
+      tbody.appendChild(tr);
+    }
+  }
+
+  /* ---------- list ---------- */
   function renderBankTransactions(rows) {
     const tbody = btEl_('bt_list_table'); if (!tbody) return;
     const waId = selectedWaId();
-    const acct = withdrawalAccountsCache.find(a => String(a.WA_id) === waId);
-    btEl_('bt_account_label').textContent = acct ? 'Selected account: ' + (acct.Bank || '') + ' - ' + (acct.Account_No || '') + (acct.Scheme ? '  |  Scheme: ' + acct.Scheme : '') : 'Select an account to see and add its bank transactions.';
+    const acct = btAcct_();
+    btEl_('bt_account_label').textContent = acct ? 'Selected account: ' + (acct.Bank || '') + ' - ' + (acct.Account_No || '') + (acct.Scheme ? '  |  Scheme: ' + acct.Scheme : '') + (acct.Operating_by ? '  |  Operating by: ' + acct.Operating_by : '') : 'Select an account to see and add its bank transactions.';
     btEl_('bt_account').value = waId;
-    btUpdateLatest_(waId ? rows : []);
+    btUpdateSummary_(waId ? rows : []);
     btSyncOb_();
+    btRenderAllStats_();
     const tot = btEl_('bt_totals');
-    if (!waId) { tbody.innerHTML = '<tr><td colspan="7" class="linked-empty">Select an account to see its bank transactions.</td></tr>'; tot.innerHTML = ''; return; }
-    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" class="linked-empty">No bank transactions for this account yet.</td></tr>'; tot.innerHTML = ''; return; }
+    if (!waId) { tbody.innerHTML = '<tr><td colspan="8" class="linked-empty">Select an account to see its bank transactions.</td></tr>'; tot.innerHTML = ''; return; }
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" class="linked-empty">No bank transactions for this account yet.</td></tr>'; tot.innerHTML = ''; return; }
     const list = rows.slice().sort((a, b) => String(b.Trans_Date).localeCompare(String(a.Trans_Date)) || (Number(b.BT_id) - Number(a.BT_id)));
     tbody.innerHTML = '';
     let dep = 0, wd = 0;
@@ -6927,8 +7159,9 @@
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
       if (btSelectedId_() === String(r.BT_id)) tr.classList.add('row-selected');
-      const esc = v => String(v == null ? '' : v).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-      tr.innerHTML = '<td>' + esc(r.Year) + '</td><td>' + esc(r.Trans_Date) + '</td><td>' + esc(r.Transaction) + '</td><td>' + esc(r.Trans_Type) + '</td><td class="' + (isDep ? 'bt-dep' : 'bt-wd') + '">' + esc(inr(r.Trans_Amt)) + '</td><td>' + esc(r.Trans_Description) + '</td>';
+      const link = r.Token_No ? 'Token ' + r.Token_No : (r.Cheque_Ref ? 'Cheque ' + r.Cheque_Ref : '');
+      tr.innerHTML = '<td>' + btEsc_(r.Year) + '</td><td>' + btEsc_(r.Trans_Date) + '</td><td>' + btEsc_(r.Transaction) + '</td><td>' + btEsc_(r.Trans_Type) + '</td><td>' + btEsc_(link) +
+        '</td><td class="' + (isDep ? 'bt-dep' : 'bt-wd') + '">' + btEsc_(inr(r.Trans_Amt)) + '</td><td>' + btEsc_(r.Trans_Description) + '</td>';
       tr.onclick = () => loadBankTransactionIntoForm(r);
       rowKebab_(tr, 'bt', r);
       tbody.appendChild(tr);
@@ -6941,6 +7174,8 @@
     gsrCall('getBankTransactionsData', waId).then(rows => {
       bankTxnCache = rows || [];
       renderBankTransactions(bankTxnCache);
+      btFillLink_();
+      btLoadAll_();
     }).catch(() => setStatus('bt_status_msg', 'The bank transactions could not be loaded. Has the bank_transactions table been created?', true));
   }
   function loadBankTransactionIntoForm(r) {
@@ -6951,11 +7186,13 @@
     btEl_('bt_ob_on').checked = !!r.OB_Date;
     btEl_('bt_trans_date').value = r.Trans_Date || '';
     btEl_('bt_txn').value = r.Transaction || '';
-    btEl_('bt_trans_amt').value = r.Trans_Amt || 0;
     btEl_('bt_trans_type').value = r.Trans_Type || '';
+    btFillLink_(r.Token_No || r.Cheque_Ref || '');
+    btEl_('bt_trans_amt').value = r.Trans_Amt || 0;
     btEl_('bt_description').value = r.Trans_Description || '';
     renderBankTransactions(bankTxnCache);
     btSyncOb_();
+    btShowDetails_(r.Trans_Type || '', r.Token_No || r.Cheque_Ref || '');
   }
   function clearBankTransactionForm() {
     if (!btEl_('bt_year')) return;
@@ -6966,15 +7203,19 @@
     btEl_('bt_ob_on').checked = false;
     btEl_('bt_trans_date').value = '';
     btEl_('bt_txn').value = '';
-    btEl_('bt_trans_amt').value = 0;
     btEl_('bt_trans_type').value = '';
+    btFillLink_('');
+    btEl_('bt_trans_amt').value = 0;
     btEl_('bt_description').value = '';
+    btEl_('bt_description').dataset.auto = '';
     setStatus('bt_status_msg', '');
     Array.from(document.querySelectorAll('#bt_list_table tr.row-selected')).forEach(t => t.classList.remove('row-selected'));
     btSyncOb_();
+    btShowDetails_('', '');
   }
   function btFormData_() {
     const obOn = btEl_('bt_ob_on').checked;          // an unticked OB is saved as nothing
+    const type = btEl_('bt_trans_type').value, link = btEl_('bt_link').value;
     return {
       wa_id: selectedWaId(),
       year: btEl_('bt_year').value,
@@ -6983,7 +7224,9 @@
       trans_date: btEl_('bt_trans_date').value,
       txn: btEl_('bt_txn').value,
       trans_amt: btEl_('bt_trans_amt').value,
-      trans_type: btEl_('bt_trans_type').value,
+      trans_type: type,
+      token_no: type === 'Token Amount' ? link : '',
+      cheque_ref: type === 'Cheque' ? link : '',
       trans_description: btEl_('bt_description').value
     };
   }
@@ -7041,6 +7284,106 @@
     }).deleteBankTransaction(id);
   }
   populateBtYearOptions_();
+  btEl_('bt_description').addEventListener('input', () => { btEl_('bt_description').dataset.auto = ''; });
+
+  /* ============================================================
+     BANK REPORT: selected account or all accounts, one month or all months
+     ============================================================ */
+  // Month-by-month statement of ONE account: opening, deposits, withdrawn, OB adjustment (when a newer OB overrides the running balance), closing.
+  function btLedger_(rows) {
+    const obs = rows.filter(r => r.OB_Date).slice().sort((a, b) => String(a.OB_Date).localeCompare(String(b.OB_Date)) || (Number(a.BT_id) - Number(b.BT_id)));
+    if (!obs.length) return [];
+    const first = obs[0], ev = [];
+    rows.forEach(r => { if (r.Trans_Date && String(r.Trans_Date) > String(first.OB_Date)) ev.push({ d: String(r.Trans_Date), k: 0, r }); });
+    obs.slice(1).forEach(o => ev.push({ d: String(o.OB_Date), k: 1, o }));
+    ev.sort((a, b) => a.d.localeCompare(b.d) || (a.k - b.k));
+    let y = Number(btYm_(first.OB_Date).slice(0, 4)), m = Number(btYm_(first.OB_Date).slice(5, 7));
+    const endYm = ev.length ? btYm_(ev[ev.length - 1].d) : btYm_(first.OB_Date), ey = Number(endYm.slice(0, 4)), em = Number(endYm.slice(5, 7));
+    const months = [];
+    while (y < ey || (y === ey && m <= em)) { months.push({ ym: y + '-' + String(m).padStart(2, '0'), opening: 0, dep: 0, wd: 0, adj: 0, closing: 0 }); m++; if (m > 12) { m = 1; y++; } }
+    let bal = Number(first.OB_Amt) || 0;
+    months.forEach(mo => {
+      mo.opening = bal;
+      ev.filter(e => btYm_(e.d) === mo.ym).forEach(e => {
+        if (e.k === 0) { const a = Number(e.r.Trans_Amt) || 0; if (e.r.Transaction === 'Deposit') { bal += a; mo.dep += a; } else { bal -= a; mo.wd += a; } }
+        else { const a = Number(e.o.OB_Amt) || 0; mo.adj += a - bal; bal = a; }
+      });
+      mo.closing = bal;
+    });
+    const r2 = v => Math.round(v * 100) / 100;
+    months.forEach(mo => { ['opening', 'dep', 'wd', 'adj', 'closing'].forEach(k => { mo[k] = r2(mo[k]); }); });
+    return months;
+  }
+  function btAccountReport_(acct, rows, month) {
+    const sorted = rows.slice().sort((a, b) => String(a.Trans_Date).localeCompare(String(b.Trans_Date)) || (Number(a.BT_id) - Number(b.BT_id)));
+    const ledger = btLedger_(sorted);
+    return { acct, summary: btSummary(sorted), months: month ? ledger.filter(x => x.ym === month) : ledger,
+             txns: month ? sorted.filter(r => btYm_(r.Trans_Date) === month) : sorted };
+  }
+  function btLinkText_(r) {
+    if (r.Token_No) { const g = btTokenGroup_(r.Token_No); return 'Token ' + r.Token_No + (g ? ' (' + inr(g.credAmt) + (g.credDate ? ', credited ' + g.credDate : '') + ')' : ''); }
+    if (r.Cheque_Ref) { const w = btWdRows_.find(x => String(x.Withdrawn_Cheque_No) === String(r.Cheque_Ref)); return 'Cheque ' + r.Cheque_Ref + (w && w.Esti_no ? ' (Est ' + w.Esti_no + ')' : ''); }
+    return '';
+  }
+  function btReportHtml_(model, scope, month) {
+    const E = btEsc_, today = new Date().toISOString().slice(0, 10);
+    let h = '<h2 style="margin:0 0 2px;">Bank Account Report</h2><div class="rep-sub">' +
+      (scope === 'selected' ? 'Account: ' + E(model[0] ? model[0].acct.Bank + ' - ' + model[0].acct.Account_No : '') : 'All accounts') + ' &middot; ' +
+      (month ? 'Month: ' + E(btMonthLabel_(month)) : 'All months') + ' &middot; Generated ' + today + '</div>';
+    if (!model.length) return h + '<p>No bank transactions found.</p>';
+    model.forEach(m => {
+      const a = m.acct, S = m.summary;
+      h += '<h3 class="rep-acct">' + E(a.Bank) + ' - ' + E(a.Account_No) + (a.Scheme ? ' &middot; Scheme: ' + E(a.Scheme) : '') + (a.Operating_by ? ' &middot; Operating by: ' + E(a.Operating_by) : '') + '</h3>';
+      h += '<table class="rep-table"><thead><tr><th>Beginning month</th><th>Beginning OB</th><th>Latest OB</th><th>Total deposits (tot_amt)</th><th>Total withdrawn</th><th>CB_Amt</th><th>CB_Dt</th></tr></thead><tbody>' +
+        (S ? '<tr><td>' + E(btMonthLabel_(S.beginMonth)) + '</td><td>' + E(inr(S.beginAmt)) + '<br><small>' + E(S.beginDt) + '</small></td><td>' + E(inr(S.obAmt)) + '<br><small>' + E(S.obDt) + '</small></td><td>' + E(inr(S.tot)) + '<br><small>Deposits ' + E(inr(S.dep)) + ' + OB</small></td><td>' + E(inr(S.wd)) + '</td><td><b>' + E(inr(S.cb)) + '</b></td><td>' + E(S.cbDt) + '</td></tr>'
+           : '<tr><td colspan="7">No opening balance recorded.</td></tr>') + '</tbody></table>';
+      h += '<table class="rep-table"><thead><tr><th>Month</th><th>Opening</th><th>Deposits</th><th>Withdrawn</th><th>OB adjustment</th><th>Closing</th></tr></thead><tbody>' +
+        (m.months.length ? m.months.map(x => '<tr><td>' + E(btMonthLabel_(x.ym)) + '</td><td class="n">' + E(inr(x.opening)) + '</td><td class="n">' + E(inr(x.dep)) + '</td><td class="n">' + E(inr(x.wd)) + '</td><td class="n">' + (x.adj ? E(inr(x.adj)) : '') + '</td><td class="n"><b>' + E(inr(x.closing)) + '</b></td></tr>').join('') : '<tr><td colspan="6">No months to show.</td></tr>') + '</tbody></table>';
+      h += '<table class="rep-table"><thead><tr><th>Trans_Date</th><th>Transaction</th><th>Trans_Type</th><th>Token / Cheque details</th><th>Trans_Amt</th><th>Description</th></tr></thead><tbody>' +
+        (m.txns.length ? m.txns.map(r => '<tr><td>' + E(r.Trans_Date) + '</td><td>' + E(r.Transaction) + '</td><td>' + E(r.Trans_Type) + '</td><td>' + E(btLinkText_(r)) + '</td><td class="n">' + E(inr(r.Trans_Amt)) + '</td><td>' + E(r.Trans_Description) + '</td></tr>').join('') : '<tr><td colspan="6">No transactions in this period.</td></tr>') + '</tbody></table>';
+    });
+    if (model.length > 1) {
+      const rowsS = model.filter(m => m.summary);
+      const sum = k => rowsS.reduce((t, m) => t + m.summary[k], 0);
+      h += '<h3 class="rep-acct">All accounts: total</h3><table class="rep-table"><thead><tr><th>Account</th><th>Scheme</th><th>Total deposits (tot_amt)</th><th>Total withdrawn</th><th>CB_Amt</th><th>CB_Dt</th></tr></thead><tbody>' +
+        rowsS.map(m => '<tr><td>' + E(m.acct.Bank) + ' - ' + E(m.acct.Account_No) + '</td><td>' + E(m.acct.Scheme || '') + '</td><td class="n">' + E(inr(m.summary.tot)) + '</td><td class="n">' + E(inr(m.summary.wd)) + '</td><td class="n">' + E(inr(m.summary.cb)) + '</td><td>' + E(m.summary.cbDt) + '</td></tr>').join('') +
+        '<tr class="tot"><td colspan="2"><b>Total</b></td><td class="n"><b>' + E(inr(sum('tot'))) + '</b></td><td class="n"><b>' + E(inr(sum('wd'))) + '</b></td><td class="n"><b>' + E(inr(sum('cb'))) + '</b></td><td></td></tr></tbody></table>';
+    }
+    return h;
+  }
+  let btReportModel_ = null;
+  function btCloseReport_() { const m = document.getElementById('bt_report_modal'); if (m) m.remove(); }
+  function btShowReport_(model, scope, month) {
+    btCloseReport_(); btReportModel_ = model;
+    const m = document.createElement('div'); m.id = 'bt_report_modal'; m.className = 'bt-report';
+    m.innerHTML = '<div class="bt-report-box"><div class="rep-actions"><b>Report</b><span class="sp"></span><button type="button" class="action" onclick="window.print()">Print / Save PDF</button>' +
+      (authIsAdmin ? '<button type="button" class="action" onclick="btDownloadCsv_()">Download CSV</button>' : '') + '<button type="button" class="action" onclick="btCloseReport_()">Close</button></div><div class="rep-body">' + btReportHtml_(model, scope, month) + '</div></div>';
+    document.body.appendChild(m);
+  }
+  async function btRunReport_() {
+    const scope = btEl_('bt_rep_scope').value, month = btEl_('bt_rep_month').value;     // month '' = all months
+    const waId = selectedWaId();
+    if (scope === 'selected' && !waId) { setStatus('bt_rep_status', 'Select an account first, or choose "All accounts" for the report', true); return; }
+    setStatus('bt_rep_status', 'Preparing the report...');
+    let rows;
+    try { rows = await gsrCall('getBankTransactionsData', scope === 'selected' ? waId : undefined); }
+    catch (e) { setStatus('bt_rep_status', 'The report could not be prepared. ' + (e && e.message ? e.message : ''), true); return; }
+    setStatus('bt_rep_status', '');
+    const accts = scope === 'selected' ? withdrawalAccountsCache.filter(a => String(a.WA_id) === waId) : withdrawalAccountsCache.slice();
+    const model = accts.map(a => btAccountReport_(a, (rows || []).filter(r => String(r.WA_id) === String(a.WA_id)), month)).filter(x => scope === 'selected' || x.txns.length || x.summary);
+    btShowReport_(model, scope, month);
+  }
+  function btDownloadCsv_() {
+    if (!btReportModel_ || !authIsAdmin) return;
+    const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const lines = [['Bank', 'Account_No', 'Scheme', 'Trans_Date', 'Transaction', 'Trans_Type', 'Token_or_Cheque', 'Operating_by_Authority_office', 'Trans_Amt', 'Trans_Description'].map(q).join(',')];
+    btReportModel_.forEach(m => m.txns.forEach(r => lines.push([m.acct.Bank, m.acct.Account_No, m.acct.Scheme || '', r.Trans_Date, r.Transaction, r.Trans_Type, btLinkText_(r), m.acct.Operating_by || '', r.Trans_Amt, r.Trans_Description].map(q).join(','))));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'bank_report.csv'; document.body.appendChild(a); a.click(); a.remove();
+  }
+  window.addEventListener('beforeprint', () => { if (document.getElementById('bt_report_modal')) document.body.classList.add('bt-printing'); });
+  window.addEventListener('afterprint', () => document.body.classList.remove('bt-printing'));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('bt_report_modal')) btCloseReport_(); });
 
   // Rows here come from Voucher Details (see getMbookData on the backend),
   // not a separate Mbook attachment sheet — one row per voucher that has
@@ -13688,6 +14031,7 @@ __copyGuard();
   /* summary chips (only while collapsed); the container stays as a spacer so header buttons keep to the right */
   +'.card.has-coll>.card-head>.coll-stats{flex:1 1 auto;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px 8px;min-width:0}'
   +'.card.has-coll:not(.coll)>.card-head>.coll-stats>*{display:none}'
+  +'.card.has-coll>.card-head>.coll-stats.coll-rows{flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:6px}'
   +'.cs-chip{display:inline-flex;align-items:baseline;gap:6px;padding:3px 11px;background:#fff;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--muted);white-space:nowrap}'
   +'.cs-chip b{color:var(--brand);font-weight:700;font-size:12.5px}'
   +'.cs-hint{font-size:12px;color:var(--muted);font-style:italic}'
@@ -13718,7 +14062,18 @@ __copyGuard();
   }
   function chipData(card){
     var title=(card.querySelector(':scope>.card-head .section-title')||{}).textContent||'';
-    var stats=card.querySelectorAll('.stat-card:not(.wide)');
+    var fnName=card.getAttribute('data-chip-fn');            /* a page function supplies the chips */
+    if(fnName&&typeof window[fnName]==='function'){ try{ return window[fnName](); }catch(e){ return []; } }
+    var src=card.getAttribute('data-chip-src');
+    if(src){
+      var outS=[];
+      src.split(',').forEach(function(id){
+        var v=document.getElementById(id.trim()), sc=v&&v.closest('.stat-card'), l=sc&&sc.querySelector('.stat-label');
+        if(l&&v) outS.push([shortLabel(l.textContent),(v.textContent||'').trim()||'-']);
+      });
+      return outS;
+    }
+    var pref=card.querySelectorAll('.stat-card[data-chip]'), stats=pref.length?pref:card.querySelectorAll('.stat-card:not(.wide)');
     if(stats.length){
       var out=[];
       Array.prototype.slice.call(stats,0,3).forEach(function(sc){
@@ -13729,7 +14084,7 @@ __copyGuard();
     }
     var tb=card.querySelector('tbody[id$="_list_table"]')||card.querySelector('tbody');
     if(tb) return [[/Issue/i.test(title)?'Issued':(/Transaction/i.test(title)?'Transactions':(/Withdrawal/i.test(title)?'Accounts':(/Attachment/i.test(title)?'Attachments':(/Mbook (Stats|Usage)/i.test(title)?'Mbooks':(/Record|Status|Event|Dashboard/i.test(title)?'Records':'Rows'))))),String(countRows(tb))]];
-    return card.querySelector('input,select,textarea')?'form':[];
+    return (!/Report/i.test(title)&&card.querySelector('input,select,textarea'))?'form':[];
   }
   function render(card){
     var box=card.querySelector(':scope>.card-head>.coll-stats'); if(!box) return;
@@ -13757,9 +14112,14 @@ __copyGuard();
     if(!h||!h.querySelector('.section-title')) return;
     card.classList.add('has-coll');
     h.setAttribute('role','button'); h.setAttribute('tabindex','0');
-    var title=h.querySelector('.section-title'), box=document.createElement('div'); box.className='coll-stats';
+    var title=h.querySelector('.section-title'), box=document.createElement('div'); box.className='coll-stats'+(card.getAttribute('data-chip-rows')?' coll-rows':'');   /* one chip per row */
     title.insertAdjacentElement('afterend',box);
     Array.prototype.forEach.call(card.querySelectorAll('.stat-value,tbody'),function(n){ mo.observe(n,{childList:true,characterData:true,subtree:true}); });
+    var srcAttr=card.getAttribute('data-chip-src');
+    if(srcAttr){                                           /* keep the bar in step with figures shown in another band */
+      var moSrc=new MutationObserver(function(){ later(card); });
+      srcAttr.split(',').forEach(function(id){ var n=document.getElementById(id.trim()); if(n) moSrc.observe(n,{childList:true,characterData:true,subtree:true}); });
+    }
     render(card);
     setOpen(card,false);                                   /* collapsed by default */
   });

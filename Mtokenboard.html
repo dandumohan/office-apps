@@ -6908,12 +6908,28 @@
     sel.innerHTML = '<option value="">--select--</option>' + list.map(v => '<option value="' + v + '">' + v + '</option>').join('');
     sel.value = keep || list[5] || '';                         // list[5] is the current financial year
   }
-  // Collapsed bar of the Bank Transactions band: the details of every account (bank, account no, scheme, operating by).
+  // Collapsed bar of the Bank Transactions band: the accounts split into Range and Division, one account per row,
+  // each with its beginning OB and latest OB (and the month of each).
+  let btAllLoaded_ = false;
   function btAccountChips_() {
     const list = withdrawalAccountsCache || [];
     if (!list.length) return [['Accounts', 'none yet']];
-    const out = list.slice(0, 8).map(a => [(a.Bank || '') + ' - ' + (a.Account_No || ''), [a.Scheme, a.Operating_by].filter(Boolean).join(' \u00b7 ') || '-']);
-    if (list.length > 8) out.push(['+' + (list.length - 8) + ' more', '']);
+    const groups = [['Division', []], ['Range', []], ['Not set', []]];
+    list.forEach(a => { (groups.find(g => g[0] === a.Operating_by) || groups[2])[1].push(a); });
+    const out = [];
+    groups.forEach(([name, accts]) => {
+      if (!accts.length) return;
+      out.push([name + ' (' + accts.length + ')', '', 'h']);                  // group heading = a column
+      accts.slice(0, 6).forEach(a => {
+        let info = '\u2026';
+        if (btAllLoaded_) {
+          const S = btSummary(btAllRows_.filter(r => String(r.WA_id) === String(a.WA_id)));
+          info = [a.Scheme, S ? 'OB(B) ' + inr(S.beginAmt) + ' (' + btMonthLabel_(S.beginMonth) + ')  \u00b7  OB(L) ' + inr(S.obAmt) + ' (' + btMonthLabel_(btYm_(S.obDt)) + ')' : 'No opening balance yet'].filter(Boolean).join('  \u00b7  ');
+        }
+        out.push([(a.Bank || '') + ' - ' + (a.Account_No || ''), info]);
+      });
+      if (accts.length > 6) out.push(['+' + (accts.length - 6) + ' more', '']);
+    });
     return out;
   }
   function populateBtAccountOptions_() {
@@ -7102,7 +7118,7 @@
   /* ---------- stats for ALL accounts (same rules as the selected-account summary) ---------- */
   let btAllRows_ = [];
   function btLoadAll_() {
-    gsrCall('getBankTransactionsData').then(r => { btAllRows_ = r || []; btRenderAllStats_(); }).catch(() => { });
+    gsrCall('getBankTransactionsData').then(r => { btAllRows_ = r || []; btAllLoaded_ = true; btRenderAllStats_(); }).catch(() => { });
   }
   function btRenderAllStats_() {
     const tbody = btEl_('bt_all_table'); if (!tbody) return;
@@ -7136,6 +7152,7 @@
       tr.innerHTML = '<td colspan="3">All accounts</td><td></td><td>' + btEsc_(withOb.length ? inr(sum('obAmt')) : '') + '</td><td>' + btEsc_(withOb.length ? inr(sum('tot')) : '') + '</td><td>' + btEsc_(withOb.length ? inr(sum('wd')) : '') + '</td><td>' + btEsc_(withOb.length ? inr(sum('cb')) : '') + '</td><td>' + btEsc_(lastCb) + '</td><td>' + btAllRows_.length + '</td>';
       tbody.appendChild(tr);
     }
+    if (window.__collRenderAll) window.__collRenderAll();           // the collapsed bar lists each account's OB figures
   }
 
   /* ---------- list ---------- */
@@ -14031,7 +14048,10 @@ __copyGuard();
   /* summary chips (only while collapsed); the container stays as a spacer so header buttons keep to the right */
   +'.card.has-coll>.card-head>.coll-stats{flex:1 1 auto;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px 8px;min-width:0}'
   +'.card.has-coll:not(.coll)>.card-head>.coll-stats>*{display:none}'
-  +'.card.has-coll>.card-head>.coll-stats.coll-rows{flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:6px}'
+  +'.card.has-coll>.card-head>.coll-stats.coll-rows{flex-direction:row;flex-wrap:wrap;align-items:flex-start;justify-content:flex-start;gap:8px 28px}'
+  +'.cs-col{display:flex;flex-direction:column;align-items:flex-start;gap:6px;flex:1 1 300px;min-width:0}'
+  +'.cs-group{width:100%;margin-top:4px;padding-bottom:2px;border-bottom:1px solid var(--border);font:700 11px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--brand)}'
+  +'.coll-rows .cs-chip{white-space:normal}'
   +'.cs-chip{display:inline-flex;align-items:baseline;gap:6px;padding:3px 11px;background:#fff;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--muted);white-space:nowrap}'
   +'.cs-chip b{color:var(--brand);font-weight:700;font-size:12.5px}'
   +'.cs-hint{font-size:12px;color:var(--muted);font-style:italic}'
@@ -14090,11 +14110,17 @@ __copyGuard();
     var box=card.querySelector(':scope>.card-head>.coll-stats'); if(!box) return;
     var d=chipData(card); box.textContent='';
     if(d==='form'){ var hnt=document.createElement('span'); hnt.className='cs-hint'; hnt.textContent='Entry form'; box.appendChild(hnt); return; }
+    var col=null;                                          /* a heading starts a column; the chips after it go into that column */
     d.forEach(function(p){
+      if(p[2]==='h'){
+        col=document.createElement('div'); col.className='cs-col';
+        var gh=document.createElement('span'); gh.className='cs-group'; gh.textContent=p[0];
+        col.appendChild(gh); box.appendChild(col); return;
+      }
       var c=document.createElement('span'); c.className='cs-chip';
       var l=document.createElement('span'); l.textContent=p[0];
       var b=document.createElement('b'); b.textContent=p[1];
-      c.appendChild(l); c.appendChild(b); box.appendChild(c);
+      c.appendChild(l); c.appendChild(b); (col||box).appendChild(c);
     });
   }
   window.__collRenderAll=function(){ Array.prototype.forEach.call(document.querySelectorAll('.card.has-coll'),render); };

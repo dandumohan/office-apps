@@ -6916,21 +6916,27 @@
     if (!list.length) return [['Accounts', 'none yet']];
     const groups = [['Division', []], ['Range', []], ['Not set', []]];
     list.forEach(a => { (groups.find(g => g[0] === a.Operating_by) || groups[2])[1].push(a); });
-    const out = [];
+    const cbCell = S => ({ t: inr(S.cb), sub: S.cbDt, cls: S.cb < 0 ? 'neg' : '' });
+    const tables = [];
     groups.forEach(([name, accts]) => {
       if (!accts.length) return;
-      out.push([name + ' (' + accts.length + ')', '', 'h']);                  // group heading = a column
-      accts.slice(0, 6).forEach(a => {
-        let info = '\u2026';
-        if (btAllLoaded_) {
-          const S = btSummary(btAllRows_.filter(r => String(r.WA_id) === String(a.WA_id)));
-          info = [a.Scheme, S ? 'OB(B) ' + inr(S.beginAmt) + ' (' + btMonthLabel_(S.beginMonth) + ')  \u00b7  OB(L) ' + inr(S.obAmt) + ' (' + btMonthLabel_(btYm_(S.obDt)) + ')' : 'No opening balance yet'].filter(Boolean).join('  \u00b7  ');
-        }
-        out.push([(a.Bank || '') + ' - ' + (a.Account_No || ''), info]);
+      const per = accts.map(a => ({ a, S: btAllLoaded_ ? btSummary(btAllRows_.filter(r => String(r.WA_id) === String(a.WA_id))) : null }));
+      const withOb = per.filter(x => x.S), sum = k => Math.round(withOb.reduce((t, x) => t + x.S[k], 0) * 100) / 100, cbSum = sum('cb');
+      tables.push({
+        title: name + ' (' + accts.length + ')',
+        head: ['Bank_Account', 'OB(B)', 'OB(L)', 'CB', 'Scheme'],
+        align: ['l', 'r', 'r', 'r', 'l'],
+        rows: per.slice(0, 6).map(x => {
+          const acc = (x.a.Bank || '') + ' - ' + (x.a.Account_No || '');
+          if (!btAllLoaded_) return [acc, '\u2026', '\u2026', '\u2026', x.a.Scheme || ''];
+          return x.S ? [acc, [inr(x.S.beginAmt), btMonthLabel_(x.S.beginMonth)], [inr(x.S.obAmt), btMonthLabel_(btYm_(x.S.obDt))], cbCell(x.S), x.a.Scheme || '']
+                     : [acc, '-', '-', '-', x.a.Scheme || ''];
+        }),
+        more: accts.length > 6 ? '+' + (accts.length - 6) + ' more' : '',
+        total: btAllLoaded_ && withOb.length ? ['Total ' + name, inr(sum('beginAmt')), inr(sum('obAmt')), { t: inr(cbSum), cls: cbSum < 0 ? 'neg' : '' }, ''] : null
       });
-      if (accts.length > 6) out.push(['+' + (accts.length - 6) + ' more', '']);
     });
-    return out;
+    return { tables };
   }
   function populateBtAccountOptions_() {
     const sel = btEl_('bt_account'); if (!sel) return;
@@ -14049,7 +14055,18 @@ __copyGuard();
   +'.card.has-coll>.card-head>.coll-stats{flex:1 1 auto;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px 8px;min-width:0}'
   +'.card.has-coll:not(.coll)>.card-head>.coll-stats>*{display:none}'
   +'.card.has-coll>.card-head>.coll-stats.coll-rows{flex-direction:row;flex-wrap:wrap;align-items:flex-start;justify-content:flex-start;gap:8px 28px}'
-  +'.cs-col{display:flex;flex-direction:column;align-items:flex-start;gap:6px;flex:1 1 300px;min-width:0}'
+  +'.cs-col{display:flex;flex-direction:column;align-items:stretch;gap:6px;flex:1 1 380px;min-width:0}'
+  +'.cs-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}'
+  +'.cs-table th{padding:3px 14px 4px 0;text-align:left;font:700 10.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}'
+  +'.cs-table td{padding:5px 14px 5px 0;vertical-align:top;white-space:nowrap;color:var(--ink);border-bottom:1px solid #eef1f5}'
+  +'.cs-table th.r,.cs-table td.r{text-align:right}'
+  +'.cs-table th:last-child,.cs-table td:last-child{padding-right:0}'
+  +'.cs-table td:first-child{font-weight:600}'
+  +'.cs-table small{display:block;font-size:10.5px;color:var(--muted)}'
+  +'.cs-table tr:last-child td{border-bottom:0}'
+  +'.cs-table tr.tot td{padding-top:6px;font-weight:700;border-top:1.5px solid #1f2d3d;border-bottom:0}'
+  +'.cs-table td.neg{color:var(--danger)}'
+  +'.cs-table td.more{padding-top:6px;font-size:11px;font-style:italic;color:var(--muted)}'
   +'.cs-group{width:100%;margin-top:4px;padding-bottom:2px;border-bottom:1px solid var(--border);font:700 11px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--brand)}'
   +'.coll-rows .cs-chip{white-space:normal}'
   +'.cs-chip{display:inline-flex;align-items:baseline;gap:6px;padding:3px 11px;background:#fff;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--muted);white-space:nowrap}'
@@ -14109,6 +14126,37 @@ __copyGuard();
   function render(card){
     var box=card.querySelector(':scope>.card-head>.coll-stats'); if(!box) return;
     var d=chipData(card); box.textContent='';
+    if(d&&d.tables){                                       /* one small table per group: aligned columns */
+      d.tables.forEach(function(t){
+        var col=document.createElement('div'); col.className='cs-col';
+        var gh=document.createElement('span'); gh.className='cs-group'; gh.textContent=t.title; col.appendChild(gh);
+        var tb=document.createElement('table'); tb.className='cs-table';
+        var thd=document.createElement('thead'), hr=document.createElement('tr');
+        t.head.forEach(function(h,i){ var th=document.createElement('th'); th.textContent=h; if(t.align&&t.align[i]==='r') th.className='r'; hr.appendChild(th); });
+        thd.appendChild(hr); tb.appendChild(thd);
+        var tbd=document.createElement('tbody');
+        t.rows.forEach(function(row){
+          var tr=document.createElement('tr');
+          tbd.appendChild(mkRow(row,false));
+        });
+        if(t.more){ var mr=document.createElement('tr'), mt=document.createElement('td'); mt.colSpan=t.head.length; mt.className='more'; mt.textContent=t.more; mr.appendChild(mt); tbd.appendChild(mr); }
+        if(t.total) tbd.appendChild(mkRow(t.total,true));
+        function mkRow(row,isTot){
+          var tr=document.createElement('tr'); if(isTot) tr.className='tot';
+          row.forEach(function(cell,i){
+            var td=document.createElement('td'), c=cell;
+            if(c&&!Array.isArray(c)&&typeof c==='object') c=[c.t,c.sub,c.cls];       /* {t, sub, cls} */
+            td.className=(t.align&&t.align[i]==='r'?'r':'')+(Array.isArray(c)&&c[2]?' '+c[2]:'');
+            if(Array.isArray(c)){ td.appendChild(document.createTextNode(c[0])); if(c[1]){ var sm=document.createElement('small'); sm.textContent=c[1]; td.appendChild(sm); } }
+            else td.textContent=c;
+            tr.appendChild(td);
+          });
+          return tr;
+        }
+        tb.appendChild(tbd); col.appendChild(tb); box.appendChild(col);
+      });
+      return;
+    }
     if(d==='form'){ var hnt=document.createElement('span'); hnt.className='cs-hint'; hnt.textContent='Entry form'; box.appendChild(hnt); return; }
     var col=null;                                          /* a heading starts a column; the chips after it go into that column */
     d.forEach(function(p){

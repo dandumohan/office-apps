@@ -380,6 +380,7 @@
     .row-menu-item:hover, .row-menu-item:focus-visible { background: #f1f5f9; outline: none; }
     .row-menu-item.danger { color: var(--danger); }
     .row-menu-item.danger:hover, .row-menu-item.danger:focus-visible { background: #fdecea; }
+    .acct-link { color: var(--link, #1d4ed8); text-decoration: underline; cursor: pointer; font-weight: 600; }
     .rec-kv { display: flex; justify-content: space-between; gap: 10px; padding-top: 6px; border-top: 1px dashed var(--border); font-size: 13px; color: var(--muted); }
     .rec-kv b { color: var(--ink); font-weight: 600; }
     .rec-kv b.pos { color: var(--success); }
@@ -423,6 +424,7 @@
       body.bt-printing .rep-actions { display: none !important; }
       body.bt-printing .bt-report .rep-table th { background: #1f2d3d !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
+    #bt_list_table tr.bt-auto td { background: #f3f8ff; font-style: italic; }
     .bt-all-total td { font-weight: 700; background: #f1f5f9; border-top: 2px solid #1f2d3d; }
     #bt_all_table tr { cursor: pointer; }
     .bt-ob-opt { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
@@ -874,7 +876,8 @@
             </div>
             <div class="field-row">
               <label>Credited Account No</label>
-              <select id="adv_credited_account_no"><option value="">Select account</option></select>
+              <select id="adv_credited_account_no" onchange="syncAdvOpenBank_()"><option value="">Select account</option></select>
+              <button type="button" class="action" id="adv_open_bank" style="display:none; margin-top:6px; align-self:flex-start;" onclick="openBankAccount_(document.getElementById('adv_credited_account_no').value)">Open this account in the Bank tab &rarr;</button>
             </div>
           </div>
         </div>
@@ -1675,6 +1678,7 @@
         <div class="stats-board bt-summary">
           <div class="stat-card"><div class="stat-label">Scheme</div><div class="stat-value" id="bt_sum_scheme" style="font-size:15px;">-</div></div>
           <div class="stat-card"><div class="stat-label">Account No</div><div class="stat-value" id="bt_sum_acct" style="font-size:15px;">-</div></div>
+          <div class="stat-card" title="Advance tokens whose Credited Account No is this account"><div class="stat-label">Advance tokens credited</div><div class="stat-value" id="bt_sum_tokens" style="font-size:15px;">-</div></div>
           <div class="stat-card"><div class="stat-label">Operating by (Authority office)</div><div class="stat-value" id="bt_sum_operating" style="font-size:15px;">-</div></div>
           <div class="stat-card"><div class="stat-label">Beginning Month</div><div class="stat-value" id="bt_sum_bmonth" style="font-size:15px;">-</div></div>
           <div class="stat-card bt-begin"><div class="stat-label">Beginning OB_Amt</div><div class="stat-value" id="bt_sum_bob_amt">-</div></div>
@@ -6916,11 +6920,12 @@
     if (!list.length) return [['Accounts', 'none yet']];
     const groups = [['Division', []], ['Range', []], ['Not set', []]];
     list.forEach(a => { (groups.find(g => g[0] === a.Operating_by) || groups[2])[1].push(a); });
+    const allRows = btAllLoaded_ ? btAllMerged_() : [];
     const cbCell = S => ({ t: inr(S.cb), sub: S.cbDt, cls: S.cb < 0 ? 'neg' : '' });
     const tables = [];
     groups.forEach(([name, accts]) => {
       if (!accts.length) return;
-      const per = accts.map(a => ({ a, S: btAllLoaded_ ? btSummary(btAllRows_.filter(r => String(r.WA_id) === String(a.WA_id))) : null }));
+      const per = accts.map(a => ({ a, S: btAllLoaded_ ? btSummary(allRows.filter(r => String(r.WA_id) === String(a.WA_id))) : null }));
       const withOb = per.filter(x => x.S), sum = k => Math.round(withOb.reduce((t, x) => t + x.S[k], 0) * 100) / 100, cbSum = sum('cb');
       tables.push({
         title: name + ' (' + accts.length + ')',
@@ -6946,6 +6951,7 @@
     sel.value = wa;
     btRenderAllStats_();
     if (window.__collRenderAll) window.__collRenderAll();           // the collapsed bar lists the accounts
+    applyPendingBankAcct_(true);                                     // an advance token asked for one of these accounts
   }
   // The Withdrawal Accounts & Cheque Books band is hidden while an account is chosen in the Bank Transactions band.
   function setBankAccountsBand_(show) {
@@ -6961,12 +6967,67 @@
     if (acct) { loadWithdrawalAccountIntoForm(acct); setBankAccountsBand_(false); }
   }
 
+  /* ---------- from an advance token to its bank account ---------- */
+  let pendingBankAcct_ = '';
+  function openBankAccount_(accountNo) {
+    const no = String(accountNo || '').trim(); if (!no) return;
+    const tabBtn = document.querySelector('button[data-acc="bank"]');
+    if (tabBtn && tabBtn.style.display === 'none') { showToast('error', 'You do not have access to the Bank tab.'); return; }
+    pendingBankAcct_ = no;
+    showAccTab('bank');
+    applyPendingBankAcct_(false);
+  }
+  // loaded = the account list has just been (re)loaded, so a missing account really is missing
+  function applyPendingBankAcct_(loaded) {
+    if (!pendingBankAcct_) return;
+    if (!withdrawalAccountsCache.length && !loaded) return;                       // wait for the Bank tab to load its accounts
+    const a = withdrawalAccountsCache.find(x => String(x.Account_No || '').trim() === pendingBankAcct_);
+    if (!a) { if (loaded) { showToast('error', 'Account ' + pendingBankAcct_ + ' is not in the Bank tab.'); pendingBankAcct_ = ''; } return; }
+    pendingBankAcct_ = '';
+    loadWithdrawalAccountIntoForm(a);
+    setBankAccountsBand_(false);
+    openCardOf_('bt_sum_acct');
+  }
+
   /* ---------- related data: tokens credited to the account, cheques drawn on it ---------- */
   let btAdvRows_ = [], btWdRows_ = [], btRelated_ = { tokens: 'idle', cheques: 'idle' };
   function btLoadRelated_() {
-    gsrCall('getAdvanceData').then(r => { btAdvRows_ = r || []; btRelated_.tokens = 'ok'; btFillLink_(); }).catch(() => { btRelated_.tokens = 'denied'; });
+    gsrCall('getAdvanceData').then(r => { btAdvRows_ = r || []; btRelated_.tokens = 'ok'; btFillLink_(); renderBankTransactions(bankTxnCache); btRenderAllStats_(); }).catch(() => { btRelated_.tokens = 'denied'; });
     gsrCall('getWithdrawnDetailsData').then(r => { btWdRows_ = r || []; btRelated_.cheques = 'ok'; btFillLink_(); }).catch(() => { btRelated_.cheques = 'denied'; });
   }
+  /* Every advance token credited to an account is shown automatically as a Deposit of type "Token Amount":
+     Trans_Date = the credited date, Token_No = the token, Trans_Amt = the credited amount.  A transaction already saved by hand for
+     the same token replaces the automatic one, so nothing is counted twice. */
+  const btFy_ = d => { const dt = new Date(d), y = dt.getMonth() >= 3 ? dt.getFullYear() : dt.getFullYear() - 1; return y + '-' + String(y + 1).slice(-2); };
+  function btTokenRowsFor_(acct, existing) {
+    const no = String(acct.Account_No || '').trim();
+    if (!no || btRelated_.tokens !== 'ok') return [];
+    const have = new Set((existing || []).filter(r => r.Token_No).map(r => String(r.Token_No)));
+    const groups = {};
+    btAdvRows_.forEach(a => {
+      if (a.Credited !== 'Yes' || String(a.Credited_Account_No || '').trim() !== no || !a.Credited_Date) return;
+      const k = String(a.Token_No); if (have.has(k)) return;
+      const g = groups[k] || (groups[k] = { token: k, amt: 0, date: String(a.Credited_Date), scheme: a.Scheme || '', hoas: new Set() });
+      g.amt += Number(a.Credited_Amt) || Number(a.Amount) || 0;
+      if (String(a.Credited_Date) < g.date) g.date = String(a.Credited_Date);
+      if (a.Hoa) g.hoas.add(a.Hoa);
+    });
+    return Object.values(groups).filter(g => g.amt > 0).map(g => ({
+      BT_id: 'T:' + g.token, WA_id: acct.WA_id, Year: btFy_(g.date), OB_Amt: 0, OB_Date: null, Trans_Date: g.date, Transaction: 'Deposit',
+      Trans_Amt: Math.round(g.amt * 100) / 100, Trans_Type: 'Token Amount', Token_No: g.token, Cheque_Ref: '',
+      Trans_Description: 'Token ' + g.token + (g.scheme ? ' - ' + g.scheme : '') + (g.hoas.size ? ' / ' + Array.from(g.hoas).join(', ') : ''), Auto: true
+    }));
+  }
+  function btMerge_(rows, waId) {
+    const acct = withdrawalAccountsCache.find(a => String(a.WA_id) === String(waId));
+    return acct ? rows.concat(btTokenRowsFor_(acct, rows)) : rows;
+  }
+  function btAllMerged_() {
+    let out = btAllRows_.slice();
+    withdrawalAccountsCache.forEach(a => { out = out.concat(btTokenRowsFor_(a, btAllRows_.filter(r => String(r.WA_id) === String(a.WA_id)))); });
+    return out;
+  }
+
   function btTokenGroup_(tokenNo) {
     const rows = btAdvRows_.filter(a => String(a.Token_No) === String(tokenNo));
     if (!rows.length) return null;
@@ -6984,11 +7045,7 @@
   function btLinkOptions_(type) {
     const acctNo = btAcctNo_(); if (!acctNo) return [];
     const others = bankTxnCache.filter(r => String(r.BT_id) !== btSelectedId_());          // what the account's other transactions already use
-    if (type === 'Token Amount') {
-      const used = new Set(others.map(r => String(r.Token_No || '')).filter(Boolean));
-      const nums = Array.from(new Set(btAdvRows_.filter(a => a.Credited === 'Yes' && String(a.Credited_Account_No || '').trim() === acctNo).map(a => String(a.Token_No)))).filter(n => !used.has(n));
-      return nums.map(n => { const g = btTokenGroup_(n); return { value: n, label: n + ' \u00b7 ' + inr(g.credAmt) + (g.credDate ? ' \u00b7 ' + g.credDate : '') + (g.scheme ? ' \u00b7 ' + g.scheme : '') }; });
-    }
+    if (type === 'Token Amount') return [];                       // credited tokens are added to the list automatically
     if (type === 'Cheque') {
       const used = new Set(others.map(r => String(r.Cheque_Ref || '')).filter(Boolean));
       return btWdRows_.filter(w => String(w.Withdrawn_Account_No || '').trim() === acctNo && String(w.Withdrawn_Cheque_No || '').trim() !== '' && !used.has(String(w.Withdrawn_Cheque_No)))
@@ -7006,7 +7063,7 @@
     const opts = btLinkOptions_(type);
     if (cur && !opts.some(o => o.value === cur)) opts.unshift({ value: cur, label: cur });      // e.g. the saved value of the record being edited
     const denied = type === 'Token Amount' ? btRelated_.tokens === 'denied' : btRelated_.cheques === 'denied';
-    sel.innerHTML = '<option value="">' + (denied ? '(no permission to read these)' : (opts.length ? '--select--' : '(none available for this account)')) + '</option>' +
+    sel.innerHTML = '<option value="">' + (denied ? '(no permission to read these)' : (opts.length ? '--select--' : (type === 'Token Amount' ? '(credited tokens are added automatically as Deposits)' : '(none available for this account)'))) + '</option>' +
       opts.map(o => '<option value="' + btEsc_(o.value) + '">' + btEsc_(o.label) + '</option>').join('');
     sel.value = cur || '';
   }
@@ -7084,6 +7141,11 @@
     set('bt_sum_scheme', acct && acct.Scheme ? acct.Scheme : '-');
     set('bt_sum_acct', acct ? (acct.Account_No || '-') : '-');
     set('bt_sum_operating', acct && acct.Operating_by ? acct.Operating_by : '-');
+    if (acct && btRelated_.tokens === 'ok') {
+      const mine = btAdvRows_.filter(a => a.Credited === 'Yes' && String(a.Credited_Account_No || '').trim() === String(acct.Account_No || '').trim());
+      const toks = new Set(mine.map(a => String(a.Token_No)));
+      set('bt_sum_tokens', toks.size + ' token' + (toks.size === 1 ? '' : 's') + ' \u00b7 ' + inr(mine.reduce((t, a) => t + (Number(a.Credited_Amt) || Number(a.Amount) || 0), 0)));
+    } else set('bt_sum_tokens', acct ? (btRelated_.tokens === 'denied' ? 'no access' : '...') : '-');
     set('bt_sum_bmonth', S ? btMonthLabel_(S.beginMonth) : '-');
     set('bt_sum_bob_amt', S ? inr(S.beginAmt) : '-'); set('bt_sum_bob_dt', S ? S.beginDt : '-');
     set('bt_latest_ob_amt', S ? inr(S.obAmt) : '-'); set('bt_latest_ob_date', S ? S.obDt : '-');
@@ -7129,12 +7191,13 @@
   function btRenderAllStats_() {
     const tbody = btEl_('bt_all_table'); if (!tbody) return;
     const sel = selectedWaId(), set = (id, v) => { btEl_(id).textContent = v; };
-    const per = withdrawalAccountsCache.map(a => { const rows = btAllRows_.filter(r => String(r.WA_id) === String(a.WA_id)); return { a, rows, S: btSummary(rows) }; });
+    const all = btAllMerged_();
+    const per = withdrawalAccountsCache.map(a => { const rows = all.filter(r => String(r.WA_id) === String(a.WA_id)); return { a, rows, S: btSummary(rows) }; });
     const withOb = per.filter(x => x.S);
     const sum = k => Math.round(withOb.reduce((t, x) => t + x.S[k], 0) * 100) / 100;
     const lastCb = withOb.reduce((m, x) => (x.S.cbDt > m ? x.S.cbDt : m), '');
     set('bt_all_accts', String(per.length)); set('bt_all_accts_note', withOb.length + ' with an opening balance');
-    set('bt_all_count', String(btAllRows_.length));
+    set('bt_all_count', String(all.length));
     set('bt_all_ob', withOb.length ? inr(sum('obAmt')) : '-'); set('bt_all_tot', withOb.length ? inr(sum('tot')) : '-');
     set('bt_all_wd', withOb.length ? inr(sum('wd')) : '-'); set('bt_all_cb', withOb.length ? inr(sum('cb')) : '-');
     set('bt_all_cbdt', lastCb || '-');
@@ -7155,7 +7218,7 @@
     });
     if (per.length > 1) {
       const tr = document.createElement('tr'); tr.className = 'bt-all-total';
-      tr.innerHTML = '<td colspan="3">All accounts</td><td></td><td>' + btEsc_(withOb.length ? inr(sum('obAmt')) : '') + '</td><td>' + btEsc_(withOb.length ? inr(sum('tot')) : '') + '</td><td>' + btEsc_(withOb.length ? inr(sum('wd')) : '') + '</td><td>' + btEsc_(withOb.length ? inr(sum('cb')) : '') + '</td><td>' + btEsc_(lastCb) + '</td><td>' + btAllRows_.length + '</td>';
+      tr.innerHTML = '<td colspan="3">All accounts</td><td></td><td>' + btEsc_(withOb.length ? inr(sum('obAmt')) : '') + '</td><td>' + btEsc_(withOb.length ? inr(sum('tot')) : '') + '</td><td>' + btEsc_(withOb.length ? inr(sum('wd')) : '') + '</td><td>' + btEsc_(withOb.length ? inr(sum('cb')) : '') + '</td><td>' + btEsc_(lastCb) + '</td><td>' + all.length + '</td>';
       tbody.appendChild(tr);
     }
     if (window.__collRenderAll) window.__collRenderAll();           // the collapsed bar lists each account's OB figures
@@ -7165,6 +7228,7 @@
   function renderBankTransactions(rows) {
     const tbody = btEl_('bt_list_table'); if (!tbody) return;
     const waId = selectedWaId();
+    if (waId) rows = btMerge_(rows, waId);                      // + the credited advance tokens
     const acct = btAcct_();
     btEl_('bt_account_label').textContent = acct ? 'Selected account: ' + (acct.Bank || '') + ' - ' + (acct.Account_No || '') + (acct.Scheme ? '  |  Scheme: ' + acct.Scheme : '') + (acct.Operating_by ? '  |  Operating by: ' + acct.Operating_by : '') : 'Select an account to see and add its bank transactions.';
     btEl_('bt_account').value = waId;
@@ -7174,7 +7238,7 @@
     const tot = btEl_('bt_totals');
     if (!waId) { tbody.innerHTML = '<tr><td colspan="8" class="linked-empty">Select an account to see its bank transactions.</td></tr>'; tot.innerHTML = ''; return; }
     if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" class="linked-empty">No bank transactions for this account yet.</td></tr>'; tot.innerHTML = ''; return; }
-    const list = rows.slice().sort((a, b) => String(b.Trans_Date).localeCompare(String(a.Trans_Date)) || (Number(b.BT_id) - Number(a.BT_id)));
+    const list = rows.slice().sort((a, b) => String(b.Trans_Date).localeCompare(String(a.Trans_Date)) || ((Number(b.BT_id) || 0) - (Number(a.BT_id) || 0)));
     tbody.innerHTML = '';
     let dep = 0, wd = 0;
     list.forEach(r => {
@@ -7182,11 +7246,18 @@
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
       if (btSelectedId_() === String(r.BT_id)) tr.classList.add('row-selected');
-      const link = r.Token_No ? 'Token ' + r.Token_No : (r.Cheque_Ref ? 'Cheque ' + r.Cheque_Ref : '');
+      const link = r.Token_No ? 'Token ' + r.Token_No + (r.Auto ? ' (auto)' : '') : (r.Cheque_Ref ? 'Cheque ' + r.Cheque_Ref : '');
       tr.innerHTML = '<td>' + btEsc_(r.Year) + '</td><td>' + btEsc_(r.Trans_Date) + '</td><td>' + btEsc_(r.Transaction) + '</td><td>' + btEsc_(r.Trans_Type) + '</td><td>' + btEsc_(link) +
         '</td><td class="' + (isDep ? 'bt-dep' : 'bt-wd') + '">' + btEsc_(inr(r.Trans_Amt)) + '</td><td>' + btEsc_(r.Trans_Description) + '</td>';
-      tr.onclick = () => loadBankTransactionIntoForm(r);
-      rowKebab_(tr, 'bt', r);
+      if (r.Auto) {                                                   // a credited advance token: shown here, maintained in the Tokens tab
+        tr.classList.add('bt-auto');
+        tr.title = 'Credited advance token (added automatically)';
+        tr.onclick = () => { btShowDetails_('Token Amount', r.Token_No); setStatus('bt_status_msg', 'This deposit is the credited advance token ' + r.Token_No + '. It is maintained in the Tokens tab, not here.'); };
+        tr.appendChild(document.createElement('td'));
+      } else {
+        tr.onclick = () => loadBankTransactionIntoForm(r);
+        rowKebab_(tr, 'bt', r);
+      }
       tbody.appendChild(tr);
     });
     tot.innerHTML = '<b>' + list.length + '</b> transactions &middot; Deposits <b>' + inr(dep) + '</b> &middot; Withdrawn <b>' + inr(wd) + '</b> &middot; Net <b>' + inr(dep - wd) + '</b>';
@@ -7338,7 +7409,7 @@
     return months;
   }
   function btAccountReport_(acct, rows, month) {
-    const sorted = rows.slice().sort((a, b) => String(a.Trans_Date).localeCompare(String(b.Trans_Date)) || (Number(a.BT_id) - Number(b.BT_id)));
+    const sorted = rows.slice().sort((a, b) => String(a.Trans_Date).localeCompare(String(b.Trans_Date)) || ((Number(a.BT_id) || 0) - (Number(b.BT_id) || 0)));
     const ledger = btLedger_(sorted);
     return { acct, summary: btSummary(sorted), months: month ? ledger.filter(x => x.ym === month) : ledger,
              txns: month ? sorted.filter(r => btYm_(r.Trans_Date) === month) : sorted };
@@ -7393,7 +7464,7 @@
     catch (e) { setStatus('bt_rep_status', 'The report could not be prepared. ' + (e && e.message ? e.message : ''), true); return; }
     setStatus('bt_rep_status', '');
     const accts = scope === 'selected' ? withdrawalAccountsCache.filter(a => String(a.WA_id) === waId) : withdrawalAccountsCache.slice();
-    const model = accts.map(a => btAccountReport_(a, (rows || []).filter(r => String(r.WA_id) === String(a.WA_id)), month)).filter(x => scope === 'selected' || x.txns.length || x.summary);
+    const model = accts.map(a => { const mine = (rows || []).filter(r => String(r.WA_id) === String(a.WA_id)); return btAccountReport_(a, mine.concat(btTokenRowsFor_(a, mine)), month); }).filter(x => scope === 'selected' || x.txns.length || x.summary);
     btShowReport_(model, scope, month);
   }
   function btDownloadCsv_() {
@@ -8137,6 +8208,7 @@
   function onAdvSchemeChange() {
     updateAdvHoaOptions();
     populateAdvTransIdDropdown();
+    fillAdvCreditedAccountOptions();          // the bank accounts of the chosen scheme come first
   }
 
   function updateAdvHoaOptions() {
@@ -8185,23 +8257,33 @@
   // a record but no longer in that list is kept as an option so it isn't lost.
   let advAccountRows = [];
 
+  // Credited Account No = one of the bank accounts of the Bank tab; the accounts of the token's scheme are listed first.
   function fillAdvCreditedAccountOptions(selected) {
     const sel = document.getElementById('adv_credited_account_no');
     if (!sel) return;
     const cur = selected !== undefined ? String(selected) : sel.value;
     const esc = v => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const scheme = (document.getElementById('adv_scheme') || {}).value || '';
     const seen = {};
+    const uniq = advAccountRows.filter(a => { const no = String(a.Account_No || '').trim(); if (!no || seen[no]) return false; seen[no] = true; return true; });
+    const label = a => {
+      const no = String(a.Account_No).trim(), bank = String(a.Bank || '').trim(), name = String(a.Name_of_Account || '').trim();
+      return esc((bank ? bank + ' - ' : '') + no) + (name ? ' \u00b7 ' + esc(name) : '') + (a.Scheme ? ' (' + esc(a.Scheme) + ')' : '') + (a.Operating_by ? ' \u00b7 ' + esc(a.Operating_by) : '');
+    };
+    const opt = a => `<option value="${esc(String(a.Account_No).trim())}">${label(a)}</option>`;
+    const related = scheme ? uniq.filter(a => String(a.Scheme || '') === String(scheme)) : [];
+    const others = uniq.filter(a => !related.includes(a));
     let html = '<option value="">Select account</option>';
-    advAccountRows.forEach(a => {
-      const no = String(a.Account_No || '').trim();
-      if (!no || seen[no]) return;
-      seen[no] = true;
-      const name = String(a.Name_of_Account || '').trim();
-      html += `<option value="${esc(no)}">${esc(no)}${name ? ' \u00b7 ' + esc(name) : ''}</option>`;
-    });
+    if (related.length) html += `<optgroup label="Bank accounts of scheme ${esc(scheme)}">${related.map(opt).join('')}</optgroup>` + (others.length ? `<optgroup label="Other bank accounts">${others.map(opt).join('')}</optgroup>` : '');
+    else html += others.map(opt).join('');
     if (cur && !seen[cur]) html += `<option value="${esc(cur)}">${esc(cur)}</option>`;
     sel.innerHTML = html;
     sel.value = cur;
+    syncAdvOpenBank_();
+  }
+  function syncAdvOpenBank_() {
+    const sel = document.getElementById('adv_credited_account_no'), b = document.getElementById('adv_open_bank');
+    if (b && sel) b.style.display = sel.value ? '' : 'none';
   }
 
   function loadAdvCreditedAccounts() {
@@ -8244,6 +8326,12 @@
       tr.style.cursor = 'pointer';
       if (selectedAdvTid && String(r.Tid) === String(selectedAdvTid)) tr.classList.add('row-selected');
       tr.innerHTML = `<td>${r.Tid}</td><td>${r.Trans_id}</td><td>${r.Token_No}</td><td>${inr(r.Amount)}</td><td>${r.Dt}</td><td>${r.Credited_Date}</td><td>${inr(r.Credited_Amt)}</td><td>${r.Credited_Account_No || ''}</td><td>${r.Scheme}</td><td>${r.Hoa}</td>`;
+      if (r.Credited_Account_No) {
+        const ac = tr.children[7]; ac.textContent = '';
+        const lk = document.createElement('a'); lk.href = '#'; lk.className = 'acct-link'; lk.textContent = r.Credited_Account_No; lk.title = 'Open this account in the Bank tab';
+        lk.onclick = e => { e.preventDefault(); e.stopPropagation(); openBankAccount_(r.Credited_Account_No); };
+        ac.appendChild(lk);
+      }
       tr.onclick = () => loadAdvanceIntoForm(r);
       rowKebab_(tr, 'advance', r);
       tbody.appendChild(tr);
@@ -12983,6 +13071,7 @@
     plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
     edit: '<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
     copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
+    link: '<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
     trash: '<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>'
   };
   let rowMenuEl_ = null, rowMenuBtn_ = null;
@@ -13075,7 +13164,7 @@
     const canA = permCan(c.mod, 'A') && (!c.canAdd || c.canAdd());
     const canE = permCan(c.mod, 'E') && (!c.canEdit || c.canEdit());
     const canD = !!c.del && permCan(c.mod, 'D') && (!c.canDel || c.canDel());
-    return [
+    const items = [
       { label: 'New ' + c.noun, icon: 'plus', hidden: !canA, run: () => { c.clear(); openCardOf_(c.field); } },
       { label: canE ? 'Edit' : 'View', icon: 'edit', run: () => { c.load(r); openCardOf_(c.field); } },
       { label: 'Duplicate as new', icon: 'copy', hidden: !(c.dup && canA), run: () => { c.dup(r); openCardOf_(c.field); showToast('info', 'Copy loaded. Change what you need and press Save to add it as a new ' + c.noun + '.'); } },
@@ -13086,6 +13175,8 @@
           await c.del();
         } }
     ];
+    if (key === 'advance' && r.Credited_Account_No) items.splice(2, 0, { label: 'Open bank account', icon: 'link', run: () => openBankAccount_(r.Credited_Account_No) });
+    return items;
   }
   function rowKebab_(tr, key, rec) {
     const mc = document.createElement('td'); mc.className = 'rowmenu-cell';

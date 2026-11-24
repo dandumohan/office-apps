@@ -182,7 +182,7 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
   <div class="tabs">
     <button class="tab active" onclick="showTab('public',this)">📊 Public View</button>
     <button class="tab" onclick="showTab('charts',this)">📈 Charts</button>
-    <button class="tab" onclick="showTab('report',this)">📑 Reports</button>
+    <button class="tab" id="tab-report" style="display:none" onclick="showTab('report',this)">📑 Reports</button>
     <button class="tab" onclick="showTab('enquiry',this)">📝 Farmer Enquiry</button>
     <button class="tab admin-only" onclick="showTab('admin',this)">🔧 Admin</button>
     <button class="tab admin-only" onclick="showTab('eq-admin',this)">📬 Enquiries</button>
@@ -380,6 +380,15 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
       </div>
     </div>
     <div id="admin-view" style="display:none">
+      <div class="section" id="rpt-access-box" style="display:none">
+        <h3>📑 Reports Access</h3>
+        <p style="font-size:13px;color:#555;margin-bottom:10px">Reports are hidden from public users. Admins always have access. Add the login email of any staff user who should also see the Reports tab.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <input id="rpt-acc-email" type="email" placeholder="user@example.com" style="max-width:280px;padding:7px 10px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px" onkeydown="if(event.key==='Enter')addReportUser()">
+          <button class="abtn ag" onclick="addReportUser()">➕ Allow</button>
+        </div>
+        <div id="rpt-acc-list"></div>
+      </div>
       <div class="section">
         <h3 id="stock-form-title">➕ Add Seedling Record</h3>
         <div class="form-grid">
@@ -670,7 +679,7 @@ async function enterAsStaff(user){
 }
 function continuePublic(){currentUser=null;currentRole='public';showApp('Public User (public)');}
 function showApp(label){
-  applyRestrictions();loadRestrictSetting();
+  applyRestrictions();loadRestrictSetting();loadReportAccess();
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
   document.getElementById('user-label').textContent=label;
@@ -1090,12 +1099,13 @@ function buildCharts(){
   destroyChart('nursery');charts.nursery=new Chart(document.getElementById('chart-nursery'),{type:'bar',data:{labels:nL,datasets:[{label:'Balance',data:nL.map(n=>nMap[n]),backgroundColor:clrs}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
 }
 function showTab(tab,btn){
+  if(tab==='report'&&!canReport()){tab='public';btn=document.querySelector('.tab');}
   ['public-view','charts-view','report-view','contact-view','avenue-view','enquiry-view','admin-view','eq-admin-view','dist-entry-view'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById(tab+'-view').style.display='block';
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   if(['admin','eq-admin','dist-entry'].includes(tab)&&currentUser){hasSession().then(ok=>{if(!ok)return;});}
-  if(tab==='admin')renderAdmin();
+  if(tab==='admin'){renderAdmin();renderReportAccess();}
   if(tab==='charts')setTimeout(buildCharts,50);
   if(tab==='eq-admin')renderEnquiryAdmin();
   if(tab==='dist-entry')deInit();
@@ -1888,6 +1898,55 @@ function dpRender(){
   tb.innerHTML=deGroupRows(data,rowOf,13,p=>{const b=bens.find(x=>x.beneficiary_id===p.beneficiary_id);return deBatchMonth(b&&b.batch_id);});
 }
 
+
+/* ── REPORTS ACCESS: hidden from public; admin always; other logged-in users only if allotted by admin ── */
+let reportEmails=[]; // lower-case emails allotted by admin (nursery_app_settings.report_access)
+const canReport=()=>{
+  if(!currentUser)return false;
+  if(currentRole==='admin')return true;
+  return reportEmails.includes(String(currentUser.email||'').trim().toLowerCase());
+};
+function applyReportAccess(){
+  const t=byId('tab-report');if(t)t.style.display=canReport()?'':'none';
+  const b=byId('rpt-access-box');if(b)b.style.display=currentRole==='admin'?'block':'none';
+  // if the report screen is open but access is gone, leave it
+  const v=byId('report-view');
+  if(v&&v.style.display==='block'&&!canReport())showTab('public',document.querySelector('.tab'));
+}
+async function loadReportAccess(){
+  reportEmails=[];
+  if(currentUser){
+    try{
+      const {data}=await sb.from('nursery_app_settings').select('value').eq('key','report_access').maybeSingle();
+      if(data&&data.value&&Array.isArray(data.value.emails))reportEmails=data.value.emails.map(e=>String(e).trim().toLowerCase()).filter(Boolean);
+    }catch(e){}
+  }
+  applyReportAccess();renderReportAccess();
+}
+async function saveReportAccess(list){
+  if(currentRole!=='admin')return false;
+  if(!(await hasSession()))return false;
+  const {data,error}=await sb.from('nursery_app_settings').upsert({key:'report_access',value:{emails:list},updated_at:new Date().toISOString()}).select('key');
+  if(error||!data||!data.length){alert('Could not save report access'+(error?': '+error.message:'.'));return false;}
+  reportEmails=list;applyReportAccess();renderReportAccess();return true;
+}
+async function addReportUser(){
+  const inp=byId('rpt-acc-email'),em=inp.value.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){alert('Enter a valid email address.');return;}
+  if(reportEmails.includes(em)){alert('This user already has access.');return;}
+  if(await saveReportAccess(reportEmails.concat(em)))inp.value='';
+}
+async function removeReportUser(i){
+  const em=reportEmails[i];if(em==null||!confirm('Remove Reports access for '+em+'?'))return;
+  await saveReportAccess(reportEmails.filter((_,k)=>k!==i));
+}
+function renderReportAccess(){
+  const el=byId('rpt-acc-list');if(!el)return;
+  el.innerHTML=reportEmails.length
+    ?'<div style="display:flex;flex-wrap:wrap;gap:6px">'+reportEmails.map((e,i)=>`<span class="role-badge" style="font-size:12px;padding:4px 10px">${esc(e)} <a href="#" onclick="removeReportUser(${i});return false" style="color:#c62828;text-decoration:none;margin-left:6px" title="Remove access">✕</a></span>`).join('')+'</div>'
+    :'<p style="font-size:12px;color:#888">No additional users allotted. Only admins can see Reports.</p>';
+}
+
 /* ── REPORTS ── */
 const RPT_DIMS=[['district','District'],['mandal','Mandal'],['division','Division'],['range','Range'],['nursery','Nursery'],['scheme','Scheme'],['species','Species'],['bagSize','Bag Size'],['distDate','Date of Raising']];
 const RPT_MEAS=[['available','Available'],['distributed','Distributed'],['balance','Balance']];
@@ -1911,6 +1970,7 @@ function resetReport(){
   byId('rpt-out').innerHTML='<p class="empty">Choose options and click Generate Report.</p>';rptRows=[];rptHead=[];
 }
 function generateReport(){
+  if(!canReport())return;
   const type=byId('rpt-type').value;
   const dims=RPT_DIMS.filter(d=>byId('rd-'+d[0]).checked),meas=RPT_MEAS.filter(m=>byId('rm-'+m[0]).checked);
   if(type==='detailed'&&!dims.length&&!meas.length){alert('Select at least one field or measure.');return;}
@@ -2090,6 +2150,7 @@ function rptHeaderHtml(type,metaTxt){
     +'</div>';
 }
 function printReport(){
+  if(!canReport())return;
   generateReport();
   if(!rptRows.length){return;}
   document.body.classList.add('printing-report');
@@ -2387,7 +2448,7 @@ function avEstInfo(){
 let restrictOn=true; // global switch, stored in Supabase (nursery_app_settings.copy_protection)
 const isAdminUser=()=>currentRole==='admin'||!restrictOn; // exempt: admins, or when protection is switched off
 const isFieldEl=el=>!!(el&&el.closest&&el.closest('input,textarea,select,[contenteditable="true"]'));
-function applyRestrictions(){document.body.classList.toggle('restricted',!isAdminUser());syncRestrictUI();}
+function applyRestrictions(){document.body.classList.toggle('restricted',!isAdminUser());syncRestrictUI();applyReportAccess();}
 document.addEventListener('contextmenu',e=>{if(!isAdminUser())e.preventDefault();});
 document.addEventListener('copy',e=>{if(!isAdminUser()){e.preventDefault();if(e.clipboardData)e.clipboardData.setData('text/plain','');}});
 document.addEventListener('dragstart',e=>{if(!isAdminUser())e.preventDefault();});

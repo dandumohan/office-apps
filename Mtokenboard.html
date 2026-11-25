@@ -857,6 +857,11 @@
               <label>Token_dt</label>
               <input type="date" id="adv_dt">
             </div>
+            <div class="field-row">
+              <label>Credited Account No</label>
+              <select id="adv_credited_account_no" onchange="syncAdvOpenBank_()"><option value="">Select account</option></select>
+              <button type="button" class="action" id="adv_open_bank" style="display:none; margin-top:6px; align-self:flex-start;" onclick="openBankAccount_(document.getElementById('adv_credited_account_no').value)">Open this account in the Bank tab &rarr;</button>
+            </div>
           </div>
 
           <div style="width: 1px; background: var(--border); align-self: stretch;"></div>
@@ -873,11 +878,6 @@
             <div class="field-row">
               <label>Credited Amt</label>
               <input type="number" id="adv_credited_amt" value="0">
-            </div>
-            <div class="field-row">
-              <label>Credited Account No</label>
-              <select id="adv_credited_account_no" onchange="syncAdvOpenBank_()"><option value="">Select account</option></select>
-              <button type="button" class="action" id="adv_open_bank" style="display:none; margin-top:6px; align-self:flex-start;" onclick="openBankAccount_(document.getElementById('adv_credited_account_no').value)">Open this account in the Bank tab &rarr;</button>
             </div>
           </div>
         </div>
@@ -1705,6 +1705,7 @@
           <h2 class="section-title">Bank Transactions</h2>
           <button class="icon-btn" title="Refresh" onclick="refreshBankTransactions()">&#8635;</button>
         </div>
+        <button type="button" class="action" id="bt_sync_tokens" style="display:none; margin: 0 0 10px;" onclick="btSyncTokens_()"></button>
         <button type="button" class="action" id="bt_show_accounts" style="display:none; margin: -2px 0 12px;" onclick="setBankAccountsBand_(true)">Show Withdrawal Accounts &amp; Cheque Books</button>
         <div class="bt-grid">
           <div class="field-row"><label>Account</label><select id="bt_account" onchange="onBtAccountChange()"><option value="">Select account</option></select></div>
@@ -3314,7 +3315,7 @@
     fund: { table: 'fund_application', pk: 'fa_id', cols: [['FA_id', 'fa_id', 'id'], ['Esti_no', 'esti_no', 's'], ['Task_no', 'task_no', 'n'], ['Task_Description', 'task_description', 's'], ['Qnty', 'qnty', 'n'], ['Unit', 'unit', 's'], ['Rate', 'rate', 'n'], ['Per', 'per', 's'], ['Amount', 'amount', 'n'], ['Batch_No', 'batch_no', 's'], ['Application_Date', 'application_date', 'd'], ['Token_no', 'token_no', 's']] },
     withdrawn: { table: 'withdrawn_details', pk: 'wd_id', cols: [['WD_id', 'wd_id', 'id'], ['Esti_no', 'esti_no', 's'], ['Advance_Token_No', 'advance_token_no', 's'], ['Credited_Status', 'credited_status', 's'], ['Withdrawn_Date', 'withdrawn_date', 'd'], ['Withdrawn_Amount', 'withdrawn_amount', 'n'], ['Withdrawn_Cheque_No', 'withdrawn_cheque_no', 's']] },
     account: { table: 'withdrawal_accounts', pk: 'wa_id', cols: [['WA_id', 'wa_id', 'id'], ['Bank', 'bank', 's'], ['Branch', 'branch', 's'], ['Place', 'place', 's'], ['Account_No', 'account_no', 's'], ['IFSC_Code', 'ifsc_code', 's'], ['Name_of_Account', 'name_of_account', 's'], ['Drawing_Authorities', 'drawing_authorities', 's'], ['Scheme', 'scheme', 's'], ['Operating_by', 'operating_by', 's'], ['No_of_Cheque_Books_Issued', 'no_of_cheque_books_issued', 'n']] },
-    bankTxn: { table: 'bank_transactions', pk: 'bt_id', cols: [['BT_id', 'bt_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Year', 'year', 's'], ['OB_Amt', 'ob_amt', 'n'], ['OB_Date', 'ob_date', 'd'], ['Trans_Date', 'trans_date', 'd'], ['Transaction', 'txn', 's'], ['Trans_Amt', 'trans_amt', 'n'], ['Trans_Type', 'trans_type', 's'], ['Token_No', 'token_no', 's'], ['Cheque_Ref', 'cheque_ref', 's'], ['Trans_Description', 'trans_description', 's']] },
+    bankTxn: { table: 'bank_transactions', pk: 'bt_id', cols: [['BT_id', 'bt_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Year', 'year', 's'], ['OB_Amt', 'ob_amt', 'n'], ['OB_Date', 'ob_date', 'd'], ['Trans_Date', 'trans_date', 'd'], ['Transaction', 'txn', 's'], ['Trans_Amt', 'trans_amt', 'n'], ['Trans_Type', 'trans_type', 's'], ['Token_No', 'token_no', 's'], ['Cheque_Ref', 'cheque_ref', 's'], ['Trans_Description', 'trans_description', 's'], ['Source', 'source', 's']] },
     cheque: { table: 'cheque_books', pk: 'cb_id', cols: [['CB_id', 'cb_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Cheque_Book_No', 'cheque_book_no', 's'], ['Leaves_No_From', 'leaves_no_from', 's'], ['Leaves_No_To', 'leaves_no_to', 's']] },
     mbi: { table: 'mbook_issued', pk: 'mbi_id', cols: [['MBI_id', 'mbi_id', 'id'], ['Year', 'year', 's'], ['MBook_No', 'mbook_no', 's'], ['Pages_From', 'pages_from', 'n'], ['Pages_To', 'pages_to', 'n'], ['Issue_Date', 'issue_date', 'd'], ['Issued_By', 'issued_by', 's'], ['Scheme', 'scheme', 's'], ['Esti_no', 'esti_no', 's']] }
     , mbob: { table: 'mbook_ob', pk: 'ob_id', cols: [['OB_id', 'ob_id', 'id'], ['MBook_No', 'mbook_no', 's'], ['OB_Page', 'ob_page', 'n'], ['OB_Date', 'ob_date', 'd']] }
@@ -3459,21 +3460,84 @@
      Flip a flag to false to give that operation back to everyone who holds the Tokens (Advance) permission. */
   const ADV_ADMIN_ONLY = { create: false, fullEdit: true, delete: true, expAdjUpdate: true };   // expAdjUpdate: Update on Expenditure / Adjustment tokens
   const ADV_CREDITED_COLS_ = ['credited', 'credited_date', 'credited_amt', 'credited_account_no'];
+  /* ---------- credited advance tokens -> Bank Transactions ----------
+     While a token is Credited = Yes (with a Credited Date and a Credited Account No of the Bank tab), one Deposit / Token Amount row
+     is kept in bank_transactions for it (source = 'advance').  Changing or removing the credit changes or removes that row.
+     A row saved by hand for the same token and account is left alone. */
+  const bankFyOf_ = dt0 => { const dt = new Date(dt0), y = dt.getMonth() >= 3 ? dt.getFullYear() : dt.getFullYear() - 1; return y + '-' + String(y + 1).slice(-2); };
+  async function syncBankForToken_(tokenNo) {
+    const tok = T_(tokenNo);
+    const out = { synced: 0, removed: 0, missing: [] };
+    if (!tok) return out;
+    const adv = await list_('advance', q => q.eq('token_no', tok));
+    const existing = await list_('bankTxn', q => q.eq('token_no', tok));
+    const managed = existing.filter(r => r.Source === 'advance'), manual = existing.filter(r => r.Source !== 'advance');
+    const byAcct = {};
+    adv.filter(a => a.Credited === 'Yes' && T_(a.Credited_Account_No) && a.Credited_Date).forEach(a => {
+      const k = T_(a.Credited_Account_No);
+      const g = byAcct[k] || (byAcct[k] = { amt: 0, date: String(a.Credited_Date), scheme: a.Scheme || '', hoas: [] });
+      g.amt += N_(a.Credited_Amt) || N_(a.Amount);
+      if (String(a.Credited_Date) < g.date) g.date = String(a.Credited_Date);
+      if (a.Hoa && !g.hoas.includes(a.Hoa)) g.hoas.push(a.Hoa);
+    });
+    const keep = new Set();
+    for (const no of Object.keys(byAcct)) {
+      const accts = await list_('account', q => q.eq('account_no', no));
+      if (!accts.length) { out.missing.push(no); continue; }
+      const wa = String(accts[0].WA_id), g = byAcct[no];
+      if (manual.some(r => String(r.WA_id) === wa)) { keep.add(wa); continue; }        // entered by hand: leave it
+      if (!(g.amt > 0)) continue;
+      const row = { wa_id: Number(wa), year: bankFyOf_(g.date), ob_amt: 0, ob_date: null, trans_date: g.date, txn: 'Deposit', trans_amt: Math.round(g.amt * 100) / 100,
+                    trans_type: 'Token Amount', token_no: tok, cheque_ref: '',
+                    trans_description: 'Token ' + tok + (g.scheme ? ' - ' + g.scheme : '') + (g.hoas.length ? ' / ' + g.hoas.join(', ') : ''), source: 'advance' };
+      const mine = managed.find(r => String(r.WA_id) === wa);
+      if (mine) await updateRow_('bank_transactions', 'bt_id', mine.BT_id, row, 'Bank transaction not found');
+      else await insertRow_('bank_transactions', 'bt_id', row);
+      keep.add(wa); out.synced++;
+    }
+    for (const r of managed) if (!keep.has(String(r.WA_id))) { await deleteRow_('bank_transactions', 'bt_id', r.BT_id, ''); out.removed++; }
+    return out;
+  }
+  // never lets a bank-side problem fail the advance save
+  async function bankSyncSafe_(tokens) {
+    const out = { synced: 0, removed: 0, missing: [] };
+    for (const t of Array.from(new Set((tokens || []).map(T_).filter(Boolean)))) {
+      try { const r = await syncBankForToken_(t); out.synced += r.synced; out.removed += r.removed; r.missing.forEach(m => { if (!out.missing.includes(m)) out.missing.push(m); }); }
+      catch (e) { out.error = (e && e.message) ? e.message : String(e); }
+    }
+    return out;
+  }
+  const advTokenOf_ = async tid => { const r = await list_('advance', q => q.eq('tid', Number(tid))); return r.length ? r[0].Token_No : ''; };
+
   API_.addAdvance = async d => {
     if (ADV_ADMIN_ONLY.create && !authIsAdmin) throw new Error('Access restricted: only an administrator can add advance tokens.');
-    return { success: true, id: await insertRow_('advance', 'tid', toDb_.advance(d)) };
+    const id = await insertRow_('advance', 'tid', toDb_.advance(d));
+    return { success: true, id, bank: await bankSyncSafe_([d.token_no]) };
   };
-  API_.updateAdvance = d => {
+  API_.updateAdvance = async d => {
     const obj = toDb_.advance(d);
+    const oldToken = await advTokenOf_(d.tid);
+    let res;
     if (ADV_ADMIN_ONLY.fullEdit && !authIsAdmin) {                       // everyone else may only change the Credited fields
       const keep = {}; ADV_CREDITED_COLS_.forEach(k => { if (k in obj) keep[k] = obj[k]; });
-      return updateRow_('advance', 'tid', d.tid, keep);
-    }
-    return updateRow_('advance', 'tid', d.tid, obj);
+      res = await updateRow_('advance', 'tid', d.tid, keep);
+    } else res = await updateRow_('advance', 'tid', d.tid, obj);
+    if (res && res.success) res.bank = await bankSyncSafe_([oldToken, obj.token_no]);
+    return res;
   };
-  API_.deleteAdvance = tid => {
+  API_.deleteAdvance = async tid => {
     if (ADV_ADMIN_ONLY.delete && !authIsAdmin) throw new Error('Access restricted: only an administrator can delete advance tokens.');
-    return deleteRow_('advance', 'tid', tid);
+    const token = await advTokenOf_(tid);
+    const res = await deleteRow_('advance', 'tid', tid);
+    if (res && res.success) res.bank = await bankSyncSafe_([token]);
+    return res;
+  };
+  // one-off: move every credited token that is not in bank_transactions yet
+  API_.syncCreditedTokensToBank = async () => {
+    const adv = await list_('advance');
+    const tokens = Array.from(new Set(adv.filter(a => a.Credited === 'Yes').map(a => T_(a.Token_No)).filter(Boolean)));
+    const out = await bankSyncSafe_(tokens);
+    return { success: !out.error, tokens: tokens.length, synced: out.synced, removed: out.removed, missing: out.missing, message: out.error || '' };
   };
   // How many expenditure / adjustment records point at this advance Token_No.
   API_.countAdvanceTokenUsage = async tokenNo => {
@@ -3981,8 +4045,10 @@
   }
   API_.getBankTransactionsData = waId => list_('bankTxn', (waId !== undefined && waId !== null && waId !== '') ? (q => q.eq('wa_id', Number(waId))) : null);
   API_.addBankTransaction = async d => { const e = await validateBankTxn_(d, ''); if (e) return { success: false, message: e }; return { success: true, id: await insertRow_('bank_transactions', 'bt_id', bankTxnDb_(d)) }; };
-  API_.updateBankTransaction = async d => { const e = await validateBankTxn_(d, d.bt_id); if (e) return { success: false, message: e }; return updateRow_('bank_transactions', 'bt_id', d.bt_id, bankTxnDb_(d), 'Bank transaction not found'); };
-  API_.deleteBankTransaction = id => deleteRow_('bank_transactions', 'bt_id', id, 'Bank transaction not found');
+  const bankTxnManaged_ = async id => { const r = await list_('bankTxn', q => q.eq('bt_id', Number(id))); return !!(r[0] && r[0].Source === 'advance'); };
+  const BT_MANAGED_MSG_ = 'This deposit comes from an Advance token. Change it in the Tokens tab.';
+  API_.updateBankTransaction = async d => { if (await bankTxnManaged_(d.bt_id)) return { success: false, message: BT_MANAGED_MSG_ }; const e = await validateBankTxn_(d, d.bt_id); if (e) return { success: false, message: e }; return updateRow_('bank_transactions', 'bt_id', d.bt_id, bankTxnDb_(d), 'Bank transaction not found'); };
+  API_.deleteBankTransaction = async id => { if (await bankTxnManaged_(id)) return { success: false, message: BT_MANAGED_MSG_ }; return deleteRow_('bank_transactions', 'bt_id', id, 'Bank transaction not found'); };
 
   API_.getChequeBooksData = async waId => {
     const rows = await fetchAll_('v_cheque_books', 'cb_id', (waId !== undefined && waId !== null && waId !== '') ? (q => q.eq('wa_id', Number(waId))) : null);
@@ -5006,7 +5072,7 @@
   secG_('Vouchers', ['generateVoucherPdf', 'generateAllVouchersPdf']);
   secR_('Mbook', ['getMbookIssuedData', 'getMbookData', 'getMbookUsageSummary', 'getMbookObData']); secW_('Mbook', 'A', ['addMbookIssued', 'saveMbookDataToVouchers', 'addMbookOb']); secW_('Mbook', 'E', ['updateMbookIssued', 'updateVoucherMbookFields']); secW_('Mbook', 'D', ['deleteMbookIssued', 'clearVoucherMbookFields', 'deleteMbookOb']);
   secR_('Withdraw', ['getWithdrawnDetailsData']); secW_('Withdraw', 'A', ['addWithdrawnDetail']); secW_('Withdraw', 'E', ['updateWithdrawnDetail']); secW_('Withdraw', 'D', ['deleteWithdrawnDetail']);
-  secR_('Withdrawal Accounts', ['getWithdrawalAccountsData', 'getBankTransactionsData']); secW_('Withdrawal Accounts', 'A', ['addWithdrawalAccount', 'addBankTransaction']); secW_('Withdrawal Accounts', 'E', ['updateWithdrawalAccount', 'updateBankTransaction']); secW_('Withdrawal Accounts', 'D', ['deleteWithdrawalAccount', 'deleteBankTransaction']);
+  secR_('Withdrawal Accounts', ['getWithdrawalAccountsData', 'getBankTransactionsData']); secW_('Withdrawal Accounts', 'A', ['addWithdrawalAccount', 'addBankTransaction', 'syncCreditedTokensToBank']); secW_('Withdrawal Accounts', 'E', ['updateWithdrawalAccount', 'updateBankTransaction']); secW_('Withdrawal Accounts', 'D', ['deleteWithdrawalAccount', 'deleteBankTransaction']);
   secR_('Cheque Books', ['getChequeBooksData']); secW_('Cheque Books', 'A', ['addChequeBook']); secW_('Cheque Books', 'E', ['updateChequeBook']); secW_('Cheque Books', 'D', ['deleteChequeBook']);
   secR_('Fund Application', ['getFundApplicationData']); secW_('Fund Application', 'A', ['saveFundApplicationPlan', 'addFundApplication']); secW_('Fund Application', 'E', ['updateFundApplication', 'updateFundApplicationBatch']); secW_('Fund Application', 'D', ['deleteFundApplication', 'deleteFundApplicationBatch']);
   secG_('Reports', ['generateTokensReportPdf', 'generateAccReportPdf', 'generateEstimateReportPdf', 'generateBudgetAdvanceReportPdf', 'exportWorkbookForVoucherSuite']);
@@ -6993,13 +7059,13 @@
   let btAdvRows_ = [], btWdRows_ = [], btRelated_ = { tokens: 'idle', cheques: 'idle' };
   function btLoadRelated_() {
     gsrCall('getAdvanceData').then(r => { btAdvRows_ = r || []; btRelated_.tokens = 'ok'; btFillLink_(); renderBankTransactions(bankTxnCache); btRenderAllStats_(); }).catch(() => { btRelated_.tokens = 'denied'; });
-    gsrCall('getWithdrawnDetailsData').then(r => { btWdRows_ = r || []; btRelated_.cheques = 'ok'; btFillLink_(); }).catch(() => { btRelated_.cheques = 'denied'; });
+    gsrCall('getWithdrawnDetailsData').then(r => { btWdRows_ = r || []; btRelated_.cheques = 'ok'; btFillLink_(); renderBankTransactions(bankTxnCache); btRenderAllStats_(); }).catch(() => { btRelated_.cheques = 'denied'; });
   }
   /* Every advance token credited to an account is shown automatically as a Deposit of type "Token Amount":
      Trans_Date = the credited date, Token_No = the token, Trans_Amt = the credited amount.  A transaction already saved by hand for
      the same token replaces the automatic one, so nothing is counted twice. */
   const btFy_ = d => { const dt = new Date(d), y = dt.getMonth() >= 3 ? dt.getFullYear() : dt.getFullYear() - 1; return y + '-' + String(y + 1).slice(-2); };
-  function btTokenRowsFor_(acct, existing) {
+  function btTokenOnlyRows_(acct, existing) {
     const no = String(acct.Account_No || '').trim();
     if (!no || btRelated_.tokens !== 'ok') return [];
     const have = new Set((existing || []).filter(r => r.Token_No).map(r => String(r.Token_No)));
@@ -7015,9 +7081,32 @@
     return Object.values(groups).filter(g => g.amt > 0).map(g => ({
       BT_id: 'T:' + g.token, WA_id: acct.WA_id, Year: btFy_(g.date), OB_Amt: 0, OB_Date: null, Trans_Date: g.date, Transaction: 'Deposit',
       Trans_Amt: Math.round(g.amt * 100) / 100, Trans_Type: 'Token Amount', Token_No: g.token, Cheque_Ref: '',
-      Trans_Description: 'Token ' + g.token + (g.scheme ? ' - ' + g.scheme : '') + (g.hoas.size ? ' / ' + Array.from(g.hoas).join(', ') : ''), Auto: true
+      Trans_Description: 'Token ' + g.token + (g.scheme ? ' - ' + g.scheme : '') + (g.hoas.size ? ' / ' + Array.from(g.hoas).join(', ') : ''), Auto: true, AutoKind: 'token'
     }));
   }
+  /* Cheques drawn on the account (the estimates' withdrawal details) are shown automatically as Withdrawn / Cheque transactions:
+     Trans_Date = the withdrawn date, Cheque = the cheque no, Trans_Amt = the withdrawn amount (one row per cheque no). */
+  function btChequeRowsFor_(acct, existing) {
+    const no = String(acct.Account_No || '').trim();
+    if (!no || btRelated_.cheques !== 'ok') return [];
+    const have = new Set((existing || []).filter(r => r.Cheque_Ref).map(r => String(r.Cheque_Ref)));
+    const groups = {};
+    btWdRows_.forEach(w0 => {
+      const cq = String(w0.Withdrawn_Cheque_No || '').trim();
+      if (!cq || String(w0.Withdrawn_Account_No || '').trim() !== no || !w0.Withdrawn_Date || have.has(cq)) return;
+      const g = groups[cq] || (groups[cq] = { cq, amt: 0, date: String(w0.Withdrawn_Date), estis: [], tokens: [] });
+      g.amt += Number(w0.Withdrawn_Amount) || 0;
+      if (String(w0.Withdrawn_Date) < g.date) g.date = String(w0.Withdrawn_Date);
+      if (w0.Esti_no && !g.estis.includes(w0.Esti_no)) g.estis.push(w0.Esti_no);
+      if (w0.Advance_Token_No && !g.tokens.includes(w0.Advance_Token_No)) g.tokens.push(w0.Advance_Token_No);
+    });
+    return Object.values(groups).filter(g => g.amt > 0).map(g => ({
+      BT_id: 'C:' + g.cq, WA_id: acct.WA_id, Year: btFy_(g.date), OB_Amt: 0, OB_Date: null, Trans_Date: g.date, Transaction: 'Withdrawn',
+      Trans_Amt: Math.round(g.amt * 100) / 100, Trans_Type: 'Cheque', Token_No: '', Cheque_Ref: g.cq,
+      Trans_Description: 'Cheque ' + g.cq + (g.estis.length ? ' - Estimate ' + g.estis.join(', ') : '') + (g.tokens.length ? ' - Token ' + g.tokens.join(', ') : ''), Auto: true, AutoKind: 'cheque'
+    }));
+  }
+  const btTokenRowsFor_ = (acct, existing) => btTokenOnlyRows_(acct, existing).concat(btChequeRowsFor_(acct, existing));
   function btMerge_(rows, waId) {
     const acct = withdrawalAccountsCache.find(a => String(a.WA_id) === String(waId));
     return acct ? rows.concat(btTokenRowsFor_(acct, rows)) : rows;
@@ -7028,6 +7117,15 @@
     return out;
   }
 
+  // one-off: credited tokens that are only shown automatically become real Bank Transactions rows
+  function btSyncTokens_() {
+    setStatus('bt_status_msg', 'Moving credited tokens to Bank Transactions...');
+    gsr().withSuccessHandler(res => {
+      if (!res || !res.success) { setStatus('bt_status_msg', (res && res.message) || 'Unable to move the tokens.', true); return; }
+      setStatus('bt_status_msg', res.synced + ' credited token deposit' + (res.synced === 1 ? '' : 's') + ' moved to Bank Transactions.' + (res.missing && res.missing.length ? ' Not in the Bank tab: ' + res.missing.join(', ') + '.' : ''));
+      refreshBankTransactions(); btLoadAll_();
+    }).withFailureHandler(e => setStatus('bt_status_msg', 'Unable to move the tokens. Reason: ' + (e && e.message ? e.message : e), true)).syncCreditedTokensToBank();
+  }
   function btTokenGroup_(tokenNo) {
     const rows = btAdvRows_.filter(a => String(a.Token_No) === String(tokenNo));
     if (!rows.length) return null;
@@ -7042,15 +7140,17 @@
     };
   }
   const btChequeRow_ = no => btWdRows_.find(w => String(w.Withdrawn_Cheque_No) === String(no) && String(w.Withdrawn_Account_No || '').trim() === btAcctNo_());
+  function btChequeGroup_(no) {                       // one cheque can pay several estimates: add them up
+    const rows = btWdRows_.filter(w => String(w.Withdrawn_Cheque_No) === String(no) && String(w.Withdrawn_Account_No || '').trim() === btAcctNo_());
+    if (!rows.length) return null;
+    const uniq = k => Array.from(new Set(rows.map(w => w[k]).filter(Boolean)));
+    return { no: String(no), amt: rows.reduce((t, w) => t + (Number(w.Withdrawn_Amount) || 0), 0), date: rows.map(w => String(w.Withdrawn_Date || '')).filter(Boolean).sort()[0] || '', estis: uniq('Esti_no'), tokens: uniq('Advance_Token_No'), vss: uniq('Name_of_VSS')[0] || '' };
+  }
   function btLinkOptions_(type) {
     const acctNo = btAcctNo_(); if (!acctNo) return [];
     const others = bankTxnCache.filter(r => String(r.BT_id) !== btSelectedId_());          // what the account's other transactions already use
     if (type === 'Token Amount') return [];                       // credited tokens are added to the list automatically
-    if (type === 'Cheque') {
-      const used = new Set(others.map(r => String(r.Cheque_Ref || '')).filter(Boolean));
-      return btWdRows_.filter(w => String(w.Withdrawn_Account_No || '').trim() === acctNo && String(w.Withdrawn_Cheque_No || '').trim() !== '' && !used.has(String(w.Withdrawn_Cheque_No)))
-        .map(w => ({ value: String(w.Withdrawn_Cheque_No), label: w.Withdrawn_Cheque_No + ' \u00b7 ' + inr(w.Withdrawn_Amount) + (w.Withdrawn_Date ? ' \u00b7 ' + w.Withdrawn_Date : '') + (w.Esti_no ? ' \u00b7 Est ' + w.Esti_no : '') }));
-    }
+    if (type === 'Cheque') return [];                            // cheques drawn on the account are added to the list automatically
     return [];
   }
   // The Token / Cheque dropdown follows Trans_Type: tokens for "Token Amount", cheques for "Cheque", nothing for the rest.
@@ -7063,7 +7163,7 @@
     const opts = btLinkOptions_(type);
     if (cur && !opts.some(o => o.value === cur)) opts.unshift({ value: cur, label: cur });      // e.g. the saved value of the record being edited
     const denied = type === 'Token Amount' ? btRelated_.tokens === 'denied' : btRelated_.cheques === 'denied';
-    sel.innerHTML = '<option value="">' + (denied ? '(no permission to read these)' : (opts.length ? '--select--' : (type === 'Token Amount' ? '(credited tokens are added automatically as Deposits)' : '(none available for this account)'))) + '</option>' +
+    sel.innerHTML = '<option value="">' + (denied ? '(no permission to read these)' : (opts.length ? '--select--' : (type === 'Token Amount' ? '(credited tokens are added automatically as Deposits)' : '(cheques are added automatically as Withdrawn)'))) + '</option>' +
       opts.map(o => '<option value="' + btEsc_(o.value) + '">' + btEsc_(o.label) + '</option>').join('');
     sel.value = cur || '';
   }
@@ -7108,8 +7208,8 @@
     }
     if (type === 'Cheque') {
       if (!val) return 'Choose a cheque from the dropdown to see its details.';
-      const w = btChequeRow_(val);
-      return w ? ('Cheque ' + val + '  |  Amount ' + inr(w.Withdrawn_Amount) + '  |  Date ' + (w.Withdrawn_Date || '-') + '  |  Estimate ' + (w.Esti_no || '-') + '  |  Token ' + (w.Advance_Token_No || '-') + (w.Name_of_VSS ? '  |  ' + w.Name_of_VSS : ''))
+      const w = btChequeGroup_(val);
+      return w ? ('Cheque ' + val + '  |  Amount ' + inr(w.amt) + '  |  Date ' + (w.date || '-') + '  |  Estimate ' + (w.estis.join(', ') || '-') + '  |  Token ' + (w.tokens.join(', ') || '-') + (w.vss ? '  |  ' + w.vss : ''))
                : ('Cheque ' + val + ' (details are not available to this user).');
     }
     return type ? ('Trans_Type ' + type + ' has no token or cheque details.') : 'Click a transaction below to see its token or cheque details.';
@@ -7198,6 +7298,8 @@
     const lastCb = withOb.reduce((m, x) => (x.S.cbDt > m ? x.S.cbDt : m), '');
     set('bt_all_accts', String(per.length)); set('bt_all_accts_note', withOb.length + ' with an opening balance');
     set('bt_all_count', String(all.length));
+    const virt = all.filter(r => r.Auto && r.AutoKind !== 'cheque').length, sb = btEl_('bt_sync_tokens');
+    if (sb) { sb.style.display = virt ? '' : 'none'; sb.textContent = 'Move ' + virt + ' credited token' + (virt === 1 ? '' : 's') + ' to Bank Transactions'; }
     set('bt_all_ob', withOb.length ? inr(sum('obAmt')) : '-'); set('bt_all_tot', withOb.length ? inr(sum('tot')) : '-');
     set('bt_all_wd', withOb.length ? inr(sum('wd')) : '-'); set('bt_all_cb', withOb.length ? inr(sum('cb')) : '-');
     set('bt_all_cbdt', lastCb || '-');
@@ -7246,13 +7348,17 @@
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
       if (btSelectedId_() === String(r.BT_id)) tr.classList.add('row-selected');
-      const link = r.Token_No ? 'Token ' + r.Token_No + (r.Auto ? ' (auto)' : '') : (r.Cheque_Ref ? 'Cheque ' + r.Cheque_Ref : '');
+      const fromAdv = !!(r.Auto || r.Source === 'advance');
+      const link = r.Token_No ? 'Token ' + r.Token_No + (fromAdv ? ' (auto)' : '') : (r.Cheque_Ref ? 'Cheque ' + r.Cheque_Ref + (fromAdv ? ' (auto)' : '') : '');
       tr.innerHTML = '<td>' + btEsc_(r.Year) + '</td><td>' + btEsc_(r.Trans_Date) + '</td><td>' + btEsc_(r.Transaction) + '</td><td>' + btEsc_(r.Trans_Type) + '</td><td>' + btEsc_(link) +
         '</td><td class="' + (isDep ? 'bt-dep' : 'bt-wd') + '">' + btEsc_(inr(r.Trans_Amt)) + '</td><td>' + btEsc_(r.Trans_Description) + '</td>';
-      if (r.Auto) {                                                   // a credited advance token: shown here, maintained in the Tokens tab
+      if (fromAdv) {                                                  // a credited advance token: shown here, maintained in the Tokens tab
         tr.classList.add('bt-auto');
-        tr.title = 'Credited advance token (added automatically)';
-        tr.onclick = () => { btShowDetails_('Token Amount', r.Token_No); setStatus('bt_status_msg', 'This deposit is the credited advance token ' + r.Token_No + '. It is maintained in the Tokens tab, not here.'); };
+        tr.title = r.Cheque_Ref ? 'Cheque drawn on this account (added automatically)' : 'Credited advance token (added automatically)';
+        tr.onclick = () => {
+          btShowDetails_(r.Trans_Type, r.Token_No || r.Cheque_Ref);
+          setStatus('bt_status_msg', r.Cheque_Ref ? 'This withdrawal is cheque ' + r.Cheque_Ref + ' from the estimate withdrawal details. It is maintained there, not here.' : 'This deposit is the credited advance token ' + r.Token_No + '. It is maintained in the Tokens tab, not here.');
+        };
         tr.appendChild(document.createElement('td'));
       } else {
         tr.onclick = () => loadBankTransactionIntoForm(r);
@@ -8098,6 +8204,17 @@
   }
   applyAdvanceRoleUI_();
 
+  // what happened to the Bank Transactions when a token was saved
+  function advBankNote_(res, data) {
+    const b = res && res.bank; if (!b) return '';
+    if (b.error) return ' (Bank Transactions could not be updated: ' + b.error + ')';
+    if (b.missing && b.missing.length) return ' Credited Account No ' + b.missing[0] + ' is not an account in the Bank tab, so nothing was added to Bank Transactions.';
+    if (data && data.credited && !data.credited_date && !b.synced) return ' Enter a Credited Date to add it to Bank Transactions.';
+    if (b.synced) return ' The credited amount is in Bank Transactions (Deposit, Token Amount).';
+    if (b.removed) return ' The token was removed from Bank Transactions.';
+    if (data && data.credited && !data.credited_account_no) return ' Choose a Credited Account No to add it to Bank Transactions.';
+    return '';
+  }
   function saveAdvance() {
     if (!advAllowed_('create')) { setStatus('adv_status', 'Only an administrator can add advance tokens.', true); return; }
     const data = {
@@ -8127,7 +8244,7 @@
       return;
     }
     gsr().withSuccessHandler(res => {
-      setStatus('adv_status', 'Saved.');
+      setStatus('adv_status', 'Saved.' + advBankNote_(res, data));
       clearAdvanceForm();
       refreshAdvanceTable();
     }).addAdvance(data);
@@ -8168,7 +8285,7 @@
       return;
     }
     const doUpdate = () => gsr().withSuccessHandler(res => {
-      setStatus('adv_status', 'Updated.');
+      setStatus('adv_status', 'Updated.' + advBankNote_(res, data));
       refreshAdvanceTable();
     }).updateAdvance(data);
     // An administrator may rename a Token_No only while nothing else refers to it.

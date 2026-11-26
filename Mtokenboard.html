@@ -390,6 +390,15 @@
     .mbi-grid > .mb-panel.mb-wide { grid-column: 1 / -1; }
     .bt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 16px; align-items: start; }
     .bt-grid .bt-desc { grid-column: 1 / -1; }
+    .bt-band { border: 1px solid var(--border); border-radius: 10px; background: #fff; padding: 12px 16px 14px; margin: 0 0 14px; }
+    .bt-band-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--ink); }
+    .bt-band-title .stat-label { font-weight: 400; }
+    .bt-band .bt-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); align-items: end; }
+    .bt-band .bt-grid .field-row input, .bt-band .bt-grid .field-row select { width: 100%; box-sizing: border-box; }
+    .bt-band .bt-grid .bt-desc { grid-column: 1 / -1; }
+    .bt-band .bt-pick { grid-column: span 2; }
+    .bt-band .btn-row { margin-top: 12px; justify-content: flex-end; }
+    .bt-band .mb-note { margin: 0 0 8px; }
     .bt-ob-strip { display: flex; flex-wrap: wrap; gap: 10px 14px; margin: 0 0 10px; }
     .bt-ob-card { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; padding: 8px 14px; border: 1px solid; border-radius: 8px; font-size: 13px; }
     .bt-ob-card .k { font: 700 11px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .12em; text-transform: uppercase; }
@@ -1679,6 +1688,7 @@
           <div class="stat-card"><div class="stat-label">Scheme</div><div class="stat-value" id="bt_sum_scheme" style="font-size:15px;">-</div></div>
           <div class="stat-card"><div class="stat-label">Account No</div><div class="stat-value" id="bt_sum_acct" style="font-size:15px;">-</div></div>
           <div class="stat-card" title="Advance tokens whose Credited Account No is this account"><div class="stat-label">Advance tokens credited</div><div class="stat-value" id="bt_sum_tokens" style="font-size:15px;">-</div></div>
+          <div class="stat-card" title="The next unused cheque leaf of each cheque book of this account that still has leaves"><div class="stat-label">Next cheque leaf</div><div class="stat-value" id="bt_sum_nextleaf" style="font-size:15px;">-</div></div>
           <div class="stat-card"><div class="stat-label">Operating by (Authority office)</div><div class="stat-value" id="bt_sum_operating" style="font-size:15px;">-</div></div>
           <div class="stat-card"><div class="stat-label">Beginning Month</div><div class="stat-value" id="bt_sum_bmonth" style="font-size:15px;">-</div></div>
           <div class="stat-card bt-begin"><div class="stat-label">Beginning OB_Amt</div><div class="stat-value" id="bt_sum_bob_amt">-</div></div>
@@ -1707,31 +1717,52 @@
         </div>
         <button type="button" class="action" id="bt_sync_tokens" style="display:none; margin: 0 0 10px;" onclick="btSyncTokens_()"></button>
         <button type="button" class="action" id="bt_show_accounts" style="display:none; margin: -2px 0 12px;" onclick="setBankAccountsBand_(true)">Show Withdrawal Accounts &amp; Cheque Books</button>
-        <div class="bt-grid">
-          <div class="field-row"><label>Account</label><select id="bt_account" onchange="onBtAccountChange()"><option value="">Select account</option></select></div>
-          <div class="field-row"><label>Year</label><select id="bt_year"></select></div>
-          <div class="field-row bt-desc">
-            <label class="bt-ob-opt"><input type="checkbox" id="bt_ob_on" onchange="btObToggled_()"> Record / change opening balance (OB)</label>
-            <div class="mb-note" id="bt_ob_note" style="margin: 2px 0 0;"></div>
+        <div class="bt-band">
+          <div class="bt-band-title">Select account</div>
+          <div class="bt-grid">
+            <div class="field-row"><label>Operating_by_Authority_office</label>
+              <select id="bt_operating" onchange="btOperatingChanged_()"><option value="All">All</option><option value="Division">Division</option><option value="Range">Range</option></select></div>
+            <div class="field-row bt-pick"><label>Account</label><select id="bt_account" onchange="onBtAccountChange()"><option value="">Select account</option></select></div>
           </div>
-          <div class="field-row bt-ob-field"><label>OB_Amt</label><input type="number" step="0.01" id="bt_ob_amt" value="0"></div>
-          <div class="field-row bt-ob-field"><label>OB_Date</label><input type="date" id="bt_ob_date"></div>
-          <div class="field-row"><label>Trans_Date</label><input type="date" id="bt_trans_date"></div>
-          <div class="field-row"><label>Transaction</label>
-            <select id="bt_txn"><option value="">--select--</option><option value="Withdrawn">Withdrawn</option><option value="Deposit">Deposit</option></select></div>
-          <div class="field-row"><label>Trans_Type</label>
-            <select id="bt_trans_type" onchange="btTypeChanged_()"><option value="">--select--</option><option>Token Amount</option><option>Interest</option><option>DD Amount</option><option>Cheque</option><option>Deposit Direct</option></select></div>
-          <div class="field-row" id="bt_link_wrap" style="display:none;"><label id="bt_link_label">Token</label><select id="bt_link" onchange="btLinkChanged_()"></select></div>
-          <div class="field-row"><label>Trans_Amt</label><input type="number" step="0.01" min="0" id="bt_trans_amt" value="0"></div>
-          <div class="field-row bt-desc"><label>Trans_Description</label><input type="text" id="bt_description" placeholder="Description of the transaction"></div>
         </div>
-        <div class="btn-row" style="margin-top:4px;">
-          <button class="action" onclick="updateBankTransactionRecord()">Update</button>
-          <button class="action" onclick="deleteBankTransactionRecord()">Delete</button>
-          <button class="action primary" onclick="saveBankTransaction()">Save</button>
-          <button class="action" onclick="clearBankTransactionForm()">New</button>
+
+        <div class="bt-band">
+          <div class="bt-band-title">1. Opening Balance (OB) <span class="stat-label">saved separately from transactions</span></div>
+          <div class="mb-note" id="bt_ob_note"></div>
+          <div class="bt-grid">
+            <div class="field-row"><label>OB_Amt</label><input type="number" step="0.01" id="bt_ob_amt" value="0"></div>
+            <div class="field-row"><label>OB_Date</label><input type="date" id="bt_ob_date"></div>
+          </div>
+          <div class="btn-row">
+            <button class="action" onclick="updateBankOpening()">Update OB</button>
+            <button class="action" onclick="deleteBankTransactionRecord()">Delete</button>
+            <button class="action primary" onclick="saveBankOpening()">Save OB</button>
+            <button class="action" onclick="clearBankOpeningForm()">New</button>
+          </div>
+          <div class="status" id="bt_ob_status_msg"></div>
         </div>
-        <div class="status" id="bt_status_msg"></div>
+
+        <div class="bt-band">
+          <div class="bt-band-title">2. Transaction</div>
+          <div class="bt-grid">
+            <div class="field-row"><label>Year</label><select id="bt_year"></select></div>
+            <div class="field-row"><label>Trans_Date</label><input type="date" id="bt_trans_date"></div>
+            <div class="field-row"><label>Transaction</label>
+              <select id="bt_txn"><option value="">--select--</option><option value="Withdrawn">Withdrawn</option><option value="Deposit">Deposit</option></select></div>
+            <div class="field-row"><label>Trans_Type</label>
+              <select id="bt_trans_type" onchange="btTypeChanged_()"><option value="">--select--</option><option>Token Amount</option><option>Interest</option><option>DD Amount</option><option>Cheque</option><option>Deposit Direct</option></select></div>
+            <div class="field-row" id="bt_link_wrap" style="display:none;"><label id="bt_link_label">Token</label><select id="bt_link" onchange="btLinkChanged_()"></select><div id="bt_next_hint" style="font-size:11px; color:var(--muted); margin-top:3px;"></div></div>
+            <div class="field-row"><label>Trans_Amt</label><input type="number" step="0.01" min="0" id="bt_trans_amt" value="0"></div>
+            <div class="field-row bt-desc"><label>Trans_Description</label><input type="text" id="bt_description" placeholder="Description of the transaction"></div>
+          </div>
+          <div class="btn-row">
+            <button class="action" onclick="updateBankTransactionRecord()">Update</button>
+            <button class="action" onclick="deleteBankTransactionRecord()">Delete</button>
+            <button class="action primary" onclick="saveBankTransaction()">Save</button>
+            <button class="action" onclick="clearBankTransactionForm()">New</button>
+          </div>
+          <div class="status" id="bt_status_msg"></div>
+        </div>
 
         <div class="scheme-card-title" style="font-size:13px; margin-top:12px; margin-bottom:6px;">Bank Transactions of selected account <span class="stat-label">(click a row to edit)</span></div>
         <div class="list-wrap" style="max-height:300px;">
@@ -2851,7 +2882,7 @@
             <div class="mbi-grid">
               <div class="mb-panel">
                 <div class="mb-panel-title">Withdrawal Accounts</div>
-            <div class="field-row"><label>Bank</label><input type="text" id="wa_bank"></div>
+            <div class="field-row"><label>Bank</label><input type="text" id="wa_bank" list="wa_bank_list" autocomplete="off" placeholder="Select a bank or type a new one" title="Pick an existing bank from the list, or type a new bank name to add it"><datalist id="wa_bank_list"></datalist></div>
             <div class="field-row"><label>Branch</label><input type="text" id="wa_branch"></div>
             <div class="field-row"><label>Place</label><input type="text" id="wa_place"></div>
             <div class="field-row"><label>Account No</label><input type="text" id="wa_account_no"></div>
@@ -2869,13 +2900,6 @@
             </div>
             <div class="status" id="wa_status_msg"></div>
 
-            <div class="scheme-card-title" style="font-size:13px; margin-top:20px; margin-bottom:6px;">Accounts <span class="stat-label">(click a row to edit)</span></div>
-            <div class="list-wrap" style="max-height:220px;">
-              <table class="grid">
-                <thead><tr><th>Bank</th><th>Branch</th><th>Place</th><th>Account No</th><th>IFSC</th><th>Name of Account</th><th>Drawing Authorities</th><th>Scheme</th><th>Operating_by_Authority_office</th><th>Cheque Books</th><th></th></tr></thead>
-                <tbody id="wa_list_table"></tbody>
-              </table>
-            </div>
               </div>
               <div class="mb-panel">
                 <div class="mb-panel-title">Cheque Books <span class="stat-label" id="cb_account_label" style="text-transform:none; letter-spacing:0; font-weight:400;">(select an account above)</span></div>
@@ -2898,6 +2922,16 @@
               <table class="grid">
                 <thead><tr><th>Cheque Book No</th><th>Leaves From</th><th>Leaves To</th><th>No. of Leaves</th><th>Used Leaves</th><th>Balance Leaves</th><th>Next Leaf No</th><th></th></tr></thead>
                 <tbody id="cb_list_table"></tbody>
+              </table>
+            </div>
+              </div>
+              <div class="mb-panel mb-wide" id="wa_accounts_wide">
+                <div class="mb-panel-title">Accounts</div>
+            <div class="scheme-card-title" style="font-size:13px; margin-top:0; margin-bottom:8px;">Accounts <span class="stat-label">(click a row to edit)</span></div>
+            <div class="list-wrap" style="max-height:340px; overflow:auto;">
+              <table class="grid" style="min-width:1100px; width:100%;">
+                <thead><tr><th>Bank</th><th>Branch</th><th>Place</th><th>Account No</th><th>IFSC</th><th>Name of Account</th><th>Drawing Authorities</th><th>Scheme</th><th>Operating_by_Authority_office</th><th>Cheque Books</th><th></th></tr></thead>
+                <tbody id="wa_list_table"></tbody>
               </table>
             </div>
               </div>
@@ -3316,6 +3350,7 @@
     withdrawn: { table: 'withdrawn_details', pk: 'wd_id', cols: [['WD_id', 'wd_id', 'id'], ['Esti_no', 'esti_no', 's'], ['Advance_Token_No', 'advance_token_no', 's'], ['Credited_Status', 'credited_status', 's'], ['Withdrawn_Date', 'withdrawn_date', 'd'], ['Withdrawn_Amount', 'withdrawn_amount', 'n'], ['Withdrawn_Cheque_No', 'withdrawn_cheque_no', 's']] },
     account: { table: 'withdrawal_accounts', pk: 'wa_id', cols: [['WA_id', 'wa_id', 'id'], ['Bank', 'bank', 's'], ['Branch', 'branch', 's'], ['Place', 'place', 's'], ['Account_No', 'account_no', 's'], ['IFSC_Code', 'ifsc_code', 's'], ['Name_of_Account', 'name_of_account', 's'], ['Drawing_Authorities', 'drawing_authorities', 's'], ['Scheme', 'scheme', 's'], ['Operating_by', 'operating_by', 's'], ['No_of_Cheque_Books_Issued', 'no_of_cheque_books_issued', 'n']] },
     bankTxn: { table: 'bank_transactions', pk: 'bt_id', cols: [['BT_id', 'bt_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Year', 'year', 's'], ['OB_Amt', 'ob_amt', 'n'], ['OB_Date', 'ob_date', 'd'], ['Trans_Date', 'trans_date', 'd'], ['Transaction', 'txn', 's'], ['Trans_Amt', 'trans_amt', 'n'], ['Trans_Type', 'trans_type', 's'], ['Token_No', 'token_no', 's'], ['Cheque_Ref', 'cheque_ref', 's'], ['Trans_Description', 'trans_description', 's'], ['Source', 'source', 's']] },
+    bankOb: { table: 'bank_opening_balances', pk: 'ob_id', cols: [['OB_id', 'ob_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Year', 'year', 's'], ['OB_Amt', 'ob_amt', 'n'], ['OB_Date', 'ob_date', 'd']] },
     cheque: { table: 'cheque_books', pk: 'cb_id', cols: [['CB_id', 'cb_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Cheque_Book_No', 'cheque_book_no', 's'], ['Leaves_No_From', 'leaves_no_from', 's'], ['Leaves_No_To', 'leaves_no_to', 's']] },
     mbi: { table: 'mbook_issued', pk: 'mbi_id', cols: [['MBI_id', 'mbi_id', 'id'], ['Year', 'year', 's'], ['MBook_No', 'mbook_no', 's'], ['Pages_From', 'pages_from', 'n'], ['Pages_To', 'pages_to', 'n'], ['Issue_Date', 'issue_date', 'd'], ['Issued_By', 'issued_by', 's'], ['Scheme', 'scheme', 's'], ['Esti_no', 'esti_no', 's']] }
     , mbob: { table: 'mbook_ob', pk: 'ob_id', cols: [['OB_id', 'ob_id', 'id'], ['MBook_No', 'mbook_no', 's'], ['OB_Page', 'ob_page', 'n'], ['OB_Date', 'ob_date', 'd']] }
@@ -3467,11 +3502,12 @@
   const bankFyOf_ = dt0 => { const dt = new Date(dt0), y = dt.getMonth() >= 3 ? dt.getFullYear() : dt.getFullYear() - 1; return y + '-' + String(y + 1).slice(-2); };
   async function syncBankForToken_(tokenNo) {
     const tok = T_(tokenNo);
-    const out = { synced: 0, removed: 0, missing: [] };
+    const out = { synced: 0, removed: 0, missing: [], withdrawn: 0 };
     if (!tok) return out;
     const adv = await list_('advance', q => q.eq('token_no', tok));
     const existing = await list_('bankTxn', q => q.eq('token_no', tok));
-    const managed = existing.filter(r => r.Source === 'advance'), manual = existing.filter(r => r.Source !== 'advance');
+    const managed = existing.filter(r => r.Source === 'advance'), managedWd = existing.filter(r => r.Source === 'advance_wd'),
+          manual = existing.filter(r => r.Source !== 'advance' && r.Source !== 'advance_wd');
     const byAcct = {};
     adv.filter(a => a.Credited === 'Yes' && T_(a.Credited_Account_No) && a.Credited_Date).forEach(a => {
       const k = T_(a.Credited_Account_No);
@@ -3485,7 +3521,7 @@
       const accts = await list_('account', q => q.eq('account_no', no));
       if (!accts.length) { out.missing.push(no); continue; }
       const wa = String(accts[0].WA_id), g = byAcct[no];
-      if (manual.some(r => String(r.WA_id) === wa)) { keep.add(wa); continue; }        // entered by hand: leave it
+      if (manual.some(r => String(r.WA_id) === wa && r.Transaction === 'Deposit')) { keep.add(wa); continue; }        // entered by hand: leave it
       if (!(g.amt > 0)) continue;
       const row = { wa_id: Number(wa), year: bankFyOf_(g.date), ob_amt: 0, ob_date: null, trans_date: g.date, txn: 'Deposit', trans_amt: Math.round(g.amt * 100) / 100,
                     trans_type: 'Token Amount', token_no: tok, cheque_ref: '',
@@ -3496,13 +3532,39 @@
       keep.add(wa); out.synced++;
     }
     for (const r of managed) if (!keep.has(String(r.WA_id))) { await deleteRow_('bank_transactions', 'bt_id', r.BT_id, ''); out.removed++; }
+
+    /* Advance token whose Hoa column holds a withdrawal Account No -> one Withdrawn / Token Amount row in that account (source = 'advance_wd').
+       Trans_Date = token date, Trans_Amt = token amount.  Changing the token's Hoa / amount / date updates the row; clearing it removes the row. */
+    const wdBy = {};
+    adv.forEach(a => {
+      const h = T_(a.Hoa); if (!h || !a.Dt) return;
+      const g = wdBy[h] || (wdBy[h] = { amt: 0, date: String(a.Dt), scheme: a.Scheme || '' });
+      g.amt += N_(a.Amount);
+      if (String(a.Dt) < g.date) g.date = String(a.Dt);
+    });
+    const keepWd = new Set();
+    for (const no of Object.keys(wdBy)) {
+      const accts = await list_('account', q => q.eq('account_no', no));
+      if (!accts.length) continue;                                                     // Hoa is an ordinary head of account, not an account no
+      const wa = String(accts[0].WA_id), g = wdBy[no];
+      if (manual.some(r => String(r.WA_id) === wa && r.Transaction === 'Withdrawn')) { keepWd.add(wa); continue; }   // entered by hand: leave it
+      if (!(g.amt > 0)) continue;
+      const row = { wa_id: Number(wa), year: bankFyOf_(g.date), ob_amt: 0, ob_date: null, trans_date: g.date, txn: 'Withdrawn', trans_amt: Math.round(g.amt * 100) / 100,
+                    trans_type: 'Token Amount', token_no: tok, cheque_ref: '',
+                    trans_description: 'Token ' + tok + (g.scheme ? ' - ' + g.scheme : '') + ' / A/c ' + no, source: 'advance_wd' };
+      const mineWd = managedWd.find(r => String(r.WA_id) === wa);
+      if (mineWd) await updateRow_('bank_transactions', 'bt_id', mineWd.BT_id, row, 'Bank transaction not found');
+      else await insertRow_('bank_transactions', 'bt_id', row);
+      keepWd.add(wa); out.withdrawn++;
+    }
+    for (const r of managedWd) if (!keepWd.has(String(r.WA_id))) { await deleteRow_('bank_transactions', 'bt_id', r.BT_id, ''); out.removed++; }
     return out;
   }
   // never lets a bank-side problem fail the advance save
   async function bankSyncSafe_(tokens) {
-    const out = { synced: 0, removed: 0, missing: [] };
+    const out = { synced: 0, removed: 0, missing: [], withdrawn: 0 };
     for (const t of Array.from(new Set((tokens || []).map(T_).filter(Boolean)))) {
-      try { const r = await syncBankForToken_(t); out.synced += r.synced; out.removed += r.removed; r.missing.forEach(m => { if (!out.missing.includes(m)) out.missing.push(m); }); }
+      try { const r = await syncBankForToken_(t); out.synced += r.synced; out.withdrawn += r.withdrawn; out.removed += r.removed; r.missing.forEach(m => { if (!out.missing.includes(m)) out.missing.push(m); }); }
       catch (e) { out.error = (e && e.message) ? e.message : String(e); }
     }
     return out;
@@ -3535,9 +3597,9 @@
   // one-off: move every credited token that is not in bank_transactions yet
   API_.syncCreditedTokensToBank = async () => {
     const adv = await list_('advance');
-    const tokens = Array.from(new Set(adv.filter(a => a.Credited === 'Yes').map(a => T_(a.Token_No)).filter(Boolean)));
+    const tokens = Array.from(new Set(adv.map(a => T_(a.Token_No)).filter(Boolean)));
     const out = await bankSyncSafe_(tokens);
-    return { success: !out.error, tokens: tokens.length, synced: out.synced, removed: out.removed, missing: out.missing, message: out.error || '' };
+    return { success: !out.error, tokens: tokens.length, synced: out.synced, withdrawn: out.withdrawn, removed: out.removed, missing: out.missing, message: out.error || '' };
   };
   // How many expenditure / adjustment records point at this advance Token_No.
   API_.countAdvanceTokenUsage = async tokenNo => {
@@ -3989,7 +4051,8 @@
   async function validateChequeLeafUnused_(d, excludeId) {
     const leaf = leafNum_(d.withdrawn_cheque_no), acct = T_(d.withdrawn_account_no);
     if (leaf === null || !acct) return '';
-    const dup = (await withdrawnRows_()).find(w => !same_(w.WD_id, excludeId || '') && T_(w.Withdrawn_Account_No) === acct && leafNum_(w.Withdrawn_Cheque_No) === leaf);
+    // one cheque may pay several estimates (Common Withdrawal), so only a second use inside the SAME estimate is refused
+    const dup = (await withdrawnRows_()).find(w => !same_(w.WD_id, excludeId || '') && T_(w.Withdrawn_Account_No) === acct && leafNum_(w.Withdrawn_Cheque_No) === leaf && same_(w.Esti_no, d.esti_no));
     return dup ? ('Cheque leaf ' + d.withdrawn_cheque_no + ' of account ' + acct + ' has already been used (estimate ' + dup.Esti_no + ').') : '';
   }
   async function withdrawnDb_(d) {
@@ -4007,6 +4070,32 @@
     if (err) return { success: false, message: err };
     return updateRow_('withdrawn_details', 'wd_id', d.wd_id, await withdrawnDb_(d), 'Withdrawal record not found');
   };
+  /* Common Withdrawal: ONE cheque leaf of ONE account pays several estimates / tokens (one withdrawn_details row per token, same leaf and date).
+     All rows are saved or none: if one fails its checks, the rows already written are removed again. */
+  API_.addCommonWithdrawal = async d => {
+    const items = (d.items || []).filter(i => N_(i.withdrawn_amount) > 0);
+    const acct = T_(d.withdrawn_account_no), leaf = T_(d.withdrawn_cheque_no);
+    if (!items.length) return { success: false, message: 'Select at least one token and enter its amount.' };
+    if (!acct) return { success: false, message: 'Select the withdrawal account.' };
+    if (!T_(d.withdrawn_date)) return { success: false, message: 'Withdrawn Date is required.' };
+    if (!leaf) return { success: false, message: 'Select the cheque leaf.' };
+    const used = (await withdrawnRows_()).find(w => T_(w.Withdrawn_Account_No) === acct && leafNum_(w.Withdrawn_Cheque_No) === leafNum_(leaf));
+    if (used) return { success: false, message: 'Cheque leaf ' + leaf + ' of account ' + acct + ' has already been used (estimate ' + used.Esti_no + ').' };
+    const made = [];
+    try {
+      for (const it of items) {
+        const row = { esti_no: it.esti_no, advance_token_no: it.advance_token_no, advance_token_amount: it.advance_token_amount, credited_status: 'Credited',
+                      withdrawn_date: d.withdrawn_date, withdrawn_amount: it.withdrawn_amount, withdrawn_cheque_no: leaf, withdrawn_account_no: acct, name_of_vss: d.name_of_vss };
+        const err = await validateWithdrawalLimits_(row);
+        if (err) throw new Error(err);
+        made.push(await insertRow_('withdrawn_details', 'wd_id', await withdrawnDb_(row)));
+      }
+    } catch (e) {
+      for (const id of made) { try { await deleteRow_('withdrawn_details', 'wd_id', id, ''); } catch (e2) { } }
+      return { success: false, message: (e && e.message) ? e.message : String(e) };
+    }
+    return { success: true, count: made.length, ids: made };
+  };
   API_.deleteWithdrawnDetail = id => deleteRow_('withdrawn_details', 'wd_id', id, 'Withdrawal record not found');
 
   /* ---------- Withdrawal accounts & cheque books ---------- */
@@ -4019,7 +4108,7 @@
     if (books.length) return { success: false, message: 'This account still has cheque books — delete them first.' };
     try {
       const txns = await list_('bankTxn', q => q.eq('wa_id', Number(id)));
-      if (txns.length) return { success: false, message: 'This account still has bank transactions — delete them first.' };
+      if (txns.length || (await obRows_(id)).length) return { success: false, message: 'This account still has bank transactions — delete them first.' };
     } catch (e) { /* the bank_transactions table has not been created yet */ }
     return deleteRow_('withdrawal_accounts', 'wa_id', id, 'Withdrawal account not found');
   };
@@ -4033,9 +4122,9 @@
     if (!accts.length) return 'Select an account first.';
     // Opening balance: optional, except that the account's first entry must carry one (the latest OB is calculated from the last OB).
     const existing = await list_('bankTxn', q => q.eq('wa_id', Number(d.wa_id)));
-    const hasOb = existing.some(r => r.OB_Date && String(r.BT_id) !== String(excludeId || ''));
+    const hasOb = existing.some(r => r.OB_Date && String(r.BT_id) !== String(excludeId || '')) || (await obRows_(d.wa_id)).length > 0;
     if (T_(d.ob_date)) { if (T_(d.ob_amt) === '' || isNaN(Number(d.ob_amt))) return 'OB_Amt is required together with OB_Date.'; }
-    else if (!hasOb) return 'OB_Amt and OB_Date are required for the first entry of an account.';
+    else if (!hasOb) return 'Save the opening balance (OB_Amt and OB_Date) for this account first.';
     if (!T_(d.year)) return 'Year is required.';
     if (!T_(d.trans_date)) return 'Trans_Date is required.';
     if (!BANK_TXN_KINDS_.includes(T_(d.txn))) return 'Select Transaction (Withdrawn or Deposit).';
@@ -4043,12 +4132,45 @@
     if (!(N_(d.trans_amt) > 0)) return 'Trans_Amt must be greater than 0.';
     return '';
   }
-  API_.getBankTransactionsData = waId => list_('bankTxn', (waId !== undefined && waId !== null && waId !== '') ? (q => q.eq('wa_id', Number(waId))) : null);
+  API_.getBankTransactionsData = async waId => {
+    const txns = await list_('bankTxn', (waId !== undefined && waId !== null && waId !== '') ? (q => q.eq('wa_id', Number(waId))) : null);
+    return txns.concat((await obRows_(waId)).map(obRowToTxn_));
+  };
   API_.addBankTransaction = async d => { const e = await validateBankTxn_(d, ''); if (e) return { success: false, message: e }; return { success: true, id: await insertRow_('bank_transactions', 'bt_id', bankTxnDb_(d)) }; };
-  const bankTxnManaged_ = async id => { const r = await list_('bankTxn', q => q.eq('bt_id', Number(id))); return !!(r[0] && r[0].Source === 'advance'); };
-  const BT_MANAGED_MSG_ = 'This deposit comes from an Advance token. Change it in the Tokens tab.';
-  API_.updateBankTransaction = async d => { if (await bankTxnManaged_(d.bt_id)) return { success: false, message: BT_MANAGED_MSG_ }; const e = await validateBankTxn_(d, d.bt_id); if (e) return { success: false, message: e }; return updateRow_('bank_transactions', 'bt_id', d.bt_id, bankTxnDb_(d), 'Bank transaction not found'); };
-  API_.deleteBankTransaction = async id => { if (await bankTxnManaged_(id)) return { success: false, message: BT_MANAGED_MSG_ }; return deleteRow_('bank_transactions', 'bt_id', id, 'Bank transaction not found'); };
+  /* Opening balances live in their own table (bank_opening_balances).  They are handed to the screen as OB-only rows
+     (BT_id 'OB:<id>', Trans_Type 'Opening Balance', Trans_Amt 0) so the summary, ledger and reports work on them unchanged. */
+  const isObId_ = id => String(id).startsWith('OB:');
+  const obRowToTxn_ = o => ({ BT_id: 'OB:' + o.OB_id, WA_id: o.WA_id, Year: o.Year, OB_Amt: o.OB_Amt, OB_Date: o.OB_Date, Trans_Date: o.OB_Date, Transaction: 'Deposit', Trans_Amt: 0,
+    Trans_Type: 'Opening Balance', Token_No: '', Cheque_Ref: '', Trans_Description: 'Opening balance', Source: 'opening' });
+  async function obRows_(waId) {
+    try { return (await list_('bankOb', (waId !== undefined && waId !== null && waId !== '') ? (q => q.eq('wa_id', Number(waId))) : null)); }
+    catch (e) { return []; }                                  // the bank_opening_balances table has not been created yet
+  }
+  const bankObErr_ = async d => {
+    const accts = await list_('account', q => q.eq('wa_id', Number(d.wa_id)));
+    if (!accts.length) return 'Select an account first.';
+    if (!T_(d.ob_date)) return 'OB_Date is required.';
+    if (T_(d.ob_amt) === '' || isNaN(Number(d.ob_amt))) return 'OB_Amt is required.';
+    return '';
+  };
+  API_.addBankOpening = async d => {
+    const e = await bankObErr_(d); if (e) return { success: false, message: e };
+    const dup = (await obRows_(d.wa_id)).find(o => o.OB_Date === D_(d.ob_date));
+    if (dup) return { success: false, message: 'An opening balance for this account is already saved for ' + dup.OB_Date + '. Select it in the list and use Update OB.' };
+    return { success: true, id: await insertRow_('bank_opening_balances', 'ob_id', { wa_id: I_(d.wa_id), year: bankFyOf_(D_(d.ob_date)), ob_amt: N_(d.ob_amt), ob_date: D_(d.ob_date) }) };
+  };
+  API_.updateBankOpening = async d => {
+    const e = await bankObErr_(d); if (e) return { success: false, message: e };
+    if (isObId_(d.bt_id)) return updateRow_('bank_opening_balances', 'ob_id', Number(String(d.bt_id).slice(3)), { ob_amt: N_(d.ob_amt), ob_date: D_(d.ob_date), year: bankFyOf_(D_(d.ob_date)) }, 'Opening balance not found');
+    const cur = (await list_('bankTxn', q => q.eq('bt_id', Number(d.bt_id))))[0];       // an older row that still holds its OB inside the transaction
+    if (!cur || !cur.OB_Date) return { success: false, message: 'Select a row that holds an opening balance.' };
+    if (cur.Source === 'advance' || cur.Source === 'advance_wd') return { success: false, message: BT_MANAGED_MSG_ };
+    return updateRow_('bank_transactions', 'bt_id', d.bt_id, { ob_amt: N_(d.ob_amt), ob_date: D_(d.ob_date) }, 'Bank transaction not found');
+  };
+  const bankTxnManaged_ = async id => { const r = await list_('bankTxn', q => q.eq('bt_id', Number(id))); return !!(r[0] && (r[0].Source === 'advance' || r[0].Source === 'advance_wd')); };
+  const BT_MANAGED_MSG_ = 'This transaction comes from an Advance token. Change it in the Tokens tab.';
+  API_.updateBankTransaction = async d => { if (isObId_(d.bt_id)) return { success: false, message: 'This is an opening balance. Use Update OB.' }; if (await bankTxnManaged_(d.bt_id)) return { success: false, message: BT_MANAGED_MSG_ }; const e = await validateBankTxn_(d, d.bt_id); if (e) return { success: false, message: e }; return updateRow_('bank_transactions', 'bt_id', d.bt_id, bankTxnDb_(d), 'Bank transaction not found'); };
+  API_.deleteBankTransaction = async id => { if (isObId_(id)) return deleteRow_('bank_opening_balances', 'ob_id', Number(String(id).slice(3)), 'Opening balance not found'); if (await bankTxnManaged_(id)) return { success: false, message: BT_MANAGED_MSG_ }; return deleteRow_('bank_transactions', 'bt_id', id, 'Bank transaction not found'); };
 
   API_.getChequeBooksData = async waId => {
     const rows = await fetchAll_('v_cheque_books', 'cb_id', (waId !== undefined && waId !== null && waId !== '') ? (q => q.eq('wa_id', Number(waId))) : null);
@@ -5071,8 +5193,8 @@
   secR_('Vouchers', ['getVoucherData']); secW_('Vouchers', 'A', ['addVoucherDetail', 'saveVoucherPlan']); secW_('Vouchers', 'E', ['updateVoucherDetail', 'saveVoucherSettings']); secW_('Vouchers', 'D', ['deleteVoucherDetail']);
   secG_('Vouchers', ['generateVoucherPdf', 'generateAllVouchersPdf']);
   secR_('Mbook', ['getMbookIssuedData', 'getMbookData', 'getMbookUsageSummary', 'getMbookObData']); secW_('Mbook', 'A', ['addMbookIssued', 'saveMbookDataToVouchers', 'addMbookOb']); secW_('Mbook', 'E', ['updateMbookIssued', 'updateVoucherMbookFields']); secW_('Mbook', 'D', ['deleteMbookIssued', 'clearVoucherMbookFields', 'deleteMbookOb']);
-  secR_('Withdraw', ['getWithdrawnDetailsData']); secW_('Withdraw', 'A', ['addWithdrawnDetail']); secW_('Withdraw', 'E', ['updateWithdrawnDetail']); secW_('Withdraw', 'D', ['deleteWithdrawnDetail']);
-  secR_('Withdrawal Accounts', ['getWithdrawalAccountsData', 'getBankTransactionsData']); secW_('Withdrawal Accounts', 'A', ['addWithdrawalAccount', 'addBankTransaction', 'syncCreditedTokensToBank']); secW_('Withdrawal Accounts', 'E', ['updateWithdrawalAccount', 'updateBankTransaction']); secW_('Withdrawal Accounts', 'D', ['deleteWithdrawalAccount', 'deleteBankTransaction']);
+  secR_('Withdraw', ['getWithdrawnDetailsData']); secW_('Withdraw', 'A', ['addWithdrawnDetail', 'addCommonWithdrawal']); secW_('Withdraw', 'E', ['updateWithdrawnDetail']); secW_('Withdraw', 'D', ['deleteWithdrawnDetail']);
+  secR_('Withdrawal Accounts', ['getWithdrawalAccountsData', 'getBankTransactionsData']); secW_('Withdrawal Accounts', 'A', ['addWithdrawalAccount', 'addBankTransaction', 'addBankOpening', 'syncCreditedTokensToBank']); secW_('Withdrawal Accounts', 'E', ['updateWithdrawalAccount', 'updateBankTransaction', 'updateBankOpening']); secW_('Withdrawal Accounts', 'D', ['deleteWithdrawalAccount', 'deleteBankTransaction']);
   secR_('Cheque Books', ['getChequeBooksData']); secW_('Cheque Books', 'A', ['addChequeBook']); secW_('Cheque Books', 'E', ['updateChequeBook']); secW_('Cheque Books', 'D', ['deleteChequeBook']);
   secR_('Fund Application', ['getFundApplicationData']); secW_('Fund Application', 'A', ['saveFundApplicationPlan', 'addFundApplication']); secW_('Fund Application', 'E', ['updateFundApplication', 'updateFundApplicationBatch']); secW_('Fund Application', 'D', ['deleteFundApplication', 'deleteFundApplicationBatch']);
   secG_('Reports', ['generateTokensReportPdf', 'generateAccReportPdf', 'generateEstimateReportPdf', 'generateBudgetAdvanceReportPdf', 'exportWorkbookForVoucherSuite']);
@@ -6815,7 +6937,16 @@
   // A small reference list of bank accounts (not tied to any one
   // estimate) — click a row to load it into the form, then Update/Delete/
   // Save (new)/New, same pattern as Issued Mbooks and Advance.
+  // distinct banks already used by the accounts, A-Z (the Bank field offers these and also accepts a new name)
+  const waBankNames_ = () => Array.from(new Set((withdrawalAccountsCache || []).map(a => String(a.Bank || '').trim()).filter(Boolean))).sort((x, y) => x.localeCompare(y, undefined, { sensitivity: 'base' }));
+  function fillWaBankList_() {
+    const dl = document.getElementById('wa_bank_list'); if (!dl) return;
+    dl.innerHTML = waBankNames_().map(b => '<option value="' + String(b).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '"></option>').join('');
+  }
+  // a new name that only differs in letter case / spacing from an existing bank is saved with the existing spelling
+  const waCanonBank_ = v => { const t = String(v || '').replace(/\s+/g, ' ').trim(), k = t.toLowerCase(); return waBankNames_().find(b => b.replace(/\s+/g, ' ').toLowerCase() === k) || t; };
   function renderWithdrawalAccountsList(rows) {
+    fillWaBankList_();
     const tbody = document.getElementById('wa_list_table');
     if (!tbody) return;
     tbody.innerHTML = '';
@@ -6871,7 +7002,7 @@
 
   function waFormData_() {
     return {
-      bank: document.getElementById('wa_bank').value,
+      bank: waCanonBank_(document.getElementById('wa_bank').value),
       branch: document.getElementById('wa_branch').value,
       place: document.getElementById('wa_place').value,
       account_no: document.getElementById('wa_account_no').value,
@@ -6981,11 +7112,21 @@
   // Collapsed bar of the Bank Transactions band: the accounts split into Range and Division, one account per row,
   // each with its beginning OB and latest OB (and the month of each).
   let btAllLoaded_ = false;
+  // short bank name: "State Bank of India" -> SBI, "Union Bank of India" -> UBI, "Canara Bank" -> Canara, "HDFC Bank" -> HDFC
+  function btShortBank_(name) {
+    const t = String(name || '').replace(/[.,]/g, ' ').replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!t) return '';
+    const words = t.split(' ').filter(w => !/^(of|the|and|ltd|limited)$/i.test(w));
+    const core = words.filter(w => !/^bank$/i.test(w));
+    if (core.length <= 1) return core[0] || words[0] || t;
+    return words.map(w => w[0].toUpperCase()).join('');
+  }
+  const btBankSort_ = (x, y) => String(x.Bank || '').localeCompare(String(y.Bank || ''), undefined, { sensitivity: 'base' }) || String(x.Account_No || '').localeCompare(String(y.Account_No || ''), undefined, { numeric: true });
   function btAccountChips_() {
     const list = withdrawalAccountsCache || [];
     if (!list.length) return [['Accounts', 'none yet']];
     const groups = [['Division', []], ['Range', []], ['Not set', []]];
-    list.forEach(a => { (groups.find(g => g[0] === a.Operating_by) || groups[2])[1].push(a); });
+    list.slice().sort(btBankSort_).forEach(a => { (groups.find(g => g[0] === a.Operating_by) || groups[2])[1].push(a); });
     const allRows = btAllLoaded_ ? btAllMerged_() : [];
     const cbCell = S => ({ t: inr(S.cb), sub: S.cbDt, cls: S.cb < 0 ? 'neg' : '' });
     const tables = [];
@@ -6998,7 +7139,7 @@
         head: ['Bank_Account', 'OB(B)', 'OB(L)', 'CB', 'Scheme'],
         align: ['l', 'r', 'r', 'r', 'l'],
         rows: per.slice(0, 6).map(x => {
-          const acc = (x.a.Bank || '') + ' - ' + (x.a.Account_No || '');
+          const acc = btShortBank_(x.a.Bank) + ' - ' + (x.a.Account_No || '');
           if (!btAllLoaded_) return [acc, '\u2026', '\u2026', '\u2026', x.a.Scheme || ''];
           return x.S ? [acc, [inr(x.S.beginAmt), btMonthLabel_(x.S.beginMonth)], [inr(x.S.obAmt), btMonthLabel_(btYm_(x.S.obDt))], cbCell(x.S), x.a.Scheme || '']
                      : [acc, '-', '-', '-', x.a.Scheme || ''];
@@ -7009,10 +7150,25 @@
     });
     return { tables };
   }
+  const btOperatingFilter_ = () => { const e = document.getElementById('bt_operating'); return e ? (e.value || 'All') : 'All'; };
+  // the account dropdown lists only the accounts of the chosen Operating_by_Authority_office
+  function btOperatingChanged_() {
+    populateBtAccountOptions_();
+    const wa = selectedWaId(), a = wa ? withdrawalAccountsCache.find(x => String(x.WA_id) === wa) : null, op = btOperatingFilter_();
+    if (a && op !== 'All' && String(a.Operating_by || '').trim() !== op) {         // the chosen account is outside the new filter
+      btEl_('bt_account').value = '';
+      onBtAccountChange();
+    }
+  }
+  // an account chosen elsewhere (accounts table, advance token) must stay visible in the dropdown
+  function btEnsureAcctVisible_(waId) {
+    const a = waId ? withdrawalAccountsCache.find(x => String(x.WA_id) === String(waId)) : null, op = btOperatingFilter_();
+    if (a && op !== 'All' && String(a.Operating_by || '').trim() !== op) { btEl_('bt_operating').value = 'All'; populateBtAccountOptions_(); }
+  }
   function populateBtAccountOptions_() {
     const sel = btEl_('bt_account'); if (!sel) return;
-    const wa = selectedWaId();
-    sel.innerHTML = '<option value="">Select account</option>' + withdrawalAccountsCache.map(a =>
+    const wa = selectedWaId(), op = btOperatingFilter_();
+    sel.innerHTML = '<option value="">Select account</option>' + withdrawalAccountsCache.filter(a => op === 'All' || String(a.Operating_by || '').trim() === op).sort(btBankSort_).map(a =>
       '<option value="' + a.WA_id + '">' + btEsc_(a.Bank) + ' - ' + btEsc_(a.Account_No) + (a.Scheme ? ' (' + btEsc_(a.Scheme) + ')' : '') + '</option>').join('');
     sel.value = wa;
     btRenderAllStats_();
@@ -7050,6 +7206,7 @@
     const a = withdrawalAccountsCache.find(x => String(x.Account_No || '').trim() === pendingBankAcct_);
     if (!a) { if (loaded) { showToast('error', 'Account ' + pendingBankAcct_ + ' is not in the Bank tab.'); pendingBankAcct_ = ''; } return; }
     pendingBankAcct_ = '';
+    btEnsureAcctVisible_(a.WA_id);
     loadWithdrawalAccountIntoForm(a);
     setBankAccountsBand_(false);
     openCardOf_('bt_sum_acct');
@@ -7059,6 +7216,7 @@
   let btAdvRows_ = [], btWdRows_ = [], btRelated_ = { tokens: 'idle', cheques: 'idle' };
   function btLoadRelated_() {
     gsrCall('getAdvanceData').then(r => { btAdvRows_ = r || []; btRelated_.tokens = 'ok'; btFillLink_(); renderBankTransactions(bankTxnCache); btRenderAllStats_(); }).catch(() => { btRelated_.tokens = 'denied'; });
+    gsrCall('getChequeBooksData').then(r => { btBooks_ = r || []; btFillLink_(); btShowDetails_(btEl_('bt_trans_type').value, btEl_('bt_link').value); renderBankTransactions(bankTxnCache); }).catch(() => { });
     gsrCall('getWithdrawnDetailsData').then(r => { btWdRows_ = r || []; btRelated_.cheques = 'ok'; btFillLink_(); renderBankTransactions(bankTxnCache); btRenderAllStats_(); }).catch(() => { btRelated_.cheques = 'denied'; });
   }
   /* Every advance token credited to an account is shown automatically as a Deposit of type "Token Amount":
@@ -7068,7 +7226,7 @@
   function btTokenOnlyRows_(acct, existing) {
     const no = String(acct.Account_No || '').trim();
     if (!no || btRelated_.tokens !== 'ok') return [];
-    const have = new Set((existing || []).filter(r => r.Token_No).map(r => String(r.Token_No)));
+    const have = new Set((existing || []).filter(r => r.Token_No && r.Transaction === 'Deposit').map(r => String(r.Token_No)));
     const groups = {};
     btAdvRows_.forEach(a => {
       if (a.Credited !== 'Yes' || String(a.Credited_Account_No || '').trim() !== no || !a.Credited_Date) return;
@@ -7122,7 +7280,7 @@
     setStatus('bt_status_msg', 'Moving credited tokens to Bank Transactions...');
     gsr().withSuccessHandler(res => {
       if (!res || !res.success) { setStatus('bt_status_msg', (res && res.message) || 'Unable to move the tokens.', true); return; }
-      setStatus('bt_status_msg', res.synced + ' credited token deposit' + (res.synced === 1 ? '' : 's') + ' moved to Bank Transactions.' + (res.missing && res.missing.length ? ' Not in the Bank tab: ' + res.missing.join(', ') + '.' : ''));
+      setStatus('bt_status_msg', res.synced + ' credited token deposit' + (res.synced === 1 ? '' : 's') + ' and ' + (res.withdrawn || 0) + ' Hoa-matched withdrawal' + (res.withdrawn === 1 ? '' : 's') + ' moved to Bank Transactions.' + (res.missing && res.missing.length ? ' Not in the Bank tab: ' + res.missing.join(', ') + '.' : ''));
       refreshBankTransactions(); btLoadAll_();
     }).withFailureHandler(e => setStatus('bt_status_msg', 'Unable to move the tokens. Reason: ' + (e && e.message ? e.message : e), true)).syncCreditedTokensToBank();
   }
@@ -7139,6 +7297,20 @@
       acct: String((cred[0] || rows[0]).Credited_Account_No || '').trim()
     };
   }
+  let btBooks_ = [];                                  // cheque books of all accounts (for the Cheque dropdown details)
+  const btLeafNo_ = v => { const t = String(v || '').replace(/\D/g, ''); return t ? Number(t) : NaN; };
+  function btBookOf_(no) {                            // the cheque book of this account whose leaves contain this cheque no
+    const acctNo = btAcctNo_(), n = btLeafNo_(no); if (!acctNo || isNaN(n)) return null;
+    return btBooks_.find(b => String(b.Account_No || '').trim() === acctNo && n >= btLeafNo_(b.Leaves_No_From) && n <= btLeafNo_(b.Leaves_No_To)) || null;
+  }
+  // next unused leaf of each cheque book of the selected account that still has leaves
+  function btNextLeaves_() {
+    const acctNo = btAcctNo_(); if (!acctNo) return [];
+    return btBooks_.filter(b => String(b.Account_No || '').trim() === acctNo && Number(b.Balance_Leaves) > 0 && b.Leaves_No_Next !== '' && b.Leaves_No_Next != null)
+      .sort((x, y) => btLeafNo_(x.Leaves_No_Next) - btLeafNo_(y.Leaves_No_Next));
+  }
+  const btNextText_ = list => list.map(b => b.Leaves_No_Next + ' (Book ' + b.Cheque_Book_No + ', ' + b.Balance_Leaves + ' left)').join('  \u00b7  ');
+  const btBookText_ = b => 'Cheque book ' + b.Cheque_Book_No + ' \u00b7 leaves ' + b.Leaves_No_From + '\u2013' + b.Leaves_No_To + ' (' + b.No_Of_Leaves + ') \u00b7 used ' + b.Used_Leaves + ' \u00b7 balance ' + b.Balance_Leaves + (b.Leaves_No_Next ? ' \u00b7 next leaf ' + b.Leaves_No_Next : '');
   const btChequeRow_ = no => btWdRows_.find(w => String(w.Withdrawn_Cheque_No) === String(no) && String(w.Withdrawn_Account_No || '').trim() === btAcctNo_());
   function btChequeGroup_(no) {                       // one cheque can pay several estimates: add them up
     const rows = btWdRows_.filter(w => String(w.Withdrawn_Cheque_No) === String(no) && String(w.Withdrawn_Account_No || '').trim() === btAcctNo_());
@@ -7150,7 +7322,13 @@
     const acctNo = btAcctNo_(); if (!acctNo) return [];
     const others = bankTxnCache.filter(r => String(r.BT_id) !== btSelectedId_());          // what the account's other transactions already use
     if (type === 'Token Amount') return [];                       // credited tokens are added to the list automatically
-    if (type === 'Cheque') return [];                            // cheques drawn on the account are added to the list automatically
+    if (type === 'Cheque') {                                      // cheques drawn on this account, each with its cheque book
+      const used = new Set(others.filter(r => r.Cheque_Ref).map(r => String(r.Cheque_Ref)));
+      const nos = Array.from(new Set(btWdRows_.filter(w => String(w.Withdrawn_Account_No || '').trim() === acctNo && String(w.Withdrawn_Cheque_No || '').trim()).map(w => String(w.Withdrawn_Cheque_No).trim())));
+      return nos.filter(no => !used.has(no)).map(no => btChequeGroup_(no)).filter(Boolean)
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.no).localeCompare(String(a.no)))
+        .map(g => { const b = btBookOf_(g.no); return { value: g.no, label: g.no + ' \u00b7 ' + inr(g.amt) + ' \u00b7 ' + (g.date || '-') + ' \u00b7 ' + (b ? 'Book ' + b.Cheque_Book_No + ' (' + b.Leaves_No_From + '\u2013' + b.Leaves_No_To + ')' : 'cheque book not found') }; });
+    }
     return [];
   }
   // The Token / Cheque dropdown follows Trans_Type: tokens for "Token Amount", cheques for "Cheque", nothing for the rest.
@@ -7158,12 +7336,14 @@
     const type = btEl_('bt_trans_type').value, wrap = btEl_('bt_link_wrap'), sel = btEl_('bt_link');
     if (type !== 'Token Amount' && type !== 'Cheque') { wrap.style.display = 'none'; sel.innerHTML = ''; return; }
     wrap.style.display = '';
+    const nh = btEl_('bt_next_hint');
+    if (nh) { const nx = type === 'Cheque' ? btNextLeaves_() : []; nh.textContent = type === 'Cheque' ? (nx.length ? 'Next cheque leaf: ' + btNextText_(nx) : (btAcctNo_() ? 'No unused cheque leaf left for this account.' : '')) : ''; }
     btEl_('bt_link_label').textContent = type === 'Token Amount' ? 'Token (credited to this account)' : 'Cheque (drawn on this account)';
     const cur = keep !== undefined ? String(keep) : sel.value;
     const opts = btLinkOptions_(type);
     if (cur && !opts.some(o => o.value === cur)) opts.unshift({ value: cur, label: cur });      // e.g. the saved value of the record being edited
     const denied = type === 'Token Amount' ? btRelated_.tokens === 'denied' : btRelated_.cheques === 'denied';
-    sel.innerHTML = '<option value="">' + (denied ? '(no permission to read these)' : (opts.length ? '--select--' : (type === 'Token Amount' ? '(credited tokens are added automatically as Deposits)' : '(cheques are added automatically as Withdrawn)'))) + '</option>' +
+    sel.innerHTML = '<option value="">' + (denied ? '(no permission to read these)' : (opts.length ? '--select--' : (type === 'Token Amount' ? '(credited tokens are added automatically as Deposits)' : '(no cheques drawn on this account yet)'))) + '</option>' +
       opts.map(o => '<option value="' + btEsc_(o.value) + '">' + btEsc_(o.label) + '</option>').join('');
     sel.value = cur || '';
   }
@@ -7190,11 +7370,11 @@
         btAutoDesc_('Token ' + g.token + (g.scheme ? ' - ' + g.scheme : '') + (g.hoa ? ' / ' + g.hoa : ''));
       }
     } else if (val && type === 'Cheque') {
-      const w = btChequeRow_(val);
+      const w = btChequeGroup_(val);
       if (w) {
-        btEl_('bt_txn').value = 'Withdrawn'; btEl_('bt_trans_amt').value = w.Withdrawn_Amount || 0;
-        if (w.Withdrawn_Date) btEl_('bt_trans_date').value = w.Withdrawn_Date;
-        btAutoDesc_('Cheque ' + val + (w.Esti_no ? ' - Estimate ' + w.Esti_no : '') + (w.Advance_Token_No ? ' - Token ' + w.Advance_Token_No : ''));
+        btEl_('bt_txn').value = 'Withdrawn'; btEl_('bt_trans_amt').value = w.amt || 0;
+        if (w.date) btEl_('bt_trans_date').value = w.date;
+        btAutoDesc_('Cheque ' + val + (w.estis.length ? ' - Estimate ' + w.estis.join(', ') : '') + (w.tokens.length ? ' - Token ' + w.tokens.join(', ') : ''));
       }
     }
     btShowDetails_(type, val);
@@ -7209,7 +7389,7 @@
     if (type === 'Cheque') {
       if (!val) return 'Choose a cheque from the dropdown to see its details.';
       const w = btChequeGroup_(val);
-      return w ? ('Cheque ' + val + '  |  Amount ' + inr(w.amt) + '  |  Date ' + (w.date || '-') + '  |  Estimate ' + (w.estis.join(', ') || '-') + '  |  Token ' + (w.tokens.join(', ') || '-') + (w.vss ? '  |  ' + w.vss : ''))
+      return w ? ('Cheque ' + val + '  |  Amount ' + inr(w.amt) + '  |  Date ' + (w.date || '-') + '  |  Estimate ' + (w.estis.join(', ') || '-') + '  |  Token ' + (w.tokens.join(', ') || '-') + (w.vss ? '  |  ' + w.vss : '') + '  |  ' + (btBookOf_(val) ? btBookText_(btBookOf_(val)) : 'Cheque book not found for this leaf'))
                : ('Cheque ' + val + ' (details are not available to this user).');
     }
     return type ? ('Trans_Type ' + type + ' has no token or cheque details.') : 'Click a transaction below to see its token or cheque details.';
@@ -7237,7 +7417,7 @@
     const acct = btAcct_(), S = acct ? btSummary(rows) : null;
     btSummary_ = S;
     const set = (id, v) => { btEl_(id).textContent = v; };
-    set('bt_count', String((rows || []).length));
+    set('bt_count', String((rows || []).filter(r => r.Trans_Type !== 'Opening Balance').length));
     set('bt_sum_scheme', acct && acct.Scheme ? acct.Scheme : '-');
     set('bt_sum_acct', acct ? (acct.Account_No || '-') : '-');
     set('bt_sum_operating', acct && acct.Operating_by ? acct.Operating_by : '-');
@@ -7246,6 +7426,7 @@
       const toks = new Set(mine.map(a => String(a.Token_No)));
       set('bt_sum_tokens', toks.size + ' token' + (toks.size === 1 ? '' : 's') + ' \u00b7 ' + inr(mine.reduce((t, a) => t + (Number(a.Credited_Amt) || Number(a.Amount) || 0), 0)));
     } else set('bt_sum_tokens', acct ? (btRelated_.tokens === 'denied' ? 'no access' : '...') : '-');
+    { const nx = acct ? btNextLeaves_() : []; set('bt_sum_nextleaf', !acct ? '-' : (nx.length ? btNextText_(nx) : (btBooks_.length ? 'none left' : '-'))); }
     set('bt_sum_bmonth', S ? btMonthLabel_(S.beginMonth) : '-');
     set('bt_sum_bob_amt', S ? inr(S.beginAmt) : '-'); set('bt_sum_bob_dt', S ? S.beginDt : '-');
     set('bt_latest_ob_amt', S ? inr(S.obAmt) : '-'); set('bt_latest_ob_date', S ? S.obDt : '-');
@@ -7261,26 +7442,13 @@
       : 'tot_amt = Latest OB ' + inr(S.obAmt) + ' + Deposits ' + inr(S.dep) + '  \u2192  ' + inr(S.tot) + '.   CB_Amt = tot_amt \u2212 Withdrawn ' + inr(S.wd) + '  \u2192  ' + inr(S.cb) + ' as on the last transaction date ' + S.cbDt + '.  Only transactions dated after the latest OB_Dt (' + S.obDt + ') are counted.'));
   }
   const btHasOb_ = excludeId => bankTxnCache.some(r => r.OB_Date && String(r.BT_id) !== String(excludeId || ''));
-  // OB_Amt / OB_Date are asked for only when needed: always for the first entry of an account, otherwise when the box is ticked.
+  // The opening balance has its own section; this only writes the hint above it.
   function btSyncOb_() {
-    const on = btEl_('bt_ob_on'), waId = selectedWaId(), note = btEl_('bt_ob_note');
-    const need = !!waId && !btHasOb_(btSelectedId_());
-    const wasForced = on.dataset.forced === '1';
-    if (need) on.checked = true; else if (wasForced) on.checked = false;     // once the account has an OB the box goes back to optional
-    on.dataset.forced = need ? '1' : '';
-    on.disabled = need;
-    Array.from(document.querySelectorAll('.bt-ob-field')).forEach(e => { e.style.display = on.checked ? '' : 'none'; });
-    note.textContent = !waId ? '' : (need
-      ? 'No opening balance is recorded for this account yet, so OB_Amt and OB_Date are required with this entry.'
-      : (on.checked ? 'This entry records a new opening balance (the balance on OB_Date).' : 'Tick to record a new opening balance; otherwise the closing balance (CB) is calculated from the latest one.'));
-  }
-  function btObToggled_() {
-    const on = btEl_('bt_ob_on');
-    if (on.checked && !btEl_('bt_ob_date').value && btSummary_) {            // suggest the current closing balance as the new opening balance
-      btEl_('bt_ob_amt').value = btSummary_.cb;
-      btEl_('bt_ob_date').value = btSummary_.cbDt;
-    }
-    btSyncOb_();
+    const waId = selectedWaId(), note = btEl_('bt_ob_note');
+    if (!note) return;
+    note.textContent = !waId ? '' : (!btHasOb_('')
+      ? 'No opening balance is recorded for this account yet. Save OB_Amt and OB_Date here first, then add transactions below.'
+      : 'Save a new OB_Amt / OB_Date to set a new opening balance; the closing balance (CB) is calculated from the latest one.');
   }
 
   /* ---------- stats for ALL accounts (same rules as the selected-account summary) ---------- */
@@ -7297,9 +7465,15 @@
     const sum = k => Math.round(withOb.reduce((t, x) => t + x.S[k], 0) * 100) / 100;
     const lastCb = withOb.reduce((m, x) => (x.S.cbDt > m ? x.S.cbDt : m), '');
     set('bt_all_accts', String(per.length)); set('bt_all_accts_note', withOb.length + ' with an opening balance');
-    set('bt_all_count', String(all.length));
+    set('bt_all_count', String(all.filter(r => r.Trans_Type !== 'Opening Balance').length));
     const virt = all.filter(r => r.Auto && r.AutoKind !== 'cheque').length, sb = btEl_('bt_sync_tokens');
-    if (sb) { sb.style.display = virt ? '' : 'none'; sb.textContent = 'Move ' + virt + ' credited token' + (virt === 1 ? '' : 's') + ' to Bank Transactions'; }
+    let pendWd = 0;                                       // tokens whose Hoa is a withdrawal Account No but no Withdrawn row exists yet
+    try {
+      const acNos = new Set(withdrawalAccountsCache.map(x => String(x.Account_No || '').trim()).filter(Boolean)), seenWd = new Set();
+      btAdvRows_.forEach(x => { const h = String(x.Hoa || '').trim(), k = h + '|' + x.Token_No; if (!h || !acNos.has(h) || seenWd.has(k)) return; seenWd.add(k);
+        if (!all.some(r => r.Transaction === 'Withdrawn' && String(r.Token_No) === String(x.Token_No) && (r.Source === 'advance_wd'))) pendWd++; });
+    } catch (e) { }
+    if (sb) { sb.style.display = (virt || pendWd) ? '' : 'none'; sb.textContent = 'Move ' + virt + ' credited token' + (virt === 1 ? '' : 's') + (pendWd ? ' + ' + pendWd + ' Hoa-matched withdrawal' + (pendWd === 1 ? '' : 's') : '') + ' to Bank Transactions'; }
     set('bt_all_ob', withOb.length ? inr(sum('obAmt')) : '-'); set('bt_all_tot', withOb.length ? inr(sum('tot')) : '-');
     set('bt_all_wd', withOb.length ? inr(sum('wd')) : '-'); set('bt_all_cb', withOb.length ? inr(sum('cb')) : '-');
     set('bt_all_cbdt', lastCb || '-');
@@ -7333,6 +7507,7 @@
     if (waId) rows = btMerge_(rows, waId);                      // + the credited advance tokens
     const acct = btAcct_();
     btEl_('bt_account_label').textContent = acct ? 'Selected account: ' + (acct.Bank || '') + ' - ' + (acct.Account_No || '') + (acct.Scheme ? '  |  Scheme: ' + acct.Scheme : '') + (acct.Operating_by ? '  |  Operating by: ' + acct.Operating_by : '') : 'Select an account to see and add its bank transactions.';
+    btEnsureAcctVisible_(waId);
     btEl_('bt_account').value = waId;
     btUpdateSummary_(waId ? rows : []);
     btSyncOb_();
@@ -7344,14 +7519,15 @@
     tbody.innerHTML = '';
     let dep = 0, wd = 0;
     list.forEach(r => {
-      const isDep = r.Transaction === 'Deposit'; if (isDep) dep += Number(r.Trans_Amt) || 0; else wd += Number(r.Trans_Amt) || 0;
+      const isOb = r.Trans_Type === 'Opening Balance';
+      const isDep = r.Transaction === 'Deposit'; if (!isOb) { if (isDep) dep += Number(r.Trans_Amt) || 0; else wd += Number(r.Trans_Amt) || 0; }
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
       if (btSelectedId_() === String(r.BT_id)) tr.classList.add('row-selected');
-      const fromAdv = !!(r.Auto || r.Source === 'advance');
-      const link = r.Token_No ? 'Token ' + r.Token_No + (fromAdv ? ' (auto)' : '') : (r.Cheque_Ref ? 'Cheque ' + r.Cheque_Ref + (fromAdv ? ' (auto)' : '') : '');
-      tr.innerHTML = '<td>' + btEsc_(r.Year) + '</td><td>' + btEsc_(r.Trans_Date) + '</td><td>' + btEsc_(r.Transaction) + '</td><td>' + btEsc_(r.Trans_Type) + '</td><td>' + btEsc_(link) +
-        '</td><td class="' + (isDep ? 'bt-dep' : 'bt-wd') + '">' + btEsc_(inr(r.Trans_Amt)) + '</td><td>' + btEsc_(r.Trans_Description) + '</td>';
+      const fromAdv = !!(r.Auto || r.Source === 'advance' || r.Source === 'advance_wd');
+      const link = isOb ? ('OB as on ' + (r.OB_Date || '')) : r.Token_No ? 'Token ' + r.Token_No + (fromAdv ? ' (auto)' : '') : (r.Cheque_Ref ? 'Cheque ' + r.Cheque_Ref + (fromAdv ? ' (auto)' : '') : '');
+      tr.innerHTML = '<td>' + btEsc_(r.Year) + '</td><td>' + btEsc_(r.Trans_Date) + '</td><td>' + btEsc_(isOb ? 'Opening Balance' : r.Transaction) + '</td><td>' + btEsc_(isOb ? 'OB' : r.Trans_Type) + '</td><td>' + btEsc_(link) +
+        '</td><td class="' + (isOb ? '' : (isDep ? 'bt-dep' : 'bt-wd')) + '">' + btEsc_(inr(isOb ? r.OB_Amt : r.Trans_Amt)) + '</td><td>' + btEsc_(r.Trans_Description) + '</td>';
       if (fromAdv) {                                                  // a credited advance token: shown here, maintained in the Tokens tab
         tr.classList.add('bt-auto');
         tr.title = r.Cheque_Ref ? 'Cheque drawn on this account (added automatically)' : 'Credited advance token (added automatically)';
@@ -7366,7 +7542,7 @@
       }
       tbody.appendChild(tr);
     });
-    tot.innerHTML = '<b>' + list.length + '</b> transactions &middot; Deposits <b>' + inr(dep) + '</b> &middot; Withdrawn <b>' + inr(wd) + '</b> &middot; Net <b>' + inr(dep - wd) + '</b>';
+    tot.innerHTML = '<b>' + list.filter(r => r.Trans_Type !== 'Opening Balance').length + '</b> transactions &middot; Deposits <b>' + inr(dep) + '</b> &middot; Withdrawn <b>' + inr(wd) + '</b> &middot; Net <b>' + inr(dep - wd) + '</b>';
   }
   function refreshBankTransactions() {
     const waId = selectedWaId();
@@ -7381,15 +7557,15 @@
   function loadBankTransactionIntoForm(r) {
     btEl_('bt_year').dataset.btId = r.BT_id;
     populateBtYearOptions_(r.Year || '');
+    const obOnly = r.Trans_Type === 'Opening Balance';
     btEl_('bt_ob_amt').value = r.OB_Date ? (r.OB_Amt || 0) : 0;
     btEl_('bt_ob_date').value = r.OB_Date || '';
-    btEl_('bt_ob_on').checked = !!r.OB_Date;
-    btEl_('bt_trans_date').value = r.Trans_Date || '';
-    btEl_('bt_txn').value = r.Transaction || '';
-    btEl_('bt_trans_type').value = r.Trans_Type || '';
-    btFillLink_(r.Token_No || r.Cheque_Ref || '');
-    btEl_('bt_trans_amt').value = r.Trans_Amt || 0;
-    btEl_('bt_description').value = r.Trans_Description || '';
+    btEl_('bt_trans_date').value = obOnly ? '' : (r.Trans_Date || '');
+    btEl_('bt_txn').value = obOnly ? '' : (r.Transaction || '');
+    btEl_('bt_trans_type').value = obOnly ? '' : (r.Trans_Type || '');
+    btFillLink_(obOnly ? '' : (r.Token_No || r.Cheque_Ref || ''));
+    btEl_('bt_trans_amt').value = obOnly ? 0 : (r.Trans_Amt || 0);
+    btEl_('bt_description').value = obOnly ? '' : (r.Trans_Description || '');
     renderBankTransactions(bankTxnCache);
     btSyncOb_();
     btShowDetails_(r.Trans_Type || '', r.Token_No || r.Cheque_Ref || '');
@@ -7398,9 +7574,6 @@
     if (!btEl_('bt_year')) return;
     btEl_('bt_year').dataset.btId = '';
     populateBtYearOptions_('');
-    btEl_('bt_ob_amt').value = 0;
-    btEl_('bt_ob_date').value = '';
-    btEl_('bt_ob_on').checked = false;
     btEl_('bt_trans_date').value = '';
     btEl_('bt_txn').value = '';
     btEl_('bt_trans_type').value = '';
@@ -7413,14 +7586,25 @@
     btSyncOb_();
     btShowDetails_('', '');
   }
-  function btFormData_() {
-    const obOn = btEl_('bt_ob_on').checked;          // an unticked OB is saved as nothing
+  function clearBankOpeningForm() {
+    if (!btEl_('bt_year')) return;
+    btEl_('bt_year').dataset.btId = '';
+    btEl_('bt_ob_amt').value = 0;
+    btEl_('bt_ob_date').value = '';
+    setStatus('bt_ob_status_msg', '');
+    Array.from(document.querySelectorAll('#bt_list_table tr.row-selected')).forEach(t => t.classList.remove('row-selected'));
+    btSyncOb_();
+  }
+  // forUpdate: an older row that still carries an OB together with its transaction keeps that OB when only the transaction is edited
+  function btFormData_(forUpdate) {
+    const sel = forUpdate ? bankTxnCache.find(x => String(x.BT_id) === btSelectedId_()) : null;
+    const keepOb = !!(sel && sel.OB_Date && sel.Trans_Type !== 'Opening Balance');
     const type = btEl_('bt_trans_type').value, link = btEl_('bt_link').value;
     return {
       wa_id: selectedWaId(),
       year: btEl_('bt_year').value,
-      ob_amt: obOn ? btEl_('bt_ob_amt').value : 0,
-      ob_date: obOn ? btEl_('bt_ob_date').value : '',
+      ob_amt: keepOb ? sel.OB_Amt : 0,
+      ob_date: keepOb ? sel.OB_Date : '',
       trans_date: btEl_('bt_trans_date').value,
       txn: btEl_('bt_txn').value,
       trans_amt: btEl_('bt_trans_amt').value,
@@ -7432,8 +7616,7 @@
   }
   function btCheck_(d, excludeId) {
     if (!d.wa_id) return 'Select an account first';
-    if (d.ob_date) { if (String(d.ob_amt).trim() === '' || isNaN(Number(d.ob_amt))) return 'OB_Amt is required together with OB_Date'; }
-    else if (!btHasOb_(excludeId)) return 'OB_Amt and OB_Date are required for the first entry of an account';
+    if (!d.ob_date && !btHasOb_(excludeId)) return 'Save the opening balance (OB_Amt and OB_Date) for this account first, in the Opening Balance section';
     if (!d.year) return 'Year is required';
     if (!d.trans_date) return 'Trans_Date is required';
     if (!d.txn) return 'Select Transaction (Withdrawn or Deposit)';
@@ -7454,10 +7637,46 @@
       setStatus('bt_status_msg', 'Unable to save. Reason: ' + (e && e.message ? e.message : e), true);
     }).addBankTransaction(data);
   }
+  function btObData_() {
+    const d = btEl_('bt_ob_date').value;
+    return { wa_id: selectedWaId(), ob_amt: btEl_('bt_ob_amt').value, ob_date: d, year: d ? btFy_(d) : '' };
+  }
+  function btObCheck_(d) {
+    if (!d.wa_id) return 'Select an account first';
+    if (!d.ob_date) return 'OB_Date is required';
+    if (String(d.ob_amt).trim() === '' || isNaN(Number(d.ob_amt))) return 'OB_Amt is required';
+    return '';
+  }
+  function saveBankOpening() {
+    const data = btObData_(), err = btObCheck_(data);
+    if (err) { setStatus('bt_ob_status_msg', err, true); return; }
+    setStatus('bt_ob_status_msg', 'Saving...');
+    gsr().withSuccessHandler(res => {
+      if (!res || !res.success) { setStatus('bt_ob_status_msg', (res && res.message) || 'Unable to save. Please try again.', true); return; }
+      clearBankOpeningForm();
+      setStatus('bt_ob_status_msg', 'Opening balance saved.');
+      refreshBankTransactions();
+    }).withFailureHandler(e => setStatus('bt_ob_status_msg', 'Unable to save. Reason: ' + (e && e.message ? e.message : e), true)).addBankOpening(data);
+  }
+  function updateBankOpening() {
+    const id = btSelectedId_();
+    if (!id) { setStatus('bt_ob_status_msg', 'Click an opening-balance row in the list first', true); return; }
+    const data = btObData_(), err = btObCheck_(data);
+    if (err) { setStatus('bt_ob_status_msg', err, true); return; }
+    data.bt_id = id;
+    setStatus('bt_ob_status_msg', 'Updating...');
+    gsr().withSuccessHandler(res => {
+      if (!res || !res.success) { setStatus('bt_ob_status_msg', (res && res.message) || 'Unable to update. Please try again.', true); return; }
+      setStatus('bt_ob_status_msg', 'Opening balance updated.');
+      refreshBankTransactions();
+    }).withFailureHandler(e => setStatus('bt_ob_status_msg', 'Unable to update. Reason: ' + (e && e.message ? e.message : e), true)).updateBankOpening(data);
+  }
   function updateBankTransactionRecord() {
     const id = btSelectedId_();
     if (!id) { setStatus('bt_status_msg', 'Click a row in the list first', true); return; }
-    const data = btFormData_(), err = btCheck_(data, id);
+    const cur = bankTxnCache.find(x => String(x.BT_id) === id);
+    if (cur && cur.Trans_Type === 'Opening Balance') { setStatus('bt_status_msg', 'This row is an opening balance. Use Update OB in the Opening Balance section.', true); return; }
+    const data = btFormData_(true), err = btCheck_(data, id);
     if (err) { setStatus('bt_status_msg', err, true); return; }
     data.bt_id = id;
     setStatus('bt_status_msg', 'Updating...');
@@ -9800,6 +10019,7 @@
           <div class="strip-title-row">
             <span class="scheme-card-title"><span style="display:inline-block; transition: transform 0.15s; transform: rotate(${isCollapsed ? '-90deg' : '0deg'}); margin-right:6px;">&#9660;</span>${scheme} (${items.length})</span>
             <span class="strip-status-row">${statusChipsHtml}</span>
+            <button class="action" style="padding:3px 10px; font-size:11px;" data-scheme="${ntEsc_(scheme)}" onclick="event.stopPropagation(); openCommonWithdraw(this.dataset.scheme)" title="One cheque withdrawal for several estimates / tokens of this scheme">&#128176; Common Withdrawal</button>
           </div>
           <div class="strip-metrics">
             <div class="strip-metric" title="Total APO approved amount for this scheme"><span class="strip-label">APO Amount</span><span class="strip-value">${nf(apoAmt)}</span></div>
@@ -11879,9 +12099,109 @@
   // can't exceed the combined Advance Amount for the estimate.
   let withdrawAdvanceRecords = [];
   let withdrawExistingRecords = [];
+  let withdrawEditId = '';          // WD_id of the withdrawal being edited in the Withdraw screen ('' = adding a new one)
   let withdrawAllRecords = [];      // every estimate's withdrawals (feeds the dropdowns)
   let withdrawAcctMap = {};         // account no -> { label, name }
   let withdrawChequeBooks = [];     // cheque books with used/balance/next leaf
+
+  /* ---------- Common Withdrawal (scheme-wise): one cheque leaf, several estimates / tokens of one account ---------- */
+  let cwData = { scheme: '', advances: [], wds: [], accts: [], books: [], rows: [] };
+  function openCommonWithdraw(scheme) {
+    const estis = new Set(estimateCache.filter(e => String(e.Scheme) === String(scheme)).map(e => String(e.Esti_no)));
+    if (!estis.size) { alert('No estimates found under scheme ' + scheme + '.'); return; }
+    Promise.all([gsrCall('getAdvanceData'), gsrCall('getWithdrawnDetailsData'), gsrCall('getWithdrawalAccountsData'), gsrCall('getChequeBooksData')]).then(([adv, wds, accts, books]) => {
+      const credited = (adv || []).filter(a => estis.has(String(a.Trans_id)) && a.Credited === 'Yes' && String(a.Credited_Account_No || '').trim());
+      if (!credited.length) { alert('No credited advance tokens with a Credited Account No under scheme ' + scheme + ' yet.'); return; }
+      cwData = { scheme, advances: credited, wds: wds || [], accts: accts || [], books: books || [], rows: [] };
+      showCommonWithdrawModal();
+    }).catch(() => alert('The advance and withdrawal data could not be loaded. Please try again.'));
+  }
+  function showCommonWithdrawModal() {
+    let modal = document.getElementById('cw_modal'); if (modal) modal.remove();
+    const esc = v => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const acctNos = Array.from(new Set(cwData.advances.map(a => String(a.Credited_Account_No).trim()))).sort();
+    const opts = acctNos.map(no => { const a = cwData.accts.find(x => String(x.Account_No || '').trim() === no); return `<option value="${esc(no)}">${esc(no)}${a && a.Bank ? ' \u00b7 ' + esc(a.Bank) : ''}</option>`; }).join('');
+    modal = document.createElement('div');
+    modal.id = 'cw_modal';
+    modal.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:9999; padding:16px;';
+    modal.innerHTML = `
+      <div style="background:#fff; border-radius:var(--radius-sm); padding:20px; width:980px; max-width:96vw; max-height:92vh; overflow:auto; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+        <div class="scheme-card-title" style="margin-bottom:4px;">Common Withdrawal &middot; ${esc(cwData.scheme)}</div>
+        <div style="font-size:12px; color:var(--muted); margin-bottom:14px;">One cheque leaf of one account pays several estimates. Tick the tokens and enter the amount drawn for each; one withdrawal is recorded per token with the same cheque, date and account.</div>
+        <div class="form-grid">
+          <div class="field-row"><label>Withdrawal Account (credited account)</label><select id="cw_account" onchange="cwAccountChanged()">${opts}</select></div>
+          <div class="field-row"><label>Name of VSS</label><input type="text" id="cw_vss" readonly style="background:#F1F2F5;"></div>
+          <div class="field-row"><label>Withdrawn Date</label><input type="date" id="cw_date"></div>
+          <div class="field-row"><label>Cheque Leaf No (next)</label><select id="cw_leaf"></select><div id="cw_leaf_hint" style="font-size:11px; color:var(--muted); margin-top:3px;"></div></div>
+        </div>
+        <div class="list-wrap" style="max-height:300px; margin:12px 0;">
+          <table class="grid">
+            <thead><tr><th></th><th>Esti_no</th><th>Token No</th><th>Token Amount</th><th>Credited Amt</th><th>Already Withdrawn</th><th>Balance</th><th>Withdraw Amount</th></tr></thead>
+            <tbody id="cw_tbody"></tbody>
+          </table>
+        </div>
+        <div style="font-weight:700; margin-bottom:6px;">Cheque total: <span id="cw_total">0</span></div>
+        <div class="btn-row" style="margin-top:8px;">
+          <button class="action primary" onclick="saveCommonWithdraw()">Save Common Withdrawal</button>
+          <button class="action" onclick="document.getElementById('cw_modal').remove()">Cancel</button>
+        </div>
+        <div class="status" id="cw_status_msg"></div>
+      </div>`;
+    document.body.appendChild(modal);
+    cwAccountChanged();
+  }
+  function cwAccountChanged() {
+    const acct = document.getElementById('cw_account').value;
+    const esc = v => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const a = cwData.accts.find(x => String(x.Account_No || '').trim() === acct);
+    document.getElementById('cw_vss').value = a ? String(a.Name_of_Account || '').trim() : '';
+    // cheque leaves: the next unused leaf of each cheque book of this account that still has leaves
+    const books = cwData.books.filter(b => String(b.Account_No).trim() === acct && Number(b.Balance_Leaves) > 0 && b.Leaves_No_Next !== '');
+    const leafEl = document.getElementById('cw_leaf'), hint = document.getElementById('cw_leaf_hint');
+    leafEl.innerHTML = books.length ? books.map(b => `<option value="${esc(b.Leaves_No_Next)}">${esc(b.Leaves_No_Next)} \u00b7 Book ${esc(b.Cheque_Book_No)} (${b.Balance_Leaves} left)</option>`).join('') : '<option value="">No leaves available</option>';
+    hint.textContent = books.length ? '' : 'No cheque book with leaves left for account ' + acct + '.';
+    cwData.rows = cwData.advances.filter(x => String(x.Credited_Account_No).trim() === acct).map(x => {
+      const already = cwData.wds.filter(w => String(w.Advance_Token_No) === String(x.Token_No)).reduce((t, w) => t + (Number(w.Withdrawn_Amount) || 0), 0);
+      const cred = Number(x.Credited_Amt) > 0 ? Number(x.Credited_Amt) : (Number(x.Amount) || 0);
+      return { adv: x, already, bal: Math.max(0, Math.min(cred, Number(x.Amount) || cred) - already) };
+    });
+    document.getElementById('cw_tbody').innerHTML = cwData.rows.length ? cwData.rows.map((r, i) => `<tr>
+        <td><input type="checkbox" id="cw_chk_${i}" ${r.bal > 0 ? '' : 'disabled'} onchange="cwToggle(${i})"></td>
+        <td>${esc(r.adv.Trans_id)}</td><td>${esc(r.adv.Token_No)}</td><td>${inr(r.adv.Amount)}</td><td>${inr(r.adv.Credited_Amt)}</td><td>${inr(r.already)}</td><td>${inr(r.bal)}</td>
+        <td><input type="number" id="cw_amt_${i}" min="0" step="0.01" value="0" disabled style="width:120px;" oninput="cwTotal()"></td></tr>`).join('')
+      : '<tr><td colspan="8" class="linked-empty">No tokens for this account.</td></tr>';
+    cwTotal();
+  }
+  function cwToggle(i) {
+    const on = document.getElementById('cw_chk_' + i).checked, amt = document.getElementById('cw_amt_' + i);
+    amt.disabled = !on; amt.value = on ? cwData.rows[i].bal : 0; cwTotal();
+  }
+  function cwTotal() {
+    let t = 0; cwData.rows.forEach((r, i) => { const c = document.getElementById('cw_chk_' + i), a = document.getElementById('cw_amt_' + i); if (c && c.checked) t += Number(a.value) || 0; });
+    document.getElementById('cw_total').textContent = inr(Math.round(t * 100) / 100);
+  }
+  function saveCommonWithdraw() {
+    const acct = document.getElementById('cw_account').value, date = document.getElementById('cw_date').value, leaf = document.getElementById('cw_leaf').value;
+    const items = [];
+    for (let i = 0; i < cwData.rows.length; i++) {
+      const c = document.getElementById('cw_chk_' + i); if (!c || !c.checked) continue;
+      const r = cwData.rows[i], amt = Number(document.getElementById('cw_amt_' + i).value) || 0;
+      if (amt <= 0) { setStatus('cw_status_msg', 'Enter an amount for token ' + r.adv.Token_No, true); return; }
+      if (amt > r.bal) { setStatus('cw_status_msg', 'Token ' + r.adv.Token_No + ': amount exceeds its balance (' + inr(r.bal) + ')', true); return; }
+      if (r.adv.Credited_Date && date && date < r.adv.Credited_Date) { setStatus('cw_status_msg', 'Withdrawn Date cannot be before the Credited Date of token ' + r.adv.Token_No + ' (' + r.adv.Credited_Date + ')', true); return; }
+      items.push({ esti_no: r.adv.Trans_id, advance_token_no: r.adv.Token_No, advance_token_amount: Number(r.adv.Amount) || 0, withdrawn_amount: amt });
+    }
+    if (!items.length) { setStatus('cw_status_msg', 'Tick at least one token', true); return; }
+    if (!date) { setStatus('cw_status_msg', 'Withdrawn Date is required', true); return; }
+    if (!leaf) { setStatus('cw_status_msg', 'Select the cheque leaf', true); return; }
+    setStatus('cw_status_msg', 'Saving...');
+    gsr().withSuccessHandler(res => {
+      if (!res || !res.success) { setStatus('cw_status_msg', (res && res.message) || 'Unable to save. Please try again.', true); return; }
+      document.getElementById('cw_modal').remove();
+      showToast('success', 'Common withdrawal saved: ' + res.count + ' token' + (res.count === 1 ? '' : 's') + ' on cheque ' + leaf + '.');
+    }).withFailureHandler(e => setStatus('cw_status_msg', 'Unable to save. Reason: ' + (e && e.message ? e.message : e), true))
+      .addCommonWithdrawal({ withdrawn_account_no: acct, withdrawn_date: date, withdrawn_cheque_no: leaf, name_of_vss: document.getElementById('cw_vss').value, items });
+  }
 
   function openWithdrawModal(estId, opts) {
     opts = opts || {};
@@ -11927,6 +12247,7 @@
   function showWithdrawModal(estId, estRow, advances, withdrawals) {
     let modal = document.getElementById('withdraw_modal');
     if (modal) modal.remove();
+    withdrawEditId = '';
 
     const tokenOptionsHtml = advances.map(a =>
       `<option value="${String(a.Token_No).replace(/"/g, '&quot;')}">${a.Token_No} &middot; ${inr(a.Amount)} &middot; ${a.Credited === 'Yes' ? 'Credited' : 'Not Credited'}</option>`
@@ -11936,7 +12257,7 @@
 
     const historyRowsHtml = withdrawals.length
       ? withdrawals.map(w => `
-          <tr>
+          <tr class="wd-row" data-wd="${w.WD_id}" style="cursor:pointer;" onclick="editWithdrawRecord('${estId}','${w.WD_id}')">
             <td>${w.Advance_Token_No}</td>
             <td>${inr(w.Advance_Token_Amount)}</td>
             <td>${w.Credited_Status}</td>
@@ -11945,8 +12266,12 @@
             <td>${w.Withdrawn_Cheque_No}</td>
             <td>${w.Withdrawn_Account_No}</td>
             <td>${w.Name_of_VSS}</td>
+            <td style="white-space:nowrap;" onclick="event.stopPropagation()">
+              <button class="action" style="padding:2px 9px; font-size:11px;" onclick="editWithdrawRecord('${estId}','${w.WD_id}')">Edit</button>
+              <button class="action" style="padding:2px 9px; font-size:11px; color:var(--danger);" onclick="deleteWithdrawRecord('${estId}','${w.WD_id}')">Delete</button>
+            </td>
           </tr>`).join('')
-      : '<tr><td colspan="8" class="linked-empty">No withdrawals recorded yet for this estimate.</td></tr>';
+      : '<tr><td colspan="9" class="linked-empty">No withdrawals recorded yet for this estimate.</td></tr>';
 
     // Summary: total credited across this estimate's advance tokens, total
     // already withdrawn, and what is still left to draw.
@@ -11984,9 +12309,9 @@
         ${summaryHtml}
 
         <div class="scheme-card-title" style="font-size:13px; margin-bottom:6px;">Existing Withdrawals</div>
-        <div class="list-wrap" style="max-height:160px; margin-bottom:14px;">
+        <div class="list-wrap" style="max-height:200px; margin-bottom:14px;">
           <table class="grid">
-            <thead><tr><th>Token No</th><th>Token Amount</th><th>Credited Status</th><th>Withdrawn Date</th><th>Amount</th><th>Cheque No</th><th>Account No</th><th>Name of VSS</th></tr></thead>
+            <thead><tr><th>Token No</th><th>Token Amount</th><th>Credited Status</th><th>Withdrawn Date</th><th>Amount</th><th>Cheque No</th><th>Account No</th><th>Name of VSS</th><th>Actions</th></tr></thead>
             <tbody>${historyRowsHtml}</tbody>
           </table>
         </div>
@@ -12009,9 +12334,13 @@
         </div>
 
         <div class="btn-row" style="margin-top:14px;">
+          <button class="action" onclick="saveWithdrawDetail('${estId}', true)">Update</button>
+          <button class="action" onclick="deleteWithdrawRecord('${estId}', withdrawEditId)">Delete</button>
           <button class="action primary" onclick="saveWithdrawDetail('${estId}')">Save Withdrawal</button>
-          <button class="action" onclick="document.getElementById('withdraw_modal').remove()">Cancel</button>
+          <button class="action" onclick="clearWithdrawForm()">New</button>
+          <button class="action" onclick="document.getElementById('withdraw_modal').remove()">Close</button>
         </div>
+        <div id="wd_edit_note" style="font-size:12px; color:var(--muted); margin-top:6px;">Click a row (or Edit) in Existing Withdrawals to change or delete it.</div>
         <div class="status" id="wd_status_msg"></div>
       </div>`;
     document.body.appendChild(modal);
@@ -12058,9 +12387,12 @@
     fillWithdrawLeafOptions(acctNo);
   }
 
-  function saveWithdrawDetail(estId) {
+  function saveWithdrawDetail(estId, isUpdate) {
     const estRow = estimateCache.find(e => String(e.Est_id) === String(estId));
     if (!estRow) return;
+    const editId = isUpdate ? String(withdrawEditId || '') : '';
+    if (isUpdate && !editId) { setStatus('wd_status_msg', 'Click Edit on a row in Existing Withdrawals first', true); return; }
+    const others = withdrawExistingRecords.filter(w => !editId || String(w.WD_id) !== editId);     // the record being edited does not count against the limits
 
     const tokenNo = document.getElementById('wd_token_no').value;
     const creditedStatus = document.getElementById('wd_credited_status').value;
@@ -12083,7 +12415,7 @@
         setStatus('wd_status_msg', `Withdrawn Amount cannot exceed the Credited Amount (${inr(creditedAmt)})`, true);
         return;
       }
-      const alreadyForToken = withdrawExistingRecords
+      const alreadyForToken = others
         .filter(w => String(w.Advance_Token_No) === String(tokenNo))
         .reduce((s, w) => s + (Number(w.Withdrawn_Amount) || 0), 0);
       if (tokenAmount > 0 && (alreadyForToken + Number(withdrawnAmount)) > tokenAmount) {
@@ -12098,7 +12430,7 @@
     }
 
     const totalTokenAmount = withdrawAdvanceRecords.reduce((s, a) => s + (Number(a.Amount) || 0), 0);
-    const alreadyForEstimate = withdrawExistingRecords.reduce((s, w) => s + (Number(w.Withdrawn_Amount) || 0), 0);
+    const alreadyForEstimate = others.reduce((s, w) => s + (Number(w.Withdrawn_Amount) || 0), 0);
     if (totalTokenAmount > 0 && (alreadyForEstimate + Number(withdrawnAmount)) > totalTokenAmount) {
       setStatus('wd_status_msg', `Total withdrawn for this estimate would be ${inr(alreadyForEstimate + Number(withdrawnAmount))}, exceeding the combined advance amount (${inr(totalTokenAmount)}).`, true);
       return;
@@ -12115,19 +12447,67 @@
       withdrawn_account_no: accountNo,
       name_of_vss: vssName
     };
+    if (isUpdate) payload.wd_id = editId;
 
-    setStatus('wd_status_msg', 'Saving...');
-    gsr().withSuccessHandler(res => {
+    setStatus('wd_status_msg', isUpdate ? 'Updating...' : 'Saving...');
+    const call = gsr().withSuccessHandler(res => {
       if (!res || !res.success) {
-        setStatus('wd_status_msg', (res && res.message) || 'Unable to save the withdrawal. Please try again.', true);
+        setStatus('wd_status_msg', (res && res.message) || ('Unable to ' + (isUpdate ? 'update' : 'save') + ' the withdrawal. Please try again.'), true);
         return;
       }
       // Stay on the Withdraw screen: reload so the totals, history and the
       // next available cheque leaf reflect this withdrawal.
-      openWithdrawModal(estId, { message: 'Withdrawal saved.', tokenNo: tokenNo });
+      openWithdrawModal(estId, { message: isUpdate ? 'Withdrawal updated.' : 'Withdrawal saved.', tokenNo: tokenNo });
     }).withFailureHandler(err => {
-      setStatus('wd_status_msg', 'Unable to save the withdrawal. Reason: ' + (err && err.message ? err.message : err), true);
-    }).addWithdrawnDetail(payload);
+      setStatus('wd_status_msg', 'Unable to ' + (isUpdate ? 'update' : 'save') + ' the withdrawal. Reason: ' + (err && err.message ? err.message : err), true);
+    });
+    if (isUpdate) call.updateWithdrawnDetail(payload); else call.addWithdrawnDetail(payload);
+  }
+
+  // Existing Withdrawals: Edit loads the row into the form below (Update / Delete act on it); Delete removes it.
+  function editWithdrawRecord(estId, wdId) {
+    const w = withdrawExistingRecords.find(x => String(x.WD_id) === String(wdId));
+    if (!w) return;
+    withdrawEditId = String(w.WD_id);
+    const tokEl = document.getElementById('wd_token_no');
+    if (tokEl && Array.from(tokEl.options).some(o => o.value === String(w.Advance_Token_No))) tokEl.value = w.Advance_Token_No;
+    updateWithdrawTokenInfo();
+    document.getElementById('wd_withdrawn_date').value = w.Withdrawn_Date || '';
+    document.getElementById('wd_withdrawn_amount').value = w.Withdrawn_Amount || 0;
+    const leafEl = document.getElementById('wd_cheque_no');
+    if (leafEl && w.Withdrawn_Cheque_No) {                        // keep the leaf this record already uses selectable
+      if (!Array.from(leafEl.options).some(o => o.value === String(w.Withdrawn_Cheque_No))) {
+        const o = document.createElement('option'); o.value = w.Withdrawn_Cheque_No; o.textContent = w.Withdrawn_Cheque_No + ' \u00b7 current';
+        leafEl.insertBefore(o, leafEl.firstChild);
+      }
+      leafEl.value = w.Withdrawn_Cheque_No;
+    }
+    Array.from(document.querySelectorAll('#withdraw_modal tr.wd-row')).forEach(tr => { tr.style.background = tr.dataset.wd === withdrawEditId ? '#EEF6FF' : ''; });
+    const note = document.getElementById('wd_edit_note');
+    if (note) note.textContent = 'Editing withdrawal of token ' + w.Advance_Token_No + ' (' + (w.Withdrawn_Date || '') + '). Change the fields and press Update, or Delete to remove it.';
+    setStatus('wd_status_msg', '');
+  }
+  function clearWithdrawForm() {
+    withdrawEditId = '';
+    updateWithdrawTokenInfo();
+    document.getElementById('wd_withdrawn_date').value = '';
+    document.getElementById('wd_withdrawn_amount').value = 0;
+    Array.from(document.querySelectorAll('#withdraw_modal tr.wd-row')).forEach(tr => { tr.style.background = ''; });
+    const note = document.getElementById('wd_edit_note');
+    if (note) note.textContent = 'Click a row (or Edit) in Existing Withdrawals to change or delete it.';
+    setStatus('wd_status_msg', '');
+  }
+  async function deleteWithdrawRecord(estId, wdId) {
+    if (!wdId) { setStatus('wd_status_msg', 'Click Edit on a row in Existing Withdrawals first', true); return; }
+    const w = withdrawExistingRecords.find(x => String(x.WD_id) === String(wdId));
+    if (!(await askConfirm('Delete this withdrawal' + (w ? ' (token ' + w.Advance_Token_No + ', ' + inr(w.Withdrawn_Amount) + ')' : '') + '? This action cannot be undone.', { title: 'Delete', confirmText: 'Delete', danger: true }))) return;
+    setStatus('wd_status_msg', 'Deleting...');
+    gsr().withSuccessHandler(res => {
+      if (!res || !res.success) { setStatus('wd_status_msg', (res && res.message) || 'Unable to delete the withdrawal. Please try again.', true); return; }
+      openWithdrawModal(estId, { message: 'Withdrawal deleted.' });
+    }).withFailureHandler(err => {
+      setStatus('wd_status_msg', 'Unable to delete the withdrawal. Reason: ' + (err && err.message ? err.message : err), true);
+    }).deleteWithdrawnDetail(wdId);
   }
 
   // Groups a linked-token list by month (based on dateField), shows each entry
@@ -13272,7 +13652,7 @@
                load: r => loadVehicleEventIntoForm(r), clear: () => clearVehicleEventForm(), del: () => deleteVehicleEventRecord() },
     bt:      { mod: 'Withdrawal Accounts', noun: 'bank transaction', field: 'bt_year', confirm: false,
                load: r => loadBankTransactionIntoForm(r), clear: () => clearBankTransactionForm(), del: () => deleteBankTransactionRecord(),
-               dup: r => { loadBankTransactionIntoForm(r); btEl_('bt_year').dataset.btId = ''; btEl_('bt_ob_on').checked = false; Array.from(document.querySelectorAll('#bt_list_table tr.row-selected')).forEach(t => t.classList.remove('row-selected')); btSyncOb_(); } },
+               dup: r => { loadBankTransactionIntoForm(r); btEl_('bt_year').dataset.btId = ''; btEl_('bt_ob_amt').value = 0; btEl_('bt_ob_date').value = ''; Array.from(document.querySelectorAll('#bt_list_table tr.row-selected')).forEach(t => t.classList.remove('row-selected')); btSyncOb_(); } },
     persev:  { mod: 'Personnel Events', noun: 'personnel event', field: 'pevt_type',
                load: r => loadPersonnelEventIntoForm(r), clear: () => clearPersonnelEventForm(), del: () => deletePersonnelEventRecord() }
   };
@@ -14264,6 +14644,9 @@ __copyGuard();
   +'.card.has-coll:not(.coll)>.card-head>.coll-stats>*{display:none}'
   +'.card.has-coll>.card-head>.coll-stats.coll-rows{flex-direction:row;flex-wrap:wrap;align-items:flex-start;justify-content:flex-start;gap:8px 28px}'
   +'.cs-col{display:flex;flex-direction:column;align-items:stretch;gap:6px;flex:1 1 380px;min-width:0}'
+  +'.cs-col:has(.cs-table){flex:1 1 auto;min-width:min-content;max-width:100%}'
+  +'.coll-rows .cs-table{table-layout:auto}'
+  +'.coll-rows .cs-group{white-space:nowrap}'
   +'.cs-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}'
   +'.cs-table th{padding:3px 14px 4px 0;text-align:left;font:700 10.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}'
   +'.cs-table td{padding:5px 14px 5px 0;vertical-align:top;white-space:nowrap;color:var(--ink);border-bottom:1px solid #eef1f5}'

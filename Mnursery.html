@@ -111,6 +111,10 @@ td.avail{color:#2d6a2d}td.dist{color:#e67e22}td.bal{color:#1565c0}
 .ckdd{position:relative}.ckdd summary{cursor:pointer;padding:7px 9px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px;background:#fff;color:#1a2e1a}
 .ckdd>div{position:absolute;z-index:20;background:#fff;border:1px solid #b5d4b5;border-radius:6px;padding:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);min-width:170px}
 .ckdd label{display:block;font-size:13px;color:#1a2e1a;margin:0;padding:2px 0}.ckdd input{width:auto;margin-right:6px}
+.abs-order{list-style-position:inside;padding:0;margin:0 0 10px;max-width:340px;font-size:13px}.abs-order li{display:flex;align-items:center;gap:6px;padding:2px 0}.abs-order li label{flex:1;display:flex;align-items:center;gap:6px;margin:0;font-size:13px}.abs-order li input{width:auto}.abs-mv{padding:1px 8px!important;font-size:11px!important}.abs-order li:first-child .abs-mv:first-of-type,.abs-order li:last-child .abs-mv:last-of-type{opacity:.35;pointer-events:none}
+.sum-grid th.sl,.sum-grid td.sl,.abs th.sl,.abs td.sl{width:1%;text-align:center;white-space:nowrap}
+#rpt-sum-sec .sum-grid{grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr))}#rpt-sum-sec .abs th,#rpt-sum-sec .abs td{padding-left:7px;padding-right:7px}
+.abs{border:1px solid #d4e8d4;border-radius:8px;padding:8px 12px;margin-bottom:10px;min-width:0}.abs>summary{cursor:pointer;font-weight:600;color:#2d6a2d;font-size:14px}.abs[open]>summary{margin-bottom:8px}.sum-grid>.abs{margin-bottom:0}
 .rpt-meta{font-size:12px;color:#555;margin-bottom:8px}tfoot td{font-weight:700;background:#e8f5e9}
 @media print{#rpt-controls,#rpt-sum-sec,#sp-class-box{display:none!important}
 .table-wrap{overflow:visible!important}thead{display:table-header-group}tfoot{display:table-row-group}tr{page-break-inside:avoid}
@@ -335,17 +339,25 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
           <div class="fg"><label>Date To</label><input type="date" id="rf-to"></div>
         </div>
         <div class="form-grid" id="rpt-filters" style="margin-top:10px"></div>
-        <details style="margin-top:12px;border:1px solid #d4e8d4;border-radius:8px;padding:8px 12px">
-          <summary style="cursor:pointer;font-weight:600;color:#2d6a2d">🖋 Customize Print Header (repeats on every printed page)</summary>
+        <details id="rh-box" ontoggle="rhPreview()" style="margin-top:12px;border:1px solid #d4e8d4;border-radius:8px;padding:8px 12px">
+          <summary style="cursor:pointer;font-weight:600;color:#2d6a2d">🖋 Customize Print Header with Date &amp; Time</summary>
           <div class="form-grid" style="margin-top:10px">
             <div class="fg"><label>Line 1 (Organization)</label><input id="rh-l1" maxlength="120" oninput="rhSave()" placeholder="e.g. Forest Department"></div>
             <div class="fg"><label>Line 2 (Office / Division)</label><input id="rh-l2" maxlength="120" oninput="rhSave()"></div>
             <div class="fg"><label>Line 3 (Address / Other)</label><input id="rh-l3" maxlength="160" oninput="rhSave()"></div>
             <div class="fg"><label>Report Title (blank = automatic)</label><input id="rh-title" maxlength="120" oninput="rhSave()"></div>
             <div class="fg"><label>Alignment</label><select id="rh-align" onchange="rhSave()"><option value="center">Centre</option><option value="left">Left</option><option value="right">Right</option></select></div>
+            <div class="fg"><label>Show Date / Time</label><select id="rh-dtshow" onchange="rhSave()"><option value="both">Date and time</option><option value="date">Date only</option><option value="time">Time only</option><option value="none">Hide</option></select></div>
+            <div class="fg"><label>Date Format</label><select id="rh-dfmt" onchange="rhSave()"><option value="dmy">27-11-2026</option><option value="slash">27/11/2026</option><option value="short">27 Nov 2026</option><option value="long">27 November 2026</option></select></div>
+            <div class="fg"><label>Time Format</label><select id="rh-tfmt" onchange="rhSave()"><option value="12">12-hour</option><option value="24">24-hour</option></select></div>
+            <div class="fg"><label>Date / Time Position</label><select id="rh-dtpos" onchange="rhSave()"><option value="right">Top right</option><option value="left">Top left</option><option value="below">Below the title</option></select></div>
+            <div class="fg"><label>Date / Time Label</label><input id="rh-dtlabel" maxlength="40" oninput="rhSave()" placeholder="e.g. As on"></div>
+            <div class="fg"><label>Fixed Date &amp; Time (blank = current)</label><input type="datetime-local" id="rh-dtfix" oninput="rhSave()" onchange="rhSave()"></div>
             <div class="fg"><label>Logo (optional, up to 300 KB)</label><input type="file" id="rh-logo" accept="image/*" onchange="rhLogo(this)"><button class="abtn ao" style="margin-top:6px;padding:3px 10px;font-size:12px" onclick="rhLogoClear()">Remove logo</button></div>
-            <div class="fg"><label><input type="checkbox" id="rh-meta" checked onchange="rhSave()" style="width:auto;margin-right:6px">Show date, filters and record count</label></div>
+            <div class="fg"><label><input type="checkbox" id="rh-meta" checked onchange="rhSave()" style="width:auto;margin-right:6px">Show filters and record count</label></div>
           </div>
+          <div class="note" style="margin:8px 0 4px">Preview</div>
+          <div id="rh-preview" style="border:1px dashed #b5d4b5;border-radius:6px;padding:10px;background:#fff"></div>
           <button class="abtn ao" style="margin-top:8px;padding:4px 12px;font-size:12px" onclick="rhReset()">Reset header</button>
         </details>
         <div class="btn-row">
@@ -359,15 +371,35 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
       <div class="section" id="rpt-sum-sec">
         <h3>📋 Abstract – Category, Nursery, Scheme, Species &amp; Bag Size wise Totals</h3>
         <p class="rpt-meta" id="rpt-sum-note">Follows the Date and field filters above.</p>
-        <div class="sum-grid" style="margin-bottom:0">
-        <div class="table-wrap"><table><thead><tr><th id="sw-c-h">Category-wise</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-category"></tbody></table></div>
-        <div class="table-wrap"><table><thead><tr><th id="sw-n-h">Nursery-wise</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-nursery"></tbody></table></div>
-        <div class="table-wrap"><table><thead><tr><th id="sw-s-h">Scheme-wise</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-scheme"></tbody></table></div>
+        <div style="border:1px solid #d4e8d4;border-radius:8px;padding:10px 12px;margin-bottom:10px;background:#f6fbf6">
+          <div style="font-weight:600;color:#2d6a2d;font-size:13px;margin-bottom:6px">Select abstracts to export or print</div>
+          <ol class="abs-order"><li><label><input type="checkbox" class="abs-pick" value="0" checked>Category-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="1" checked>Nursery-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="2" checked>Scheme-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="3" checked>Scheme &amp; Bag Size</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="4" checked>Bag Size &amp; Scheme</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="5" checked>Species-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li></ol>
+          <div class="form-grid" style="margin-bottom:10px"><div class="fg"><label>Page layout</label><select id="ap-flow"><option value="cont" selected>Continuous</option><option value="each">Each abstract on a new page</option></select></div><div class="fg"><label>Paper size</label><select id="ap-paper"><option value="A4" selected>A4</option><option value="A3">A3</option><option value="Letter">Letter</option><option value="Legal">Legal</option></select></div><div class="fg"><label>Orientation</label><select id="ap-orient"><option value="portrait" selected>Portrait</option><option value="landscape">Landscape</option></select></div><div class="fg"><label>Margins</label><select id="ap-margin"><option value="10">Narrow (10 mm)</option><option value="15" selected>Normal (15 mm)</option><option value="25">Wide (25 mm)</option></select></div><div class="fg"><label>Table width</label><select id="ap-width"><option value="fit" selected>Fit to content</option><option value="full">Full page width</option></select></div><div class="fg"><label>Font</label><select id="ap-font"><option value="Arial" selected>Arial</option><option value="Calibri">Calibri</option><option value="Times New Roman">Times New Roman</option><option value="Georgia">Georgia</option><option value="Verdana">Verdana</option><option value="Tahoma">Tahoma</option><option value="Courier New">Courier New</option></select></div><div class="fg"><label>Font size</label><select id="ap-size"><option value="8">8 pt</option><option value="9">9 pt</option><option value="10" selected>10 pt</option><option value="11">11 pt</option><option value="12">12 pt</option><option value="14">14 pt</option><option value="16">16 pt</option></select></div></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <button type="button" class="abtn ag" onclick="absExcel()">📗 Excel</button>
+            <button type="button" class="abtn ab" onclick="absCSV()">📥 CSV</button>
+            <button type="button" class="abtn ab" onclick="absPrint()">📄 PDF</button>
+            <button type="button" class="abtn ab" onclick="absWord()">📝 Word</button>
+            <button type="button" class="abtn ao" onclick="absPrint()">🖨 Print</button>
+            <button type="button" class="abtn ao" onclick="rhOpen()">🖋 Header, Date &amp; Time</button>
+          </div>
+          <p class="note" style="margin:6px 0 0">Use ▲ ▼ to set the order. Page settings apply to PDF, Print and Word; Excel uses the order, page layout and margins; CSV uses the order only. For PDF, choose “Save as PDF” in the print window, with Scale at 100%. Margins are set here, so leave the print window’s Margins at Default or None.</p>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px"><button type="button" class="abtn ao" style="padding:4px 12px;font-size:12px" onclick="absAll(true)">▼ Expand all</button><button type="button" class="abtn ao" style="padding:4px 12px;font-size:12px" onclick="absAll(false)">▲ Collapse all</button></div>
+        <div class="sum-grid" style="margin-bottom:10px">
+        <details class="abs"><summary id="sw-c-s">Category-wise</summary><div class="table-wrap"><table><thead><tr><th class="sl">Sl.No</th><th id="sw-c-h">Category-wise</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-category"></tbody></table></div></details>
+        <details class="abs"><summary id="sw-n-s">Nursery-wise</summary><div class="table-wrap"><table><thead><tr><th class="sl">Sl.No</th><th id="sw-n-h">Nursery-wise</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-nursery"></tbody></table></div></details>
+        <details class="abs"><summary id="sw-s-s">Scheme-wise</summary><div class="table-wrap"><table><thead><tr><th class="sl">Sl.No</th><th id="sw-s-h">Scheme-wise</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-scheme"></tbody></table></div></details>
       </div>
-        <h3 id="sw-sb-h" style="margin-top:16px">Scheme &amp; Bag Size wise Abstract</h3>
-        <div class="table-wrap"><table><thead><tr><th>Scheme</th><th>Bag Size</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-schemebag"></tbody></table></div>
-        <h3 id="sw-sp-h" style="margin-top:16px">Species-wise</h3>
+        <details class="abs"><summary id="sw-sb-h">Scheme &amp; Bag Size wise Abstract</summary>
+        <div class="table-wrap"><table><thead><tr><th class="sl">Sl.No</th><th>Scheme</th><th>Bag Size</th><th>Nursery</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-schemebag"></tbody></table></div>
+        </details>
+        <details class="abs"><summary id="sw-bs-h">Bag Size &amp; Scheme wise Abstract</summary>
+        <div class="table-wrap"><table><thead><tr><th class="sl">Sl.No</th><th>Bag Size</th><th>Scheme</th><th>Nursery</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-bagscheme"></tbody></table></div>
+        </details>
+        <details class="abs"><summary id="sw-sp-h">Species-wise</summary>
         <div class="sum-grid" id="sum-species" style="margin-bottom:0"></div>
+        </details>
       </div>
       <div class="section" id="sp-class-box" style="display:none">
         <details><summary style="cursor:pointer;font-weight:600;color:#2d6a2d">🌳 Species Classification (<span id="sp-class-sum"></span>)</summary>
@@ -916,21 +948,28 @@ let tipRows=[]; // records behind the summary tables, used by the hover popups
   document.addEventListener('click',e=>{const tr=row(e);if(tr)show(tr,e);else hide();}); // touch devices
   document.addEventListener('scroll',hide,true);
 })();
-function renderSchemeBag(data,te){
-  const el=document.getElementById('sum-schemebag');if(!el)return;
-  const h=document.getElementById('sw-sb-h');if(h)h.textContent=te?'పథకం & బ్యాగ్ సైజు వారీగా':'Scheme & Bag Size wise Abstract';
-  if(!data.length){el.innerHTML='<tr><td colspan="5" class="empty">No records found.</td></tr>';return;}
-  const m={};data.forEach(r=>{const s=r.scheme||'—',b=r.bagSize||'—',g=m[s]||(m[s]={}),o=g[b]||(g[b]={a:0,d:0});o.a+=r.available;o.d+=r.distributed;});
+function renderPairAbstract(data,te,k1,k2,id,hid,title){
+  const el=document.getElementById(id);if(!el)return;
+  const h=document.getElementById(hid);if(h)h.textContent=title;
+  if(!data.length){el.innerHTML='<tr><td colspan="7" class="empty">No records found.</td></tr>';return;}
+  const m={};data.forEach(r=>{const x=r[k1]||'—',y=r[k2]||'—',z=r.nursery||'—',g=m[x]||(m[x]={}),n=g[y]||(g[y]={}),o=n[z]||(n[z]={a:0,d:0});o.a+=r.available;o.d+=r.distributed;});
   const sort=o=>Object.keys(o).sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
   const nums=(a,d)=>`<td class="num avail">${fmt(a)}</td><td class="num dist">${fmt(d)}</td><td class="num bal">${fmt(a-d)}</td>`;
-  let ta=0,td=0,html='';
-  sort(m).forEach(s=>{
-    const bags=sort(m[s]);let a=0,d=0;
-    bags.forEach((b,i)=>{const o=m[s][b];a+=o.a;d+=o.d;html+='<tr>'+(i?'':`<td rowspan="${bags.length}" style="vertical-align:top;font-weight:600">${esc(s)}</td>`)+`<td>${esc(b)}</td>${nums(o.a,o.d)}</tr>`;});
-    html+=`<tr style="font-weight:700;background:#f1f8e9"><td colspan="2">${esc(s)} — ${te?'ఉప మొత్తం':'Subtotal'}</td>${nums(a,d)}</tr>`;ta+=a;td+=d;
+  const span=(v,n,bold)=>`<td rowspan="${n}" style="vertical-align:top${bold?';font-weight:600':''}">${esc(v)}</td>`;
+  let ta=0,td=0,html='',sl=0;
+  sort(m).forEach(x=>{
+    const ys=sort(m[x]),count=ys.reduce((c,y)=>c+Object.keys(m[x][y]).length,0);let a=0,d=0;
+    ys.forEach((y,i)=>{const zs=sort(m[x][y]);zs.forEach((z,j)=>{const o=m[x][y][z];a+=o.a;d+=o.d;
+      html+=`<tr><td class="sl">${++sl}</td>`+(i||j?'':span(x,count,true))+(j?'':span(y,zs.length))+`<td>${esc(z)}</td>${nums(o.a,o.d)}</tr>`;});});
+    html+=`<tr style="font-weight:700;background:#f1f8e9"><td colspan="4">${esc(x)} — ${te?'ఉప మొత్తం':'Subtotal'}</td>${nums(a,d)}</tr>`;ta+=a;td+=d;
   });
-  el.innerHTML=html+`<tr class="sum-tot" style="font-weight:700;background:#e8f5e9;border-top:2px solid #2d6a2d"><td colspan="2">${te?'మొత్తం':'Grand Total'}</td><td class="num">${fmt(ta)}</td><td class="num">${fmt(td)}</td><td class="num">${fmt(ta-td)}</td></tr>`;
+  el.innerHTML=html+`<tr class="sum-tot" style="font-weight:700;background:#e8f5e9;border-top:2px solid #2d6a2d"><td colspan="4">${te?'మొత్తం':'Grand Total'}</td><td class="num">${fmt(ta)}</td><td class="num">${fmt(td)}</td><td class="num">${fmt(ta-td)}</td></tr>`;
 }
+function renderSchemeBag(data,te){
+  renderPairAbstract(data,te,'scheme','bagSize','sum-schemebag','sw-sb-h',te?'పథకం & బ్యాగ్ సైజు వారీగా':'Scheme & Bag Size wise Abstract');
+  renderPairAbstract(data,te,'bagSize','scheme','sum-bagscheme','sw-bs-h',te?'బ్యాగ్ సైజు & పథకం వారీగా':'Bag Size & Scheme wise Abstract');
+}
+function absAll(open){document.querySelectorAll('#rpt-sum-sec details.abs').forEach(d=>d.open=open);}
 function renderSpeciesGroups(data,te){
   const box=document.getElementById('sum-species');if(!box)return;
   const TE={'Fruit':'పండ్ల జాతులు','Flowering':'పూల జాతులు','Shade & Wood':'నీడ & కలప జాతులు','Unclassified':'వర్గీకరించనివి'};
@@ -940,9 +979,9 @@ function renderSpeciesGroups(data,te){
   box.innerHTML=cats.map(c=>{
     const m={};let ta=0,td=0;
     data.filter(r=>r.category===c).forEach(r=>{const k=r.species||'—',o=m[k]||(m[k]={a:0,d:0});o.a+=r.available;o.d+=r.distributed;ta+=r.available;td+=r.distributed;});
-    const rows=Object.keys(m).sort((x,y)=>x.localeCompare(y)).map(k=>`<tr data-k="${encodeURIComponent(k)}"><td>${esc(k)}</td>${nums(m[k].a,m[k].d)}</tr>`).join('');
-    return `<div class="table-wrap"><table><thead><tr><th>${esc(te?TE[c]:c)} (${Object.keys(m).length})</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody>`
-      +(rows?rows+`<tr class="sum-tot"><td>${te?'మొత్తం':'Total'}</td><td class="num">${fmt(ta)}</td><td class="num">${fmt(td)}</td><td class="num">${fmt(ta-td)}</td></tr>`:'<tr><td colspan="4" class="empty">No records found.</td></tr>')+'</tbody></table></div>';
+    const rows=Object.keys(m).sort((x,y)=>x.localeCompare(y)).map((k,i)=>`<tr data-k="${encodeURIComponent(k)}"><td class="sl">${i+1}</td><td>${esc(k)}</td>${nums(m[k].a,m[k].d)}</tr>`).join('');
+    return `<div class="table-wrap"><table><thead><tr><th class="sl">Sl.No</th><th>${esc(te?TE[c]:c)} (${Object.keys(m).length})</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody>`
+      +(rows?rows+`<tr class="sum-tot"><td colspan="2">${te?'మొత్తం':'Total'}</td><td class="num">${fmt(ta)}</td><td class="num">${fmt(td)}</td><td class="num">${fmt(ta-td)}</td></tr>`:'<tr><td colspan="5" class="empty">No records found.</td></tr>')+'</tbody></table></div>';
   }).join('');
 }
 function renderWiseTotals(data){
@@ -951,16 +990,16 @@ function renderWiseTotals(data){
     const m={};data.forEach(r=>{const k=r[key]||'—';(m[k]=m[k]||{a:0,d:0});m[k].a+=r.available;m[k].d+=r.distributed;});
     const ks=Object.keys(m).sort((x,y)=>String(x).localeCompare(String(y)));
     const el=document.getElementById(id);if(!el)return;
-    if(!ks.length){el.innerHTML='<tr><td colspan="4" class="empty">No records found.</td></tr>';return;}
+    if(!ks.length){el.innerHTML='<tr><td colspan="5" class="empty">No records found.</td></tr>';return;}
     let ta=0,td=0;
-    const rows=ks.map(k=>{const a=m[k].a,d=m[k].d;ta+=a;td+=d;return `<tr data-k="${encodeURIComponent(k)}"><td>${esc(k)}</td><td class="num avail">${fmt(a)}</td><td class="num dist">${fmt(d)}</td><td class="num bal">${fmt(a-d)}</td></tr>`;}).join('');
-    el.innerHTML=rows+`<tr class="sum-tot"><td>${te?'మొత్తం':'Total'}</td><td class="num">${fmt(ta)}</td><td class="num">${fmt(td)}</td><td class="num">${fmt(ta-td)}</td></tr>`;
+    const rows=ks.map((k,i)=>{const a=m[k].a,d=m[k].d;ta+=a;td+=d;return `<tr data-k="${encodeURIComponent(k)}"><td class="sl">${i+1}</td><td>${esc(k)}</td><td class="num avail">${fmt(a)}</td><td class="num dist">${fmt(d)}</td><td class="num bal">${fmt(a-d)}</td></tr>`;}).join('');
+    el.innerHTML=rows+`<tr class="sum-tot"><td colspan="2">${te?'మొత్తం':'Total'}</td><td class="num">${fmt(ta)}</td><td class="num">${fmt(td)}</td><td class="num">${fmt(ta-td)}</td></tr>`;
   };
   tipRows=data;
   renderSchemeBag(data,te);
   build('category','sum-category');build('nursery','sum-nursery');build('scheme','sum-scheme');renderSpeciesGroups(data,te);
   const h=(id,en,tl)=>{const e=document.getElementById(id);if(e)e.textContent=te?tl:en;};
-  h('sw-c-h','Category-wise','వర్గం వారీగా');h('sw-n-h','Nursery-wise','నర్సరీ వారీగా');h('sw-s-h','Scheme-wise','పథకం వారీగా');h('sw-sp-h','Species-wise','జాతి వారీగా');
+  h('sw-c-s','Category-wise','వర్గం వారీగా');h('sw-n-s','Nursery-wise','నర్సరీ వారీగా');h('sw-s-s','Scheme-wise','పథకం వారీగా');h('sw-c-h','Category-wise','వర్గం వారీగా');h('sw-n-h','Nursery-wise','నర్సరీ వారీగా');h('sw-s-h','Scheme-wise','పథకం వారీగా');h('sw-sp-h','Species-wise','జాతి వారీగా');
 }
 function applyFilters(){
   const data=getFiltered();
@@ -2159,20 +2198,20 @@ function generateReport(){
   const dv=(r,d)=>r[d[0]]===''||r[d[0]]==null?'—':r[d[0]];
   let head,rows;
   if(type==='detailed'){
-    head=['S.No',...dims.map(d=>d[1]),...meas.map(m=>m[1])];
+    head=['Sl.No',...dims.map(d=>d[1]),...meas.map(m=>m[1])];
     rows=data.map((r,i)=>[i+1,...dims.map(d=>dv(r,d)),...meas.map(m=>rv(r,m[0]))]);
   }else{
     const g={};
     data.forEach(r=>{const k=dims.map(d=>dv(r,d)).join('\u0001');const o=g[k]||(g[k]={keys:dims.map(d=>dv(r,d)),n:0,m:meas.map(()=>0)});o.n++;meas.forEach((m,i)=>o.m[i]+=rv(r,m[0]));});
-    head=[...dims.map(d=>d[1]),'Records',...meas.map(m=>m[1])];
-    rows=Object.keys(g).sort().map(k=>[...g[k].keys,g[k].n,...g[k].m]);
+    head=['Sl.No',...dims.map(d=>d[1]),'Records',...meas.map(m=>m[1])];
+    rows=Object.keys(g).sort().map((k,i)=>[i+1,...g[k].keys,g[k].n,...g[k].m]);
   }
-  const nd=type==='detailed'?1+dims.length:dims.length;
+  const nd=1+dims.length;
   const tot=head.map((h,i)=>i<nd?'':rows.reduce((a,r)=>a+(Number(r[i])||0),0));
   if(type==='abstract'&&nd>0)tot[0]='Grand Total'; else if(nd>0)tot[0]='Total';
   rptHead=head;rptRows=rows.concat(rows.length?[tot]:[]);rptTitle=(type==='detailed'?'Detailed':'Abstract')+'_Report';
   const fmtc=(v,i)=>i>=nd&&typeof v==='number'?fmt(v):esc(v);
-  const metaTxt=['Generated: '+new Date().toLocaleString('en-IN'),...flt.map(([d,v])=>d[1]+': '+v),from?'From: '+from:'',to?'To: '+to:'',data.length+' stock record(s)'].filter(Boolean).join(' | ');
+  const metaTxt=[...flt.map(([d,v])=>d[1]+': '+v),from?'From: '+from:'',to?'To: '+to:'',data.length+' stock record(s)'].filter(Boolean).join(' | ');
   const hdrHtml=rptHeaderHtml(type,metaTxt);byId('rpt-out').innerHTML=(rows.length?'<div class="table-wrap"><table><thead><tr class="rpt-hdr"><th colspan="'+head.length+'">'+hdrHtml+'</th></tr><tr>'+head.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((v,i)=>'<td'+(i>=nd?' class="num"':'')+'>'+fmtc(v,i)+'</td>').join('')+'</tr>').join('')+'</tbody><tfoot><tr>'+tot.map((v,i)=>'<td'+(i>=nd?' class="num"':'')+'>'+fmtc(v,i)+'</td>').join('')+'</tr></tfoot></table></div>':hdrHtml+'<p class="empty">No records match the selection.</p>');
 }
 function rptCSV(){
@@ -2300,14 +2339,16 @@ function setCombo(id,val){
 function comboReset(){ADMIN_COMBOS.forEach(([id])=>{const el=byId(id);if(!el)return;el.value='';byId(id+'-new').value='';byId(id+'-new').style.display='none';});}
 
 /* ── CUSTOM REPORT HEADER (repeats on every printed page via <thead>) ── */
+const RH_DT={dtshow:'both',dfmt:'dmy',tfmt:'12',dtpos:'right',dtlabel:'Date',dtfix:''};
 const RH_KEY='nursery_rpt_header';let rhMem=null,rptLogo='';
-function rhLoad(){let o=null;try{o=JSON.parse(localStorage.getItem(RH_KEY)||'null');}catch(e){}return Object.assign({l1:'',l2:'',l3:'',title:'',align:'center',meta:true,logo:''},o||rhMem||{});}
-function rhRead(){return {l1:byId('rh-l1').value.trim(),l2:byId('rh-l2').value.trim(),l3:byId('rh-l3').value.trim(),title:byId('rh-title').value.trim(),align:byId('rh-align').value,meta:byId('rh-meta').checked,logo:rptLogo};}
+function rhLoad(){let o=null;try{o=JSON.parse(localStorage.getItem(RH_KEY)||'null');}catch(e){}return Object.assign({l1:'',l2:'',l3:'',title:'',align:'center',meta:true,logo:''},RH_DT,o||rhMem||{});}
+function rhRead(){return {l1:byId('rh-l1').value.trim(),l2:byId('rh-l2').value.trim(),l3:byId('rh-l3').value.trim(),title:byId('rh-title').value.trim(),align:byId('rh-align').value,meta:byId('rh-meta').checked,logo:rptLogo,...Object.fromEntries(Object.keys(RH_DT).map(k=>[k,byId('rh-'+k).value.trim()]))};}
 function rhFill(){
   const h=rhLoad();if(!byId('rh-l1'))return;
   byId('rh-l1').value=h.l1;byId('rh-l2').value=h.l2;byId('rh-l3').value=h.l3;byId('rh-title').value=h.title;byId('rh-align').value=h.align;byId('rh-meta').checked=!!h.meta;rptLogo=h.logo||'';
+  Object.keys(RH_DT).forEach(k=>byId('rh-'+k).value=h[k]);rhPreview();
 }
-function rhSave(){const o=rhRead();rhMem=o;try{localStorage.setItem(RH_KEY,JSON.stringify(o));}catch(e){}}
+function rhSave(){const o=rhRead();rhMem=o;try{localStorage.setItem(RH_KEY,JSON.stringify(o));}catch(e){}rhPreview();}
 function rhLogo(inp){
   const f=inp.files[0];if(!f)return;
   if(!/^image\//.test(f.type)){alert('Please choose an image file.');inp.value='';return;}
@@ -2315,16 +2356,30 @@ function rhLogo(inp){
   const r=new FileReader();r.onload=()=>{rptLogo=r.result;rhSave();};r.readAsDataURL(f);
 }
 function rhLogoClear(){rptLogo='';byId('rh-logo').value='';rhSave();}
-function rhReset(){rptLogo='';byId('rh-logo').value='';['rh-l1','rh-l2','rh-l3','rh-title'].forEach(i=>byId(i).value='');byId('rh-align').value='center';byId('rh-meta').checked=true;rhSave();}
-function rptHeaderHtml(type,metaTxt){
+function rhReset(){rptLogo='';byId('rh-logo').value='';['rh-l1','rh-l2','rh-l3','rh-title'].forEach(i=>byId(i).value='');byId('rh-align').value='center';byId('rh-meta').checked=true;Object.keys(RH_DT).forEach(k=>byId('rh-'+k).value=RH_DT[k]);rhSave();}
+// date / time line of the print header: current moment unless a fixed one is entered
+function rhStamp(h){
+  if(h.dtshow==='none')return '';
+  let d=h.dtfix?new Date(h.dtfix):new Date();if(isNaN(d))d=new Date();
+  const p=n=>String(n).padStart(2,'0'),dd=p(d.getDate()),mm=p(d.getMonth()+1),y=d.getFullYear();
+  const date=h.dfmt==='slash'?dd+'/'+mm+'/'+y:h.dfmt==='short'||h.dfmt==='long'?d.toLocaleDateString('en-GB',{day:'2-digit',month:h.dfmt,year:'numeric'}):dd+'-'+mm+'-'+y;
+  const H=d.getHours(),M=p(d.getMinutes()),time=h.tfmt==='24'?p(H)+':'+M:p(H%12||12)+':'+M+(H<12?' AM':' PM');
+  const text=h.dtshow==='date'?date:h.dtshow==='time'?time:date+', '+time;
+  return (h.dtlabel?h.dtlabel+': ':'')+text;
+}
+function rhPreview(){const e=byId('rh-preview');if(e)e.innerHTML=rptHeaderHtml(byId('rpt-type').value,'Selected filters | record count',byId('rh-title').value.trim()?'':undefined);}
+function rhOpen(){const b=byId('rh-box');b.open=true;rhPreview();b.scrollIntoView({behavior:'smooth',block:'center'});}
+function rptHeaderHtml(type,metaTxt,defTitle){
   const h=rhRead(),al=['left','center','right'].includes(h.align)?h.align:'center';
-  const title=h.title||((type==='detailed'?'Detailed':'Abstract')+' Report');
+  const title=h.title||defTitle||((type==='detailed'?'Detailed':'Abstract')+' Report');
   return '<div style="text-align:'+al+';color:#111">'
+    +(h.dtpos!=='below'&&rhStamp(h)?'<div style="font-size:11px;color:#333;text-align:'+(h.dtpos==='left'?'left':'right')+'">'+esc(rhStamp(h))+'</div>':'')
     +(h.logo?'<img src="'+esc(h.logo)+'" alt="" style="height:56px;max-width:160px;object-fit:contain;margin-bottom:4px">':'')
     +(h.l1?'<div style="font-size:18px;font-weight:700">'+esc(h.l1)+'</div>':'')
     +(h.l2?'<div style="font-size:14px;font-weight:600">'+esc(h.l2)+'</div>':'')
     +(h.l3?'<div style="font-size:12px">'+esc(h.l3)+'</div>':'')
     +'<div style="font-size:15px;font-weight:700;margin-top:4px;color:#2d6a2d">'+esc(title)+'</div>'
+    +(h.dtpos==='below'&&rhStamp(h)?'<div style="font-size:11px;color:#333;margin-top:2px">'+esc(rhStamp(h))+'</div>':'')
     +(h.meta?'<div style="font-size:11px;color:#555;margin-top:2px">'+esc(metaTxt)+'</div>':'')
     +'</div>';
 }
@@ -2332,8 +2387,168 @@ function printReport(){
   if(!canReport())return;
   generateReport();
   if(!rptRows.length){return;}
+  document.body.classList.remove('printing-abs');absClearPage();
   document.body.classList.add('printing-report');
   window.onafterprint=()=>document.body.classList.remove('printing-report');
+  window.print();
+}
+
+/* ── ABSTRACT EXPORT / PRINT ── */
+const ABS_TITLE='Nursery Stock Abstract';
+function absPicked(){
+  if(!canReport())return null;
+  refreshWise();
+  const all=[...document.querySelectorAll('#rpt-sum-sec details.abs')];
+  const list=[...document.querySelectorAll('.abs-pick:checked')].map(c=>all[+c.value]).filter(Boolean)
+    .map(d=>({title:d.querySelector('summary').textContent.trim(),tables:[...d.querySelectorAll('table')]}));
+  if(!list.length){alert('Select at least one abstract.');return null;}
+  return list;
+}
+function absMeta(){
+  const flt=RPT_DIMS.filter(d=>byId('rf-'+d[0])&&byId('rf-'+d[0]).value).map(d=>d[1]+': '+byId('rf-'+d[0]).value);
+  const from=byId('rf-from').value,to=byId('rf-to').value;
+  return [...flt,from?'From: '+from:'',to?'To: '+to:'',rptSumData().length+' stock record(s)'].filter(Boolean).join(' | ');
+}
+function absMove(btn,dir){
+  const li=btn.closest('li'),other=dir<0?li.previousElementSibling:li.nextElementSibling;
+  if(!other)return;
+  li.parentNode.insertBefore(li,dir<0?other:other.nextSibling);
+}
+function absOpts(){
+  const v=i=>byId('ap-'+i).value;
+  return {each:v('flow')==='each',paper:v('paper'),land:v('orient')==='landscape',margin:+v('margin'),fit:v('width')==='fit',font:v('font'),size:+v('size')};
+}
+const absFont=o=>"'"+o.font+"','Nirmala UI','Noto Sans Telugu',Gautami,"+(/Times|Georgia/.test(o.font)?'serif':o.font==='Courier New'?'monospace':'sans-serif');
+// print header, scaled with the chosen font size
+const absHeader=o=>rptHeaderHtml('abstract',absMeta(),ABS_TITLE).replace(/font-size:(\d+)px/g,(m,n)=>'font-size:'+Math.round(n*o.size/10)+'px');
+// table → rows of values; merged (rowspan) cells are repeated so every row is complete
+function absGrid(table){
+  const grid=[];
+  [...table.rows].forEach((tr,i)=>{
+    grid[i]=grid[i]||[];let c=0;
+    [...tr.cells].forEach(td=>{
+      while(grid[i][c]!==undefined)c++;
+      const text=td.textContent.trim(),n=Number(text.replace(/,/g,''));
+      const v=(td.classList.contains('num')||td.classList.contains('sl'))&&td.tagName==='TD'&&text!==''&&!isNaN(n)?n:text;
+      for(let y=0;y<td.rowSpan;y++){grid[i+y]=grid[i+y]||[];for(let x=0;x<td.colSpan;x++)grid[i+y][c+x]=x?'':v;}
+      c+=td.colSpan;
+    });
+  });
+  return grid;
+}
+function absHeadLines(){
+  const h=rhRead();
+  return [h.l1,h.l2,h.l3,h.title||ABS_TITLE,rhStamp(h),h.meta?absMeta():''].filter(Boolean);
+}
+// text beginning with = + - @ would be run as a formula by spreadsheet programs
+const absSafe=v=>typeof v==='string'&&/^[=+\-@\t\r]/.test(v)?"'"+v:v;
+const absName=ext=>'Abstract_'+new Date().toISOString().slice(0,10)+'.'+ext;
+function absDownload(blob,name){
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+function absCSV(){
+  const list=absPicked();if(!list)return;
+  const rows=absHeadLines().map(l=>[l]);
+  list.forEach(x=>{rows.push([],[x.title]);x.tables.forEach((t,i)=>{if(i)rows.push([]);rows.push(...absGrid(t));});});
+  const q=v=>'"'+String(absSafe(v)).replace(/"/g,'""')+'"';
+  absDownload(new Blob(['﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),absName('csv'));
+}
+let xlsxLoading=null;
+function absXlsxLib(){
+  if(window.XLSX)return Promise.resolve();
+  return xlsxLoading||(xlsxLoading=new Promise((ok,fail)=>{
+    const t=document.createElement('script');t.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    t.onload=ok;t.onerror=()=>{xlsxLoading=null;t.remove();fail();};document.head.appendChild(t);
+  }));
+}
+async function absExcel(){
+  const list=absPicked();if(!list)return;
+  const head=absHeadLines();
+  try{await absXlsxLib();}catch(e){alert('Could not load the Excel tool. Check the internet connection, or use CSV.');return;}
+  const wb=XLSX.utils.book_new(),o=absOpts(),inch=o.margin/25.4;
+  const section=x=>{const rows=[[x.title]];x.tables.forEach((t,i)=>{if(i)rows.push([]);rows.push(...absGrid(t));});return rows;};
+  const addSheet=(body,name)=>{
+    // string cells are stored as text, never as formulas
+    const ws=XLSX.utils.aoa_to_sheet(head.map(l=>[absSafe(l)]).concat([[]],body));
+    const cols=Math.max(...body.map(r=>r.length)),data=body.filter(r=>r.length>1); // fit columns to the table contents
+    ws['!cols']=Array.from({length:cols},(_,c)=>({wch:Math.min(60,Math.max(8,...data.map(r=>String(r[c]??'').length+2)))}));
+    ws['!margins']={left:inch,right:inch,top:inch,bottom:inch,header:0.3,footer:0.3};
+    Object.keys(ws).forEach(a=>{if(a[0]!=='!'&&ws[a].t==='n')ws[a].z='#,##0';});
+    XLSX.utils.book_append_sheet(wb,ws,name.replace(/[\[\]:*?\/\\]/g,' ').slice(0,31));
+  };
+  if(o.each)list.forEach((x,k)=>addSheet(section(x),(k+1)+'. '+x.title));
+  else addSheet(list.flatMap((x,k)=>(k?[[]]:[]).concat(section(x))),'Abstract');
+  XLSX.writeFile(wb,absName('xlsx'));
+}
+// plain tables with their own borders, shared by Word, PDF and print
+function absSections(list,o){
+  return list.map(x=>'<h3>'+esc(x.title)+'</h3>'+x.tables.map(t=>{
+    const c=t.cloneNode(true);
+    c.querySelectorAll('[style],[class],[data-k],[id]').forEach(e=>{const num=e.classList.contains('num'),sl=e.classList.contains('sl');['style','class','data-k','id'].forEach(a=>e.removeAttribute(a));if(num)e.setAttribute('class','num');if(sl)e.setAttribute('class','sl');});
+    [...c.rows].forEach(r=>{if(/total|మొత్తం/i.test(r.cells[0].textContent)||(r.cells[0].colSpan>1))r.setAttribute('class','tot');});
+    // long merged cells cannot break across pages (leaving large gaps), so repeat their value on each row
+    const owners=[];
+    [...c.rows].forEach((tr,i)=>{
+      [...tr.cells].filter(td=>td.rowSpan>8).forEach(td=>owners.push({td,i,span:td.rowSpan,col:td.cellIndex+owners.filter(w=>w.i<i&&i<w.i+w.span&&w.col<=td.cellIndex).length}));
+    });
+    owners.sort((a,b)=>a.col-b.col).forEach(w=>{
+      w.td.rowSpan=1;
+      for(let y=w.i+1;y<w.i+w.span;y++){
+        // insert after the cells that belong to earlier columns
+        const tr=c.rows[y],before=owners.filter(q=>q!==w&&q.col<w.col&&y>q.i&&y<q.i+q.span).length+1;
+        tr.insertBefore(w.td.cloneNode(true),tr.cells[Math.min(before,tr.cells.length)]||null);
+      }
+    });
+    return '<table class="at" border="1" cellspacing="0" cellpadding="4"'+(o.fit?' align="center" style="width:auto;margin-left:auto;margin-right:auto"':' width="100%" style="width:100%"')+'>'+c.innerHTML+'</table>'+(o.fit?'<br clear="all">':'');
+  }).join(''));
+}
+function absCss(o,scope){
+  const p=scope?scope+' ':'',f=absFont(o),z=o.size;
+  return p+'h3{font-family:'+f+';color:#2d6a2d;font-size:'+(z+3)+'pt;margin:12px 0 6px;page-break-after:avoid;break-after:avoid'+(o.fit?';text-align:center':'')+'}'
+    +p+'table.at{border-collapse:collapse;font-family:'+f+';font-size:'+z+'pt;margin:0 auto 10px;'+(o.fit?'width:auto;max-width:100%':'width:100%')+'}'
+    +p+'table.at th,'+p+'table.at td{font-family:'+f+';font-size:'+z+'pt;border:1px solid #777!important;padding:3px 8px!important;text-align:left;vertical-align:top;color:#111!important;background:#fff;white-space:normal!important}'
+    +p+'table.at th{background:#e8f5e9!important;font-weight:700;text-transform:none!important}'
+    +p+'table.at th:nth-child(n){letter-spacing:0}'
+    +p+'table.at th.num,'+p+'table.at td.num{text-align:right;white-space:nowrap!important}'
+    +p+'table.at th.sl,'+p+'table.at td.sl{'+(o.fit?'':'width:1%;')+'text-align:center;white-space:nowrap!important}'
+    +p+'table.at tr.tot td{font-weight:700;background:#f1f8e9!important}'
+    +p+'table.at tr{page-break-inside:avoid;break-inside:avoid}';
+}
+function absWord(){
+  const list=absPicked();if(!list)return;
+  const o=absOpts(),mm={A4:[210,297],A3:[297,420],Letter:[215.9,279.4],Legal:[215.9,355.6]}[o.paper],pt=n=>(n*72/25.4).toFixed(1)+'pt';
+  const size=(o.land?[mm[1],mm[0]]:mm).map(pt).join(' ');
+  const brk=o.each?'<br clear="all" style="page-break-before:always">':'';
+  const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>@page S{size:'+size+';mso-page-orientation:'+(o.land?'landscape':'portrait')+';margin:'+pt(o.margin)+'}div.S{page:S}body{font-family:'+absFont(o)+';font-size:'+o.size+'pt}'+absCss(o)+'</style></head><body><div class="S"><div style="font-family:'+absFont(o)+'">'+absHeader(o)+'</div>'+absSections(list,o).join(brk)+'</div></body></html>';
+  absDownload(new Blob(['﻿'+html],{type:'application/msword'}),absName('doc'));
+}
+function absClearPage(){const e=byId('abs-page');if(e)e.remove();}
+function absPrint(){
+  const list=absPicked();if(!list)return;
+  const o=absOpts();
+  let box=byId('abs-print');if(!box){box=document.createElement('div');box.id='abs-print';document.body.appendChild(box);}
+  absClearPage();
+  const st=document.createElement('style');st.id='abs-page';
+  st.textContent='@page{size:'+o.paper+' '+(o.land?'landscape':'portrait')+';margin:0}'
+    +'@media print{html,body.printing-abs{margin:0!important;padding:0!important;background:#fff!important;min-height:0!important;height:auto!important}body.printing-abs>*:not(#abs-print){display:none!important}body.printing-abs #abs-print{display:block}'
+    +'#abs-print>table.abs-page{width:100%;table-layout:fixed;border-collapse:collapse;margin:0}#abs-print .abs-page>thead{display:table-header-group}#abs-print .abs-page>tfoot{display:table-footer-group}'
+    +'#abs-print .abs-page>*>tr>td{border:none!important;background:#fff!important;padding:0 '+o.margin+'mm!important}#abs-print .abs-page>tbody>tr{page-break-inside:auto;break-inside:auto}'
+    +'#abs-print .abs-gap{height:'+o.margin+'mm}'
+    +'#abs-print .abs-doc>thead img{height:34px!important}#abs-print .abs-doc>thead div{line-height:1.2}'
+    +'#abs-print *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}#abs-print table.abs-doc{width:100%;border-collapse:collapse;margin:0}#abs-print .abs-doc>thead{display:table-header-group}'
+    +'#abs-print .abs-doc>thead>tr>th,#abs-print .abs-doc>tbody>tr>td{background:#fff!important;border:none!important;padding:0 1px 8px!important;text-transform:none!important;font-weight:400;white-space:normal!important;font-family:'+absFont(o)+'}'
+    +'#abs-print .abs-doc>tbody>tr{page-break-inside:auto;break-inside:auto}#abs-print br{display:none}#abs-print .ab-new{break-before:page;page-break-before:always}'
+    +absCss(o,'#abs-print')+'}#abs-print{display:none}';
+  document.head.appendChild(st);
+  // the outer table head makes the print header repeat on every page
+  box.innerHTML='<table class="abs-page"><thead><tr><td><div class="abs-gap"></div></td></tr></thead><tfoot><tr><td><div class="abs-gap"></div></td></tr></tfoot><tbody><tr><td><table class="abs-doc"><thead><tr><th>'+absHeader(o)+'</th></tr></thead><tbody><tr><td>'+absSections(list,o).map((h,i)=>'<div'+(o.each&&i?' class="ab-new"':'')+'>'+h+'</div>').join('')+'</td></tr></tbody></table></td></tr></tbody></table>';
+  const old=document.title;
+  document.body.classList.remove('printing-report');document.body.classList.add('printing-abs');
+  document.title=absName('pdf').replace('.pdf',''); // default file name for Save as PDF
+  // styles are cleared on the next click, not on "afterprint", which some browsers send before the preview is drawn
+  window.onafterprint=()=>{document.title=old;};
+  document.addEventListener('pointerdown',()=>{document.body.classList.remove('printing-abs');absClearPage();document.title=old;},{once:true});
   window.print();
 }
 

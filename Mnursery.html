@@ -369,11 +369,11 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
         <p class="note">Abstract groups the selected fields and sums the measures. Detailed lists every record with the selected fields.</p>
       </div>
       <div class="section" id="rpt-sum-sec">
-        <h3>📋 Abstract – Category, Nursery, Scheme, Species &amp; Bag Size wise Totals</h3>
+        <h3>📋 Abstract – Category, Nursery, Scheme, Species, Bag Size &amp; Month wise Totals</h3>
         <p class="rpt-meta" id="rpt-sum-note">Follows the Date and field filters above.</p>
         <div style="border:1px solid #d4e8d4;border-radius:8px;padding:10px 12px;margin-bottom:10px;background:#f6fbf6">
           <div style="font-weight:600;color:#2d6a2d;font-size:13px;margin-bottom:6px">Select abstracts to export or print</div>
-          <ol class="abs-order"><li><label><input type="checkbox" class="abs-pick" value="0" checked>Category-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="1" checked>Nursery-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="2" checked>Scheme-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="3" checked>Scheme &amp; Bag Size</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="4" checked>Bag Size &amp; Scheme</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="5" checked>Species-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li></ol>
+          <ol class="abs-order"><li><label><input type="checkbox" class="abs-pick" value="0" checked>Category-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="1" checked>Nursery-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="2" checked>Scheme-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="3" checked>Scheme &amp; Bag Size</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="4" checked>Bag Size &amp; Scheme</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="5" checked>Species-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="6" checked>Month-wise Distribution</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li></ol>
           <div class="form-grid" style="margin-bottom:10px"><div class="fg"><label>Page layout</label><select id="ap-flow"><option value="cont" selected>Continuous</option><option value="each">Each abstract on a new page</option></select></div><div class="fg"><label>Paper size</label><select id="ap-paper"><option value="A4" selected>A4</option><option value="A3">A3</option><option value="Letter">Letter</option><option value="Legal">Legal</option></select></div><div class="fg"><label>Orientation</label><select id="ap-orient"><option value="portrait" selected>Portrait</option><option value="landscape">Landscape</option></select></div><div class="fg"><label>Margins</label><select id="ap-margin"><option value="10">Narrow (10 mm)</option><option value="15" selected>Normal (15 mm)</option><option value="25">Wide (25 mm)</option></select></div><div class="fg"><label>Table width</label><select id="ap-width"><option value="fit" selected>Fit to content</option><option value="full">Full page width</option></select></div><div class="fg"><label>Font</label><select id="ap-font"><option value="Arial" selected>Arial</option><option value="Calibri">Calibri</option><option value="Times New Roman">Times New Roman</option><option value="Georgia">Georgia</option><option value="Verdana">Verdana</option><option value="Tahoma">Tahoma</option><option value="Courier New">Courier New</option></select></div><div class="fg"><label>Font size</label><select id="ap-size"><option value="8">8 pt</option><option value="9">9 pt</option><option value="10" selected>10 pt</option><option value="11">11 pt</option><option value="12">12 pt</option><option value="14">14 pt</option><option value="16">16 pt</option></select></div></div>
           <div style="display:flex;flex-wrap:wrap;gap:8px">
             <button type="button" class="abtn ag" onclick="absExcel()">📗 Excel</button>
@@ -399,6 +399,10 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
         </details>
         <details class="abs"><summary id="sw-sp-h">Species-wise</summary>
         <div class="sum-grid" id="sum-species" style="margin-bottom:0"></div>
+        </details>
+        <details class="abs"><summary id="sw-m-h">Month-wise Distribution Abstract</summary>
+        <p class="note" style="margin:0 0 8px">From Distribution Entry batches, by batch From Date. Date From / To apply to that date here.</p>
+        <div class="table-wrap" id="sum-month"></div>
         </details>
       </div>
       <div class="section" id="sp-class-box" style="display:none">
@@ -857,7 +861,7 @@ async function loadSheetData(){
     populateFilters();applyFilters();populateSpeciesDropdown();populateAdminCombos();if(typeof isStaff==='function'&&isStaff())loadReplHistory();
     if(document.getElementById('dist-entry-view').style.display==='block')deAfterStock();
     if(document.getElementById('admin-view').style.display==='block')renderAdmin();
-    if(document.getElementById('report-view').style.display==='block'&&typeof initReport==='function')initReport();
+    if(document.getElementById('report-view').style.display==='block'&&typeof initReport==='function'){initReport();if(typeof mdLoad==='function')mdLoad();}
     refreshTimer=setTimeout(loadSheetData,5*60*1000);
   }catch(e){showBanner('⚠️ Could not load data: '+esc(e.message||e)+' '+retry);}
 }
@@ -1264,7 +1268,7 @@ function showTab(tab,btn){
   if(tab==='eq-admin')renderEnquiryAdmin();
   if(tab==='dist-entry')deInit();
   document.body.classList.remove('printing-report');
-  if(tab==='report')initReport();
+  if(tab==='report'){initReport();mdLoad();}
   if(tab==='contact')initContacts();
   if(tab==='avenue')initAvenue();
 }
@@ -2163,7 +2167,7 @@ function rptSumData(){
   const flt=RPT_DIMS.filter(d=>d[0]!=='distDate'&&byId('rf-'+d[0])&&byId('rf-'+d[0]).value).map(d=>[d,byId('rf-'+d[0]).value]);
   return records.filter(r=>flt.every(([d,v])=>String(r[d[0]])===v)&&(!from||r.distDate>=from)&&(!to||r.distDate<=to));
 }
-function refreshWise(){if(canReport())renderWiseTotals(rptSumData());}
+function refreshWise(){if(canReport()){renderWiseTotals(rptSumData());renderMonthDist();}}
 document.addEventListener('change',e=>{if(e.target&&/^rf-/.test(e.target.id||''))refreshWise();});
 function initReport(){
   if(!initReport.prefs){initReport.prefs=true;absRestore();}
@@ -2394,6 +2398,60 @@ function printReport(){
   window.print();
 }
 
+/* ── MONTH-WISE DISTRIBUTION ABSTRACT ── */
+let mdBatches=null,mdError='',mdBusy=false;
+async function mdLoad(){
+  if(mdBusy||!canReport())return;mdBusy=true;
+  try{
+    // only counts are read: no beneficiary names or contact details
+    const all=[];
+    for(let from=0;;from+=1000){
+      const {data,error}=await sb.from('nursery_dist_batch').select('*, nursery_dist_beneficiary(beneficiary_id), nursery_dist_items(master_id,qty), nursery_dist_batch_lines(*)').order('batch_id').range(from,from+999);
+      if(error)throw error;
+      all.push(...(data||[]));if(!data||data.length<1000)break;
+    }
+    mdBatches=all;mdError='';
+  }catch(e){mdBatches=null;mdError=e.message||'unknown error';}
+  mdBusy=false;refreshWise();
+}
+function renderMonthDist(){
+  const box=byId('sum-month');if(!box)return;
+  const msg=t=>{box.innerHTML='<table><tbody><tr><td class="empty">'+esc(t)+'</td></tr></tbody></table>';};
+  if(mdError)return msg('Could not load distribution records: '+mdError);
+  if(!mdBatches)return msg('Loading distribution records…');
+  const from=byId('rf-from').value,to=byId('rf-to').value;
+  const flt=RPT_DIMS.filter(d=>d[0]!=='distDate'&&byId('rf-'+d[0])&&byId('rf-'+d[0]).value).map(d=>[d[0],byId('rf-'+d[0]).value]);
+  // batch entry lines carry only nursery and scheme; other filters need the selected seedlings
+  const lineOk=flt.every(([d])=>d==='nursery'||d==='scheme');
+  const stock=new Map(records.map(r=>[String(r.id),r]));
+  const m={};
+  mdBatches.forEach(b=>{
+    const date=deIso(b.from_date);
+    if((from&&date<from)||(to&&date>to))return;
+    const items=(b.nursery_dist_items||[]).map(it=>({q:Number(it.qty)||0,r:stock.get(String(it.master_id))})).filter(x=>!flt.length||(x.r&&flt.every(([d,v])=>String(x.r[d])===v)));
+    let lines=deLines(b);
+    if(!lines.length)lines=[{nursery:'',scheme:'',seedlings:b.seedlings_distributed}];
+    lines=lineOk?lines.filter(l=>flt.every(([d,v])=>l[d]===v)):[];
+    if(flt.length&&!items.length&&!lines.length)return;
+    const k=date.slice(0,7),o=m[k]||(m[k]={batches:0,bens:0,entry:0,cat:{},sel:0});
+    o.batches++;o.bens+=(b.nursery_dist_beneficiary||[]).length;
+    o.entry+=lines.reduce((a,l)=>a+(Number(l.seedlings)||0),0);
+    items.forEach(x=>{const c=x.r?spClass(x.r.species):SP_OTHER;o.cat[c]=(o.cat[c]||0)+x.q;o.sel+=x.q;});
+  });
+  const keys=Object.keys(m).sort();
+  if(!keys.length)return msg('No distribution records found.');
+  const cats=SP_CATS.concat(keys.some(k=>m[k].cat[SP_OTHER])?[SP_OTHER]:[]);
+  const cols=[['Batches',o=>o.batches],
+    // beneficiaries belong to a whole batch, so they cannot be split by a filter
+    ...(flt.length?[]:[['Beneficiaries',o=>o.bens]]),
+    ...(lineOk?[['Seedlings (Batch Entry)',o=>o.entry]]:[]),
+    ...cats.map(c=>[c,o=>o.cat[c]||0]),['Total Selected',o=>o.sel]];
+  const cells=(vals)=>vals.map((v,i)=>'<td class="num'+(i===vals.length-1?' bal':'')+'">'+fmt(v)+'</td>').join('');
+  box.innerHTML='<table><thead><tr><th class="sl">Sl.No</th><th>Month</th>'+cols.map(c=>'<th class="num">'+esc(c[0])+'</th>').join('')+'</tr></thead><tbody>'
+    +keys.map((k,i)=>'<tr><td class="sl">'+(i+1)+'</td><td>'+esc(deMonthLabel(k))+'</td>'+cells(cols.map(c=>c[1](m[k])))+'</tr>').join('')
+    +'<tr class="sum-tot"><td colspan="2">Total</td>'+cells(cols.map(c=>keys.reduce((a,k)=>a+c[1](m[k]),0)))+'</tr></tbody></table>';
+}
+
 /* ── ABSTRACT EXPORT / PRINT ── */
 const ABS_TITLE='Nursery Stock Abstract';
 function absPicked(){
@@ -2403,6 +2461,7 @@ function absPicked(){
   const list=[...document.querySelectorAll('.abs-pick:checked')].map(c=>all[+c.value]).filter(Boolean)
     .map(d=>({title:d.querySelector('summary').textContent.trim(),tables:[...d.querySelectorAll('table')]}));
   if(!list.length){alert('Select at least one abstract.');return null;}
+  if(!mdBatches&&!mdError&&byId('sum-month')&&document.querySelector('.abs-pick[value="6"]').checked){alert('Distribution records are still loading. Please try again in a moment, or untick Month-wise Distribution.');mdLoad();return null;}
   return list;
 }
 function absMeta(){
@@ -2429,6 +2488,9 @@ function absRestore(){
     const c=[...list.querySelectorAll('.abs-pick')].find(x=>x.value===String(v));
     if(c){c.checked=!!on;list.appendChild(c.closest('li'));}
   });
+  // abstracts added since the choices were saved go to the end
+  const known=(Array.isArray(o.items)?o.items:[]).map(x=>String(x[0]));
+  [...list.querySelectorAll('.abs-pick')].filter(c=>!known.includes(c.value)).forEach(c=>list.appendChild(c.closest('li')));
   ABS_SET.forEach(k=>{const e=byId('ap-'+k),v=o.set&&o.set[k];if(e&&[...e.options].some(x=>x.value===v))e.value=v;});
 }
 document.addEventListener('change',e=>{if(e.target.matches&&e.target.matches('.abs-pick,[id^="ap-"]'))absSave();});

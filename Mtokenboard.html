@@ -14493,6 +14493,11 @@
   }
   // Grid / Full text: ONE card per Year + Scheme + Qtr. When that scheme has several HOAs in the quarter, the card adds them up
   // and lists each HOA (click a HOA line to edit that record).
+  const budExpanded_ = new Set();                                   // schemes whose detail cards are open
+  function toggleBudgetDetail_(scheme) {
+    const k = String(scheme); if (budExpanded_.has(k)) budExpanded_.delete(k); else budExpanded_.add(k);
+    renderBudgetCards_(budLastRows);
+  }
   function renderBudgetCards_(rows) {
     budLastRows = rows || [];
     const box = document.getElementById('bud_cards'); if (!box) return;
@@ -14518,8 +14523,9 @@
                  : mode === 'year_desc' ? (x, y) => String(y.Year).localeCompare(String(x.Year), undefined, { numeric: true }) : mode === 'dt_desc' ? (x, y) => time(y.Dt) - time(x.Dt) : null;
     if (schCmp) schemes.sort(schCmp);
     if (cardCmp) schemes.forEach(sc => sc.cards.sort(cardCmp));
+    // one Total card per scheme; its quarter / HOA detail cards are shown only when asked for (Show details)
     const list = [];
-    schemes.forEach(sc => { sc.cards.forEach(g => list.push(g)); if (sc.cards.length > 1) list.push({ total: true, sc }); });
+    schemes.forEach(sc => { list.push({ total: true, sc }); if (budExpanded_.has(String(sc.Scheme))) sc.cards.forEach(g => list.push(g)); });
     box.innerHTML = '';
     if (!list.length) { box.innerHTML = '<div class="rec-empty" style="grid-column:1/-1;">No budget records match the filters.</div>'; }
     list.forEach(g => {
@@ -14557,18 +14563,20 @@
             + line('Balance in VSS = Credited - Expenditure', recEsc_(inr(credSum - expSum)), true));
         const tc = document.createElement('div');
         tc.className = 'rec-card rec-total'; tc.style.cssText = 'border:2px solid #1F5FBF; background:linear-gradient(180deg,#F3F7FE,#fff); cursor:default;';
-        tc.title = 'Total of all the cards of this scheme shown here';
+        tc.title = 'Total of this scheme (use Show details for its quarter / HOA cards)';
         tc.innerHTML =
           '<div class="rec-bar"><span class="rec-dots"><i></i><i></i><i></i></span><span class="rec-bar-r"><span style="font-weight:700; letter-spacing:.06em;">TOTAL</span></span></div>' +
           '<div class="rec-body"><div class="rec-title">' + recEsc_(sc.Scheme) + '</div><div class="rec-rule"></div>' +
-          '<div class="rec-sub">' + sc.cards.length + ' cards &middot; ' + sc.cards.reduce((t, x) => t + x.recs.length, 0) + ' records</div>' +
+          '<div class="rec-sub">' + sc.cards.length + ' quarter card' + (sc.cards.length === 1 ? '' : 's') + ' &middot; ' + sc.cards.reduce((t, x) => t + x.recs.length, 0) + ' record' + (sc.cards.reduce((t, x) => t + x.recs.length, 0) === 1 ? '' : 's') + '</div>' +
           '<div style="font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin:6px 0 2px;">BY HOA</div>' +
           hoaRows.map(h => '<div style="display:flex; gap:8px; font-size:12.5px; padding:1px 6px;"><span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;" title="' + recEsc_(h.hoa) + '">HOA: ' + recEsc_(h.hoa) + '</span><span style="font-variant-numeric:tabular-nums; white-space:nowrap;">' + recEsc_(inr(h.amt)) + '</span></div>').join('') +
           '<div style="font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin:8px 0 2px;">BY QUARTER</div>' +
           sc.cards.map(x => '<div style="display:flex; gap:8px; font-size:12.5px; padding:1px 6px;"><span style="flex:1;">' + recEsc_(x.Year) + ' &middot; ' + recEsc_(x.Qtr) + '</span><span style="font-variant-numeric:tabular-nums;">' + recEsc_(inr(x.Amt)) + '</span></div>').join('') +
           apoHtml + expHtml + vssHtml +
           '<div class="rec-amt">' + recEsc_(inr(sc.Amt)) + '</div>' + (tw ? '<div class="rec-words">' + recEsc_(tw) + '</div>' : '') +
-          '<div class="rec-meta"><span class="rec-badge">' + recEsc_(years) + '</span><span class="rec-date">' + recEsc_(sc.Dt) + '</span></div></div>';
+          '<div class="rec-meta"><span class="rec-badge">' + recEsc_(years) + '</span><span class="rec-date">' + recEsc_(sc.Dt) + '</span></div>' +
+          '<div style="margin-top:10px;"><button type="button" class="action" style="padding:4px 12px; font-size:12px;" data-s="' + recEsc_(sc.Scheme) + '" onclick="event.stopPropagation(); toggleBudgetDetail_(this.dataset.s)">' +
+            (budExpanded_.has(String(sc.Scheme)) ? 'Hide details' : 'Show details (' + sc.cards.length + ' card' + (sc.cards.length === 1 ? '' : 's') + ')') + '</button></div></div>';
         box.appendChild(tc);
         return;
       }
@@ -14577,6 +14585,7 @@
       const card = document.createElement('div');
       card.className = 'rec-card'; card.tabIndex = 0; card.setAttribute('role', 'button');
       card.dataset.id = String(first.Budget_id); card.dataset.ids = g.recs.map(r => r.Budget_id).join(',');
+      card.style.borderLeft = '4px solid #9DB8E8';                    // a detail card under its scheme's Total card
       card.title = multi ? 'Click a HOA line to edit that budget record' : 'Click to edit this budget record';
       card.innerHTML =
         '<div class="rec-bar"><span class="rec-dots"><i></i><i></i><i></i></span><span class="rec-bar-r"><span>' + (multi ? g.recs.length + ' HOAs' : 'Budget /' + recEsc_(first.Budget_id)) + '</span></span></div>' +

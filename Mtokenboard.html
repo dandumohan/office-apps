@@ -14538,14 +14538,23 @@
         const exps = (typeof expenditureCache !== 'undefined' ? expenditureCache : []).filter(e => String(e.Scheme || '') === String(sc.Scheme) && (!fyKnown || yset.has(fyOf(e.Dt))));
         const expSum = exps.reduce((t, e) => t + num(e.Amount), 0);
         const loadedApo = !!loadedTabs.apo, loadedExp = !!loadedTabs.expenditure;
+        const loadedAdv = !!loadedTabs.advance;
+        if (!loadedApo || !loadedExp || !loadedAdv) ensureBudgetExtras_();             // fetch (once) whatever the card still needs
+        const credOf = a => (Number(a.Credited_Amt) > 0 ? Number(a.Credited_Amt) : Number(a.Amount)) || 0;
+        const advs = (typeof advanceCache !== 'undefined' ? advanceCache : []).filter(a => String(a.Scheme || '') === String(sc.Scheme) && String(a.Credited || '').trim().toLowerCase() === 'yes' && (!fyKnown || yset.has(fyOf(a.Credited_Date || a.Dt))));
+        const credSum = advs.reduce((t, a) => t + credOf(a), 0);
         const line = (l, v, bold) => '<div style="display:flex; gap:8px; font-size:12.5px; padding:1px 6px;' + (bold ? ' font-weight:700;' : '') + '"><span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;">' + l + '</span><span style="font-variant-numeric:tabular-nums; white-space:nowrap;">' + v + '</span></div>';
         const head = t => '<div style="font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin:8px 0 2px;">' + t + '</div>';
-        const apoHtml = head('APPROVED APO') + (!loadedApo ? line('Loading...', '') : apos.length
+        const apoHtml = head('APPROVED APO') + (!loadedApo ? line(budExtra_.apo === 'denied' ? 'Not available: ' + recEsc_(budExtra_.apoMsg) : 'Loading...', '') : apos.length
           ? apos.map(a => line(recEsc_([a.Year, a.Approval_Reference, a.Approved_Dt].filter(Boolean).join(' \u00b7 ')), recEsc_(inr(num(a.APO_Approved_Amt))))).join('') + line('Total approved', recEsc_(inr(apoSum)), true)
             + line('Budget released', recEsc_(inr(sc.Amt))) + line('To be released', recEsc_(inr(apoSum - sc.Amt)), true)
           : line('No APO found for this scheme / year', ''));
-        const expHtml = head('EXPENDITURE') + (!loadedExp ? line('Loading...', '') : line(exps.length + ' entr' + (exps.length === 1 ? 'y' : 'ies'), recEsc_(inr(expSum)), true)
+        const expHtml = head('EXPENDITURE') + (!loadedExp ? line(budExtra_.exp === 'denied' ? 'Not available: ' + recEsc_(budExtra_.expMsg) : 'Loading...', '') : line(exps.length + ' entr' + (exps.length === 1 ? 'y' : 'ies'), recEsc_(inr(expSum)), true)
           + line('Budget - Expenditure', recEsc_(inr(sc.Amt - expSum)), true));
+        const vssHtml = head('BALANCE IN VSS') + (!(loadedAdv && loadedExp)
+          ? line((budExtra_.adv === 'denied' ? 'Not available: ' + recEsc_(budExtra_.advMsg) : budExtra_.exp === 'denied' ? 'Not available: ' + recEsc_(budExtra_.expMsg) : 'Loading...'), '')
+          : line('Advance credited (' + advs.length + ' token' + (advs.length === 1 ? '' : 's') + ')', recEsc_(inr(credSum))) + line('Expenditure', recEsc_(inr(expSum)))
+            + line('Balance in VSS = Credited - Expenditure', recEsc_(inr(credSum - expSum)), true));
         const tc = document.createElement('div');
         tc.className = 'rec-card rec-total'; tc.style.cssText = 'border:2px solid #1F5FBF; background:linear-gradient(180deg,#F3F7FE,#fff); cursor:default;';
         tc.title = 'Total of all the cards of this scheme shown here';
@@ -14557,7 +14566,7 @@
           hoaRows.map(h => '<div style="display:flex; gap:8px; font-size:12.5px; padding:1px 6px;"><span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;" title="' + recEsc_(h.hoa) + '">HOA: ' + recEsc_(h.hoa) + '</span><span style="font-variant-numeric:tabular-nums; white-space:nowrap;">' + recEsc_(inr(h.amt)) + '</span></div>').join('') +
           '<div style="font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin:8px 0 2px;">BY QUARTER</div>' +
           sc.cards.map(x => '<div style="display:flex; gap:8px; font-size:12.5px; padding:1px 6px;"><span style="flex:1;">' + recEsc_(x.Year) + ' &middot; ' + recEsc_(x.Qtr) + '</span><span style="font-variant-numeric:tabular-nums;">' + recEsc_(inr(x.Amt)) + '</span></div>').join('') +
-          apoHtml + expHtml +
+          apoHtml + expHtml + vssHtml +
           '<div class="rec-amt">' + recEsc_(inr(sc.Amt)) + '</div>' + (tw ? '<div class="rec-words">' + recEsc_(tw) + '</div>' : '') +
           '<div class="rec-meta"><span class="rec-badge">' + recEsc_(years) + '</span><span class="rec-date">' + recEsc_(sc.Dt) + '</span></div></div>';
         box.appendChild(tc);
@@ -14623,9 +14632,20 @@
   applyBudgetLayout_();
 
   // The Total card also shows the scheme's approved APO and its expenditure, so make sure those lists are loaded.
+  const budExtra_ = { apo: '', exp: '', adv: '', apoMsg: '', expMsg: '', advMsg: '' };          // state: '', 'loading', 'ok' or 'denied'
   function ensureBudgetExtras_() {
-    if (!loadedTabs.apo) gsr().withSuccessHandler(rows => { apoCache = rows || []; loadedTabs.apo = true; renderBudgetCards_(budLastRows); }).getApoData();
-    if (!loadedTabs.expenditure) gsr().withSuccessHandler(rows => { expenditureCache = rows || []; loadedTabs.expenditure = true; renderBudgetCards_(budLastRows); }).getExpenditureData();
+    const failMsg = e => String((e && e.message) || e || 'not available').replace(/^Error:\s*/, '');
+    const jobs = [
+      ['apo', 'apo', 'getApoData', rows => { apoCache = rows || []; }],
+      ['exp', 'expenditure', 'getExpenditureData', rows => { expenditureCache = rows || []; }],
+      ['adv', 'advance', 'getAdvanceData', rows => { advanceCache = rows || []; }]
+    ];
+    jobs.forEach(([k, flag, fn, store]) => {
+      if (loadedTabs[flag] || budExtra_[k] === 'loading' || budExtra_[k] === 'denied') return;
+      budExtra_[k] = 'loading';
+      gsr().withSuccessHandler(rows => { store(rows); loadedTabs[flag] = true; budExtra_[k] = 'ok'; renderBudgetCards_(budLastRows); })
+        .withFailureHandler(e => { budExtra_[k] = 'denied'; budExtra_[k + 'Msg'] = failMsg(e); renderBudgetCards_(budLastRows); })[fn]();
+    });
   }
   function refreshBudgetTable(force) {
     gsr().withSuccessHandler(rows => {

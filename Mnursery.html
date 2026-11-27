@@ -354,7 +354,7 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
             <div class="fg"><label>Date / Time Label</label><input id="rh-dtlabel" maxlength="40" oninput="rhSave()" placeholder="e.g. As on"></div>
             <div class="fg"><label>Fixed Date &amp; Time (blank = current)</label><input type="datetime-local" id="rh-dtfix" oninput="rhSave()" onchange="rhSave()"></div>
             <div class="fg"><label>Logo (optional, up to 300 KB)</label><input type="file" id="rh-logo" accept="image/*" onchange="rhLogo(this)"><button class="abtn ao" style="margin-top:6px;padding:3px 10px;font-size:12px" onclick="rhLogoClear()">Remove logo</button></div>
-            <div class="fg"><label><input type="checkbox" id="rh-meta" checked onchange="rhSave()" style="width:auto;margin-right:6px">Show filters and record count</label></div>
+            <div class="fg"><label><input type="checkbox" id="rh-meta" checked onchange="rhSave()" style="width:auto;margin-right:6px">Show selected filters</label></div>
           </div>
           <div class="note" style="margin:8px 0 4px">Preview</div>
           <div id="rh-preview" style="border:1px dashed #b5d4b5;border-radius:6px;padding:10px;background:#fff"></div>
@@ -383,7 +383,7 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
             <button type="button" class="abtn ao" onclick="absPrint()">🖨 Print</button>
             <button type="button" class="abtn ao" onclick="rhOpen()">🖋 Header, Date &amp; Time</button>
           </div>
-          <p class="note" style="margin:6px 0 0">Use ▲ ▼ to set the order. Page settings apply to PDF, Print and Word; Excel uses the order, page layout and margins; CSV uses the order only. For PDF, choose “Save as PDF” in the print window, with Scale at 100%. Margins are set here, so leave the print window’s Margins at Default or None.</p>
+          <p class="note" style="margin:6px 0 0">Your selection, order and page settings are remembered in this browser. Use ▲ ▼ to set the order. Page settings apply to Excel, Word, PDF and Print; CSV uses the order only. For PDF, choose “Save as PDF” in the print window, with Scale at 100%. Margins are set here, so leave the print window’s Margins at Default or None.</p>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:10px"><button type="button" class="abtn ao" style="padding:4px 12px;font-size:12px" onclick="absAll(true)">▼ Expand all</button><button type="button" class="abtn ao" style="padding:4px 12px;font-size:12px" onclick="absAll(false)">▲ Collapse all</button></div>
         <div class="sum-grid" style="margin-bottom:10px">
@@ -2166,6 +2166,7 @@ function rptSumData(){
 function refreshWise(){if(canReport())renderWiseTotals(rptSumData());}
 document.addEventListener('change',e=>{if(e.target&&/^rf-/.test(e.target.id||''))refreshWise();});
 function initReport(){
+  if(!initReport.prefs){initReport.prefs=true;absRestore();}
   spApply();spRenderMap();
   if(!initReport.loaded){initReport.loaded=true;spLoad().then(()=>{initReport();});}
   rhFill();
@@ -2211,7 +2212,7 @@ function generateReport(){
   if(type==='abstract'&&nd>0)tot[0]='Grand Total'; else if(nd>0)tot[0]='Total';
   rptHead=head;rptRows=rows.concat(rows.length?[tot]:[]);rptTitle=(type==='detailed'?'Detailed':'Abstract')+'_Report';
   const fmtc=(v,i)=>i>=nd&&typeof v==='number'?fmt(v):esc(v);
-  const metaTxt=[...flt.map(([d,v])=>d[1]+': '+v),from?'From: '+from:'',to?'To: '+to:'',data.length+' stock record(s)'].filter(Boolean).join(' | ');
+  const metaTxt=[...flt.map(([d,v])=>d[1]+': '+v),from?'From: '+from:'',to?'To: '+to:''].filter(Boolean).join(' | ');
   const hdrHtml=rptHeaderHtml(type,metaTxt);byId('rpt-out').innerHTML=(rows.length?'<div class="table-wrap"><table><thead><tr class="rpt-hdr"><th colspan="'+head.length+'">'+hdrHtml+'</th></tr><tr>'+head.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((v,i)=>'<td'+(i>=nd?' class="num"':'')+'>'+fmtc(v,i)+'</td>').join('')+'</tr>').join('')+'</tbody><tfoot><tr>'+tot.map((v,i)=>'<td'+(i>=nd?' class="num"':'')+'>'+fmtc(v,i)+'</td>').join('')+'</tr></tfoot></table></div>':hdrHtml+'<p class="empty">No records match the selection.</p>');
 }
 function rptCSV(){
@@ -2367,7 +2368,7 @@ function rhStamp(h){
   const text=h.dtshow==='date'?date:h.dtshow==='time'?time:date+', '+time;
   return (h.dtlabel?h.dtlabel+': ':'')+text;
 }
-function rhPreview(){const e=byId('rh-preview');if(e)e.innerHTML=rptHeaderHtml(byId('rpt-type').value,'Selected filters | record count',byId('rh-title').value.trim()?'':undefined);}
+function rhPreview(){const e=byId('rh-preview');if(e)e.innerHTML=rptHeaderHtml(byId('rpt-type').value,'Selected filters',byId('rh-title').value.trim()?'':undefined);}
 function rhOpen(){const b=byId('rh-box');b.open=true;rhPreview();b.scrollIntoView({behavior:'smooth',block:'center'});}
 function rptHeaderHtml(type,metaTxt,defTitle){
   const h=rhRead(),al=['left','center','right'].includes(h.align)?h.align:'center';
@@ -2407,20 +2408,37 @@ function absPicked(){
 function absMeta(){
   const flt=RPT_DIMS.filter(d=>byId('rf-'+d[0])&&byId('rf-'+d[0]).value).map(d=>d[1]+': '+byId('rf-'+d[0]).value);
   const from=byId('rf-from').value,to=byId('rf-to').value;
-  return [...flt,from?'From: '+from:'',to?'To: '+to:'',rptSumData().length+' stock record(s)'].filter(Boolean).join(' | ');
+  return [...flt,from?'From: '+from:'',to?'To: '+to:''].filter(Boolean).join(' | ');
 }
 function absMove(btn,dir){
   const li=btn.closest('li'),other=dir<0?li.previousElementSibling:li.nextElementSibling;
   if(!other)return;
   li.parentNode.insertBefore(li,dir<0?other:other.nextSibling);
+  absSave();
 }
+// remember the selected abstracts, their order and the page settings in this browser
+const ABS_KEY='nursery_abs_prefs',ABS_SET=['flow','paper','orient','margin','width','font','size'];
+function absSave(){
+  const o={items:[...document.querySelectorAll('.abs-pick')].map(c=>[c.value,c.checked]),set:Object.fromEntries(ABS_SET.map(k=>[k,byId('ap-'+k).value]))};
+  try{localStorage.setItem(ABS_KEY,JSON.stringify(o));}catch(e){}
+}
+function absRestore(){
+  let o=null;try{o=JSON.parse(localStorage.getItem(ABS_KEY)||'null');}catch(e){}
+  const list=document.querySelector('.abs-order');if(!o||!list)return;
+  (Array.isArray(o.items)?o.items:[]).forEach(([v,on])=>{
+    const c=[...list.querySelectorAll('.abs-pick')].find(x=>x.value===String(v));
+    if(c){c.checked=!!on;list.appendChild(c.closest('li'));}
+  });
+  ABS_SET.forEach(k=>{const e=byId('ap-'+k),v=o.set&&o.set[k];if(e&&[...e.options].some(x=>x.value===v))e.value=v;});
+}
+document.addEventListener('change',e=>{if(e.target.matches&&e.target.matches('.abs-pick,[id^="ap-"]'))absSave();});
 function absOpts(){
   const v=i=>byId('ap-'+i).value;
   return {each:v('flow')==='each',paper:v('paper'),land:v('orient')==='landscape',margin:+v('margin'),fit:v('width')==='fit',font:v('font'),size:+v('size')};
 }
 const absFont=o=>"'"+o.font+"','Nirmala UI','Noto Sans Telugu',Gautami,"+(/Times|Georgia/.test(o.font)?'serif':o.font==='Courier New'?'monospace':'sans-serif');
 // print header, scaled with the chosen font size
-const absHeader=o=>rptHeaderHtml('abstract',absMeta(),ABS_TITLE).replace(/font-size:(\d+)px/g,(m,n)=>'font-size:'+Math.round(n*o.size/10)+'px');
+const absHeader=o=>'<div style="border-bottom:3px double #1b5e20;padding-bottom:6px;margin-bottom:4px">'+rptHeaderHtml('abstract',absMeta(),ABS_TITLE).replace(/font-size:(\d+)px/g,(m,n)=>'font-size:'+Math.round(n*o.size/10)+'px')+'</div>';
 // table → rows of values; merged (rowspan) cells are repeated so every row is complete
 function absGrid(table){
   const grid=[];
@@ -2456,37 +2474,110 @@ function absCSV(){
 }
 let xlsxLoading=null;
 function absXlsxLib(){
-  if(window.XLSX)return Promise.resolve();
+  if(window.ExcelJS)return Promise.resolve();
   return xlsxLoading||(xlsxLoading=new Promise((ok,fail)=>{
-    const t=document.createElement('script');t.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    const t=document.createElement('script');t.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
     t.onload=ok;t.onerror=()=>{xlsxLoading=null;t.remove();fail();};document.head.appendChild(t);
   }));
 }
 async function absExcel(){
   const list=absPicked();if(!list)return;
-  const head=absHeadLines();
+  const o=absOpts(),h=rhRead(),stamp=rhStamp(h),meta=h.meta?absMeta():'';
   try{await absXlsxLib();}catch(e){alert('Could not load the Excel tool. Check the internet connection, or use CSV.');return;}
-  const wb=XLSX.utils.book_new(),o=absOpts(),inch=o.margin/25.4;
-  const section=x=>{const rows=[[x.title]];x.tables.forEach((t,i)=>{if(i)rows.push([]);rows.push(...absGrid(t));});return rows;};
-  const addSheet=(body,name)=>{
-    // string cells are stored as text, never as formulas
-    const ws=XLSX.utils.aoa_to_sheet(head.map(l=>[absSafe(l)]).concat([[]],body));
-    const cols=Math.max(...body.map(r=>r.length)),data=body.filter(r=>r.length>1); // fit columns to the table contents
-    ws['!cols']=Array.from({length:cols},(_,c)=>({wch:Math.min(60,Math.max(8,...data.map(r=>String(r[c]??'').length+2)))}));
-    ws['!margins']={left:inch,right:inch,top:inch,bottom:inch,header:0.3,footer:0.3};
-    Object.keys(ws).forEach(a=>{if(a[0]!=='!'&&ws[a].t==='n')ws[a].z='#,##0';});
-    XLSX.utils.book_append_sheet(wb,ws,name.replace(/[\[\]:*?\/\\]/g,' ').slice(0,31));
+  const wb=new ExcelJS.Workbook(),inch=o.margin/25.4;
+  const fill=c=>({type:'pattern',pattern:'solid',fgColor:{argb:'FF'+c}});
+  const font=(extra)=>Object.assign({name:o.font,size:o.size,color:{argb:'FF111111'}},extra);
+  const thin={style:'thin',color:{argb:'FF9AB89A'}},strong={style:'medium',color:{argb:'FF1B5E20'}};
+  const NUM='[>=10000000]##\\,##\\,##\\,##0;[>=100000]##\\,##\\,##0;##,##0'; // Indian digit grouping
+  const addSheet=(parts,name)=>{
+    const ws=wb.addWorksheet(name.replace(/[\[\]:*?\/\\]/g,' ').slice(0,31),{views:[{showGridLines:false}]});
+    const cols=Math.max(...parts.flatMap(x=>x.tables.map(t=>absGrid(t)[0].length))),widths=Array(cols).fill(0);
+    let r=0;
+    const line=(text,style,align)=>{
+      if(!text)return;r++;ws.mergeCells(r,1,r,cols);
+      const c=ws.getCell(r,1);c.value=text;c.font=font(style);c.alignment={horizontal:align||h.align||'center',vertical:'middle',wrapText:true};
+      ws.getRow(r).height=((style&&style.size)||o.size)*1.6*Math.max(1,Math.ceil(text.length/(cols*13)));
+    };
+    const img=/^data:image\/(png|jpe?g|gif);base64,/.exec(h.logo||'');
+    if(img){r++;ws.getRow(r).height=48;}
+    if(h.dtpos!=='below')line(stamp,{size:o.size-1},h.dtpos==='left'?'left':'right');
+    line(h.l1,{bold:true,size:o.size+6,color:{argb:'FF1B5E20'}});line(h.l2,{bold:true,size:o.size+2});line(h.l3,{});
+    line(h.title||ABS_TITLE,{bold:true,size:o.size+3,color:{argb:'FF1B5E20'}});
+    if(h.dtpos==='below')line(stamp,{size:o.size-1});
+    line(meta,{italic:true,size:o.size-1,color:{argb:'FF555555'}});
+    for(let c=1;c<=cols;c++)ws.getCell(r,c).border={bottom:strong};
+    const topRows=r;let headRow=0;
+    parts.forEach(x=>{
+      r+=2;ws.mergeCells(r,1,r,cols);
+      const tc=ws.getCell(r,1);tc.value=x.title;tc.font=font({bold:true,size:o.size+2,color:{argb:'FF1B5E20'}});tc.alignment={vertical:'middle'};
+      for(let c=1;c<=cols;c++)ws.getCell(r,c).border={bottom:thin};
+      ws.getRow(r).height=(o.size+2)*1.7;
+      x.tables.forEach((t,ti)=>{
+        r+=ti?2:1;const start=r,used=[];let band=0;
+        [...t.rows].forEach((tr,i)=>{
+          const isHead=tr.parentNode.tagName==='THEAD',grand=tr.classList.contains('sum-tot'),sub=!grand&&[...tr.cells].some(td=>td.colSpan>1&&!td.classList.contains('empty'));
+          if(isHead&&!headRow)headRow=start+i;
+          if(!isHead&&!grand&&!sub)band++;
+          let col=0;
+          [...tr.cells].forEach(td=>{
+            used[i]=used[i]||[];while(used[i][col])col++;
+            const row=start+i,cs=Math.min(td.colSpan,cols-col),rs=td.rowSpan,text=td.textContent.trim(),n=Number(text.replace(/,/g,''));
+            const isNum=!isHead&&(td.classList.contains('num')||td.classList.contains('sl'))&&text!==''&&!isNaN(n);
+            const color=isHead?'1B5E20':grand?'C8E6C9':sub?'E3F1E3':band%2?'FFFFFF':'F4F9F4';
+            for(let y=0;y<rs;y++){used[i+y]=used[i+y]||[];for(let z=0;z<cs;z++){
+              used[i+y][col+z]=true;const c=ws.getCell(row+y,col+z+1);
+              c.fill=fill(rs>1?'FFFFFF':color);
+              c.border={top:grand?strong:thin,left:thin,bottom:thin,right:thin};
+            }}
+            const c=ws.getCell(row,col+1);
+            c.value=isNum?n:text; // text values are never treated as formulas
+            if(isNum&&!td.classList.contains('sl'))c.numFmt=NUM;
+            c.font=font({bold:isHead||grand||sub||td.classList.contains('bal'),color:{argb:isHead?'FFFFFFFF':'FF111111'}});
+            c.alignment={vertical:rs>1?'top':'middle',horizontal:td.classList.contains('sl')?'center':td.classList.contains('num')?'right':'left',wrapText:true,indent:td.classList.contains('sl')?0:1};
+            if(rs>1||cs>1)ws.mergeCells(row,col+1,row+rs-1,col+cs);
+            if(cs===1)widths[col]=Math.max(widths[col],(text.length+4)*Math.max(1,o.size/10));
+            col+=cs;
+          });
+          ws.getRow(start+i).height=o.size*(isHead?2.1:1.8);
+        });
+        r=start+t.rows.length-1;
+      });
+    });
+    // fit columns to content; "full width" spreads them over the page
+    let w=widths.map(v=>Math.min(50,Math.max(8,v)));
+    if(!o.fit){const mm={A4:[210,297],A3:[297,420],Letter:[216,279],Legal:[216,356]}[o.paper],page=((o.land?mm[1]:mm[0])-2*o.margin)/2.1,sum=w.reduce((a,v)=>a+v,0);if(page>sum)w=w.map((v,i)=>i?v+(page-sum)/(cols-1):v);}
+    w.forEach((v,i)=>ws.getColumn(i+1).width=v);
+    if(img){
+      const px=w.reduce((a,v)=>a+v*7+5,0),at=h.align==='left'?0:h.align==='right'?px-60:px/2-30;
+      let x=Math.max(0,at),c=0;while(c<cols-1&&x>w[c]*7+5){x-=w[c]*7+5;c++;}
+      ws.addImage(wb.addImage({base64:h.logo,extension:img[1]==='jpg'?'jpeg':img[1]}),{tl:{col:c+x/(w[c]*7+5),row:0.05},ext:{width:60,height:60}});
+    }
+    ws.pageSetup={paperSize:{A4:9,A3:8,Letter:1,Legal:5}[o.paper],orientation:o.land?'landscape':'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0,horizontalCentered:true,
+      margins:{left:inch,right:inch,top:inch,bottom:Math.max(inch,0.55),header:0.2,footer:0.25},
+      // repeat the heading rows on every printed page
+      printTitlesRow:'1:'+(parts.length===1&&parts[0].tables.length===1&&headRow?headRow:topRows)};
+    ws.headerFooter={oddFooter:'&C&9Page &P of &N'};
   };
-  if(o.each)list.forEach((x,k)=>addSheet(section(x),(k+1)+'. '+x.title));
-  else addSheet(list.flatMap((x,k)=>(k?[[]]:[]).concat(section(x))),'Abstract');
-  XLSX.writeFile(wb,absName('xlsx'));
+  try{
+    if(o.each)list.forEach((x,k)=>addSheet([x],(k+1)+'. '+x.title));else addSheet(list,'Abstract');
+    const buf=await wb.xlsx.writeBuffer();
+    absDownload(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),absName('xlsx'));
+  }catch(e){alert('Could not create the Excel file: '+e.message);}
 }
 // plain tables with their own borders, shared by Word, PDF and print
 function absSections(list,o){
   return list.map(x=>'<h3>'+esc(x.title)+'</h3>'+x.tables.map(t=>{
     const c=t.cloneNode(true);
+    const grands=[...c.rows].map(r=>r.classList.contains('sum-tot'));
     c.querySelectorAll('[style],[class],[data-k],[id]').forEach(e=>{const num=e.classList.contains('num'),sl=e.classList.contains('sl');['style','class','data-k','id'].forEach(a=>e.removeAttribute(a));if(num)e.setAttribute('class','num');if(sl)e.setAttribute('class','sl');});
-    [...c.rows].forEach(r=>{if(/total|మొత్తం/i.test(r.cells[0].textContent)||(r.cells[0].colSpan>1))r.setAttribute('class','tot');});
+    let band=0;
+    [...c.rows].forEach((r,i)=>{
+      const head=r.parentNode.tagName==='THEAD',kind=head?'':grands[i]?'grand':[...r.cells].some(td=>td.colSpan>1)?'tot':++band%2?'':'alt';
+      if(kind)r.setAttribute('class',kind);
+      // colour attributes as well, because Word ignores some style rules
+      const bg=head?'#1b5e20':{grand:'#c8e6c9',tot:'#e3f1e3',alt:'#f4f9f4'}[kind];
+      if(bg)[...r.cells].forEach(td=>{if(td.rowSpan===1)td.setAttribute('bgcolor',bg);});
+    });
     // long merged cells cannot break across pages (leaving large gaps), so repeat their value on each row
     const owners=[];
     [...c.rows].forEach((tr,i)=>{
@@ -2505,22 +2596,57 @@ function absSections(list,o){
 }
 function absCss(o,scope){
   const p=scope?scope+' ':'',f=absFont(o),z=o.size;
-  return p+'h3{font-family:'+f+';color:#2d6a2d;font-size:'+(z+3)+'pt;margin:12px 0 6px;page-break-after:avoid;break-after:avoid'+(o.fit?';text-align:center':'')+'}'
+  const t=p+'table.at ';
+  return p+'h3{font-family:'+f+';color:#1b5e20;font-size:'+(z+3)+'pt;margin:14px 0 6px;padding-bottom:3px;border-bottom:1.5pt solid #1b5e20;page-break-after:avoid;break-after:avoid'+(o.fit?';text-align:center':'')+'}'
     +p+'table.at{border-collapse:collapse;font-family:'+f+';font-size:'+z+'pt;margin:0 auto 10px;'+(o.fit?'width:auto;max-width:100%':'width:100%')+'}'
-    +p+'table.at th,'+p+'table.at td{font-family:'+f+';font-size:'+z+'pt;border:1px solid #777!important;padding:3px 8px!important;text-align:left;vertical-align:top;color:#111!important;background:#fff;white-space:normal!important}'
-    +p+'table.at th{background:#e8f5e9!important;font-weight:700;text-transform:none!important}'
-    +p+'table.at th:nth-child(n){letter-spacing:0}'
-    +p+'table.at th.num,'+p+'table.at td.num{text-align:right;white-space:nowrap!important}'
-    +p+'table.at th.sl,'+p+'table.at td.sl{'+(o.fit?'':'width:1%;')+'text-align:center;white-space:nowrap!important}'
-    +p+'table.at tr.tot td{font-weight:700;background:#f1f8e9!important}'
+    +t+'th,'+t+'td{font-family:'+f+';font-size:'+z+'pt;border:0.75pt solid #9ab89a!important;padding:4px 9px!important;text-align:left;vertical-align:middle;color:#111!important;background:#fff;white-space:normal!important}'
+    +t+'td[rowspan]{vertical-align:top}'
+    +t+'th{background:#1b5e20!important;color:#fff!important;border-color:#1b5e20!important;font-weight:700;text-transform:none!important}'
+    +t+'th:nth-child(n){letter-spacing:0}'
+    +t+'th.num,'+t+'td.num{text-align:right;white-space:nowrap!important}'
+    +t+'th.sl,'+t+'td.sl{'+(o.fit?'':'width:1%;')+'text-align:center;white-space:nowrap!important}'
+    +t+'tr.alt td{background:#f4f9f4!important}'+t+'tr.alt td[rowspan]{background:#fff!important}'
+    +t+'tr.tot td{font-weight:700;background:#e3f1e3!important}'
+    +t+'tr.grand td{font-weight:700;background:#c8e6c9!important;border-top:1.5pt solid #1b5e20!important}'
     +p+'table.at tr{page-break-inside:avoid;break-inside:avoid}';
+}
+// Word follows styles written on each cell far more reliably than a style sheet
+function absWordCells(html,o){
+  const box=document.createElement('div');box.innerHTML=html;
+  // fixed column widths (in pixels), fitted to the longest text in each column
+  const mm={A4:[210,297],A3:[297,420],Letter:[216,279],Legal:[216,356]}[o.paper],page=Math.floor(((o.land?mm[1]:mm[0])-2*o.margin)*96/25.4);
+  box.querySelectorAll('table').forEach(t=>{
+    const grid=absGrid(t),cols=grid[0].length,body=[...t.rows].filter(r=>![...r.cells].some(c=>c.colSpan>1));
+    let w=Array.from({length:cols},(_,i)=>Math.max(5,...body.filter(r=>r.cells.length===cols).map(r=>r.cells[i].textContent.trim().length),String(grid[0][i]).length)*o.size*0.98+18);
+    const sum=()=>w.reduce((a,v)=>a+v,0);
+    if(!o.fit||sum()>page){const k=page/sum();w=w.map(v=>v*k);}
+    w=w.map(Math.floor);t.setAttribute('width',sum());t.style.width=sum()+'px';
+    const used=[];
+    [...t.rows].forEach((r,y)=>{let x=0;[...r.cells].forEach(c=>{
+      used[y]=used[y]||[];while(used[y][x])x++;
+      c.setAttribute('width',w.slice(x,x+c.colSpan).reduce((a,v)=>a+v,0));
+      for(let j=0;j<c.rowSpan;j++){used[y+j]=used[y+j]||[];for(let i=0;i<c.colSpan;i++)used[y+j][x+i]=true;}
+      x+=c.colSpan;
+    });});
+  });
+  box.querySelectorAll('th,td').forEach(c=>{
+    const row=c.parentNode,head=c.tagName==='TH',strong=head||/^(grand|tot)$/.test(row.className);
+    const bal=!head&&c.classList.contains('num')&&c===row.lastElementChild;
+    const align=c.classList.contains('sl')?'center':c.classList.contains('num')?'right':'left';
+    c.setAttribute('align',align);c.setAttribute('valign',c.rowSpan>1?'top':'middle');c.setAttribute('nowrap','nowrap');
+    const style='font-family:'+absFont(o)+';font-size:'+o.size+'pt;padding:2pt 6pt;border:solid #9ab89a 0.75pt;white-space:nowrap;text-align:'+align+';';
+    const text='margin:0;text-align:'+align+';color:'+(head?'#ffffff':'#111111')+';font-weight:'+(strong||bal?'bold':'normal');
+    c.setAttribute('style',style);
+    c.innerHTML='<p style="'+text+'">'+(strong||bal?'<b>'+c.innerHTML+'</b>':c.innerHTML)+'</p>';
+  });
+  return box.innerHTML;
 }
 function absWord(){
   const list=absPicked();if(!list)return;
   const o=absOpts(),mm={A4:[210,297],A3:[297,420],Letter:[215.9,279.4],Legal:[215.9,355.6]}[o.paper],pt=n=>(n*72/25.4).toFixed(1)+'pt';
   const size=(o.land?[mm[1],mm[0]]:mm).map(pt).join(' ');
   const brk=o.each?'<br clear="all" style="page-break-before:always">':'';
-  const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>@page S{size:'+size+';mso-page-orientation:'+(o.land?'landscape':'portrait')+';margin:'+pt(o.margin)+'}div.S{page:S}body{font-family:'+absFont(o)+';font-size:'+o.size+'pt}'+absCss(o)+'</style></head><body><div class="S"><div style="font-family:'+absFont(o)+'">'+absHeader(o)+'</div>'+absSections(list,o).join(brk)+'</div></body></html>';
+  const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>@page S{size:'+size+';mso-page-orientation:'+(o.land?'landscape':'portrait')+';margin:'+pt(o.margin)+'}div.S{page:S}body{font-family:'+absFont(o)+';font-size:'+o.size+'pt}'+absCss(o)+'</style></head><body><div class="S"><div style="font-family:'+absFont(o)+'">'+rptHeaderHtml('abstract',absMeta(),ABS_TITLE).replace(/font-size:(\d+)px/g,(m,n)=>'font-size:'+Math.round(n*o.size/10)+'px').replace('<img ','<img height="56" ')+'</div><div style="border-bottom:double #1b5e20 2.25pt;font-size:2pt">&nbsp;</div>'+absWordCells(absSections(list,o).join(brk),o)+'</div></body></html>';
   absDownload(new Blob(['﻿'+html],{type:'application/msword'}),absName('doc'));
 }
 function absClearPage(){const e=byId('abs-page');if(e)e.remove();}

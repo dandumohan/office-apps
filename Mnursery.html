@@ -70,8 +70,8 @@ tr:nth-child(even){background:#f5faf5}
 td{padding:8px 10px;border-bottom:1px solid #e8f2e8;vertical-align:middle}
 td.num{text-align:right;font-weight:600}
 th.num{text-align:right}
-#sum-species tr[data-k]{cursor:help}#sum-species tr[data-k]:hover td{background:#f1f8e9}
-.sp-tip{position:fixed;z-index:9999;display:none;max-width:320px;background:#fff;border:1px solid #2d6a2d;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.25);padding:8px 10px;font-size:12px;pointer-events:none}
+#sum-category tr[data-k],#sum-nursery tr[data-k],#sum-scheme tr[data-k],#sum-species tr[data-k]{cursor:help}#sum-category tr[data-k]:hover td,#sum-nursery tr[data-k]:hover td,#sum-scheme tr[data-k]:hover td,#sum-species tr[data-k]:hover td{background:#f1f8e9}
+.sp-tip{position:fixed;z-index:9999;display:none;max-width:calc(100vw - 12px);max-height:calc(100vh - 12px);overflow:hidden;background:#fff;border:1px solid #2d6a2d;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.25);padding:8px 10px;font-size:12px;pointer-events:none}
 .sp-tip h5{margin:0 0 5px;color:#2d6a2d;font-size:12px}.sp-tip table{width:auto;font-size:12px}.sp-tip td{padding:2px 8px 2px 0;border:none}.sp-tip td.num{text-align:right;color:#1565c0;padding-right:0}
 @media print{.sp-tip{display:none!important}}
 .sum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;margin-bottom:14px;align-items:start}
@@ -112,7 +112,7 @@ td.avail{color:#2d6a2d}td.dist{color:#e67e22}td.bal{color:#1565c0}
 .ckdd>div{position:absolute;z-index:20;background:#fff;border:1px solid #b5d4b5;border-radius:6px;padding:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);min-width:170px}
 .ckdd label{display:block;font-size:13px;color:#1a2e1a;margin:0;padding:2px 0}.ckdd input{width:auto;margin-right:6px}
 .rpt-meta{font-size:12px;color:#555;margin-bottom:8px}tfoot td{font-weight:700;background:#e8f5e9}
-@media print{#rpt-controls,#rpt-sum-sec{display:none!important}
+@media print{#rpt-controls,#rpt-sum-sec,#sp-class-box{display:none!important}
 .table-wrap{overflow:visible!important}thead{display:table-header-group}tfoot{display:table-row-group}tr{page-break-inside:avoid}
 body.printing-report .header,body.printing-report .tabs{display:none!important}
 body.printing-report .section{box-shadow:none!important;border:none!important;padding:0!important}}
@@ -357,13 +357,22 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
         <p class="note">Abstract groups the selected fields and sums the measures. Detailed lists every record with the selected fields.</p>
       </div>
       <div class="section" id="rpt-sum-sec">
-        <h3>📋 Abstract – Nursery, Scheme &amp; Species wise Totals</h3>
+        <h3>📋 Abstract – Category, Nursery, Scheme, Species &amp; Bag Size wise Totals</h3>
         <p class="rpt-meta" id="rpt-sum-note">Follows the Date and field filters above.</p>
         <div class="sum-grid" style="margin-bottom:0">
+        <div class="table-wrap"><table><thead><tr><th id="sw-c-h">Category-wise</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-category"></tbody></table></div>
         <div class="table-wrap"><table><thead><tr><th id="sw-n-h">Nursery-wise</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-nursery"></tbody></table></div>
         <div class="table-wrap"><table><thead><tr><th id="sw-s-h">Scheme-wise</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-scheme"></tbody></table></div>
-        <div class="table-wrap"><table><thead><tr><th id="sw-sp-h">Species-wise</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-species"></tbody></table></div>
       </div>
+        <h3 id="sw-sb-h" style="margin-top:16px">Scheme &amp; Bag Size wise Abstract</h3>
+        <div class="table-wrap"><table><thead><tr><th>Scheme</th><th>Bag Size</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody id="sum-schemebag"></tbody></table></div>
+        <h3 id="sw-sp-h" style="margin-top:16px">Species-wise</h3>
+        <div class="sum-grid" id="sum-species" style="margin-bottom:0"></div>
+      </div>
+      <div class="section" id="sp-class-box" style="display:none">
+        <details><summary style="cursor:pointer;font-weight:600;color:#2d6a2d">🌳 Species Classification (<span id="sp-class-sum"></span>)</summary>
+        <p class="note" style="margin:8px 0">Species are classified automatically by name. Choose a category to correct any of them.</p>
+        <div class="table-wrap" style="max-height:320px;overflow:auto"><table><thead><tr><th>Species</th><th>Category</th></tr></thead><tbody id="sp-class-body"></tbody></table></div></details>
       </div>
       <div class="section" id="rpt-out"><p class="empty">Choose options and click Generate Report.</p></div>
     </div>
@@ -865,31 +874,77 @@ function getFiltered(){
   const sp=(document.getElementById('f-species').value||'').toLowerCase(),df=document.getElementById('f-date-from').value,dt=document.getElementById('f-date-to').value;
   return records.filter(r=>(!dv||r.district===dv)&&(!mv||r.mandal===mv)&&(!divv||r.division===divv)&&(!rv||r.range===rv)&&(!nv||r.nursery===nv)&&(!sv||r.scheme===sv)&&(!sp||r.species.toLowerCase().includes(sp))&&(!df||r.distDate>=df)&&(!dt||r.distDate<=dt));
 }
-let spTipData={};
+let tipRows=[]; // records behind the summary tables, used by the hover popups
 (function(){
+  const SEL=['sum-category','sum-nursery','sum-scheme','sum-species'].map(i=>'#'+i+' tr[data-k]').join(',');
+  const SHOW={category:['nursery','scheme','species'],nursery:['scheme','bagSize'],scheme:['nursery','bagSize'],species:['nursery','scheme']};
+  const NAMES={nursery:['Nursery','నర్సరీ'],scheme:['Scheme','పథకం'],species:['Species','జాతి'],bagSize:['Bag Size','బ్యాగ్ సైజు']};
+  const FLAGS=[['Fruit','Fruit','పండ్లు','#e65100','#fff3e0'],['Flowering','Flower','పూలు','#ad1457','#fce4ec'],['Shade & Wood','Shade','నీడ','#1b5e20','#dcedc8']];
+  // a flag is shown only when that category has balance in the given records
+  const flags=(rs,te,withBal)=>FLAGS.map(f=>{const b=rs.reduce((a,r)=>r.category===f[0]?a+r.available-r.distributed:a,0);
+    return b>0?'<span style="display:inline-block;white-space:nowrap;margin-right:4px;padding:1px 6px;border-radius:9px;font-size:10px;font-weight:700;color:'+f[3]+';background:'+f[4]+'">'+(te?f[2]:f[1])+(withBal?': '+fmt(b):'')+'</span>':'';}).join('');
   let tip=null;
   const get=()=>tip||(tip=Object.assign(document.body.appendChild(document.createElement('div')),{className:'sp-tip'}));
   const place=e=>{const t=get(),pad=14;let x=e.clientX+pad,y=e.clientY+pad;
     if(x+t.offsetWidth>innerWidth-6)x=Math.max(6,e.clientX-t.offsetWidth-pad);
-    if(y+t.offsetHeight>innerHeight-6)y=Math.max(6,e.clientY-t.offsetHeight-pad);
+    if(y+t.offsetHeight>innerHeight-6)y=Math.max(6,Math.min(e.clientY-t.offsetHeight-pad,innerHeight-t.offsetHeight-6));
     t.style.left=x+'px';t.style.top=y+'px';};
   const show=(tr,e)=>{
-    const sp=decodeURIComponent(tr.dataset.k),m=spTipData[sp]||{},te=(typeof lang!=='undefined'&&lang==='te');
-    const list=Object.entries(m).filter(([,b])=>b>0).sort((a,b)=>b[1]-a[1]);
+    const key=tr.closest('[id^="sum-"]').id.slice(4),val=decodeURIComponent(tr.dataset.k),te=(typeof lang!=='undefined'&&lang==='te');
+    const rows=tipRows.filter(r=>String(r[key]||'—')===val),dims=SHOW[key],narrow=innerWidth<600;
+    // the popup cannot be scrolled, so long lists are cut to fit the screen
+    const max=Math.max(3,Math.floor((innerHeight-120)/20/(narrow?dims.length:1))-(narrow?2:0));
+    const flagged=key==='nursery'||key==='scheme';
+    const list=d=>{
+      const withFlags=flagged&&d!=='bagSize';
+      const m={};rows.forEach(r=>{const k=r[d]||'—';m[k]=(m[k]||0)+r.available-r.distributed;});
+      const l=Object.entries(m).sort((a,b)=>b[1]-a[1]||String(a[0]).localeCompare(String(b[0])));
+      const rest=l.slice(max);
+      return '<table style="align-self:flex-start"><tr><td><strong>'+NAMES[d][te?1:0]+' ('+l.length+')</strong></td><td class="num"><strong>'+(te?'నిల్వ':'Balance')+'</strong></td></tr>'
+        +l.slice(0,max).map(([n,b])=>{const f=withFlags?flags(rows.filter(r=>String(r[d]||'—')===n),te):'';return '<tr><td>'+esc(n)+(f?'<span style="margin-left:6px">'+f+'</span>':'')+'</td><td class="num">'+fmt(b)+'</td></tr>';}).join('')
+        +(rest.length?'<tr><td><em>+ '+rest.length+' '+(te?'ఇంకా':'more')+'</em></td><td class="num">'+fmt(rest.reduce((a,x)=>a+x[1],0))+'</td></tr>':'')+'</table>';
+    };
     const t=get();
-    t.innerHTML='<h5>'+esc(sp)+' — '+(te?'నిల్వ ఉన్న నర్సరీలు':'Nurseries with balance')+'</h5>'
-      +(list.length?'<table>'+list.map(([n,b])=>'<tr><td>'+esc(n)+'</td><td class="num">'+fmt(b)+'</td></tr>').join('')+'</table>':'<em>'+(te?'నిల్వ లేదు':'No balance available')+'</em>');
+    t.innerHTML='<h5>'+esc(val)+' — '+(te?'మొత్తం నిల్వ':'Total balance')+': '+fmt(rows.reduce((a,r)=>a+r.available-r.distributed,0))+'</h5>'+(flagged?'<div style="margin-bottom:6px">'+flags(rows,te,true)+'</div>':'')+'<div style="display:flex;gap:18px;flex-direction:'+(narrow?'column':'row')+'">'+dims.map(list).join('')+'</div>';
     t.style.display='block';place(e);
   };
   const hide=()=>{if(tip)tip.style.display='none';};
-  document.addEventListener('mouseover',e=>{const tr=e.target.closest&&e.target.closest('#sum-species tr[data-k]');if(tr)show(tr,e);});
-  document.addEventListener('mousemove',e=>{if(tip&&tip.style.display==='block'&&e.target.closest&&e.target.closest('#sum-species tr[data-k]'))place(e);});
-  document.addEventListener('mouseout',e=>{const tr=e.target.closest&&e.target.closest('#sum-species tr[data-k]');if(tr&&!(e.relatedTarget&&tr.contains(e.relatedTarget)))hide();});
-  document.addEventListener('click',e=>{ // touch devices: tap a species to see, tap elsewhere to hide
-    const tr=e.target.closest&&e.target.closest('#sum-species tr[data-k]');
-    if(tr)show(tr,e);else hide();});
+  const row=e=>e.target.closest&&e.target.closest(SEL);
+  document.addEventListener('mouseover',e=>{const tr=row(e);if(tr)show(tr,e);});
+  document.addEventListener('mousemove',e=>{if(tip&&tip.style.display==='block'&&row(e))place(e);});
+  document.addEventListener('mouseout',e=>{const tr=row(e);if(tr&&!(e.relatedTarget&&tr.contains(e.relatedTarget)))hide();});
+  document.addEventListener('click',e=>{const tr=row(e);if(tr)show(tr,e);else hide();}); // touch devices
   document.addEventListener('scroll',hide,true);
 })();
+function renderSchemeBag(data,te){
+  const el=document.getElementById('sum-schemebag');if(!el)return;
+  const h=document.getElementById('sw-sb-h');if(h)h.textContent=te?'పథకం & బ్యాగ్ సైజు వారీగా':'Scheme & Bag Size wise Abstract';
+  if(!data.length){el.innerHTML='<tr><td colspan="5" class="empty">No records found.</td></tr>';return;}
+  const m={};data.forEach(r=>{const s=r.scheme||'—',b=r.bagSize||'—',g=m[s]||(m[s]={}),o=g[b]||(g[b]={a:0,d:0});o.a+=r.available;o.d+=r.distributed;});
+  const sort=o=>Object.keys(o).sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
+  const nums=(a,d)=>`<td class="num avail">${fmt(a)}</td><td class="num dist">${fmt(d)}</td><td class="num bal">${fmt(a-d)}</td>`;
+  let ta=0,td=0,html='';
+  sort(m).forEach(s=>{
+    const bags=sort(m[s]);let a=0,d=0;
+    bags.forEach((b,i)=>{const o=m[s][b];a+=o.a;d+=o.d;html+='<tr>'+(i?'':`<td rowspan="${bags.length}" style="vertical-align:top;font-weight:600">${esc(s)}</td>`)+`<td>${esc(b)}</td>${nums(o.a,o.d)}</tr>`;});
+    html+=`<tr style="font-weight:700;background:#f1f8e9"><td colspan="2">${esc(s)} — ${te?'ఉప మొత్తం':'Subtotal'}</td>${nums(a,d)}</tr>`;ta+=a;td+=d;
+  });
+  el.innerHTML=html+`<tr class="sum-tot" style="font-weight:700;background:#e8f5e9;border-top:2px solid #2d6a2d"><td colspan="2">${te?'మొత్తం':'Grand Total'}</td><td class="num">${fmt(ta)}</td><td class="num">${fmt(td)}</td><td class="num">${fmt(ta-td)}</td></tr>`;
+}
+function renderSpeciesGroups(data,te){
+  const box=document.getElementById('sum-species');if(!box)return;
+  const TE={'Fruit':'పండ్ల జాతులు','Flowering':'పూల జాతులు','Shade & Wood':'నీడ & కలప జాతులు','Unclassified':'వర్గీకరించనివి'};
+  // the Unclassified box appears only when needed, so that no stock is left out
+  const cats=SP_CATS.concat(data.some(r=>r.category===SP_OTHER)?[SP_OTHER]:[]);
+  const nums=(a,d)=>`<td class="num avail">${fmt(a)}</td><td class="num dist">${fmt(d)}</td><td class="num bal">${fmt(a-d)}</td>`;
+  box.innerHTML=cats.map(c=>{
+    const m={};let ta=0,td=0;
+    data.filter(r=>r.category===c).forEach(r=>{const k=r.species||'—',o=m[k]||(m[k]={a:0,d:0});o.a+=r.available;o.d+=r.distributed;ta+=r.available;td+=r.distributed;});
+    const rows=Object.keys(m).sort((x,y)=>x.localeCompare(y)).map(k=>`<tr data-k="${encodeURIComponent(k)}"><td>${esc(k)}</td>${nums(m[k].a,m[k].d)}</tr>`).join('');
+    return `<div class="table-wrap"><table><thead><tr><th>${esc(te?TE[c]:c)} (${Object.keys(m).length})</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody>`
+      +(rows?rows+`<tr class="sum-tot"><td>${te?'మొత్తం':'Total'}</td><td class="num">${fmt(ta)}</td><td class="num">${fmt(td)}</td><td class="num">${fmt(ta-td)}</td></tr>`:'<tr><td colspan="4" class="empty">No records found.</td></tr>')+'</tbody></table></div>';
+  }).join('');
+}
 function renderWiseTotals(data){
   const te=(typeof lang!=='undefined'&&lang==='te');
   const build=(key,id)=>{
@@ -898,14 +953,14 @@ function renderWiseTotals(data){
     const el=document.getElementById(id);if(!el)return;
     if(!ks.length){el.innerHTML='<tr><td colspan="4" class="empty">No records found.</td></tr>';return;}
     let ta=0,td=0;
-    const rows=ks.map(k=>{const a=m[k].a,d=m[k].d;ta+=a;td+=d;return `<tr${key==='species'?` data-k="${encodeURIComponent(k)}"`:''}><td>${esc(k)}</td><td class="num avail">${fmt(a)}</td><td class="num dist">${fmt(d)}</td><td class="num bal">${fmt(a-d)}</td></tr>`;}).join('');
+    const rows=ks.map(k=>{const a=m[k].a,d=m[k].d;ta+=a;td+=d;return `<tr data-k="${encodeURIComponent(k)}"><td>${esc(k)}</td><td class="num avail">${fmt(a)}</td><td class="num dist">${fmt(d)}</td><td class="num bal">${fmt(a-d)}</td></tr>`;}).join('');
     el.innerHTML=rows+`<tr class="sum-tot"><td>${te?'మొత్తం':'Total'}</td><td class="num">${fmt(ta)}</td><td class="num">${fmt(td)}</td><td class="num">${fmt(ta-td)}</td></tr>`;
   };
-  spTipData={};
-  data.forEach(r=>{const k=r.species||'—';const n=r.nursery||'—';(spTipData[k]=spTipData[k]||{})[n]=(spTipData[k][n]||0)+(r.available-r.distributed);});
-  build('nursery','sum-nursery');build('scheme','sum-scheme');build('species','sum-species');
+  tipRows=data;
+  renderSchemeBag(data,te);
+  build('category','sum-category');build('nursery','sum-nursery');build('scheme','sum-scheme');renderSpeciesGroups(data,te);
   const h=(id,en,tl)=>{const e=document.getElementById(id);if(e)e.textContent=te?tl:en;};
-  h('sw-n-h','Nursery-wise','నర్సరీ వారీగా');h('sw-s-h','Scheme-wise','పథకం వారీగా');h('sw-sp-h','Species-wise','జాతి వారీగా');
+  h('sw-c-h','Category-wise','వర్గం వారీగా');h('sw-n-h','Nursery-wise','నర్సరీ వారీగా');h('sw-s-h','Scheme-wise','పథకం వారీగా');h('sw-sp-h','Species-wise','జాతి వారీగా');
 }
 function applyFilters(){
   const data=getFiltered();
@@ -2007,12 +2062,64 @@ function renderReportAccess(){
     :'<p style="font-size:12px;color:#888">No additional users allotted. Only admins can see Reports.</p>';
 }
 
+/* ── SPECIES CLASSIFICATION (Fruit / Flowering / Shade & Wood) ── */
+const SP_CATS=['Fruit','Flowering','Shade & Wood'],SP_OTHER='Unclassified',SPC_KEY='species_class';
+const SP_WORDS={
+  Fruit:['mango','mangifera','guava','psidium','sapota','chikoo','manilkara','jamun','neredu','syzygium','tamarind','chinta','tamarindus','amla','usiri','gooseberry','emblica','custard apple','seethaphal','sitaphal','annona','pomegranate','danimma','punica','lemon','lime','nimma','citrus','orange','mosambi','jack fruit','jackfruit','panasa','artocarpus','papaya','banana','coconut','cashew','jeedi','anacardium','ber','regu','ziziphus','wood apple','velaga','limonia','bael','maredu','aegle','fig','anjeer','mulberry','star fruit','carambola','water apple','rose apple','bread fruit','dragon fruit','litchi','avocado','date palm','sapodilla','phalsa','karonda','vakkaya','apple ber','మామిడి','జామ','సపోటా','నేరేడు','చింత','ఉసిరి','సీతాఫలం','దానిమ్మ','నిమ్మ','పనస','కొబ్బరి','జీడి','రేగు','వెలగ','మారేడు'],
+  Flowering:['gulmohar','gul mohar','delonix','turai','peltophorum','copper pod','cassia','rela','laburnum','tabebuia','tecoma','spathodea','jacaranda','bauhinia','lagerstroemia','plumeria','frangipani','champa','champaka','sampenga','michelia','nerium','oleander','ganneru','hibiscus','mandara','jasmine','malle','rose','bougainvillea','ixora','parijat','parijatham','nyctanthes','kadamba','kadamb','neolamarckia','ashoka flower','saraca','moduga','butea','millingtonia','akasa malle','bottle brush','callistemon','crossandra','chandni','nandivardhanam','గన్నేరు','మందార','మల్లె','గులాబీ','సంపెంగ','రేల','మోదుగ','పారిజాతం','కదంబ'],
+  'Shade & Wood':['teak','teku','tectona','red sanders','red sander','redsanders','rakta chandanam','erra chandanam','pterocarpus','sandalwood','sandal wood','chandanam','santalum','rosewood','rose wood','dalbergia','sissoo','jitregi','eucalyptus','nilgiri','casuarina','sarugudu','subabul','leucaena','bamboo','veduru','bambusa','dendrocalamus','silver oak','grevillea','mahogany','swietenia','nallamaddi','yegisa','vegisa','bijasal','gummadi teak','gmelina','melia','malabar neem','acacia','thumma','sandra','hardwickia','narayepi','rosewud','టేకు','ఎర్ర చందనం','ఎర్రచందనం','చందనం','వెదురు','నీలగిరి','సరుగుడు','తుమ్మ','మద్ది',
+    'neem','vepa','azadirachta','pongamia','kanuga','millettia','banyan','marri','ficus','peepal','pipal','raavi','rain tree','samanea','nidraganneru','albizia','dirisena','badam','terminalia catappa','almond','polyalthia','naramamidi','ashoka','mast tree','ippa','mahua','madhuca','spathodia','kanugu','alstonia','devils tree','saptaparni','thespesia','ganga ravi','gangaravi','bogada','mimusops','pogada','conocarpus','simarouba','medi','juvvi','arjun','maddi','వేప','కానుగ','మర్రి','రావి','బాదం','ఇప్ప','మేడి','జువ్వి','పొగడ']
+};
+let spOverride={};
+const spNorm=n=>String(n||'').toLowerCase().replace(/[^a-z0-9ఀ-౿]+/g,' ').trim();
+function spClass(name){
+  const n=spNorm(name);if(!n)return SP_OTHER;
+  if(Object.prototype.hasOwnProperty.call(spOverride,n))return spOverride[n]==='Shade'?'Shade & Wood':spOverride[n];
+  // longest matching word wins, so "rain tree", "rose apple" or "nidraganneru" beat shorter words
+  let best=SP_OTHER,len=0;
+  SP_CATS.forEach(c=>SP_WORDS[c].forEach(w=>{
+    const hit=/^[a-z0-9 ]+$/.test(w)?(' '+n+' ').includes(' '+w+' '):n.includes(w);
+    if(hit&&w.length>len){best=c;len=w.length;}
+  }));
+  return best;
+}
+function spApply(){records.forEach(r=>r.category=spClass(r.species));}
+async function spLoad(){
+  try{
+    const {data}=await sb.from('nursery_app_settings').select('value').eq('key',SPC_KEY).maybeSingle();
+    if(data&&data.value&&data.value.map)spOverride=data.value.map;
+  }catch(e){}
+}
+async function spSet(i,cat){
+  if(currentRole!=='admin')return;
+  const n=spNorm(spList[i]),next={...spOverride};
+  if(cat)next[n]=cat;else delete next[n];
+  let error=null,data=null;
+  if(await hasSession())({data,error}=await sb.from('nursery_app_settings').upsert({key:SPC_KEY,value:{map:next},updated_at:new Date().toISOString()}).select('key'));
+  if(error||!data||!data.length){alert('Could not save the classification'+(error?': '+error.message:'.'));spRenderMap();return;}
+  spOverride=next;initReport();
+  if(rptRows.length)generateReport();
+}
+let spList=[];
+function spRenderMap(){
+  const box=byId('sp-class-box');if(!box)return;
+  box.style.display=currentRole==='admin'?'block':'none';
+  spList=[...new Set(records.map(r=>r.species).filter(Boolean))].sort();
+  const un=spList.filter(n=>spClass(n)===SP_OTHER).length;
+  byId('sp-class-sum').textContent=spList.length+' species'+(un?', '+un+' unclassified':'');
+  byId('sp-class-body').innerHTML=spList.map((n,i)=>{
+    const own=spOverride[spNorm(n)]?spClass(n):'',auto=own?'':spClass(n);
+    return '<tr><td>'+esc(n)+'</td><td><select onchange="spSet('+i+',this.value)"><option value="">Automatic'+(auto?' ('+auto+')':'')+'</option>'+[...SP_CATS,SP_OTHER].map(c=>'<option value="'+c+'"'+(own===c?' selected':'')+'>'+c+'</option>').join('')+'</select></td></tr>';
+  }).join('');
+}
+
 /* ── REPORTS ── */
-const RPT_DIMS=[['district','District'],['mandal','Mandal'],['division','Division'],['range','Range'],['nursery','Nursery'],['scheme','Scheme'],['species','Species'],['bagSize','Bag Size'],['distDate','Date of Raising']];
+const RPT_DIMS=[['district','District'],['mandal','Mandal'],['division','Division'],['range','Range'],['nursery','Nursery'],['scheme','Scheme'],['category','Category'],['species','Species'],['bagSize','Bag Size'],['distDate','Date of Raising']];
 const RPT_MEAS=[['available','Available'],['distributed','Distributed'],['balance','Balance']];
 let rptHead=[],rptRows=[],rptTitle='report';
 const rv=(r,k)=>k==='balance'?r.available-r.distributed:r[k];
 function rptSumData(){
+  spApply();
   const from=byId('rf-from').value,to=byId('rf-to').value;
   const flt=RPT_DIMS.filter(d=>d[0]!=='distDate'&&byId('rf-'+d[0])&&byId('rf-'+d[0]).value).map(d=>[d,byId('rf-'+d[0]).value]);
   return records.filter(r=>flt.every(([d,v])=>String(r[d[0]])===v)&&(!from||r.distDate>=from)&&(!to||r.distDate<=to));
@@ -2020,6 +2127,8 @@ function rptSumData(){
 function refreshWise(){if(canReport())renderWiseTotals(rptSumData());}
 document.addEventListener('change',e=>{if(e.target&&/^rf-/.test(e.target.id||''))refreshWise();});
 function initReport(){
+  spApply();spRenderMap();
+  if(!initReport.loaded){initReport.loaded=true;spLoad().then(()=>{initReport();});}
   rhFill();
   if(!byId('rpt-dims').innerHTML){
     byId('rpt-dims').innerHTML=RPT_DIMS.map(d=>`<label><input type="checkbox" id="rd-${d[0]}" checked>${d[1]}</label>`).join('');
@@ -2040,6 +2149,7 @@ function resetReport(){
 }
 function generateReport(){
   if(!canReport())return;
+  spApply();
   const type=byId('rpt-type').value;
   const dims=RPT_DIMS.filter(d=>byId('rd-'+d[0]).checked),meas=RPT_MEAS.filter(m=>byId('rm-'+m[0]).checked);
   if(type==='detailed'&&!dims.length&&!meas.length){alert('Select at least one field or measure.');return;}

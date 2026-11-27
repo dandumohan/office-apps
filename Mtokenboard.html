@@ -413,6 +413,21 @@
     .stat-card.bt-neg .stat-value { color: var(--danger); }
     .bt-report-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 14px; padding: 8px 12px; background: #f6f8fb; border: 1px solid var(--border); border-radius: 8px; }
     .bt-report-bar select { width: auto; min-width: 160px; }
+    /* filter menu: button -> menu of rows (label left, current value right) -> submenu with a tick on the chosen value */
+    .fm-wrap { display: flex; align-items: center; gap: 10px; min-height: 34px; }
+    .fm-btn { width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 9px; background: #fff; color: #4A5163; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+    .fm-btn:hover, .fm-btn.open { background: #EDEEF1; }
+    .fm-sum { font-size: 12.5px; color: #5B6275; }
+    .fm-pop, .fm-sub { position: fixed; z-index: 10000; background: #fff; border: 1px solid #E2E4EA; border-radius: 14px; box-shadow: 0 8px 28px rgba(20, 24, 40, .16); padding: 6px; box-sizing: border-box; }
+    .fm-pop { min-width: 260px; }
+    .fm-sub { min-width: 190px; max-height: 60vh; overflow-y: auto; }
+    .fm-row, .fm-opt { display: flex; align-items: center; gap: 14px; padding: 9px 12px; border-radius: 9px; cursor: pointer; font-size: 14px; color: #1F2430; white-space: nowrap; }
+    .fm-row:hover, .fm-row.on, .fm-opt:hover { background: #E9EAED; }
+    .fm-l { flex: 1; }
+    .fm-v { color: #7A8092; font-size: 13px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+    .fm-c { color: #7A8092; font-size: 15px; line-height: 1; }
+    .fm-opt .fm-l { flex: 1; }
+    .fm-tick { color: #2F6BDB; font-weight: 700; width: 16px; text-align: right; }
     .bt-rep-month { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
     .bt-rep-hint { font-size: 12px; color: var(--muted); }
     .bt-report { position: fixed; inset: 0; z-index: 2500; display: flex; align-items: flex-start; justify-content: center; padding: 24px; overflow: auto; background: rgba(15, 23, 42, .55); }
@@ -1720,8 +1735,12 @@
         <div class="bt-band">
           <div class="bt-band-title">Select account</div>
           <div class="bt-grid">
-            <div class="field-row"><label>Operating_by_Authority_office</label>
-              <select id="bt_operating" onchange="btOperatingChanged_()"><option value="All">All</option><option value="Division">Division</option><option value="Range">Range</option></select></div>
+            <div class="field-row"><label>Filter accounts</label>
+              <div class="fm-wrap">
+                <button type="button" class="fm-btn" id="bt_fm_btn" onclick="fmOpen_('bt_fm')" title="Filter by Operating by (authority office), Bank and Scheme"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M4 8h8M6.5 12h3"/></svg></button>
+                <span class="fm-sum" id="bt_fm_sum">No filter (all accounts)</span>
+                <select id="bt_operating" style="display:none;"><option value="All">All</option><option value="Division">Division</option><option value="Range">Range</option></select>
+              </div></div>
             <div class="field-row bt-pick"><label>Account</label><select id="bt_account" onchange="onBtAccountChange()"><option value="">Select account</option></select></div>
           </div>
         </div>
@@ -1777,10 +1796,18 @@
         <div class="card-head">
           <h2 class="section-title">Bank Reports</h2>
         </div>
-        <div class="mb-note">Choose an account scope and a month (leave the month blank for all months), then press Report.</div>
+        <div class="mb-note">Choose the report, an account or scheme scope and a month (leave the month blank for all months), then press Report.</div>
         <div class="bt-report-bar">
           <span class="lay-label" style="margin:0;">REPORT</span>
-          <select id="bt_rep_scope"><option value="selected">Selected account</option><option value="all">All accounts</option></select>
+          <div class="fm-wrap">
+            <button type="button" class="fm-btn" id="bt_rm_btn" onclick="fmOpen_('bt_rm')" title="Choose the report and its scope"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M4 8h8M6.5 12h3"/></svg></button>
+            <span class="fm-sum" id="bt_rm_sum" style="min-width:230px;">Bank Account Report &middot; Selected account</span>
+          </div>
+          <span style="display:none;">
+            <select id="bt_rep_type"><option value="bank">Bank Account Report</option><option value="cash">Cash Book (Receipts | Payments)</option></select>
+            <select id="bt_rep_scope" onchange="btRepScopeChanged_()"><option value="selected">Selected account</option><option value="scheme">Selected scheme</option><option value="all">All accounts</option></select>
+            <select id="bt_rep_scheme"></select>
+          </span>
           <label class="bt-rep-month">Month <input type="month" id="bt_rep_month" title="Leave blank for all months"></label>
           <button type="button" class="action primary" onclick="btRunReport_()">Report</button>
           <span class="bt-rep-hint">Leave the month blank for all months.</span>
@@ -1851,16 +1878,15 @@
             <input type="text" id="apo_search" placeholder="Search Scheme, Reference..." oninput="applyApoFilters()">
           </div>
           <div class="field-row">
-            <label>Year</label>
-            <select id="apo_filter_year" onchange="applyApoFilters()">
-              <option value="">All</option>
-            </select>
-          </div>
-          <div class="field-row">
-            <label>Scheme</label>
-            <select id="apo_filter_scheme" onchange="applyApoFilters()">
-              <option value="">All</option>
-            </select>
+            <label>Filters</label>
+            <div class="fm-wrap">
+              <button type="button" class="fm-btn" id="apo_fm_btn" onclick="fmOpen_('apo_fm')" title="Filter by Year and Scheme"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M4 8h8M6.5 12h3"/></svg></button>
+              <span class="fm-sum" id="apo_fm_sum">No filter</span>
+              <span style="display:none;">
+                <select id="apo_filter_year" onchange="applyApoFilters()"><option value="">All</option></select>
+                <select id="apo_filter_scheme" onchange="applyApoFilters()"><option value="">All</option></select>
+              </span>
+            </div>
           </div>
         </div>
         <div class="lay-bar">
@@ -1990,26 +2016,16 @@
             <input type="text" id="bud_search" placeholder="Search Scheme, Hoa..." oninput="applyBudgetFilters()">
           </div>
           <div class="field-row">
-            <label>Year</label>
-            <select id="bud_filter_year" onchange="applyBudgetFilters()">
-              <option value="">All</option>
-            </select>
-          </div>
-          <div class="field-row">
-            <label>Qtr</label>
-            <select id="bud_filter_qtr" onchange="applyBudgetFilters()">
-              <option value="">All</option>
-              <option value="Q1">Q1</option>
-              <option value="Q2">Q2</option>
-              <option value="Q3">Q3</option>
-              <option value="Q4">Q4</option>
-            </select>
-          </div>
-          <div class="field-row">
-            <label>Scheme</label>
-            <select id="bud_filter_scheme" onchange="applyBudgetFilters()">
-              <option value="">All</option>
-            </select>
+            <label>Filters</label>
+            <div class="fm-wrap">
+              <button type="button" class="fm-btn" id="bud_fm_btn" onclick="fmOpen_('bud_fm')" title="Filter by Year, Qtr and Scheme"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M4 8h8M6.5 12h3"/></svg></button>
+              <span class="fm-sum" id="bud_fm_sum">No filter</span>
+              <span style="display:none;">
+                <select id="bud_filter_year" onchange="applyBudgetFilters()"><option value="">All</option></select>
+                <select id="bud_filter_qtr" onchange="applyBudgetFilters()"><option value="">All</option><option value="Q1">Q1</option><option value="Q2">Q2</option><option value="Q3">Q3</option><option value="Q4">Q4</option></select>
+                <select id="bud_filter_scheme" onchange="applyBudgetFilters()"><option value="">All</option></select>
+              </span>
+            </div>
           </div>
         </div>
         <div class="lay-bar">
@@ -2787,19 +2803,15 @@
             <input type="text" id="fundapp_search" placeholder="Search Esti_no, Scheme, Description..." oninput="applyFundAppFilters()">
           </div>
           <div class="field-row">
-            <label>Scheme</label>
-            <select id="report_fundapp_filter_scheme" onchange="applyFundAppFilters()">
-              <option value="">All</option>
-            </select>
-          </div>
-          <div class="field-row">
-            <label>Status Filter</label>
-            <select id="fundapp_filter_pending" onchange="applyFundAppFilters()">
-              <option value="">All</option>
-              <option value="FA_Pending">Fund Application Pending</option>
-              <option value="VCH_Pending">Vouchers Pending</option>
-              <option value="ADV_Pending">Advance Pending</option>
-            </select>
+            <label>Filters</label>
+            <div class="fm-wrap">
+              <button type="button" class="fm-btn" id="fa_fm_btn" onclick="fmOpen_('fa_fm')" title="Filter by Scheme and Status"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M4 8h8M6.5 12h3"/></svg></button>
+              <span class="fm-sum" id="fa_fm_sum">No filter</span>
+              <span style="display:none;">
+                <select id="report_fundapp_filter_scheme" onchange="applyFundAppFilters()"><option value="">All</option></select>
+                <select id="fundapp_filter_pending" onchange="applyFundAppFilters()"><option value="">All</option><option value="FA_Pending">Fund Application Pending</option><option value="VCH_Pending">Vouchers Pending</option><option value="ADV_Pending">Advance Pending</option></select>
+              </span>
+            </div>
           </div>
         </div>
         <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">Summary per estimate: Advance to be generated (Amount − Total Advance), Fund Application to be submitted (Credited Advance − Total Fund Application), Voucher to be submitted (Total Fund Application − Total Voucher Submitted).</div>
@@ -3349,7 +3361,7 @@
     fund: { table: 'fund_application', pk: 'fa_id', cols: [['FA_id', 'fa_id', 'id'], ['Esti_no', 'esti_no', 's'], ['Task_no', 'task_no', 'n'], ['Task_Description', 'task_description', 's'], ['Qnty', 'qnty', 'n'], ['Unit', 'unit', 's'], ['Rate', 'rate', 'n'], ['Per', 'per', 's'], ['Amount', 'amount', 'n'], ['Batch_No', 'batch_no', 's'], ['Application_Date', 'application_date', 'd'], ['Token_no', 'token_no', 's']] },
     withdrawn: { table: 'withdrawn_details', pk: 'wd_id', cols: [['WD_id', 'wd_id', 'id'], ['Esti_no', 'esti_no', 's'], ['Advance_Token_No', 'advance_token_no', 's'], ['Credited_Status', 'credited_status', 's'], ['Withdrawn_Date', 'withdrawn_date', 'd'], ['Withdrawn_Amount', 'withdrawn_amount', 'n'], ['Withdrawn_Cheque_No', 'withdrawn_cheque_no', 's']] },
     account: { table: 'withdrawal_accounts', pk: 'wa_id', cols: [['WA_id', 'wa_id', 'id'], ['Bank', 'bank', 's'], ['Branch', 'branch', 's'], ['Place', 'place', 's'], ['Account_No', 'account_no', 's'], ['IFSC_Code', 'ifsc_code', 's'], ['Name_of_Account', 'name_of_account', 's'], ['Drawing_Authorities', 'drawing_authorities', 's'], ['Scheme', 'scheme', 's'], ['Operating_by', 'operating_by', 's'], ['No_of_Cheque_Books_Issued', 'no_of_cheque_books_issued', 'n']] },
-    bankTxn: { table: 'bank_transactions', pk: 'bt_id', cols: [['BT_id', 'bt_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Year', 'year', 's'], ['OB_Amt', 'ob_amt', 'n'], ['OB_Date', 'ob_date', 'd'], ['Trans_Date', 'trans_date', 'd'], ['Transaction', 'txn', 's'], ['Trans_Amt', 'trans_amt', 'n'], ['Trans_Type', 'trans_type', 's'], ['Token_No', 'token_no', 's'], ['Cheque_Ref', 'cheque_ref', 's'], ['Trans_Description', 'trans_description', 's'], ['Source', 'source', 's']] },
+    bankTxn: { table: 'bank_transactions', pk: 'bt_id', cols: [['BT_id', 'bt_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Year', 'year', 's'], ['OB_Amt', 'ob_amt', 'n'], ['OB_Date', 'ob_date', 'd'], ['Trans_Date', 'trans_date', 'd'], ['Transaction', 'txn', 's'], ['Trans_Amt', 'trans_amt', 'n'], ['Trans_Type', 'trans_type', 's'], ['Token_No', 'token_no', 's'], ['Cheque_Ref', 'cheque_ref', 's'], ['Trans_Description', 'trans_description', 's'], ['Source', 'source', 's'], ['Esti_no', 'esti_no', 's']] },
     bankOb: { table: 'bank_opening_balances', pk: 'ob_id', cols: [['OB_id', 'ob_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Year', 'year', 's'], ['OB_Amt', 'ob_amt', 'n'], ['OB_Date', 'ob_date', 'd']] },
     cheque: { table: 'cheque_books', pk: 'cb_id', cols: [['CB_id', 'cb_id', 'id'], ['WA_id', 'wa_id', 'n'], ['Cheque_Book_No', 'cheque_book_no', 's'], ['Leaves_No_From', 'leaves_no_from', 's'], ['Leaves_No_To', 'leaves_no_to', 's']] },
     mbi: { table: 'mbook_issued', pk: 'mbi_id', cols: [['MBI_id', 'mbi_id', 'id'], ['Year', 'year', 's'], ['MBook_No', 'mbook_no', 's'], ['Pages_From', 'pages_from', 'n'], ['Pages_To', 'pages_to', 'n'], ['Issue_Date', 'issue_date', 'd'], ['Issued_By', 'issued_by', 's'], ['Scheme', 'scheme', 's'], ['Esti_no', 'esti_no', 's']] }
@@ -3507,7 +3519,7 @@
     const adv = await list_('advance', q => q.eq('token_no', tok));
     const existing = await list_('bankTxn', q => q.eq('token_no', tok));
     const managed = existing.filter(r => r.Source === 'advance'), managedWd = existing.filter(r => r.Source === 'advance_wd'),
-          manual = existing.filter(r => r.Source !== 'advance' && r.Source !== 'advance_wd');
+          manual = existing.filter(r => r.Source !== 'advance' && r.Source !== 'advance_wd' && r.Source !== 'withdraw');
     const byAcct = {};
     adv.filter(a => a.Credited === 'Yes' && T_(a.Credited_Account_No) && a.Credited_Date).forEach(a => {
       const k = T_(a.Credited_Account_No);
@@ -4007,28 +4019,20 @@
     return { success: true, count: res.length };
   };
 
-  /* ---------- Withdrawals (account / VSS / token amount are derived when those columns don't exist) ---------- */
-  let _wdExtras = null;
-  async function wdExtras_() {
-    if (_wdExtras !== null) return _wdExtras;
-    const res = await db().from('withdrawn_details').select('withdrawn_account_no,name_of_vss,advance_token_amount').limit(1);
-    _wdExtras = !res.error;
-    return _wdExtras;
-  }
+  /* ---------- Withdrawals: stored in bank_transactions (Source 'withdraw': Withdrawn / Cheque, with esti_no, token_no, cheque_ref ...) ----------
+     The screens still receive them in the old withdrawn-details shape, so the Withdraw and Common Withdrawal screens work unchanged. */
   async function withdrawnRows_(estiNo) {
-    const extras = await wdExtras_();
-    const raw = await fetchAll_('withdrawn_details', 'wd_id', estiNo ? (q => q.eq('esti_no', S_(estiNo))) : null);
-    const [adv, vs] = await Promise.all([list_('advance'), API_.getVoucherSettings()]);
+    const raw = await fetchAll_('bank_transactions', 'bt_id', q => { const x = q.eq('source', 'withdraw'); return estiNo ? x.eq('esti_no', S_(estiNo)) : x; });
+    const [adv, vs, accts] = await Promise.all([list_('advance'), API_.getVoucherSettings(), list_('account')]);
     const byToken = {};
-    adv.forEach(a => { const k = S_(a.Token_No); (byToken[k] = byToken[k] || { acct: '', amt: 0 }); byToken[k].amt += Number(a.Amount) || 0; if (a.Credited_Account_No && !byToken[k].acct) byToken[k].acct = a.Credited_Account_No; });
-    return raw.map(r => {
-      const o = rowOut_(E_.withdrawn, r);
-      const t = byToken[S_(r.advance_token_no)] || { acct: '', amt: 0 };
-      o.Withdrawn_Account_No = extras ? S_(r.withdrawn_account_no) : t.acct;
-      o.Name_of_VSS = extras ? S_(r.name_of_vss) : vs.VSS;
-      o.Advance_Token_Amount = extras ? N_(r.advance_token_amount) : t.amt;
-      return o;
-    });
+    adv.forEach(a => { const k = S_(a.Token_No); (byToken[k] = byToken[k] || { amt: 0 }); byToken[k].amt += Number(a.Amount) || 0; });
+    const acctNo = {}; accts.forEach(a => { acctNo[String(a.WA_id)] = T_(a.Account_No); });
+    return raw.map(r => ({
+      WD_id: N_(r.bt_id), Esti_no: S_(r.esti_no), Advance_Token_No: S_(r.token_no), Credited_Status: S_(r.credited_status) || 'Credited',
+      Withdrawn_Date: D_(r.trans_date), Withdrawn_Amount: N_(r.trans_amt), Withdrawn_Cheque_No: S_(r.cheque_ref),
+      Withdrawn_Account_No: acctNo[String(r.wa_id)] || '', Name_of_VSS: S_(r.name_of_vss) || vs.VSS,
+      Advance_Token_Amount: N_(r.advance_token_amount) || (byToken[S_(r.token_no)] || { amt: 0 }).amt
+    }));
   }
   API_.getWithdrawnDetailsData = estiNo => withdrawnRows_(estiNo);
 
@@ -4051,24 +4055,38 @@
   async function validateChequeLeafUnused_(d, excludeId) {
     const leaf = leafNum_(d.withdrawn_cheque_no), acct = T_(d.withdrawn_account_no);
     if (leaf === null || !acct) return '';
-    // one cheque may pay several estimates (Common Withdrawal), so only a second use inside the SAME estimate is refused
-    const dup = (await withdrawnRows_()).find(w => !same_(w.WD_id, excludeId || '') && T_(w.Withdrawn_Account_No) === acct && leafNum_(w.Withdrawn_Cheque_No) === leaf && same_(w.Esti_no, d.esti_no));
-    return dup ? ('Cheque leaf ' + d.withdrawn_cheque_no + ' of account ' + acct + ' has already been used (estimate ' + dup.Esti_no + ').') : '';
+    const wa = (await list_('account', q => q.eq('account_no', acct)))[0];
+    if (!wa) return '';
+    // one cheque may pay several estimates (Common Withdrawal), so a withdrawal row only clashes with a second use in the SAME estimate;
+    // a cheque saved by hand in Bank Transactions clashes with any use of that leaf
+    const dup = (await list_('bankTxn', q => q.eq('wa_id', Number(wa.WA_id)))).find(r => !same_(r.BT_id, excludeId || '') && r.Transaction === 'Withdrawn' && leafNum_(r.Cheque_Ref) === leaf
+      && (r.Source !== 'withdraw' || same_(r.Esti_no, d.esti_no)));
+    return dup ? ('Cheque leaf ' + d.withdrawn_cheque_no + ' of account ' + acct + ' has already been used' + (dup.Esti_no ? ' (estimate ' + dup.Esti_no + ')' : ' in Bank Transactions') + '.') : '';
   }
-  async function withdrawnDb_(d) {
-    const o = { esti_no: S_(d.esti_no), advance_token_no: S_(d.advance_token_no), credited_status: S_(d.credited_status), withdrawn_date: D_(d.withdrawn_date), withdrawn_amount: N_(d.withdrawn_amount), withdrawn_cheque_no: S_(d.withdrawn_cheque_no) };
-    if (await wdExtras_()) { o.withdrawn_account_no = S_(d.withdrawn_account_no); o.name_of_vss = S_(d.name_of_vss); o.advance_token_amount = N_(d.advance_token_amount); }
-    return o;
+  // a withdrawal as a bank_transactions row (the account is found from its Account No)
+  async function wdBankRow_(d) {
+    const acct = T_(d.withdrawn_account_no);
+    const wa = acct ? (await list_('account', q => q.eq('account_no', acct)))[0] : null;
+    if (!wa) throw new Error('Account ' + (acct || '(none)') + ' is not registered in Withdrawal Accounts & Cheque Books. Add it there first.');
+    const dt = D_(d.withdrawn_date);
+    return { wa_id: I_(wa.WA_id), year: bankFyOf_(dt), ob_amt: 0, ob_date: null, trans_date: dt, txn: 'Withdrawn', trans_amt: N_(d.withdrawn_amount), trans_type: 'Cheque',
+             token_no: S_(d.advance_token_no), cheque_ref: S_(d.withdrawn_cheque_no),
+             trans_description: 'Cheque ' + S_(d.withdrawn_cheque_no) + ' - Estimate ' + S_(d.esti_no) + ' - Token ' + S_(d.advance_token_no),
+             source: 'withdraw', esti_no: S_(d.esti_no), advance_token_amount: N_(d.advance_token_amount), name_of_vss: S_(d.name_of_vss), credited_status: S_(d.credited_status) || 'Credited' };
   }
+  async function wdIsWithdrawRow_(id) { const r = await list_('bankTxn', q => q.eq('bt_id', Number(id))); return !!(r[0] && r[0].Source === 'withdraw'); }
   API_.addWithdrawnDetail = async d => {
     const err = (await validateWithdrawalLimits_(d)) || (await validateChequeLeafUnused_(d));
     if (err) return { success: false, message: err };
-    return { success: true, id: await insertRow_('withdrawn_details', 'wd_id', await withdrawnDb_(d)) };
+    try { return { success: true, id: await insertRow_('bank_transactions', 'bt_id', await wdBankRow_(d)) }; }
+    catch (e) { return { success: false, message: e.message || String(e) }; }
   };
   API_.updateWithdrawnDetail = async d => {
     const err = (await validateWithdrawalLimits_(d, d.wd_id)) || (await validateChequeLeafUnused_(d, d.wd_id));
     if (err) return { success: false, message: err };
-    return updateRow_('withdrawn_details', 'wd_id', d.wd_id, await withdrawnDb_(d), 'Withdrawal record not found');
+    if (!(await wdIsWithdrawRow_(d.wd_id))) return { success: false, message: 'Withdrawal record not found' };
+    try { return await updateRow_('bank_transactions', 'bt_id', d.wd_id, await wdBankRow_(d), 'Withdrawal record not found'); }
+    catch (e) { return { success: false, message: e.message || String(e) }; }
   };
   /* Common Withdrawal: ONE cheque leaf of ONE account pays several estimates / tokens (one withdrawn_details row per token, same leaf and date).
      All rows are saved or none: if one fails its checks, the rows already written are removed again. */
@@ -4088,15 +4106,18 @@
                       withdrawn_date: d.withdrawn_date, withdrawn_amount: it.withdrawn_amount, withdrawn_cheque_no: leaf, withdrawn_account_no: acct, name_of_vss: d.name_of_vss };
         const err = await validateWithdrawalLimits_(row);
         if (err) throw new Error(err);
-        made.push(await insertRow_('withdrawn_details', 'wd_id', await withdrawnDb_(row)));
+        made.push(await insertRow_('bank_transactions', 'bt_id', await wdBankRow_(row)));
       }
     } catch (e) {
-      for (const id of made) { try { await deleteRow_('withdrawn_details', 'wd_id', id, ''); } catch (e2) { } }
+      for (const id of made) { try { await deleteRow_('bank_transactions', 'bt_id', id, ''); } catch (e2) { } }
       return { success: false, message: (e && e.message) ? e.message : String(e) };
     }
     return { success: true, count: made.length, ids: made };
   };
-  API_.deleteWithdrawnDetail = id => deleteRow_('withdrawn_details', 'wd_id', id, 'Withdrawal record not found');
+  API_.deleteWithdrawnDetail = async id => {
+    if (!(await wdIsWithdrawRow_(id))) return { success: false, message: 'Withdrawal record not found' };
+    return deleteRow_('bank_transactions', 'bt_id', id, 'Withdrawal record not found');
+  };
 
   /* ---------- Withdrawal accounts & cheque books ---------- */
   API_.getWithdrawalAccountsData = () => list_('account');
@@ -4130,6 +4151,10 @@
     if (!BANK_TXN_KINDS_.includes(T_(d.txn))) return 'Select Transaction (Withdrawn or Deposit).';
     if (!BANK_TXN_TYPES_.includes(T_(d.trans_type))) return 'Select a Trans_Type.';
     if (!(N_(d.trans_amt) > 0)) return 'Trans_Amt must be greater than 0.';
+    if (T_(d.trans_type) === 'Cheque' && leafNum_(d.cheque_ref) !== null && d.txn === 'Withdrawn') {
+      const dup = existing.find(r => !same_(r.BT_id, excludeId || '') && r.Transaction === 'Withdrawn' && leafNum_(r.Cheque_Ref) === leafNum_(d.cheque_ref));
+      if (dup) return 'Cheque leaf ' + d.cheque_ref + ' has already been used' + (dup.Esti_no ? ' (estimate ' + dup.Esti_no + ')' : '') + '.';
+    }
     return '';
   }
   API_.getBankTransactionsData = async waId => {
@@ -4164,21 +4189,30 @@
     if (isObId_(d.bt_id)) return updateRow_('bank_opening_balances', 'ob_id', Number(String(d.bt_id).slice(3)), { ob_amt: N_(d.ob_amt), ob_date: D_(d.ob_date), year: bankFyOf_(D_(d.ob_date)) }, 'Opening balance not found');
     const cur = (await list_('bankTxn', q => q.eq('bt_id', Number(d.bt_id))))[0];       // an older row that still holds its OB inside the transaction
     if (!cur || !cur.OB_Date) return { success: false, message: 'Select a row that holds an opening balance.' };
-    if (cur.Source === 'advance' || cur.Source === 'advance_wd') return { success: false, message: BT_MANAGED_MSG_ };
+    if (cur.Source === 'advance' || cur.Source === 'advance_wd' || cur.Source === 'withdraw') return { success: false, message: BT_MANAGED_MSG_ };
     return updateRow_('bank_transactions', 'bt_id', d.bt_id, { ob_amt: N_(d.ob_amt), ob_date: D_(d.ob_date) }, 'Bank transaction not found');
   };
-  const bankTxnManaged_ = async id => { const r = await list_('bankTxn', q => q.eq('bt_id', Number(id))); return !!(r[0] && (r[0].Source === 'advance' || r[0].Source === 'advance_wd')); };
-  const BT_MANAGED_MSG_ = 'This transaction comes from an Advance token. Change it in the Tokens tab.';
+  const bankTxnManaged_ = async id => { const r = await list_('bankTxn', q => q.eq('bt_id', Number(id))); return !!(r[0] && (r[0].Source === 'advance' || r[0].Source === 'advance_wd' || r[0].Source === 'withdraw')); };
+  const BT_MANAGED_MSG_ = 'This transaction comes from an Advance token or an estimate Withdrawal. Change it in the Tokens tab or in the Estimate tab (Withdraw).';
   API_.updateBankTransaction = async d => { if (isObId_(d.bt_id)) return { success: false, message: 'This is an opening balance. Use Update OB.' }; if (await bankTxnManaged_(d.bt_id)) return { success: false, message: BT_MANAGED_MSG_ }; const e = await validateBankTxn_(d, d.bt_id); if (e) return { success: false, message: e }; return updateRow_('bank_transactions', 'bt_id', d.bt_id, bankTxnDb_(d), 'Bank transaction not found'); };
   API_.deleteBankTransaction = async id => { if (isObId_(id)) return deleteRow_('bank_opening_balances', 'ob_id', Number(String(id).slice(3)), 'Opening balance not found'); if (await bankTxnManaged_(id)) return { success: false, message: BT_MANAGED_MSG_ }; return deleteRow_('bank_transactions', 'bt_id', id, 'Bank transaction not found'); };
 
+  /* Every cheque leaf is used by a Withdrawn Cheque row of bank_transactions (estimate withdrawals and hand-entered cheques alike),
+     so Used / Balance / next leaf are counted from there; the next leaf is the lowest unused leaf of the book. */
   API_.getChequeBooksData = async waId => {
-    const rows = await fetchAll_('v_cheque_books', 'cb_id', (waId !== undefined && waId !== null && waId !== '') ? (q => q.eq('wa_id', Number(waId))) : null);
-    return rows.map(r => ({
-      CB_id: N_(r.cb_id), WA_id: N_(r.wa_id), Account_No: T_(r.account_no), Cheque_Book_No: S_(r.cheque_book_no),
-      Leaves_No_From: S_(r.leaves_no_from), Leaves_No_To: S_(r.leaves_no_to), No_Of_Leaves: N_(r.no_of_leaves),
-      Used_Leaves: N_(r.used_leaves), Balance_Leaves: N_(r.balance_leaves), Leaves_No_Next: S_(r.leaves_no_next)
-    }));
+    const has = waId !== undefined && waId !== null && waId !== '';
+    const [books, accts, bank] = await Promise.all([list_('cheque', has ? (q => q.eq('wa_id', Number(waId))) : null), list_('account'),
+      list_('bankTxn', q => { const x = q.eq('txn', 'Withdrawn').eq('trans_type', 'Cheque'); return has ? x.eq('wa_id', Number(waId)) : x; })]);
+    const acctNo = {}; accts.forEach(a => { acctNo[String(a.WA_id)] = T_(a.Account_No); });
+    return books.map(b => {
+      const from = leafNum_(b.Leaves_No_From), to = leafNum_(b.Leaves_No_To), used = new Set();
+      if (from !== null && to !== null) bank.forEach(r => { const n = leafNum_(r.Cheque_Ref); if (same_(r.WA_id, b.WA_id) && n !== null && n >= from && n <= to) used.add(n); });
+      const total = (from !== null && to !== null) ? to - from + 1 : 0;
+      let nx = from; while (nx !== null && used.has(nx)) nx++;
+      return { CB_id: N_(b.CB_id), WA_id: N_(b.WA_id), Account_No: acctNo[String(b.WA_id)] || '', Cheque_Book_No: S_(b.Cheque_Book_No),
+        Leaves_No_From: S_(b.Leaves_No_From), Leaves_No_To: S_(b.Leaves_No_To), No_Of_Leaves: total, Used_Leaves: used.size, Balance_Leaves: Math.max(0, total - used.size),
+        Leaves_No_Next: (nx !== null && nx <= to) ? String(nx).padStart(S_(b.Leaves_No_From).length, '0') : '' };
+    });
   };
   async function validateChequeBook_(d, excludeId) {
     const accts = await list_('account', q => q.eq('wa_id', Number(d.wa_id)));
@@ -6947,6 +6981,7 @@
   const waCanonBank_ = v => { const t = String(v || '').replace(/\s+/g, ' ').trim(), k = t.toLowerCase(); return waBankNames_().find(b => b.replace(/\s+/g, ' ').toLowerCase() === k) || t; };
   function renderWithdrawalAccountsList(rows) {
     fillWaBankList_();
+    if (typeof fillBtRepSchemes_ === 'function') fillBtRepSchemes_();
     const tbody = document.getElementById('wa_list_table');
     if (!tbody) return;
     tbody.innerHTML = '';
@@ -7136,41 +7171,147 @@
       const withOb = per.filter(x => x.S), sum = k => Math.round(withOb.reduce((t, x) => t + x.S[k], 0) * 100) / 100, cbSum = sum('cb');
       tables.push({
         title: name + ' (' + accts.length + ')',
-        head: ['Bank_Account', 'OB(B)', 'OB(L)', 'CB', 'Scheme'],
+        head: ['Bank_Account', 'OB(B)', 'Txn Amt', 'CB', 'Scheme'],
         align: ['l', 'r', 'r', 'r', 'l'],
         rows: per.slice(0, 6).map(x => {
           const acc = btShortBank_(x.a.Bank) + ' - ' + (x.a.Account_No || '');
           if (!btAllLoaded_) return [acc, '\u2026', '\u2026', '\u2026', x.a.Scheme || ''];
-          return x.S ? [acc, [inr(x.S.beginAmt), btMonthLabel_(x.S.beginMonth)], [inr(x.S.obAmt), btMonthLabel_(btYm_(x.S.obDt))], cbCell(x.S), x.a.Scheme || '']
+          if (!x.S) return [acc, '-', '-', '-', x.a.Scheme || ''];
+          // transaction amount = deposits - withdrawn after the latest OB (so latest OB + Txn Amt = CB); the small line is the number of transactions
+          const net = Math.round((x.S.dep - x.S.wd) * 100) / 100, n = allRows.filter(r => String(r.WA_id) === String(x.a.WA_id) && r.Trans_Type !== 'Opening Balance' && r.Trans_Date && String(r.Trans_Date) > x.S.obDt).length;
+          return x.S ? [acc, [inr(x.S.beginAmt), btMonthLabel_(x.S.beginMonth)], { t: inr(net), sub: n + (n === 1 ? ' txn' : ' txns'), cls: net < 0 ? 'neg' : '' }, cbCell(x.S), x.a.Scheme || '']
                      : [acc, '-', '-', '-', x.a.Scheme || ''];
         }),
         more: accts.length > 6 ? '+' + (accts.length - 6) + ' more' : '',
-        total: btAllLoaded_ && withOb.length ? ['Total ' + name, inr(sum('beginAmt')), inr(sum('obAmt')), { t: inr(cbSum), cls: cbSum < 0 ? 'neg' : '' }, ''] : null
+        total: btAllLoaded_ && withOb.length ? ['Total ' + name, inr(sum('beginAmt')), inr(Math.round((sum('dep') - sum('wd')) * 100) / 100), { t: inr(cbSum), cls: cbSum < 0 ? 'neg' : '' }, ''] : null
       });
     });
     return { tables };
   }
-  const btOperatingFilter_ = () => { const e = document.getElementById('bt_operating'); return e ? (e.value || 'All') : 'All'; };
+  /* ---------- filter menu component ---------- */
+  const fmCfg_ = {};
+  function fmClose_() { document.querySelectorAll('.fm-pop, .fm-sub').forEach(e => e.remove()); document.querySelectorAll('.fm-btn.open').forEach(b => b.classList.remove('open')); }
+  function fmOpen_(id) {
+    const cfg = fmCfg_[id], btn = document.getElementById(id + '_btn'); if (!cfg || !btn) return;
+    const was = document.querySelector('.fm-pop[data-fm="' + id + '"]'); fmClose_(); if (was) return;
+    btn.classList.add('open');
+    const rows = cfg.rows().filter(r => !r.hidden), E = btEsc_;
+    const pop = document.createElement('div'); pop.className = 'fm-pop'; pop.dataset.fm = id;
+    pop.innerHTML = rows.map((r, i) => '<div class="fm-row" data-i="' + i + '"><span class="fm-l">' + E(r.label) + '</span><span class="fm-v">' + E(r.shown()) + '</span><span class="fm-c">&rsaquo;</span></div>').join('');
+    document.body.appendChild(pop);
+    const br = btn.getBoundingClientRect();
+    pop.style.top = (br.bottom + 6) + 'px'; pop.style.left = Math.max(8, Math.min(br.left, window.innerWidth - pop.offsetWidth - 8)) + 'px';
+    const openSub = row => {
+      document.querySelectorAll('.fm-sub').forEach(e => e.remove());
+      pop.querySelectorAll('.fm-row').forEach(x => x.classList.toggle('on', x === row));
+      const r = rows[Number(row.dataset.i)], multi = !!r.multi, sub = document.createElement('div'); sub.className = 'fm-sub';
+      const draw = () => {                                         // a tick on every chosen value ("All" is ticked when nothing is chosen)
+        const chosen = multi ? r.values().map(String) : [String(r.value())];
+        sub.innerHTML = r.options().map(o => { const on = multi && String(o.v) === '' ? chosen.length === 0 : chosen.includes(String(o.v));
+          return '<div class="fm-opt" data-v="' + E(o.v) + '"><span class="fm-l">' + E(o.label) + '</span><span class="fm-tick">' + (on ? '\u2713' : '') + '</span></div>'; }).join('');
+      };
+      draw();
+      document.body.appendChild(sub);
+      const pr = pop.getBoundingClientRect(), rr = row.getBoundingClientRect();
+      let left = pr.right + 6; if (left + sub.offsetWidth > window.innerWidth - 8) left = Math.max(8, pr.left - sub.offsetWidth - 6);
+      sub.style.left = left + 'px'; sub.style.top = Math.max(8, Math.min(rr.top - 6, window.innerHeight - sub.offsetHeight - 8)) + 'px';
+      sub.addEventListener('click', ev => {
+        const o = ev.target.closest('.fm-opt'); if (!o) return; const v = o.dataset.v;
+        if (!multi) { fmClose_(); fmKeepPosition_(btn, () => { r.set(v); fmRefresh_(id); }); return; }
+        let arr = r.values().map(String);
+        arr = v === '' ? [] : (arr.includes(v) ? arr.filter(x => x !== v) : arr.concat(v));
+        fmKeepPosition_(btn, () => { r.set(arr); fmRefresh_(id); });
+        draw(); const fv = row.querySelector('.fm-v'); if (fv) fv.textContent = r.shown();     // the menu stays open so several values can be ticked
+      });
+    };
+    pop.querySelectorAll('.fm-row').forEach(row => { row.addEventListener('mouseenter', () => openSub(row)); row.addEventListener('click', () => openSub(row)); });
+  }
+  // Choosing a filter re-draws the lists below it (accounts, collapsed bar, summary) and the page height changes.
+  // Keep the filter button where it is on the screen so the background does not jump.
+  function fmScroller_(el) {
+    for (let p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+      const o = getComputedStyle(p).overflowY; if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight) return p;
+    }
+    return null;
+  }
+  let fmUserMoved_ = false, fmHold_ = null, fmIgnoreScroll_ = 0;
+  ['wheel', 'touchmove', 'keydown', 'mousedown'].forEach(ev => window.addEventListener(ev, () => { fmUserMoved_ = true; }, { passive: true, capture: true }));
+  function fmKeepPosition_(el, fn) {
+    if (fmHold_) { clearInterval(fmHold_); fmHold_ = null; }
+    const t0 = el.getBoundingClientRect().top, sc = fmScroller_(el); fmUserMoved_ = false;
+    const fix = () => { const d = el.getBoundingClientRect().top - t0; if (Math.abs(d) > 1) { fmIgnoreScroll_ = Date.now() + 400; if (sc) sc.scrollTop += d; else window.scrollBy(0, d); } };
+    fn(); fix();
+    let n = 0;                                                    // data reloads a moment later can change the height again: hold for ~1.5 s unless the user scrolls
+    fmHold_ = setInterval(() => { if (fmUserMoved_ || ++n > 15) { clearInterval(fmHold_); fmHold_ = null; return; } fix(); }, 100);
+  }
+  // an open menu is fixed to the screen, so close it if the page behind is scrolled
+  window.addEventListener('scroll', e => { if (Date.now() < fmIgnoreScroll_) return; if (document.querySelector('.fm-pop') && !(e.target && e.target.closest && e.target.closest('.fm-sub'))) fmClose_(); }, true);
+  // Menu that drives ordinary <select> filters: the selects stay in the page (hidden) and keep their own onchange handlers.
+  // A multi-value filter keeps its chosen values in fmMulti_; the select itself holds the value only when exactly one is chosen.
+  const fmMulti_ = {};
+  const fmSel_ = selId => { if (fmMulti_[selId]) return fmMulti_[selId]; const e = document.getElementById(selId); return e && e.value ? [e.value] : []; };
+  const fmHas_ = (selId, val) => { const a = fmSel_(selId); return !a.length || a.includes(String(val)); };
+  function fmFromSelects_(id, defs) {
+    const el = d => document.getElementById(d.sel), txt = d => { const e = el(d), o = e && e.options[e.selectedIndex]; return o ? o.textContent : ''; };
+    const label = (d, v) => { const o = Array.from(el(d).options).find(x => x.value === String(v)); return o ? o.textContent : v; };
+    const shown = d => { const a = fmSel_(d.sel); return !a.length ? 'All' : a.length === 1 ? label(d, a[0]) : a.length + ' selected'; };
+    defs.forEach(d => { fmMulti_[d.sel] = []; });
+    fmCfg_[id] = {
+      rows: () => defs.map(d => ({ label: d.label, multi: true, shown: () => shown(d), values: () => fmSel_(d.sel), value: () => '',
+        options: () => Array.from(el(d).options).map(o => ({ v: o.value, label: o.textContent })),
+        set: arr => { fmMulti_[d.sel] = arr; el(d).value = arr.length === 1 ? arr[0] : ''; el(d).dispatchEvent(new Event('change', { bubbles: true })); } })),
+      summary: () => { const p = defs.map(d => { const a = fmSel_(d.sel); return a.length ? d.label + ': ' + (a.length <= 2 ? a.map(v => label(d, v)).join(', ') : a.length + ' selected') : ''; }).filter(Boolean); return p.length ? p.join(' \u00b7 ') : 'No filter'; }
+    };
+    defs.forEach(d => { const e = el(d); if (!e) return;
+      e.addEventListener('change', () => fmRefresh_(id));
+      new MutationObserver(() => { const ok = new Set(Array.from(e.options).map(o => o.value)); fmMulti_[d.sel] = fmMulti_[d.sel].filter(v => ok.has(v)); fmRefresh_(id); }).observe(e, { childList: true }); });   // options are filled when the data loads
+    fmRefresh_(id);
+  }
+  function fmRefresh_(id) { try { const cfg = fmCfg_[id], el = document.getElementById(id + '_sum'); if (cfg && el) el.textContent = cfg.summary(); } catch (e) { } }
+  document.addEventListener('mousedown', e => { if (!e.target.closest('.fm-pop, .fm-sub, .fm-btn')) fmClose_(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') fmClose_(); });
+  window.addEventListener('resize', fmClose_);
+
+  fmFromSelects_('apo_fm', [{ label: 'Year', sel: 'apo_filter_year' }, { label: 'Scheme', sel: 'apo_filter_scheme' }]);
+  fmFromSelects_('bud_fm', [{ label: 'Year', sel: 'bud_filter_year' }, { label: 'Qtr', sel: 'bud_filter_qtr' }, { label: 'Scheme', sel: 'bud_filter_scheme' }]);
+  fmFromSelects_('fa_fm', [{ label: 'Scheme', sel: 'report_fundapp_filter_scheme' }, { label: 'Status', sel: 'fundapp_filter_pending' }]);
+
+  // Bank Transactions band: filter the Account list by Operating by (authority office), Bank and Scheme
+  const btF_ = { op: [], bank: [], scheme: [] };                    // empty = all
+  const btFilterAcctOk_ = a => (!btF_.op.length || btF_.op.includes(String(a.Operating_by || '').trim())) && (!btF_.bank.length || btF_.bank.includes(String(a.Bank || '').trim())) && (!btF_.scheme.length || btF_.scheme.includes(String(a.Scheme || '').trim()));
+  const fmOpts_ = list => [{ v: '', label: 'All' }].concat(list.map(x => ({ v: x, label: x })));
+  const btFmShown_ = (arr, fmt) => !arr.length ? 'All' : arr.length === 1 ? (fmt ? fmt(arr[0]) : arr[0]) : arr.length + ' selected';
+  fmCfg_.bt_fm = {
+    rows: () => [
+      { label: 'Operating by (Authority office)', multi: true, shown: () => btFmShown_(btF_.op), values: () => btF_.op, options: () => fmOpts_(['Division', 'Range']), set: a => { btF_.op = a; btEl_('bt_operating').value = a.length === 1 ? a[0] : 'All'; btFilterChanged_(); } },
+      { label: 'Bank', multi: true, shown: () => btFmShown_(btF_.bank, btShortBank_), values: () => btF_.bank, options: () => fmOpts_(waBankNames_()), set: a => { btF_.bank = a; btFilterChanged_(); } },
+      { label: 'Scheme', multi: true, shown: () => btFmShown_(btF_.scheme), values: () => btF_.scheme, options: () => fmOpts_(Array.from(new Set(withdrawalAccountsCache.map(a => String(a.Scheme || '').trim()).filter(Boolean))).sort()), set: a => { btF_.scheme = a; btFilterChanged_(); } }
+    ],
+    summary: () => { const p = []; if (btF_.op.length) p.push(btFmShown_(btF_.op)); if (btF_.bank.length) p.push(btFmShown_(btF_.bank, btShortBank_)); if (btF_.scheme.length) p.push(btFmShown_(btF_.scheme)); return p.length ? p.join(' \u00b7 ') : 'No filter (all accounts)'; }
+  };
+  const btOperatingFilter_ = () => (btF_.op.length === 1 ? btF_.op[0] : 'All');
   // the account dropdown lists only the accounts of the chosen Operating_by_Authority_office
-  function btOperatingChanged_() {
+  function btFilterChanged_() {
     populateBtAccountOptions_();
-    const wa = selectedWaId(), a = wa ? withdrawalAccountsCache.find(x => String(x.WA_id) === wa) : null, op = btOperatingFilter_();
-    if (a && op !== 'All' && String(a.Operating_by || '').trim() !== op) {         // the chosen account is outside the new filter
+    const wa = selectedWaId(), a = wa ? withdrawalAccountsCache.find(x => String(x.WA_id) === wa) : null;
+    if (a && !btFilterAcctOk_(a)) {                                                  // the chosen account is outside the new filter
       btEl_('bt_account').value = '';
       onBtAccountChange();
     }
   }
+  const btOperatingChanged_ = btFilterChanged_;
   // an account chosen elsewhere (accounts table, advance token) must stay visible in the dropdown
   function btEnsureAcctVisible_(waId) {
-    const a = waId ? withdrawalAccountsCache.find(x => String(x.WA_id) === String(waId)) : null, op = btOperatingFilter_();
-    if (a && op !== 'All' && String(a.Operating_by || '').trim() !== op) { btEl_('bt_operating').value = 'All'; populateBtAccountOptions_(); }
+    const a = waId ? withdrawalAccountsCache.find(x => String(x.WA_id) === String(waId)) : null;
+    if (a && !btFilterAcctOk_(a)) { btF_.op = []; btF_.bank = []; btF_.scheme = []; btEl_('bt_operating').value = 'All'; fmRefresh_('bt_fm'); populateBtAccountOptions_(); }
   }
   function populateBtAccountOptions_() {
     const sel = btEl_('bt_account'); if (!sel) return;
     const wa = selectedWaId(), op = btOperatingFilter_();
-    sel.innerHTML = '<option value="">Select account</option>' + withdrawalAccountsCache.filter(a => op === 'All' || String(a.Operating_by || '').trim() === op).sort(btBankSort_).map(a =>
+    sel.innerHTML = '<option value="">Select account</option>' + withdrawalAccountsCache.filter(btFilterAcctOk_).sort(btBankSort_).map(a =>
       '<option value="' + a.WA_id + '">' + btEsc_(a.Bank) + ' - ' + btEsc_(a.Account_No) + (a.Scheme ? ' (' + btEsc_(a.Scheme) + ')' : '') + '</option>').join('');
     sel.value = wa;
+    fmRefresh_('bt_fm');
     btRenderAllStats_();
     if (window.__collRenderAll) window.__collRenderAll();           // the collapsed bar lists the accounts
     applyPendingBankAcct_(true);                                     // an advance token asked for one of these accounts
@@ -7325,9 +7466,12 @@
     if (type === 'Cheque') {                                      // cheques drawn on this account, each with its cheque book
       const used = new Set(others.filter(r => r.Cheque_Ref).map(r => String(r.Cheque_Ref)));
       const nos = Array.from(new Set(btWdRows_.filter(w => String(w.Withdrawn_Account_No || '').trim() === acctNo && String(w.Withdrawn_Cheque_No || '').trim()).map(w => String(w.Withdrawn_Cheque_No).trim())));
-      return nos.filter(no => !used.has(no)).map(no => btChequeGroup_(no)).filter(Boolean)
+      const drawn = new Set(nos);
+      const next = btNextLeaves_().filter(b => !used.has(String(b.Leaves_No_Next)) && !drawn.has(String(b.Leaves_No_Next)))
+        .map(b => ({ value: String(b.Leaves_No_Next), label: 'Next leaf \u00b7 ' + b.Leaves_No_Next + ' \u00b7 Book ' + b.Cheque_Book_No + ' (' + b.Leaves_No_From + '\u2013' + b.Leaves_No_To + ') \u00b7 ' + b.Balance_Leaves + ' left' }));
+      return next.concat(nos.filter(no => !used.has(no)).map(no => btChequeGroup_(no)).filter(Boolean)
         .sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.no).localeCompare(String(a.no)))
-        .map(g => { const b = btBookOf_(g.no); return { value: g.no, label: g.no + ' \u00b7 ' + inr(g.amt) + ' \u00b7 ' + (g.date || '-') + ' \u00b7 ' + (b ? 'Book ' + b.Cheque_Book_No + ' (' + b.Leaves_No_From + '\u2013' + b.Leaves_No_To + ')' : 'cheque book not found') }; });
+        .map(g => { const b = btBookOf_(g.no); return { value: g.no, label: g.no + ' \u00b7 ' + inr(g.amt) + ' \u00b7 ' + (g.date || '-') + ' \u00b7 ' + (b ? 'Book ' + b.Cheque_Book_No + ' (' + b.Leaves_No_From + '\u2013' + b.Leaves_No_To + ')' : 'cheque book not found') }; }));
     }
     return [];
   }
@@ -7375,6 +7519,9 @@
         btEl_('bt_txn').value = 'Withdrawn'; btEl_('bt_trans_amt').value = w.amt || 0;
         if (w.date) btEl_('bt_trans_date').value = w.date;
         btAutoDesc_('Cheque ' + val + (w.estis.length ? ' - Estimate ' + w.estis.join(', ') : '') + (w.tokens.length ? ' - Token ' + w.tokens.join(', ') : ''));
+      } else if (btBookOf_(val)) {                                // a next, not yet drawn leaf: only the cheque no is known
+        btEl_('bt_txn').value = 'Withdrawn';
+        btAutoDesc_('Cheque ' + val);
       }
     }
     btShowDetails_(type, val);
@@ -7390,7 +7537,7 @@
       if (!val) return 'Choose a cheque from the dropdown to see its details.';
       const w = btChequeGroup_(val);
       return w ? ('Cheque ' + val + '  |  Amount ' + inr(w.amt) + '  |  Date ' + (w.date || '-') + '  |  Estimate ' + (w.estis.join(', ') || '-') + '  |  Token ' + (w.tokens.join(', ') || '-') + (w.vss ? '  |  ' + w.vss : '') + '  |  ' + (btBookOf_(val) ? btBookText_(btBookOf_(val)) : 'Cheque book not found for this leaf'))
-               : ('Cheque ' + val + ' (details are not available to this user).');
+               : (btBookOf_(val) ? ('Cheque ' + val + '  |  not drawn against an estimate yet  |  ' + btBookText_(btBookOf_(val))) : ('Cheque ' + val + ' (details are not available to this user).'));
     }
     return type ? ('Trans_Type ' + type + ' has no token or cheque details.') : 'Click a transaction below to see its token or cheque details.';
   }
@@ -7524,16 +7671,16 @@
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
       if (btSelectedId_() === String(r.BT_id)) tr.classList.add('row-selected');
-      const fromAdv = !!(r.Auto || r.Source === 'advance' || r.Source === 'advance_wd');
-      const link = isOb ? ('OB as on ' + (r.OB_Date || '')) : r.Token_No ? 'Token ' + r.Token_No + (fromAdv ? ' (auto)' : '') : (r.Cheque_Ref ? 'Cheque ' + r.Cheque_Ref + (fromAdv ? ' (auto)' : '') : '');
+      const fromAdv = !!(r.Auto || r.Source === 'advance' || r.Source === 'advance_wd' || r.Source === 'withdraw');
+      const link = isOb ? ('OB as on ' + (r.OB_Date || '')) : r.Source === 'withdraw' ? ('Cheque ' + r.Cheque_Ref + ' \u00b7 Est ' + (r.Esti_no || '') + ' \u00b7 Token ' + (r.Token_No || '')) : r.Token_No ? 'Token ' + r.Token_No + (fromAdv ? ' (auto)' : '') : (r.Cheque_Ref ? 'Cheque ' + r.Cheque_Ref + (fromAdv ? ' (auto)' : '') : '');
       tr.innerHTML = '<td>' + btEsc_(r.Year) + '</td><td>' + btEsc_(r.Trans_Date) + '</td><td>' + btEsc_(isOb ? 'Opening Balance' : r.Transaction) + '</td><td>' + btEsc_(isOb ? 'OB' : r.Trans_Type) + '</td><td>' + btEsc_(link) +
         '</td><td class="' + (isOb ? '' : (isDep ? 'bt-dep' : 'bt-wd')) + '">' + btEsc_(inr(isOb ? r.OB_Amt : r.Trans_Amt)) + '</td><td>' + btEsc_(r.Trans_Description) + '</td>';
       if (fromAdv) {                                                  // a credited advance token: shown here, maintained in the Tokens tab
         tr.classList.add('bt-auto');
-        tr.title = r.Cheque_Ref ? 'Cheque drawn on this account (added automatically)' : 'Credited advance token (added automatically)';
+        tr.title = r.Source === 'withdraw' ? 'Withdrawal of an estimate (maintained in the Estimate tab, Withdraw)' : r.Cheque_Ref ? 'Cheque drawn on this account (added automatically)' : 'Credited advance token (added automatically)';
         tr.onclick = () => {
           btShowDetails_(r.Trans_Type, r.Token_No || r.Cheque_Ref);
-          setStatus('bt_status_msg', r.Cheque_Ref ? 'This withdrawal is cheque ' + r.Cheque_Ref + ' from the estimate withdrawal details. It is maintained there, not here.' : 'This deposit is the credited advance token ' + r.Token_No + '. It is maintained in the Tokens tab, not here.');
+          setStatus('bt_status_msg', r.Cheque_Ref ? 'This withdrawal is cheque ' + r.Cheque_Ref + ' of estimate ' + (r.Esti_no || '') + '. It is maintained in the Estimate tab (Withdraw), not here.' : 'This deposit is the credited advance token ' + r.Token_No + '. It is maintained in the Tokens tab, not here.');
         };
         tr.appendChild(document.createElement('td'));
       } else {
@@ -7552,6 +7699,8 @@
       renderBankTransactions(bankTxnCache);
       btFillLink_();
       btLoadAll_();
+      // cheque leaves used here count in the cheque books, so reload them (Used / Balance / next leaf)
+      gsrCall('getChequeBooksData').then(r => { btBooks_ = r || []; btFillLink_(); renderBankTransactions(bankTxnCache); refreshChequeBooks(); }).catch(() => { });
     }).catch(() => setStatus('bt_status_msg', 'The bank transactions could not be loaded. Has the bank_transactions table been created?', true));
   }
   function loadBankTransactionIntoForm(r) {
@@ -7747,7 +7896,7 @@
   function btReportHtml_(model, scope, month) {
     const E = btEsc_, today = new Date().toISOString().slice(0, 10);
     let h = '<h2 style="margin:0 0 2px;">Bank Account Report</h2><div class="rep-sub">' +
-      (scope === 'selected' ? 'Account: ' + E(model[0] ? model[0].acct.Bank + ' - ' + model[0].acct.Account_No : '') : 'All accounts') + ' &middot; ' +
+      (scope === 'selected' ? 'Account: ' + E(model[0] ? model[0].acct.Bank + ' - ' + model[0].acct.Account_No : '') : scope === 'scheme' ? 'Scheme: ' + E(btEl_('bt_rep_scheme').value) : 'All accounts') + ' &middot; ' +
       (month ? 'Month: ' + E(btMonthLabel_(month)) : 'All months') + ' &middot; Generated ' + today + '</div>';
     if (!model.length) return h + '<p>No bank transactions found.</p>';
     model.forEach(m => {
@@ -7770,6 +7919,27 @@
     }
     return h;
   }
+  function fillBtRepSchemes_() {
+    const el = document.getElementById('bt_rep_scheme'); if (!el) return;
+    const keep = el.value, list = Array.from(new Set((withdrawalAccountsCache || []).map(a => String(a.Scheme || '').trim()).filter(Boolean))).sort((x, y) => x.localeCompare(y));
+    el.innerHTML = list.length ? list.map(v => '<option value="' + btEsc_(v) + '">' + btEsc_(v) + '</option>').join('') : '<option value="">(no scheme on any account)</option>';
+    if (keep && list.includes(keep)) el.value = keep;
+    else { const a = btAcct_ && btAcct_(); if (a && a.Scheme && list.includes(String(a.Scheme).trim())) el.value = String(a.Scheme).trim(); }
+    fmRefresh_('bt_rm');
+  }
+  function btRepScopeChanged_() { fillBtRepSchemes_(); fmRefresh_('bt_rm'); }
+  const btRepLabel_ = (id, v) => { const o = Array.from(document.getElementById(id).options).find(x => x.value === v); return o ? o.textContent : v; };
+  fmCfg_.bt_rm = {
+    rows: () => [
+      { label: 'Report', shown: () => btRepLabel_('bt_rep_type', btEl_('bt_rep_type').value).replace(' (Receipts | Payments)', ''), value: () => btEl_('bt_rep_type').value,
+        options: () => Array.from(btEl_('bt_rep_type').options).map(o => ({ v: o.value, label: o.textContent })), set: v => { btEl_('bt_rep_type').value = v; } },
+      { label: 'Scope', shown: () => btRepLabel_('bt_rep_scope', btEl_('bt_rep_scope').value), value: () => btEl_('bt_rep_scope').value,
+        options: () => Array.from(btEl_('bt_rep_scope').options).map(o => ({ v: o.value, label: o.textContent })), set: v => { btEl_('bt_rep_scope').value = v; btRepScopeChanged_(); } },
+      { label: 'Scheme', hidden: btEl_('bt_rep_scope').value !== 'scheme', shown: () => btEl_('bt_rep_scheme').value || '-', value: () => btEl_('bt_rep_scheme').value,
+        options: () => Array.from(btEl_('bt_rep_scheme').options).map(o => ({ v: o.value, label: o.textContent })), set: v => { btEl_('bt_rep_scheme').value = v; } }
+    ],
+    summary: () => { const sc = btEl_('bt_rep_scope').value; return btRepLabel_('bt_rep_type', btEl_('bt_rep_type').value).replace(' (Receipts | Payments)', '') + ' \u00b7 ' + (sc === 'scheme' ? 'Scheme: ' + (btEl_('bt_rep_scheme').value || '-') : btRepLabel_('bt_rep_scope', sc)); }
+  };
   let btReportModel_ = null;
   function btCloseReport_() { const m = document.getElementById('bt_report_modal'); if (m) m.remove(); }
   function btShowReport_(model, scope, month) {
@@ -7781,16 +7951,97 @@
   }
   async function btRunReport_() {
     const scope = btEl_('bt_rep_scope').value, month = btEl_('bt_rep_month').value;     // month '' = all months
-    const waId = selectedWaId();
-    if (scope === 'selected' && !waId) { setStatus('bt_rep_status', 'Select an account first, or choose "All accounts" for the report', true); return; }
+    const waId = selectedWaId(), scheme = btEl_('bt_rep_scheme').value, kind = btEl_('bt_rep_type').value;
+    if (scope === 'selected' && !waId) { setStatus('bt_rep_status', 'Select an account first, or choose a scheme / "All accounts" for the report', true); return; }
+    if (scope === 'scheme' && !scheme) { setStatus('bt_rep_status', 'Select a scheme for the report', true); return; }
     setStatus('bt_rep_status', 'Preparing the report...');
     let rows;
     try { rows = await gsrCall('getBankTransactionsData', scope === 'selected' ? waId : undefined); }
     catch (e) { setStatus('bt_rep_status', 'The report could not be prepared. ' + (e && e.message ? e.message : ''), true); return; }
     setStatus('bt_rep_status', '');
-    const accts = scope === 'selected' ? withdrawalAccountsCache.filter(a => String(a.WA_id) === waId) : withdrawalAccountsCache.slice();
+    const accts = scope === 'selected' ? withdrawalAccountsCache.filter(a => String(a.WA_id) === waId)
+                : scope === 'scheme' ? withdrawalAccountsCache.filter(a => String(a.Scheme || '').trim() === scheme) : withdrawalAccountsCache.slice();
+    if (kind === 'cash') { btShowCashBook_(accts, rows || [], scope, scheme, month); return; }
     const model = accts.map(a => { const mine = (rows || []).filter(r => String(r.WA_id) === String(a.WA_id)); return btAccountReport_(a, mine.concat(btTokenRowsFor_(a, mine)), month); }).filter(x => scope === 'selected' || x.txns.length || x.summary);
     btShowReport_(model, scope, month);
+  }
+  /* ---------- Cash Book: Receipts (opening balance + every kind of deposit) on the left, Payments (every kind of withdrawal + closing balance) on the right ---------- */
+  function btCashBookBuild_(accts, rows, month) {
+    const r2 = v => Math.round(v * 100) / 100, multi = accts.length > 1;
+    const out = { opening: 0, closing: 0, adjPos: [], adjNeg: [], dep: [], wd: [], used: [], skipped: [], from: '', to: '' };
+    accts.forEach(a => {
+      const mine = rows.filter(r => String(r.WA_id) === String(a.WA_id)), rep = btAccountReport_(a, mine.concat(btTokenRowsFor_(a, mine)), month), S = rep.summary;
+      if (!S) { out.skipped.push(a); return; }
+      let opening, closing, months = rep.months;
+      if (!months.length) {                                          // a month with no ledger line: before the first OB, or after the last entry
+        const all = btAccountReport_(a, mine.concat(btTokenRowsFor_(a, mine)), '').months;
+        if (!all.length || month < all[0].ym) { out.skipped.push(a); return; }
+        opening = closing = all[all.length - 1].closing;
+      } else { opening = months[0].opening; closing = months[months.length - 1].closing; }
+      out.opening += opening; out.closing += closing; out.used.push(a);
+      const tag = multi ? btShortBank_(a.Bank) + ' ' + String(a.Account_No || '').slice(-4) + ' \u00b7 ' : '';
+      months.forEach(m => { if (m.adj) (m.adj > 0 ? out.adjPos : out.adjNeg).push({ d: m.ym + '-01', t: 'OB adjustment', p: tag + 'OB adjustment (' + btMonthLabel_(m.ym) + ')', a: Math.abs(m.adj) }); });
+      rep.txns.filter(r => r.Trans_Type !== 'Opening Balance' && r.Trans_Date && String(r.Trans_Date) > S.beginDt).forEach(r => {
+        const e = { d: String(r.Trans_Date), t: r.Trans_Type || '', p: tag + [r.Trans_Type, btLinkText_(r), r.Trans_Description && !String(btLinkText_(r)).includes(String(r.Trans_Description)) ? r.Trans_Description : ''].filter(Boolean).join(' \u00b7 '), a: Number(r.Trans_Amt) || 0 };
+        (r.Transaction === 'Deposit' ? out.dep : out.wd).push(e);
+      });
+      if (!out.from || S.beginDt < out.from) out.from = S.beginDt;
+    });
+    const byDate = (x, y) => x.d.localeCompare(y.d);
+    ['adjPos', 'adjNeg', 'dep', 'wd'].forEach(k => out[k].sort(byDate));
+    out.opening = r2(out.opening); out.closing = r2(out.closing);
+    return out;
+  }
+  function btCashBookHtml_(cb, title, subtitle, month) {
+    const E = btEsc_, r2 = v => Math.round(v * 100) / 100, sum = l => r2(l.reduce((t, x) => t + x.a, 0));
+    const today = new Date().toISOString().slice(0, 10);
+    let h = '<h2 style="margin:0 0 2px;">Cash Book</h2><div class="rep-sub">' + E(title) + ' &middot; ' + (month ? 'Month: ' + E(btMonthLabel_(month)) : 'All months') + ' &middot; Generated ' + today + '</div>' + (subtitle ? '<div class="rep-sub">' + E(subtitle) + '</div>' : '');
+    if (!cb.used.length) return h + '<p>No account with an opening balance was found for this selection.</p>';
+    const openDate = month ? month + '-01' : cb.from;
+    const left = [{ d: openDate, p: 'To Opening Balance b/d' + (cb.used.length > 1 ? ' (' + cb.used.length + ' accounts)' : ''), a: cb.opening, b: true }].concat(cb.adjPos.map(x => ({ d: x.d, p: 'To ' + x.p, a: x.a })), cb.dep.map(x => ({ d: x.d, p: 'To ' + x.p, a: x.a })));
+    const right = cb.adjNeg.map(x => ({ d: x.d, p: 'By ' + x.p, a: x.a })).concat(cb.wd.map(x => ({ d: x.d, p: 'By ' + x.p, a: x.a })));
+    const n = Math.max(left.length, right.length + 1);
+    const lTot = r2(cb.opening + sum(cb.adjPos) + sum(cb.dep)), rTot = r2(sum(cb.adjNeg) + sum(cb.wd) + cb.closing);
+    const cell = (x, extra) => x ? '<td style="white-space:nowrap;' + (extra || '') + '">' + E(x.d) + '</td><td>' + E(x.p) + '</td><td class="n"' + (x.b ? ' style="font-weight:700;"' : '') + '>' + E(inr(x.a)) + '</td>' : '<td style="' + (extra || '') + '"></td><td></td><td></td>';
+    let rows = '';
+    for (let i = 0; i < n; i++) {
+      const closing = i === n - 1 ? { d: '', p: 'By Closing Balance c/d', a: cb.closing, b: true } : null;
+      rows += '<tr>' + cell(left[i]) + cell(closing || right[i], 'border-left:2px solid #222;') + '</tr>';
+    }
+    h += '<table class="rep-table cb-table"><thead><tr><th colspan="3">RECEIPTS (Opening Balance &amp; Deposits)</th><th colspan="3" style="border-left:2px solid #222;">PAYMENTS (Withdrawals &amp; Closing Balance)</th></tr>' +
+         '<tr><th>Date</th><th>Particulars</th><th>Amount</th><th style="border-left:2px solid #222;">Date</th><th>Particulars</th><th>Amount</th></tr></thead><tbody>' + rows +
+         '<tr class="tot"><td colspan="2"><b>Total</b></td><td class="n"><b>' + E(inr(lTot)) + '</b></td><td colspan="2" style="border-left:2px solid #222;"><b>Total</b></td><td class="n"><b>' + E(inr(rTot)) + '</b></td></tr></tbody></table>';
+    // totals by kind of transaction
+    const byType = list => { const m = {}; list.forEach(x => { const k = x.t || 'Other'; (m[k] = m[k] || { n: 0, a: 0 }); m[k].n++; m[k].a += x.a; }); return Object.entries(m).sort((x, y) => y[1].a - x[1].a); };
+    const tbl = (title2, list) => '<table class="rep-table" style="width:auto; min-width:46%;"><thead><tr><th>' + title2 + '</th><th>Entries</th><th>Amount</th></tr></thead><tbody>' +
+      (list.length ? byType(list).map(([k, v]) => '<tr><td>' + E(k) + '</td><td class="n">' + v.n + '</td><td class="n">' + E(inr(r2(v.a))) + '</td></tr>').join('') : '<tr><td colspan="3">None</td></tr>') +
+      '<tr class="tot"><td><b>Total</b></td><td class="n"><b>' + list.length + '</b></td><td class="n"><b>' + E(inr(sum(list))) + '</b></td></tr></tbody></table>';
+    h += '<h3 class="rep-acct">Summary by kind of transaction</h3><div style="display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start;">' + tbl('Deposits (receipts)', cb.dep) + tbl('Withdrawals (payments)', cb.wd) + '</div>';
+    if (cb.skipped.length) h += '<p style="font-size:11px; color:#666;">Not included (no opening balance for this period): ' + cb.skipped.map(a => E(btShortBank_(a.Bank) + ' ' + a.Account_No)).join(', ') + '.</p>';
+    return h;
+  }
+  let btCashCsv_ = null;
+  function btShowCashBook_(accts, rows, scope, scheme, month) {
+    const cb = btCashBookBuild_(accts, rows, month);
+    const title = scope === 'selected' ? 'Account: ' + (accts[0] ? accts[0].Bank + ' - ' + accts[0].Account_No : '') : scope === 'scheme' ? 'Scheme: ' + scheme : 'All accounts';
+    const sub = scope !== 'selected' ? cb.used.length + ' account' + (cb.used.length === 1 ? '' : 's') + ' combined' : (accts[0] && accts[0].Scheme ? 'Scheme: ' + accts[0].Scheme : '');
+    btCashCsv_ = { cb, title };
+    btCloseReport_(); btReportModel_ = null;
+    const m = document.createElement('div'); m.id = 'bt_report_modal'; m.className = 'bt-report';
+    m.innerHTML = '<div class="bt-report-box"><div class="rep-actions"><b>Cash Book</b><span class="sp"></span><button type="button" class="action" onclick="window.print()">Print / Save PDF</button>' +
+      (authIsAdmin ? '<button type="button" class="action" onclick="btDownloadCashCsv_()">Download CSV</button>' : '') + '<button type="button" class="action" onclick="btCloseReport_()">Close</button></div><div class="rep-body">' + btCashBookHtml_(cb, title, sub, month) + '</div></div>';
+    document.body.appendChild(m);
+  }
+  function btDownloadCashCsv_() {
+    if (!btCashCsv_ || !authIsAdmin) return;
+    const cb = btCashCsv_.cb, q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const lines = [['Side', 'Date', 'Particulars', 'Amount'].map(q).join(',')];
+    lines.push(['Receipts', cb.from, 'Opening Balance b/d', cb.opening].map(q).join(','));
+    cb.adjPos.concat(cb.dep).forEach(x => lines.push(['Receipts', x.d, x.p, x.a].map(q).join(',')));
+    cb.adjNeg.concat(cb.wd).forEach(x => lines.push(['Payments', x.d, x.p, x.a].map(q).join(',')));
+    lines.push(['Payments', '', 'Closing Balance c/d', cb.closing].map(q).join(','));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'cash_book.csv'; document.body.appendChild(a); a.click(); a.remove();
   }
   function btDownloadCsv_() {
     if (!btReportModel_ || !authIsAdmin) return;
@@ -8792,14 +9043,15 @@
   // Filters fundAppStatusCache client-side: search text, Scheme, and status
   function applyFundAppFilters() {
     const q = (document.getElementById('fundapp_search').value || '').trim().toLowerCase();
-    const schemeF = document.getElementById('report_fundapp_filter_scheme').value;
-    const pendingF = document.getElementById('fundapp_filter_pending').value;
+    const pendingSel = fmSel_('fundapp_filter_pending');
+    const pendingOk = r => !pendingSel.length || pendingSel.some(k =>                                  // several statuses: a row passes if it has any of them
+      (k === 'FA_Pending' && (Number(r.Fund_Application_Amount_To_Be_Submitted) || 0) > 0) ||
+      (k === 'VCH_Pending' && (Number(r.Voucher_Amount_To_Be_Submitted) || 0) > 0) ||
+      (k === 'ADV_Pending' && (Number(r.Advance_Amount_To_Be_Generated) || 0) > 0));
 
     const filtered = fundAppStatusCache.filter(r => {
-      if (schemeF && String(r.Scheme) !== schemeF) return false;
-      if (pendingF === 'FA_Pending' && (Number(r.Fund_Application_Amount_To_Be_Submitted) || 0) <= 0) return false;
-      if (pendingF === 'VCH_Pending' && (Number(r.Voucher_Amount_To_Be_Submitted) || 0) <= 0) return false;
-      if (pendingF === 'ADV_Pending' && (Number(r.Advance_Amount_To_Be_Generated) || 0) <= 0) return false;
+      if (!fmHas_('report_fundapp_filter_scheme', r.Scheme)) return false;
+      if (!pendingOk(r)) return false;
       if (q) {
         const haystack = [r.Esti_no, r.Scheme, r.Esti_Description].join(' ').toLowerCase();
         if (!haystack.includes(q)) return false;
@@ -12109,12 +12361,42 @@
   function openCommonWithdraw(scheme) {
     const estis = new Set(estimateCache.filter(e => String(e.Scheme) === String(scheme)).map(e => String(e.Esti_no)));
     if (!estis.size) { alert('No estimates found under scheme ' + scheme + '.'); return; }
-    Promise.all([gsrCall('getAdvanceData'), gsrCall('getWithdrawnDetailsData'), gsrCall('getWithdrawalAccountsData'), gsrCall('getChequeBooksData')]).then(([adv, wds, accts, books]) => {
+    Promise.all([gsrCall('getAdvanceData'), gsrCall('getWithdrawnDetailsData'), gsrCall('getWithdrawalAccountsData'), gsrCall('getChequeBooksData'),
+                 gsrCall('getBankTransactionsData').catch(() => [])]).then(([adv, wds, accts, books, bank]) => {
       const credited = (adv || []).filter(a => estis.has(String(a.Trans_id)) && a.Credited === 'Yes' && String(a.Credited_Account_No || '').trim());
       if (!credited.length) { alert('No credited advance tokens with a Credited Account No under scheme ' + scheme + ' yet.'); return; }
-      cwData = { scheme, advances: credited, wds: wds || [], accts: accts || [], books: books || [], rows: [] };
+      // cheques entered directly in Bank Transactions (not through a Withdraw screen) use their leaf too
+      const direct = (bank || []).filter(r => r.Transaction === 'Withdrawn' && r.Trans_Type === 'Cheque' && String(r.Cheque_Ref || '').trim() && r.Source !== 'withdraw');
+      const allCredited = (adv || []).filter(a => estis.has(String(a.Trans_id)) && a.Credited === 'Yes');
+      cwData = { scheme, advances: credited, wds: wds || [], accts: accts || [], books: books || [], rows: [], direct, estis, allCredited };
       showCommonWithdrawModal();
     }).catch(() => alert('The advance and withdrawal data could not be loaded. Please try again.'));
+  }
+  // same three figures as the Withdraw screen, for all estimates of the scheme
+  function cwStatsHtml_() {
+    const wds = cwData.wds.filter(w => cwData.estis.has(String(w.Esti_no)));
+    const totalCredited = cwData.allCredited.reduce((t, a) => t + (Number(a.Credited_Amt) || 0), 0);
+    const totalWithdrawn = wds.reduce((t, w) => t + (Number(w.Withdrawn_Amount) || 0), 0);
+    const balance = totalCredited - totalWithdrawn, pct = totalCredited > 0 ? Math.min(100, Math.round(totalWithdrawn / totalCredited * 100)) : 0;
+    const cheques = new Set(wds.map(w => String(w.Withdrawn_Account_No || '') + '|' + String(w.Withdrawn_Cheque_No || '')).filter(k => !k.endsWith('|'))).size;
+    const card = (label, value, color, sub) => `
+      <div style="flex:1 1 180px; min-width:170px; background:#fff; border:1px solid #E3E6EC; border-left:4px solid ${color}; border-radius:8px; padding:12px 14px; box-shadow:0 1px 2px rgba(16,24,40,0.05);">
+        <div style="font-size:10.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted);">${label}</div>
+        <div style="font-size:22px; font-weight:700; color:${color}; margin-top:4px; font-variant-numeric:tabular-nums;">&#8377; ${inr(value)}</div>
+        <div style="font-size:11px; color:var(--muted); margin-top:2px;">${sub}</div>
+      </div>`;
+    return `
+      <div style="margin-bottom:16px;">
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          ${card('Total Credited Amount', totalCredited, '#1F5FBF', cwData.allCredited.length + ' advance token' + (cwData.allCredited.length === 1 ? '' : 's') + ' of ' + cwData.estis.size + ' estimate' + (cwData.estis.size === 1 ? '' : 's'))}
+          ${card('Total Withdrawn Amount', totalWithdrawn, '#B26A00', wds.length + ' withdrawal' + (wds.length === 1 ? '' : 's') + ' on ' + cheques + ' cheque' + (cheques === 1 ? '' : 's'))}
+          ${card('Balance To Be Drawn', balance, balance < 0 ? '#C0392B' : '#1E8449', balance < 0 ? 'Withdrawn exceeds credited' : 'Available to withdraw')}
+        </div>
+        <div style="height:6px; background:#E9ECF1; border-radius:3px; margin-top:12px; overflow:hidden;" title="${pct}% of credited amount withdrawn">
+          <div style="height:100%; width:${pct}%; background:${balance < 0 ? '#C0392B' : '#1F5FBF'};"></div>
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin-top:4px; text-align:right;">${pct}% of credited amount withdrawn</div>
+      </div>`;
   }
   function showCommonWithdrawModal() {
     let modal = document.getElementById('cw_modal'); if (modal) modal.remove();
@@ -12128,6 +12410,7 @@
       <div style="background:#fff; border-radius:var(--radius-sm); padding:20px; width:980px; max-width:96vw; max-height:92vh; overflow:auto; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
         <div class="scheme-card-title" style="margin-bottom:4px;">Common Withdrawal &middot; ${esc(cwData.scheme)}</div>
         <div style="font-size:12px; color:var(--muted); margin-bottom:14px;">One cheque leaf of one account pays several estimates. Tick the tokens and enter the amount drawn for each; one withdrawal is recorded per token with the same cheque, date and account.</div>
+        ${cwStatsHtml_()}
         <div class="form-grid">
           <div class="field-row"><label>Withdrawal Account (credited account)</label><select id="cw_account" onchange="cwAccountChanged()">${opts}</select></div>
           <div class="field-row"><label>Name of VSS</label><input type="text" id="cw_vss" readonly style="background:#F1F2F5;"></div>
@@ -12141,6 +12424,13 @@
           </table>
         </div>
         <div style="font-weight:700; margin-bottom:6px;">Cheque total: <span id="cw_total">0</span></div>
+        <div class="scheme-card-title" style="font-size:13px; margin:14px 0 6px;">Cheques already used <span class="stat-label" id="cw_used_acct"></span></div>
+        <div class="list-wrap" style="max-height:200px;">
+          <table class="grid">
+            <thead><tr><th>Cheque No</th><th>Withdrawn Date</th><th>Amount</th><th>Estimates</th><th>Tokens</th></tr></thead>
+            <tbody id="cw_used_tbody"></tbody>
+          </table>
+        </div>
         <div class="btn-row" style="margin-top:8px;">
           <button class="action primary" onclick="saveCommonWithdraw()">Save Common Withdrawal</button>
           <button class="action" onclick="document.getElementById('cw_modal').remove()">Cancel</button>
@@ -12171,6 +12461,22 @@
         <td><input type="number" id="cw_amt_${i}" min="0" step="0.01" value="0" disabled style="width:120px;" oninput="cwTotal()"></td></tr>`).join('')
       : '<tr><td colspan="8" class="linked-empty">No tokens for this account.</td></tr>';
     cwTotal();
+    // cheques of this account that are already used: one line per cheque (a common cheque adds up its estimates)
+    const g = {};
+    cwData.wds.filter(w => String(w.Withdrawn_Account_No || '').trim() === acct && String(w.Withdrawn_Cheque_No || '').trim()).forEach(w => {
+      const k = String(w.Withdrawn_Cheque_No).trim(), x = g[k] || (g[k] = { no: k, date: w.Withdrawn_Date || '', amt: 0, estis: new Set(), toks: new Set() });
+      x.amt += Number(w.Withdrawn_Amount) || 0; x.estis.add(String(w.Esti_no)); x.toks.add(String(w.Advance_Token_No));
+      if (w.Withdrawn_Date && (!x.date || w.Withdrawn_Date < x.date)) x.date = w.Withdrawn_Date;
+    });
+    if (a) cwData.direct.filter(r => String(r.WA_id) === String(a.WA_id)).forEach(r => {
+      const k = String(r.Cheque_Ref).trim(), x = g[k] || (g[k] = { no: k, date: r.Trans_Date || '', amt: 0, estis: new Set(), toks: new Set() });
+      x.amt += Number(r.Trans_Amt) || 0; x.estis.add('Entered in Bank Transactions');
+      if (r.Trans_Date && (!x.date || r.Trans_Date < x.date)) x.date = r.Trans_Date;
+    });
+    const used = Object.values(g).sort((x, y) => String(y.date).localeCompare(String(x.date)) || String(y.no).localeCompare(String(x.no)));
+    document.getElementById('cw_used_acct').textContent = used.length ? '(' + used.length + ' cheque' + (used.length === 1 ? '' : 's') + ', ' + inr(used.reduce((t, x) => t + x.amt, 0)) + ')' : '';
+    document.getElementById('cw_used_tbody').innerHTML = used.length ? used.map(x => `<tr><td>${esc(x.no)}</td><td>${esc(x.date)}</td><td>${inr(x.amt)}</td><td>${esc(Array.from(x.estis).join(', '))}</td><td>${esc(Array.from(x.toks).join(', '))}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="linked-empty">No cheque has been used on this account yet.</td></tr>';
   }
   function cwToggle(i) {
     const on = document.getElementById('cw_chk_' + i).checked, amt = document.getElementById('cw_amt_' + i);
@@ -13443,11 +13749,9 @@
 
   function filterApoRows() {
     const q = document.getElementById('apo_search').value.trim().toLowerCase();
-    const yearF = document.getElementById('apo_filter_year').value;
-    const schemeF = document.getElementById('apo_filter_scheme').value;
     return apoCache.filter(r => {
-      if (yearF && String(r.Year) !== yearF) return false;
-      if (schemeF && String(r.Scheme) !== schemeF) return false;
+      if (!fmHas_('apo_filter_year', r.Year)) return false;
+      if (!fmHas_('apo_filter_scheme', r.Scheme)) return false;
       if (q && ![r.Scheme, r.Approval_Reference].join(' ').toLowerCase().includes(q)) return false;
       return true;
     });
@@ -14023,14 +14327,10 @@
 
   function filterBudgetRowsSuffixed(suffix) {
     const q = document.getElementById('bud_search' + suffix).value.trim().toLowerCase();
-    const yearF = document.getElementById('bud_filter_year' + suffix).value;
-    const qtrF = document.getElementById('bud_filter_qtr' + suffix).value;
-    const schemeF = document.getElementById('bud_filter_scheme' + suffix).value;
-
     return budgetCache.filter(r => {
-      if (yearF && String(r.Year) !== yearF) return false;
-      if (qtrF && r.Qtr !== qtrF) return false;
-      if (schemeF && String(r.Scheme) !== schemeF) return false;
+      if (!fmHas_('bud_filter_year' + suffix, r.Year)) return false;
+      if (!fmHas_('bud_filter_qtr' + suffix, r.Qtr)) return false;
+      if (!fmHas_('bud_filter_scheme' + suffix, r.Scheme)) return false;
       if (q) {
         const haystack = [r.Scheme, r.Hoa].join(' ').toLowerCase();
         if (!haystack.includes(q)) return false;
@@ -14189,38 +14489,112 @@
   }
   function markBudgetCardSelected_(id) {
     budSelectedId = (id == null) ? '' : String(id);
-    Array.from(document.querySelectorAll('#bud_cards .rec-card')).forEach(c => c.classList.toggle('selected', c.dataset.id === budSelectedId));
+    Array.from(document.querySelectorAll('#bud_cards .rec-card')).forEach(c => c.classList.toggle('selected', !!budSelectedId && String(c.dataset.ids || c.dataset.id).split(',').includes(budSelectedId)));
   }
+  // Grid / Full text: ONE card per Year + Scheme + Qtr. When that scheme has several HOAs in the quarter, the card adds them up
+  // and lists each HOA (click a HOA line to edit that record).
   function renderBudgetCards_(rows) {
     budLastRows = rows || [];
     const box = document.getElementById('bud_cards'); if (!box) return;
     const mode = (document.getElementById('bud_card_sort') || {}).value || 'default';
-    const list = budLastRows.slice();
     const num = v => Number(v) || 0, time = v => { const t = new Date(v).getTime(); return isNaN(t) ? 0 : t; };
-    if (mode === 'amt_desc') list.sort((a, b) => num(b.Amt) - num(a.Amt));
-    else if (mode === 'amt_asc') list.sort((a, b) => num(a.Amt) - num(b.Amt));
-    else if (mode === 'scheme') list.sort((a, b) => String(a.Scheme).localeCompare(String(b.Scheme), undefined, { numeric: true, sensitivity: 'base' }));
-    else if (mode === 'year_desc') list.sort((a, b) => String(b.Year).localeCompare(String(a.Year), undefined, { numeric: true }));
-    else if (mode === 'dt_desc') list.sort((a, b) => time(b.Dt) - time(a.Dt));
+    const groups = [], idx = {};
+    budLastRows.forEach(r => {
+      const k = [r.Year, r.Scheme, r.Qtr].join('\u0001');
+      if (!(k in idx)) { idx[k] = groups.length; groups.push({ Year: r.Year, Scheme: r.Scheme, Qtr: r.Qtr, recs: [], Amt: 0, Dt: '' }); }
+      const g = groups[idx[k]]; g.recs.push(r); g.Amt += num(r.Amt); if (time(r.Dt) >= time(g.Dt)) g.Dt = r.Dt;
+    });
+    // cards are kept together per scheme; a Total card closes each scheme that has more than one card
+    const schemes = [], sidx = {};
+    groups.forEach(g => {
+      const k = String(g.Scheme);
+      if (!(k in sidx)) { sidx[k] = schemes.length; schemes.push({ Scheme: g.Scheme, cards: [], Amt: 0, Dt: '', Year: '' }); }
+      const sc = schemes[sidx[k]]; sc.cards.push(g); sc.Amt += g.Amt; if (time(g.Dt) >= time(sc.Dt)) sc.Dt = g.Dt; if (String(g.Year) > sc.Year) sc.Year = String(g.Year);
+    });
+    const cardCmp = mode === 'amt_desc' ? (x, y) => y.Amt - x.Amt : mode === 'amt_asc' ? (x, y) => x.Amt - y.Amt
+                  : mode === 'year_desc' ? (x, y) => String(y.Year).localeCompare(String(x.Year), undefined, { numeric: true }) : mode === 'dt_desc' ? (x, y) => time(y.Dt) - time(x.Dt) : null;
+    const schCmp = mode === 'amt_desc' ? (x, y) => y.Amt - x.Amt : mode === 'amt_asc' ? (x, y) => x.Amt - y.Amt
+                 : mode === 'scheme' ? (x, y) => String(x.Scheme).localeCompare(String(y.Scheme), undefined, { numeric: true, sensitivity: 'base' })
+                 : mode === 'year_desc' ? (x, y) => String(y.Year).localeCompare(String(x.Year), undefined, { numeric: true }) : mode === 'dt_desc' ? (x, y) => time(y.Dt) - time(x.Dt) : null;
+    if (schCmp) schemes.sort(schCmp);
+    if (cardCmp) schemes.forEach(sc => sc.cards.sort(cardCmp));
+    const list = [];
+    schemes.forEach(sc => { sc.cards.forEach(g => list.push(g)); if (sc.cards.length > 1) list.push({ total: true, sc }); });
     box.innerHTML = '';
     if (!list.length) { box.innerHTML = '<div class="rec-empty" style="grid-column:1/-1;">No budget records match the filters.</div>'; }
-    list.forEach(r => {
-      let words = ''; try { words = amountInWordsIndian(num(r.Amt)); } catch (e) { }
+    list.forEach(g => {
+      if (g.total) {                                               // Total card of a scheme: all its quarters / years together
+        const sc = g.sc, tw = (() => { try { return amountInWordsIndian(sc.Amt); } catch (e) { return ''; } })();
+        const years = Array.from(new Set(sc.cards.map(x => String(x.Year)))).sort().join(', ');
+        const hm = {};                                                // HOA-wise total of the scheme (all its quarters / years)
+        sc.cards.forEach(x => x.recs.forEach(r => { const k = String(r.Hoa || '(no HOA)'); hm[k] = (hm[k] || 0) + num(r.Amt); }));
+        const hoaRows = Object.keys(hm).sort((p, q) => p.localeCompare(q, undefined, { numeric: true })).map(k => ({ hoa: k, amt: Math.round(hm[k] * 100) / 100 }));
+        // approved APO of this scheme (same years as the cards) and the expenditure booked against it
+        const yset = new Set(sc.cards.map(x => String(x.Year)));
+        const apos = (typeof apoCache !== 'undefined' ? apoCache : []).filter(a => String(a.Scheme || '') === String(sc.Scheme) && yset.has(String(a.Year)));
+        const apoSum = apos.reduce((t, a) => t + num(a.APO_Approved_Amt), 0);
+        const fyOf = v => { const d = new Date(v); if (isNaN(d)) return ''; const y = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1; return y + '-' + String((y + 1) % 100).padStart(2, '0'); };
+        const fyKnown = Array.from(yset).every(y => /^\d{4}-\d{2}$/.test(y));
+        const exps = (typeof expenditureCache !== 'undefined' ? expenditureCache : []).filter(e => String(e.Scheme || '') === String(sc.Scheme) && (!fyKnown || yset.has(fyOf(e.Dt))));
+        const expSum = exps.reduce((t, e) => t + num(e.Amount), 0);
+        const loadedApo = !!loadedTabs.apo, loadedExp = !!loadedTabs.expenditure;
+        const line = (l, v, bold) => '<div style="display:flex; gap:8px; font-size:12.5px; padding:1px 6px;' + (bold ? ' font-weight:700;' : '') + '"><span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;">' + l + '</span><span style="font-variant-numeric:tabular-nums; white-space:nowrap;">' + v + '</span></div>';
+        const head = t => '<div style="font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin:8px 0 2px;">' + t + '</div>';
+        const apoHtml = head('APPROVED APO') + (!loadedApo ? line('Loading...', '') : apos.length
+          ? apos.map(a => line(recEsc_([a.Year, a.Approval_Reference, a.Approved_Dt].filter(Boolean).join(' \u00b7 ')), recEsc_(inr(num(a.APO_Approved_Amt))))).join('') + line('Total approved', recEsc_(inr(apoSum)), true)
+            + line('Budget released', recEsc_(inr(sc.Amt))) + line('To be released', recEsc_(inr(apoSum - sc.Amt)), true)
+          : line('No APO found for this scheme / year', ''));
+        const expHtml = head('EXPENDITURE') + (!loadedExp ? line('Loading...', '') : line(exps.length + ' entr' + (exps.length === 1 ? 'y' : 'ies'), recEsc_(inr(expSum)), true)
+          + line('Budget - Expenditure', recEsc_(inr(sc.Amt - expSum)), true));
+        const tc = document.createElement('div');
+        tc.className = 'rec-card rec-total'; tc.style.cssText = 'border:2px solid #1F5FBF; background:linear-gradient(180deg,#F3F7FE,#fff); cursor:default;';
+        tc.title = 'Total of all the cards of this scheme shown here';
+        tc.innerHTML =
+          '<div class="rec-bar"><span class="rec-dots"><i></i><i></i><i></i></span><span class="rec-bar-r"><span style="font-weight:700; letter-spacing:.06em;">TOTAL</span></span></div>' +
+          '<div class="rec-body"><div class="rec-title">' + recEsc_(sc.Scheme) + '</div><div class="rec-rule"></div>' +
+          '<div class="rec-sub">' + sc.cards.length + ' cards &middot; ' + sc.cards.reduce((t, x) => t + x.recs.length, 0) + ' records</div>' +
+          '<div style="font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin:6px 0 2px;">BY HOA</div>' +
+          hoaRows.map(h => '<div style="display:flex; gap:8px; font-size:12.5px; padding:1px 6px;"><span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;" title="' + recEsc_(h.hoa) + '">HOA: ' + recEsc_(h.hoa) + '</span><span style="font-variant-numeric:tabular-nums; white-space:nowrap;">' + recEsc_(inr(h.amt)) + '</span></div>').join('') +
+          '<div style="font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin:8px 0 2px;">BY QUARTER</div>' +
+          sc.cards.map(x => '<div style="display:flex; gap:8px; font-size:12.5px; padding:1px 6px;"><span style="flex:1;">' + recEsc_(x.Year) + ' &middot; ' + recEsc_(x.Qtr) + '</span><span style="font-variant-numeric:tabular-nums;">' + recEsc_(inr(x.Amt)) + '</span></div>').join('') +
+          apoHtml + expHtml +
+          '<div class="rec-amt">' + recEsc_(inr(sc.Amt)) + '</div>' + (tw ? '<div class="rec-words">' + recEsc_(tw) + '</div>' : '') +
+          '<div class="rec-meta"><span class="rec-badge">' + recEsc_(years) + '</span><span class="rec-date">' + recEsc_(sc.Dt) + '</span></div></div>';
+        box.appendChild(tc);
+        return;
+      }
+      const multi = g.recs.length > 1, first = g.recs[0];
+      let words = ''; try { words = amountInWordsIndian(g.Amt); } catch (e) { }
       const card = document.createElement('div');
-      card.className = 'rec-card'; card.tabIndex = 0; card.setAttribute('role', 'button'); card.dataset.id = String(r.Budget_id);
-      card.title = 'Click to edit this budget record';
+      card.className = 'rec-card'; card.tabIndex = 0; card.setAttribute('role', 'button');
+      card.dataset.id = String(first.Budget_id); card.dataset.ids = g.recs.map(r => r.Budget_id).join(',');
+      card.title = multi ? 'Click a HOA line to edit that budget record' : 'Click to edit this budget record';
       card.innerHTML =
-        '<div class="rec-bar"><span class="rec-dots"><i></i><i></i><i></i></span><span class="rec-bar-r"><span>Budget /' + recEsc_(r.Budget_id) + '</span></span></div>' +
+        '<div class="rec-bar"><span class="rec-dots"><i></i><i></i><i></i></span><span class="rec-bar-r"><span>' + (multi ? g.recs.length + ' HOAs' : 'Budget /' + recEsc_(first.Budget_id)) + '</span></span></div>' +
         '<div class="rec-body">' +
-          '<div class="rec-title">' + recEsc_(r.Scheme) + '</div><div class="rec-rule"></div>' +
-          '<div class="rec-sub">HOA: ' + recEsc_(r.Hoa) + '</div>' +
-          '<div class="rec-amt">' + recEsc_(inr(r.Amt)) + '</div>' +
+          '<div class="rec-title">' + recEsc_(g.Scheme) + '</div><div class="rec-rule"></div>' +
+          (multi ? '<div class="rec-hoas"></div>' : '<div class="rec-sub">HOA: ' + recEsc_(first.Hoa) + '</div>') +
+          '<div class="rec-amt">' + recEsc_(inr(g.Amt)) + '</div>' +
           (words ? '<div class="rec-words">' + recEsc_(words) + '</div>' : '') +
-          '<div class="rec-meta"><span class="rec-badge">' + recEsc_(r.Year) + '</span><span class="rec-badge q">' + recEsc_(r.Qtr) + '</span><span class="rec-date">' + recEsc_(r.Dt) + '</span></div>' +
+          '<div class="rec-meta"><span class="rec-badge">' + recEsc_(g.Year) + '</span><span class="rec-badge q">' + recEsc_(g.Qtr) + '</span><span class="rec-date">' + recEsc_(g.Dt) + '</span></div>' +
         '</div>';
-      card.querySelector('.rec-bar-r').appendChild(makeKebab_(r, x => rowMenuItems_('budget', x)));
-      card.onclick = () => loadBudgetIntoForm(r);
-      card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); loadBudgetIntoForm(r); } };
+      if (multi) {
+        const hb = card.querySelector('.rec-hoas');
+        g.recs.forEach(r => {
+          const line = document.createElement('div');
+          line.style.cssText = 'display:flex; align-items:center; gap:8px; padding:3px 6px; margin:2px 0; border-radius:6px; font-size:12.5px; cursor:pointer;';
+          line.className = 'rec-hoa'; line.dataset.id = String(r.Budget_id); line.title = 'Edit Budget /' + r.Budget_id;
+          line.innerHTML = '<span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;">HOA: ' + recEsc_(r.Hoa) + '</span><span style="font-variant-numeric:tabular-nums; white-space:nowrap;">' + recEsc_(inr(r.Amt)) + '</span>';
+          line.onmouseenter = () => { line.style.background = 'rgba(31,95,191,0.09)'; }; line.onmouseleave = () => { line.style.background = ''; };
+          line.onclick = e => { e.stopPropagation(); loadBudgetIntoForm(r); };
+          line.appendChild(makeKebab_(r, x => rowMenuItems_('budget', x)));
+          hb.appendChild(line);
+        });
+      } else {
+        card.querySelector('.rec-bar-r').appendChild(makeKebab_(first, x => rowMenuItems_('budget', x)));
+      }
+      card.onclick = () => loadBudgetIntoForm(first);
+      card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); loadBudgetIntoForm(first); } };
       box.appendChild(card);
     });
     markBudgetCardSelected_(budSelectedId);
@@ -14248,6 +14622,11 @@
   }
   applyBudgetLayout_();
 
+  // The Total card also shows the scheme's approved APO and its expenditure, so make sure those lists are loaded.
+  function ensureBudgetExtras_() {
+    if (!loadedTabs.apo) gsr().withSuccessHandler(rows => { apoCache = rows || []; loadedTabs.apo = true; renderBudgetCards_(budLastRows); }).getApoData();
+    if (!loadedTabs.expenditure) gsr().withSuccessHandler(rows => { expenditureCache = rows || []; loadedTabs.expenditure = true; renderBudgetCards_(budLastRows); }).getExpenditureData();
+  }
   function refreshBudgetTable(force) {
     gsr().withSuccessHandler(rows => {
       budgetCache = rows;
@@ -14258,6 +14637,7 @@
       applyBudgetFilters();
       refreshAllEmbeddedBudgetStats();
       loadedTabs.budget = true;
+      ensureBudgetExtras_();
     }).getBudgetData();
   }
 

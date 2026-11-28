@@ -340,6 +340,14 @@
     .lay-tab.active { color: var(--brand); border-bottom-color: var(--brand); background: #f6f9fd; }
     .lay-sort select { width: auto; min-width: 190px; }
     .lay-sort label { display: block; margin-bottom: 6px; font: 600 11px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .16em; color: var(--muted); text-transform: uppercase; }
+    .unit-switch { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12.5px; font-weight: 600; color: #8A90A2; cursor: pointer; user-select: none; }
+    .unit-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .unit-switch .unit-slider { position: relative; width: 40px; height: 22px; border-radius: 11px; background: #C9CFDC; transition: background .15s; }
+    .unit-switch .unit-slider::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; }
+    .unit-switch input:checked + .unit-slider { background: #1F5FBF; }
+    .unit-switch input:checked + .unit-slider::after { transform: translateX(18px); }
+    .unit-switch input:focus-visible + .unit-slider { outline: 2px solid #1F5FBF; outline-offset: 2px; }
+    .unit-switch .on { color: #1F5FBF; }
     .lay-count { flex: 1 1 100%; font-size: 13px; color: var(--muted); }
     .lay-count b { color: var(--ink); font-weight: 600; }
     .rec-cards { display: grid; gap: 16px; }
@@ -2048,6 +2056,12 @@
               <option value="dt_desc">Date: newest first</option>
             </select>
           </div>
+          <span class="bud-print" style="margin-left:auto; display:inline-flex; align-items:center; gap:6px;">
+            <span class="lay-label" style="margin:0;">PRINT</span>
+            <button type="button" class="action" style="padding:4px 12px; font-size:12px;" onclick="budPrint_('pdf')" title="Open the print dialog; choose Save as PDF">PDF</button>
+            <button type="button" class="action" style="padding:4px 12px; font-size:12px;" onclick="budPrint_('word')" title="Download as a Word document">Word</button>
+          </span>
+          <label class="unit-switch" style="margin-left:18px;" title="Show the figures in rupees or in lakhs"><span id="bud_unit_rs" class="on">&#8377; Rupees</span><input type="checkbox" id="bud_unit_chk" onchange="setBudgetUnit_(this.checked)"><span class="unit-slider"></span><span id="bud_unit_l">Lakhs</span></label>
           <div class="lay-count" id="bud_count_line"></div>
         </div>
         <div id="bud_cards" class="rec-cards rec-grid" style="display:none;"></div>
@@ -14493,6 +14507,69 @@
   }
   // Grid / Full text: ONE card per Year + Scheme + Qtr. When that scheme has several HOAs in the quarter, the card adds them up
   // and lists each HOA (click a HOA line to edit that record).
+  let budModels_ = [];                                               // plain figures of every Total card, used by Print / Word
+  let budUnit_ = 'rupees';                                           // 'rupees' or 'lakhs' (the slider on the Budget records bar)
+  const bInr = v => budUnit_ === 'lakhs' ? ((Number(v) || 0) / 100000).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : inr(v);
+  function setBudgetUnit_(lakhs) {
+    budUnit_ = lakhs ? 'lakhs' : 'rupees';
+    const a = document.getElementById('bud_unit_rs'), b = document.getElementById('bud_unit_l');
+    if (a) a.classList.toggle('on', !lakhs); if (b) b.classList.toggle('on', !!lakhs);
+    renderBudgetCards_(budLastRows);
+  }
+  // Print / Word: the Total cards (with the current filters and unit) as plain tables
+  function budReportHtml_(word) {
+    const E = recEsc_, f = v => E(bInr(v)), unit = budUnit_ === 'lakhs' ? 'Lakhs' : 'Rupees';
+    const flt = (fmCfg_.bud_fm ? fmCfg_.bud_fm.summary() : '') + ((document.getElementById('bud_search') || {}).value ? ' \u00b7 Search: ' + document.getElementById('bud_search').value : '');
+    const th = (t, r) => '<th' + (r ? ' class="n"' : '') + '>' + t + '</th>', td = (t, r, b) => '<td' + (r ? ' class="n"' : '') + (b ? ' style="font-weight:bold;"' : '') + '>' + t + '</td>';
+    const tbl = (head, rows) => '<table><thead><tr>' + head.join('') + '</tr></thead><tbody>' + (rows.length ? rows.join('') : '<tr><td colspan="' + head.length + '">None</td></tr>') + '</tbody></table>';
+    const dis = (m, k, v) => !m.loaded[k] ? (m.denied[k] ? 'n/a' : '...') : v;
+    let h = '<h1>Budget &ndash; Scheme-wise Total</h1><div class="sub">' + E(flt || 'No filter') + ' &middot; Amounts in ' + unit + (budUnit_ === 'lakhs' ? ' (1 lakh = 1,00,000)' : '') + ' &middot; Generated ' + new Date().toISOString().slice(0, 10) + '</div>';
+    budModels_.forEach((m, i) => {
+      const bal = m.loaded.adv && m.loaded.exp;
+      h += '<div class="sec"' + (i ? ' style="page-break-before:always;"' : '') + '><h2>' + E(m.scheme) + ' <span class="sub">' + E(m.years) + '</span></h2>';
+      h += tbl(['Approved APO', 'Releases', 'Uploaded', 'To be uploaded', 'Advance (all)', 'Advance (credited)', 'Advance (to be credited)', 'Expenditure', 'Balance'].map(t => th(t, true)),
+        ['<tr>' + td(dis(m, 'apo', f(m.apoSum)), true) + td(f(m.rel), true) + td(dis(m, 'adv', f(m.up)), true) + td(dis(m, 'adv', f(m.rel - m.up)), true) + td(dis(m, 'adv', f(m.advAll)), true) + td(dis(m, 'adv', f(m.cred)), true) +
+         td(dis(m, 'adv', f(m.advAll - m.cred)), true) + td(dis(m, 'exp', f(m.exp)), true) + td(bal ? f(m.bal) : (m.denied.adv || m.denied.exp ? 'n/a' : '...'), true, true) + '</tr>']);
+      h += '<h3>Head-wise (HOA)</h3>' + tbl([th('HOA'), th('Releases', true), th('Uploaded', true), th('To be uploaded', true)],
+        m.hoa.map(x => '<tr>' + td(E(x.hoa)) + td(f(x.rel), true) + td(m.loaded.adv ? f(x.up) : '...', true) + td(m.loaded.adv ? f(x.rel - x.up) : '...', true) + '</tr>')
+          .concat(m.loaded.adv && Math.abs(m.otherUp) > 0.004 ? ['<tr>' + td('Other (no matching HOA)') + td('', true) + td(f(m.otherUp), true) + td('', true) + '</tr>'] : [])
+          .concat(['<tr>' + td('Total', false, true) + td(f(m.rel), true, true) + td(m.loaded.adv ? f(m.up) : '...', true, true) + td(m.loaded.adv ? f(m.rel - m.up) : '...', true, true) + '</tr>']));
+      h += '<h3>Budget records</h3>' + tbl([th('Year'), th('Qtr'), th('HOA'), th('Amount', true), th('Date')], m.recs.map(r => '<tr>' + td(E(r.y)) + td(E(r.q)) + td(E(r.hoa)) + td(f(r.amt), true) + td(E(r.dt)) + '</tr>'));
+      h += '<h3>Approved APO</h3>' + tbl([th('Year'), th('Reference'), th('Approved on'), th('Amount', true)], !m.loaded.apo ? [] : m.apos.map(a => '<tr>' + td(E(a.y)) + td(E(a.ref)) + td(E(a.dt)) + td(f(a.amt), true) + '</tr>').concat(m.apos.length ? ['<tr>' + td('Total', false, true) + td('') + td('') + td(f(m.apoSum), true, true) + '</tr>'] : []));
+      h += '<h3>Accounts of this scheme</h3>' + tbl([th('Bank'), th('Account No'), th('Operating by'), th('Name of account'), th('Branch / Place'), th('IFSC')], !m.loaded.acc ? [] :
+        m.accts.map(a => '<tr>' + td(E(a.bank)) + td(E(a.no)) + td(E(a.op)) + td(E(a.name)).replace('<td>', '<td class="wrap">') + td(E(a.place)).replace('<td>', '<td class="wrap">') + td(E(a.ifsc)) + '</tr>'));
+      const mrows = (rows, run) => { let r = 0, t = 0; return rows.map(x => { r += x.amt; t += x.amt; return '<tr>' + td(E(x.label)) + td(x.days.join(', ')) + td(f(x.amt), true) + (run ? td(f(r), true) : '') + '</tr>'; })
+        .concat(rows.length ? ['<tr>' + td('Total', false, true) + td('') + td(f(t), true, true) + (run ? td('') : '') + '</tr>'] : []); };
+      h += '<h3>Advance (to be credited) &ndash; month-wise</h3>' + tbl([th('Month-year'), th('Dates'), th('Amount', true)], m.loaded.adv ? mrows(m.tbc, false) : []);
+      h += '<h3>Balance (Advance credited &minus; Expenditure) &ndash; month-wise</h3>' + tbl([th('Month-year'), th('Dates'), th('Balance', true), th('Running', true)], bal ? mrows(m.balRows, true) : []);
+      h += '</div>';
+    });
+    // compact, professional print style: tables are only as wide as their content, tight padding, light header shading, zebra rows
+    const css = 'body{font-family:"Segoe UI",Calibri,Arial,Helvetica,sans-serif;font-size:9pt;color:#1a1a1a;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;} ' +
+      'h1{font-size:15pt;margin:0 0 1px;color:#12306B;border-bottom:2px solid #12306B;padding-bottom:3px;} h2{font-size:12pt;margin:0 0 4px;color:#12306B;} ' +
+      'h3{font-size:9.5pt;margin:8px 0 2px;color:#12306B;text-transform:uppercase;letter-spacing:.4pt;} .sub{font-size:8.5pt;color:#555;font-weight:normal;margin:2px 0 6px;} ' +
+      'table{border-collapse:collapse;width:auto;margin:0 0 3px;table-layout:auto;} thead{display:table-header-group;} tr{page-break-inside:avoid;} ' +
+      'th,td{border:0.5pt solid #9AA3B5;padding:1.5pt 5pt;font-size:8.5pt;line-height:1.2;vertical-align:top;white-space:nowrap;} ' +
+      'th{background:#E3EAF6;color:#12306B;text-align:left;font-weight:bold;} tbody tr:nth-child(even) td{background:#F6F8FC;} .n{text-align:right;} ' +
+      'td.wrap{white-space:normal;}';
+    if (word) return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Budget</title>' +
+      '<style>@page Section1{size:841.9pt 595.3pt; mso-page-orientation:landscape; margin:21pt 21pt 21pt 21pt;} div.Section1{page:Section1;} ' + css + '</style></head><body><div class="Section1">' + h + '</div></body></html>';
+    return '<html><head><meta charset="utf-8"><title>Budget</title><style>@page{size:A4 landscape; margin:6mm;} ' + css + '</style></head><body>' + h + '</body></html>';
+  }
+  function budPrint_(kind) {
+    renderBudgetCards_(budLastRows);                                  // rebuild the figures with the current filters
+    if (!budModels_.length) { alert('There are no budget records to print for the current filters.'); return; }
+    const waiting = budModels_.some(m => (!m.loaded.apo && !m.denied.apo) || (!m.loaded.exp && !m.denied.exp) || (!m.loaded.adv && !m.denied.adv) || (!m.loaded.acc && !m.denied.acc));
+    if (waiting) { alert('The APO, advance, expenditure and account data are still loading. Please try again in a moment.'); return; }
+    if (kind === 'word') {
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff', budReportHtml_(true)], { type: 'application/msword' }));
+      a.download = 'budget_scheme_total.doc'; document.body.appendChild(a); a.click(); a.remove(); return;
+    }
+    const fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0;';
+    document.body.appendChild(fr);
+    const d = fr.contentWindow.document; d.open(); d.write(budReportHtml_(false)); d.close();
+    setTimeout(() => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } finally { setTimeout(() => fr.remove(), 2000); } }, 300);
+  }
   const budExpanded_ = new Set();                                   // schemes whose detail cards are open
   function toggleBudgetDetail_(scheme) {
     const k = String(scheme); if (budExpanded_.has(k)) budExpanded_.delete(k); else budExpanded_.add(k);
@@ -14500,6 +14577,7 @@
   }
   function renderBudgetCards_(rows) {
     budLastRows = rows || [];
+    budModels_ = [];
     const box = document.getElementById('bud_cards'); if (!box) return;
     const mode = (document.getElementById('bud_card_sort') || {}).value || 'default';
     const num = v => Number(v) || 0, time = v => { const t = new Date(v).getTime(); return isNaN(t) ? 0 : t; };
@@ -14544,38 +14622,110 @@
         const exps = (typeof expenditureCache !== 'undefined' ? expenditureCache : []).filter(e => String(e.Scheme || '') === String(sc.Scheme) && (!fyKnown || yset.has(fyOf(e.Dt))));
         const expSum = exps.reduce((t, e) => t + num(e.Amount), 0);
         const loadedApo = !!loadedTabs.apo, loadedExp = !!loadedTabs.expenditure;
-        const loadedAdv = !!loadedTabs.advance;
-        if (!loadedApo || !loadedExp || !loadedAdv) ensureBudgetExtras_();             // fetch (once) whatever the card still needs
+        const loadedAdv = !!loadedTabs.advance, loadedAcc = !!loadedTabs.waAccounts || (withdrawalAccountsCache || []).length > 0;
+        if (!loadedApo || !loadedExp || !loadedAdv || !loadedAcc) ensureBudgetExtras_();             // fetch (once) whatever the card still needs
         const credOf = a => (Number(a.Credited_Amt) > 0 ? Number(a.Credited_Amt) : Number(a.Amount)) || 0;
         const advs = (typeof advanceCache !== 'undefined' ? advanceCache : []).filter(a => String(a.Scheme || '') === String(sc.Scheme) && String(a.Credited || '').trim().toLowerCase() === 'yes' && (!fyKnown || yset.has(fyOf(a.Credited_Date || a.Dt))));
         const credSum = advs.reduce((t, a) => t + credOf(a), 0);
-        const line = (l, v, bold) => '<div style="display:flex; gap:8px; font-size:12.5px; padding:1px 6px;' + (bold ? ' font-weight:700;' : '') + '"><span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;">' + l + '</span><span style="font-variant-numeric:tabular-nums; white-space:nowrap;">' + v + '</span></div>';
-        const head = t => '<div style="font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin:8px 0 2px;">' + t + '</div>';
-        const apoHtml = head('APPROVED APO') + (!loadedApo ? line(budExtra_.apo === 'denied' ? 'Not available: ' + recEsc_(budExtra_.apoMsg) : 'Loading...', '') : apos.length
-          ? apos.map(a => line(recEsc_([a.Year, a.Approval_Reference, a.Approved_Dt].filter(Boolean).join(' \u00b7 ')), recEsc_(inr(num(a.APO_Approved_Amt))))).join('') + line('Total approved', recEsc_(inr(apoSum)), true)
-            + line('Budget released', recEsc_(inr(sc.Amt))) + line('To be released', recEsc_(inr(apoSum - sc.Amt)), true)
-          : line('No APO found for this scheme / year', ''));
-        const expHtml = head('EXPENDITURE') + (!loadedExp ? line(budExtra_.exp === 'denied' ? 'Not available: ' + recEsc_(budExtra_.expMsg) : 'Loading...', '') : line(exps.length + ' entr' + (exps.length === 1 ? 'y' : 'ies'), recEsc_(inr(expSum)), true)
-          + line('Budget - Expenditure', recEsc_(inr(sc.Amt - expSum)), true));
-        const vssHtml = head('BALANCE IN VSS') + (!(loadedAdv && loadedExp)
-          ? line((budExtra_.adv === 'denied' ? 'Not available: ' + recEsc_(budExtra_.advMsg) : budExtra_.exp === 'denied' ? 'Not available: ' + recEsc_(budExtra_.expMsg) : 'Loading...'), '')
-          : line('Advance credited (' + advs.length + ' token' + (advs.length === 1 ? '' : 's') + ')', recEsc_(inr(credSum))) + line('Expenditure', recEsc_(inr(expSum)))
-            + line('Balance in VSS = Credited - Expenditure', recEsc_(inr(credSum - expSum)), true));
+        // Uploaded = the amount of ALL advance tokens of the scheme (credited or not) dated in the same years; To be uploaded = Releases - Uploaded
+        const allAdvs = (typeof advanceCache !== 'undefined' ? advanceCache : []).filter(a => String(a.Scheme || '') === String(sc.Scheme) && (!fyKnown || yset.has(fyOf(a.Dt))));
+        const upSum = allAdvs.reduce((t, a) => t + (Number(a.Amount) || 0), 0);
+        const line = (l, v, bold, title) => '<div style="display:flex; gap:8px; font-size:12.5px; padding:1px 6px;' + (bold ? ' font-weight:700;' : '') + '"' + (title ? ' title="' + title + '"' : '') + '><span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;">' + l + '</span><span style="font-variant-numeric:tabular-nums; white-space:nowrap;">' + v + '</span></div>';
+        const head = t => '<div style="font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin:0 0 3px;">' + t + '</div>';
+        const nrec = sc.cards.reduce((t, x) => t + x.recs.length, 0);
+        const pend = (k, ok) => ok ? null : (budExtra_[k] === 'denied' ? { v: 'n/a', sub: 'Not available: ' + budExtra_[k + 'Msg'] } : { v: '...', sub: 'Loading...' });
+        // one figure per column: Approved APO | Releases | Advance | Expenditure | Balance
+        // every month-year that has an entry behind the figure ("Apr 2026, Jun 2026, Mar 2027")
+        const rangeOf = (rows, f) => { const m = new Map(); rows.forEach(r => { const d = new Date(f(r)); if (!isNaN(d)) { const k = d.getFullYear() * 12 + d.getMonth(); m.set(k, d.toLocaleString('en-GB', { month: 'short', year: 'numeric' })); } }); return m; };
+        const joinR = (x, y) => new Map([...x, ...y]);
+        const asOn = m => m && m.size ? Array.from(m.keys()).sort((p, q) => p - q).map(k => m.get(k)).join(', ') : '';
+        const tApo = rangeOf(apos, a => a.Approved_Dt), tRel = rangeOf(sc.cards, c => c.Dt), tUp = rangeOf(allAdvs, a => a.Dt), tCred = rangeOf(advs, a => a.Credited_Date || a.Dt), tExp = rangeOf(exps, e => e.Dt);
+        const stat = (label, value, sub, color, first, when) => '<div style="flex:1 1 0; min-width:112px; padding:8px 10px;' + (first ? '' : ' border-left:1px solid #D6DEEE;') + '">' +
+          '<div style="font-size:9.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); line-height:1.25; min-height:24px;">' + label + '</div>' +
+          '<div style="font-size:15px; font-weight:700; margin-top:3px; font-variant-numeric:tabular-nums; white-space:nowrap; color:' + (color || 'inherit') + ';">' + value + '</div>' +
+          '<div style="font-size:10.5px; color:var(--muted); margin-top:2px; line-height:1.25;" title="' + sub + '">' + sub + '</div>' +
+          (when ? '<div style="font-size:10.5px; font-weight:600; color:#4A5163; margin-top:1px; line-height:1.25;">' + when + '</div>' : '') + '</div>';
+        const pApo = pend('apo', loadedApo), pExp = pend('exp', loadedExp), pAdv = pend('adv', loadedAdv);
+        const balOk = loadedAdv && loadedExp, balance = credSum - expSum, pBal = balOk ? null : (pAdv || pExp);
+        const strip = '<div style="display:flex; flex-wrap:nowrap; overflow-x:auto; margin:10px 0; background:#fff; border:1px solid #D6DEEE; border-radius:8px;">' +
+          stat('Approved APO', pApo ? pApo.v : recEsc_(bInr(apoSum)), pApo ? recEsc_(pApo.sub) : (apos.length ? apos.length + ' APO &middot; to release ' + recEsc_(bInr(apoSum - sc.Amt)) : 'No APO found'), '#1F5FBF', true, pApo ? '' : asOn(tApo)) +
+          stat('Releases', recEsc_(bInr(sc.Amt)), sc.cards.length + ' quarter card' + (sc.cards.length === 1 ? '' : 's') + ' &middot; ' + nrec + ' record' + (nrec === 1 ? '' : 's'), '#1F5FBF', false, asOn(tRel)) +
+          stat('Uploaded', pAdv ? pAdv.v : recEsc_(bInr(upSum)), pAdv ? recEsc_(pAdv.sub) : 'all advances &middot; ' + allAdvs.length + ' token' + (allAdvs.length === 1 ? '' : 's'), '#6B3FA0', false, pAdv ? '' : asOn(tUp)) +
+          stat('To be uploaded', pAdv ? pAdv.v : recEsc_(bInr(sc.Amt - upSum)), pAdv ? recEsc_(pAdv.sub) : 'Releases - Uploaded', pAdv ? '' : (sc.Amt - upSum < 0 ? '#C0392B' : '#6B3FA0'), false, pAdv ? '' : asOn(joinR(tRel, tUp))) +
+          stat('Advance (all)', pAdv ? pAdv.v : recEsc_(bInr(upSum)), pAdv ? recEsc_(pAdv.sub) : allAdvs.length + ' token' + (allAdvs.length === 1 ? '' : 's'), '#B26A00', false, pAdv ? '' : asOn(tUp)) +
+          stat('Advance (credited)', pAdv ? pAdv.v : recEsc_(bInr(credSum)), pAdv ? recEsc_(pAdv.sub) : advs.length + ' token' + (advs.length === 1 ? '' : 's'), '#B26A00', false, pAdv ? '' : asOn(tCred)) +
+          stat('Advance (to be credited)', pAdv ? pAdv.v : recEsc_(bInr(upSum - credSum)), pAdv ? recEsc_(pAdv.sub) : 'all - credited', pAdv ? '' : (upSum - credSum < 0 ? '#C0392B' : '#B26A00'), false, '') +
+          stat('Expenditure', pExp ? pExp.v : recEsc_(bInr(expSum)), pExp ? recEsc_(pExp.sub) : exps.length + ' entr' + (exps.length === 1 ? 'y' : 'ies'), '#B26A00', false, pExp ? '' : asOn(tExp)) +
+          stat('Balance', pBal ? pBal.v : recEsc_(bInr(balance)), pBal ? recEsc_(pBal.sub) : 'Advance - Expenditure (in VSS)', pBal ? '' : (balance < 0 ? '#C0392B' : '#1E8449'), false, '') + '</div>';
+        // one row per month-year: the dates in that month and the amount
+        const monthRows = items => {
+          const m = new Map();
+          items.forEach(it => { const d = new Date(it.d); if (isNaN(d) || !it.v) return; const k = d.getFullYear() * 12 + d.getMonth();
+            const e = m.get(k) || { label: d.toLocaleString('en-GB', { month: 'short', year: 'numeric' }), days: new Set(), amt: 0 }; e.days.add(d.getDate()); e.amt += it.v; m.set(k, e); });
+          return Array.from(m.keys()).sort((p, q) => p - q).map(k => m.get(k));
+        };
+        const mTable = (rows, running) => {
+          if (!rows.length) return '<div style="font-size:12.5px; padding:0 6px; color:var(--muted);">None</div>';
+          let run = 0, tot = 0;
+          const cs = running ? 'minmax(80px,1fr) minmax(90px,1.6fr) repeat(2, minmax(80px,1fr))' : 'minmax(80px,1fr) minmax(90px,1.8fr) minmax(80px,1fr)';
+          const hd = (t, r) => '<span style="font-size:10.5px; color:var(--muted); font-weight:700;' + (r ? ' text-align:right;' : '') + '">' + t + '</span>';
+          const cell = (v, color, bold) => '<span style="text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;' + (color ? ' color:' + color + ';' : '') + (bold ? ' font-weight:700;' : '') + '">' + v + '</span>';
+          let h = '<div style="display:grid; grid-template-columns:' + cs + '; gap:3px 10px; font-size:12.5px; padding:0 6px;">' + hd('Month-year') + hd('Dates') + hd(running ? 'Balance' : 'Amount', true) + (running ? hd('Running', true) : '');
+          rows.forEach(r => { run += r.amt; tot += r.amt;
+            h += '<span>' + recEsc_(r.label) + '</span><span style="min-width:0;">' + Array.from(r.days).sort((a, b) => a - b).join(', ') + '</span>' + cell(recEsc_(bInr(Math.round(r.amt * 100) / 100)), r.amt < 0 ? '#C0392B' : '') + (running ? cell(recEsc_(bInr(Math.round(run * 100) / 100)), run < 0 ? '#C0392B' : '') : ''); });
+          h += '<span style="font-weight:700;">Total</span><span></span>' + cell(recEsc_(bInr(Math.round(tot * 100) / 100)), '', true) + (running ? '<span></span>' : '');
+          return h + '</div>';
+        };
+        const tbcRows = monthRows(allAdvs.map(a => ({ d: a.Dt, v: (Number(a.Amount) || 0) - (String(a.Credited || '').trim().toLowerCase() === 'yes' ? Math.min(credOf(a), Number(a.Amount) || 0) : 0) })).filter(x => x.v > 0.004));
+        const balRows = monthRows(advs.map(a => ({ d: a.Credited_Date || a.Dt, v: credOf(a) })).concat(exps.map(e => ({ d: e.Dt, v: -num(e.Amount) }))));
+        // withdrawal accounts of this scheme
+        const schAccts = (withdrawalAccountsCache || []).filter(a => String(a.Scheme || '').trim() === String(sc.Scheme).trim())
+          .sort((x, y) => String(x.Bank || '').localeCompare(String(y.Bank || '')) || String(x.Account_No || '').localeCompare(String(y.Account_No || ''), undefined, { numeric: true }));
+        const acctList = !loadedAcc ? line(budExtra_.acc === 'denied' ? 'Not available: ' + recEsc_(budExtra_.accMsg) : 'Loading...', '')
+          : schAccts.length ? schAccts.map(a => '<div style="padding:3px 6px 5px; font-size:12.5px; border-bottom:1px dashed #D6DEEE;">' +
+              '<div style="font-weight:700;">' + recEsc_(btShortBank_(a.Bank)) + ' &middot; ' + recEsc_(a.Account_No) + (a.Operating_by ? ' <span class="rec-badge" style="font-weight:600;">' + recEsc_(a.Operating_by) + '</span>' : '') + '</div>' +
+              '<div style="font-size:11.5px; color:var(--muted);">' + recEsc_([a.Name_of_Account, a.Branch, a.Place].filter(Boolean).join(' &middot; ')) + '</div>' +
+              '<div style="font-size:11.5px; color:var(--muted);">' + recEsc_([a.IFSC_Code ? 'IFSC ' + a.IFSC_Code : '', a.Drawing_Authorities ? 'Drawing: ' + a.Drawing_Authorities : ''].filter(Boolean).join(' \u00b7 ')) + '</div></div>').join('')
+          : line('No withdrawal account is linked to this scheme', '');
+        const col = (t, inner, wide) => '<div style="flex:' + (wide ? '2 1 420px' : '1 1 230px') + '; min-width:' + (wide ? '320px' : '200px') + ';">' + head(t) + inner + '</div>';
+        // head-wise: Releases, Uploaded (advances of that HOA) and To be uploaded (Releases - Uploaded)
+        const upBy = {}; allAdvs.forEach(a => { const k = String(a.Hoa || '').trim(); upBy[k] = (upBy[k] || 0) + (Number(a.Amount) || 0); });
+        const known = new Set(hoaRows.map(h => String(h.hoa).trim()));
+        const otherUp = Object.keys(upBy).filter(k => !known.has(k)).reduce((t, k) => t + upBy[k], 0);
+        const hCell = (v, bold, color) => '<span style="text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;' + (bold ? ' font-weight:700;' : '') + (color ? ' color:' + color + ';' : '') + '">' + v + '</span>';
+        const hRow = (name, rel, up, bold) => '<span style="min-width:0; overflow:hidden; text-overflow:ellipsis;' + (bold ? ' font-weight:700;' : '') + '" title="' + name + '">' + name + '</span>' +
+          hCell(rel === null ? '' : recEsc_(bInr(rel)), bold) + (loadedAdv ? hCell(recEsc_(bInr(up)), bold, '#6B3FA0') + hCell(rel === null ? '' : recEsc_(bInr(rel - up)), bold, rel - up < 0 ? '#C0392B' : '#6B3FA0') : hCell('...', bold) + hCell('...', bold));
+        const hHead = ['HOA', 'Releases', 'Uploaded', 'To be uploaded'].map((t, i) => '<span style="font-size:10.5px; color:var(--muted); font-weight:700;' + (i ? ' text-align:right;' : '') + '">' + t + '</span>').join('');
+        const hoaList = '<div style="display:grid; grid-template-columns:minmax(90px,1.6fr) repeat(3, minmax(80px,1fr)); gap:3px 10px; font-size:12.5px; padding:0 6px;">' + hHead +
+          hoaRows.map(h => hRow('HOA: ' + recEsc_(h.hoa), h.amt, upBy[String(h.hoa).trim()] || 0, false)).join('') +
+          (loadedAdv && Math.abs(otherUp) > 0.004 ? hRow('Other (no matching HOA)', null, otherUp, false) : '') +
+          hRow('Total', sc.Amt, loadedAdv ? upSum : 0, true) + '</div>';
+        const qtrList = sc.cards.map(x => line(recEsc_(x.Year) + ' &middot; ' + recEsc_(x.Qtr), recEsc_(bInr(x.Amt)))).join('');
+        const apoList = !loadedApo ? line(pApo ? recEsc_(pApo.sub) : '', '') : apos.length
+          ? apos.map(a => line(recEsc_([a.Year, a.Approval_Reference, a.Approved_Dt].filter(Boolean).join(' \u00b7 ')), recEsc_(bInr(num(a.APO_Approved_Amt))))).join('') : line('No APO found for this scheme / year', '');
+        budModels_.push({
+          scheme: sc.Scheme, years, nrec, loaded: { apo: loadedApo, exp: loadedExp, adv: loadedAdv, acc: loadedAcc }, denied: { apo: budExtra_.apo === 'denied', exp: budExtra_.exp === 'denied', adv: budExtra_.adv === 'denied', acc: budExtra_.acc === 'denied' },
+          apoSum, rel: sc.Amt, up: upSum, advAll: upSum, cred: credSum, exp: expSum, bal: credSum - expSum, nTok: allAdvs.length, nCred: advs.length, nExp: exps.length,
+          hoa: hoaRows.map(h => ({ hoa: h.hoa, rel: h.amt, up: upBy[String(h.hoa).trim()] || 0 })), otherUp,
+          qtr: sc.cards.map(x => ({ y: x.Year, q: x.Qtr, amt: x.Amt })),
+          recs: sc.cards.reduce((l, x) => l.concat(x.recs), []).map(r => ({ y: r.Year, q: r.Qtr, hoa: r.Hoa, amt: num(r.Amt), dt: r.Dt })),
+          apos: apos.map(a => ({ y: a.Year, ref: a.Approval_Reference, dt: a.Approved_Dt, amt: num(a.APO_Approved_Amt) })),
+          accts: schAccts.map(a => ({ bank: a.Bank, no: a.Account_No, op: a.Operating_by, name: a.Name_of_Account, place: [a.Branch, a.Place].filter(Boolean).join(', '), ifsc: a.IFSC_Code })),
+          tbc: tbcRows.map(r => ({ label: r.label, days: Array.from(r.days).sort((x, y) => x - y), amt: r.amt })), balRows: balRows.map(r => ({ label: r.label, days: Array.from(r.days).sort((x, y) => x - y), amt: r.amt }))
+        });
         const tc = document.createElement('div');
-        tc.className = 'rec-card rec-total'; tc.style.cssText = 'border:2px solid #1F5FBF; background:linear-gradient(180deg,#F3F7FE,#fff); cursor:default;';
+        tc.className = 'rec-card rec-total'; tc.style.cssText = 'border:2px solid #1F5FBF; background:linear-gradient(180deg,#F3F7FE,#fff); cursor:default; grid-column:1 / -1;';
         tc.title = 'Total of this scheme (use Show details for its quarter / HOA cards)';
         tc.innerHTML =
           '<div class="rec-bar"><span class="rec-dots"><i></i><i></i><i></i></span><span class="rec-bar-r"><span style="font-weight:700; letter-spacing:.06em;">TOTAL</span></span></div>' +
-          '<div class="rec-body"><div class="rec-title">' + recEsc_(sc.Scheme) + '</div><div class="rec-rule"></div>' +
-          '<div class="rec-sub">' + sc.cards.length + ' quarter card' + (sc.cards.length === 1 ? '' : 's') + ' &middot; ' + sc.cards.reduce((t, x) => t + x.recs.length, 0) + ' record' + (sc.cards.reduce((t, x) => t + x.recs.length, 0) === 1 ? '' : 's') + '</div>' +
-          '<div style="font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin:6px 0 2px;">BY HOA</div>' +
-          hoaRows.map(h => '<div style="display:flex; gap:8px; font-size:12.5px; padding:1px 6px;"><span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;" title="' + recEsc_(h.hoa) + '">HOA: ' + recEsc_(h.hoa) + '</span><span style="font-variant-numeric:tabular-nums; white-space:nowrap;">' + recEsc_(inr(h.amt)) + '</span></div>').join('') +
-          '<div style="font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin:8px 0 2px;">BY QUARTER</div>' +
-          sc.cards.map(x => '<div style="display:flex; gap:8px; font-size:12.5px; padding:1px 6px;"><span style="flex:1;">' + recEsc_(x.Year) + ' &middot; ' + recEsc_(x.Qtr) + '</span><span style="font-variant-numeric:tabular-nums;">' + recEsc_(inr(x.Amt)) + '</span></div>').join('') +
-          apoHtml + expHtml + vssHtml +
-          '<div class="rec-amt">' + recEsc_(inr(sc.Amt)) + '</div>' + (tw ? '<div class="rec-words">' + recEsc_(tw) + '</div>' : '') +
-          '<div class="rec-meta"><span class="rec-badge">' + recEsc_(years) + '</span><span class="rec-date">' + recEsc_(sc.Dt) + '</span></div>' +
-          '<div style="margin-top:10px;"><button type="button" class="action" style="padding:4px 12px; font-size:12px;" data-s="' + recEsc_(sc.Scheme) + '" onclick="event.stopPropagation(); toggleBudgetDetail_(this.dataset.s)">' +
+          '<div class="rec-body"><div class="rec-title">' + recEsc_(sc.Scheme) + '</div><div class="rec-rule"></div>' + strip +
+          (tw ? '<div class="rec-words" style="margin-bottom:8px;">Releases: ' + recEsc_(tw) + '</div>' : '') +
+          '<div style="display:flex; flex-wrap:wrap; gap:14px 28px;">' + col('BY HOA', hoaList, true) + col('BY QUARTER', qtrList) + col('APPROVED APO', apoList) + col('ACCOUNTS (' + (loadedAcc ? schAccts.length : '...') + ')', acctList) + '</div>' +
+          '<div style="display:flex; flex-wrap:wrap; gap:14px 28px; margin-top:14px;">' +
+            col('ADVANCE (TO BE CREDITED) - MONTH-WISE', !loadedAdv ? line(pAdv ? recEsc_(pAdv.sub) : '', '') : mTable(tbcRows, false), true) +
+            col('BALANCE (ADVANCE CREDITED - EXPENDITURE) - MONTH-WISE', !(loadedAdv && loadedExp) ? line(pBal ? recEsc_(pBal.sub) : '', '') : mTable(balRows, true), true) + '</div>' +
+          '<div class="rec-meta" style="margin-top:10px;"><span class="rec-badge">' + recEsc_(years) + '</span><span class="rec-date">' + recEsc_(sc.Dt) + '</span>' +
+          '<button type="button" class="action" style="padding:4px 12px; font-size:12px; margin-left:auto;" data-s="' + recEsc_(sc.Scheme) + '" onclick="event.stopPropagation(); toggleBudgetDetail_(this.dataset.s)">' +
             (budExpanded_.has(String(sc.Scheme)) ? 'Hide details' : 'Show details (' + sc.cards.length + ' card' + (sc.cards.length === 1 ? '' : 's') + ')') + '</button></div></div>';
         box.appendChild(tc);
         return;
@@ -14592,7 +14742,7 @@
         '<div class="rec-body">' +
           '<div class="rec-title">' + recEsc_(g.Scheme) + '</div><div class="rec-rule"></div>' +
           (multi ? '<div class="rec-hoas"></div>' : '<div class="rec-sub">HOA: ' + recEsc_(first.Hoa) + '</div>') +
-          '<div class="rec-amt">' + recEsc_(inr(g.Amt)) + '</div>' +
+          '<div class="rec-amt">' + recEsc_(bInr(g.Amt)) + '</div>' +
           (words ? '<div class="rec-words">' + recEsc_(words) + '</div>' : '') +
           '<div class="rec-meta"><span class="rec-badge">' + recEsc_(g.Year) + '</span><span class="rec-badge q">' + recEsc_(g.Qtr) + '</span><span class="rec-date">' + recEsc_(g.Dt) + '</span></div>' +
         '</div>';
@@ -14602,7 +14752,7 @@
           const line = document.createElement('div');
           line.style.cssText = 'display:flex; align-items:center; gap:8px; padding:3px 6px; margin:2px 0; border-radius:6px; font-size:12.5px; cursor:pointer;';
           line.className = 'rec-hoa'; line.dataset.id = String(r.Budget_id); line.title = 'Edit Budget /' + r.Budget_id;
-          line.innerHTML = '<span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;">HOA: ' + recEsc_(r.Hoa) + '</span><span style="font-variant-numeric:tabular-nums; white-space:nowrap;">' + recEsc_(inr(r.Amt)) + '</span>';
+          line.innerHTML = '<span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;">HOA: ' + recEsc_(r.Hoa) + '</span><span style="font-variant-numeric:tabular-nums; white-space:nowrap;">' + recEsc_(bInr(r.Amt)) + '</span>';
           line.onmouseenter = () => { line.style.background = 'rgba(31,95,191,0.09)'; }; line.onmouseleave = () => { line.style.background = ''; };
           line.onclick = e => { e.stopPropagation(); loadBudgetIntoForm(r); };
           line.appendChild(makeKebab_(r, x => rowMenuItems_('budget', x)));
@@ -14641,13 +14791,14 @@
   applyBudgetLayout_();
 
   // The Total card also shows the scheme's approved APO and its expenditure, so make sure those lists are loaded.
-  const budExtra_ = { apo: '', exp: '', adv: '', apoMsg: '', expMsg: '', advMsg: '' };          // state: '', 'loading', 'ok' or 'denied'
+  const budExtra_ = { apo: '', exp: '', adv: '', acc: '', apoMsg: '', expMsg: '', advMsg: '', accMsg: '' };          // state: '', 'loading', 'ok' or 'denied'
   function ensureBudgetExtras_() {
     const failMsg = e => String((e && e.message) || e || 'not available').replace(/^Error:\s*/, '');
     const jobs = [
       ['apo', 'apo', 'getApoData', rows => { apoCache = rows || []; }],
       ['exp', 'expenditure', 'getExpenditureData', rows => { expenditureCache = rows || []; }],
-      ['adv', 'advance', 'getAdvanceData', rows => { advanceCache = rows || []; }]
+      ['adv', 'advance', 'getAdvanceData', rows => { advanceCache = rows || []; }],
+      ['acc', 'waAccounts', 'getWithdrawalAccountsData', rows => { withdrawalAccountsCache = rows || []; }]
     ];
     jobs.forEach(([k, flag, fn, store]) => {
       if (loadedTabs[flag] || budExtra_[k] === 'loading' || budExtra_[k] === 'denied') return;

@@ -111,7 +111,11 @@ td.avail{color:#2d6a2d}td.dist{color:#e67e22}td.bal{color:#1565c0}
 .ckdd{position:relative}.ckdd summary{cursor:pointer;padding:7px 9px;border:1px solid #b5d4b5;border-radius:6px;font-size:13px;background:#fff;color:#1a2e1a}
 .ckdd>div{position:absolute;z-index:20;background:#fff;border:1px solid #b5d4b5;border-radius:6px;padding:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);min-width:170px}
 .ckdd label{display:block;font-size:13px;color:#1a2e1a;margin:0;padding:2px 0}.ckdd input{width:auto;margin-right:6px}
-.abs-order{list-style-position:inside;padding:0;margin:0 0 10px;max-width:340px;font-size:13px}.abs-order li{display:flex;align-items:center;gap:6px;padding:2px 0}.abs-order li label{flex:1;display:flex;align-items:center;gap:6px;margin:0;font-size:13px}.abs-order li input{width:auto}.abs-mv{padding:1px 8px!important;font-size:11px!important}.abs-order li:first-child .abs-mv:first-of-type,.abs-order li:last-child .abs-mv:last-of-type{opacity:.35;pointer-events:none}
+.pl-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}.pl-photos figure{margin:0;border:1px solid #d4e8d4;border-radius:8px;overflow:hidden;background:#f6fbf6}.pl-photos img{display:block;width:100%;height:190px;object-fit:cover;cursor:zoom-in}.pl-photos figcaption{padding:6px 8px;font-size:12px}.pl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr));gap:14px;align-items:start}.pl-card h3{color:#2d6a2d;font-size:15px;margin-bottom:8px}.pl-card p,.pl-card li{font-size:13px;line-height:1.55}.pl-card ul{padding-left:18px}.pl-card table th{width:130px;text-align:left}
+.fig-sw{position:relative;display:inline-block;width:46px;height:24px;margin:0}.fig-sw input{opacity:0;width:100%;height:100%;margin:0;position:absolute;z-index:1;cursor:pointer}.fig-sw span{position:absolute;inset:0;background:#b8c4b8;border-radius:24px;transition:.2s}.fig-sw span:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}.fig-sw input:checked+span{background:#2d6a2d}.fig-sw input:checked+span:before{transform:translateX(22px)}.fig-sw input:focus-visible+span{outline:2px solid #1565c0;outline-offset:2px}
+.abs-order li{flex-wrap:wrap;border-bottom:1px dashed #d4e8d4}.abs-order li label.abs-w{flex:0 0 auto}.abs-order select.abs-ori{width:auto;padding:2px 6px;font-size:12px}.abs-order li label:first-child{min-width:170px}
+.abs th .hw{display:block;white-space:nowrap}
+.abs-order{list-style-position:inside;padding:0;margin:0 0 10px;max-width:660px;font-size:13px}.abs-order li{display:flex;align-items:center;gap:6px;padding:2px 0}.abs-order li label{flex:1;display:flex;align-items:center;gap:6px;margin:0;font-size:13px}.abs-order li input{width:auto}.abs-mv{padding:1px 8px!important;font-size:11px!important}.abs-order li:first-child .abs-mv:first-of-type,.abs-order li:last-child .abs-mv:last-of-type{opacity:.35;pointer-events:none}
 .sum-grid th.sl,.sum-grid td.sl,.abs th.sl,.abs td.sl{width:1%;text-align:center;white-space:nowrap}
 #rpt-sum-sec .sum-grid{grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr))}#rpt-sum-sec .abs th,#rpt-sum-sec .abs td{padding-left:7px;padding-right:7px}
 .abs{border:1px solid #d4e8d4;border-radius:8px;padding:8px 12px;margin-bottom:10px;min-width:0}.abs>summary{cursor:pointer;font-weight:600;color:#2d6a2d;font-size:14px}.abs[open]>summary{margin-bottom:8px}.sum-grid>.abs{margin-bottom:0}
@@ -193,6 +197,7 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
   <div class="tabs">
     <button class="tab active" onclick="showTab('public',this)">📊 Public View</button>
     <button class="tab" onclick="showTab('charts',this)">📈 Charts</button>
+    <button class="tab" onclick="showTab('plant',this)">🌿 Plant Profile</button>
     <button class="tab" id="tab-report" style="display:none" onclick="showTab('report',this)">📑 Reports</button>
     <button class="tab" onclick="showTab('enquiry',this)">📝 Farmer Enquiry</button>
     <button class="tab admin-only" onclick="showTab('admin',this)">🔧 Admin</button>
@@ -247,6 +252,18 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
       <div class="section"><h3>🏕️ Nursery-wise Balance</h3>
         <div class="chart-box"><h4>Balance Stock per Nursery</h4><canvas id="chart-nursery" height="180"></canvas></div>
       </div>
+    </div>
+    <div id="plant-view" style="display:none">
+      <div class="section">
+        <h2 style="color:#2d6a2d;margin-bottom:10px">🌿 Plant Profile</h2>
+        <div class="fg" style="max-width:420px"><label>Select Species</label><select id="pl-select" onchange="plShow(this.value)"></select></div>
+        <div id="pl-admin" style="display:none;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="abtn ab" onclick="plEdit(false)">✏️ Edit this profile</button>
+          <button class="abtn ag" onclick="plEdit(true)">➕ New species</button>
+        </div>
+      </div>
+      <div class="section" id="pl-editor" style="display:none"></div>
+      <div id="pl-body"></div>
     </div>
     <div id="contact-view" style="display:none">
       <div class="section admin-only" id="ct-form-wrap" style="display:none">
@@ -369,11 +386,17 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
         <p class="note">Abstract groups the selected fields and sums the measures. Detailed lists every record with the selected fields.</p>
       </div>
       <div class="section" id="rpt-sum-sec">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:13px;font-weight:600;color:#2d6a2d">
+          <span>Show figures in:</span><span>Numbers</span>
+          <label class="fig-sw"><input type="checkbox" id="fig-lakh" role="switch" aria-label="Show figures in lakhs" onchange="figSet(this.checked)"><span></span></label>
+          <span>Lakhs (0.000)</span><span id="fig-note" class="note" style="margin:0;display:none">1 lakh = 1,00,000</span>
+        </div>
         <h3>📋 Abstract – Category, Nursery, Scheme, Species, Bag Size &amp; Month wise Totals</h3>
         <p class="rpt-meta" id="rpt-sum-note">Follows the Date and field filters above.</p>
         <div style="border:1px solid #d4e8d4;border-radius:8px;padding:10px 12px;margin-bottom:10px;background:#f6fbf6">
           <div style="font-weight:600;color:#2d6a2d;font-size:13px;margin-bottom:6px">Select abstracts to export or print</div>
-          <ol class="abs-order"><li><label><input type="checkbox" class="abs-pick" value="0" checked>Category-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="1" checked>Nursery-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="2" checked>Scheme-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="3" checked>Scheme &amp; Bag Size</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="4" checked>Bag Size &amp; Scheme</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="5" checked>Species-wise</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="6" checked>Month-wise Distribution</label><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li></ol>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button type="button" class="abtn ao abs-mv" onclick="absWrapAll(true)">Wrap all headings</button><button type="button" class="abtn ao abs-mv" onclick="absWrapAll(false)">No wrap for all</button></div>
+          <ol class="abs-order"><li><label><input type="checkbox" class="abs-pick" value="0" checked>Category-wise</label><label class="abs-w"><input type="checkbox" class="abs-wrap">Wrap headings</label><select class="abs-ori" aria-label="Page orientation"><option value="">Orientation: default</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="1" checked>Nursery-wise</label><label class="abs-w"><input type="checkbox" class="abs-wrap">Wrap headings</label><select class="abs-ori" aria-label="Page orientation"><option value="">Orientation: default</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="2" checked>Scheme-wise</label><label class="abs-w"><input type="checkbox" class="abs-wrap">Wrap headings</label><select class="abs-ori" aria-label="Page orientation"><option value="">Orientation: default</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="3" checked>Scheme &amp; Bag Size</label><label class="abs-w"><input type="checkbox" class="abs-wrap">Wrap headings</label><select class="abs-ori" aria-label="Page orientation"><option value="">Orientation: default</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="4" checked>Bag Size &amp; Scheme</label><label class="abs-w"><input type="checkbox" class="abs-wrap">Wrap headings</label><select class="abs-ori" aria-label="Page orientation"><option value="">Orientation: default</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="5" checked>Species-wise</label><label class="abs-w"><input type="checkbox" class="abs-wrap">Wrap headings</label><select class="abs-ori" aria-label="Page orientation"><option value="">Orientation: default</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li><li><label><input type="checkbox" class="abs-pick" value="6" checked>Month-wise Distribution</label><label class="abs-w"><input type="checkbox" class="abs-wrap">Wrap headings</label><select class="abs-ori" aria-label="Page orientation"><option value="">Orientation: default</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select><button type="button" class="abtn ao abs-mv" onclick="absMove(this,-1)" title="Move up" aria-label="Move up">▲</button><button type="button" class="abtn ao abs-mv" onclick="absMove(this,1)" title="Move down" aria-label="Move down">▼</button></li></ol>
           <div class="form-grid" style="margin-bottom:10px"><div class="fg"><label>Page layout</label><select id="ap-flow"><option value="cont" selected>Continuous</option><option value="each">Each abstract on a new page</option></select></div><div class="fg"><label>Paper size</label><select id="ap-paper"><option value="A4" selected>A4</option><option value="A3">A3</option><option value="Letter">Letter</option><option value="Legal">Legal</option></select></div><div class="fg"><label>Orientation</label><select id="ap-orient"><option value="portrait" selected>Portrait</option><option value="landscape">Landscape</option></select></div><div class="fg"><label>Margins</label><select id="ap-margin"><option value="10">Narrow (10 mm)</option><option value="15" selected>Normal (15 mm)</option><option value="25">Wide (25 mm)</option></select></div><div class="fg"><label>Table width</label><select id="ap-width"><option value="fit" selected>Fit to content</option><option value="full">Full page width</option></select></div><div class="fg"><label>Font</label><select id="ap-font"><option value="Arial" selected>Arial</option><option value="Calibri">Calibri</option><option value="Times New Roman">Times New Roman</option><option value="Georgia">Georgia</option><option value="Verdana">Verdana</option><option value="Tahoma">Tahoma</option><option value="Courier New">Courier New</option></select></div><div class="fg"><label>Font size</label><select id="ap-size"><option value="8">8 pt</option><option value="9">9 pt</option><option value="10" selected>10 pt</option><option value="11">11 pt</option><option value="12">12 pt</option><option value="14">14 pt</option><option value="16">16 pt</option></select></div></div>
           <div style="display:flex;flex-wrap:wrap;gap:8px">
             <button type="button" class="abtn ag" onclick="absExcel()">📗 Excel</button>
@@ -383,7 +406,7 @@ body.restricted input,body.restricted textarea,body.restricted select{-webkit-us
             <button type="button" class="abtn ao" onclick="absPrint()">🖨 Print</button>
             <button type="button" class="abtn ao" onclick="rhOpen()">🖋 Header, Date &amp; Time</button>
           </div>
-          <p class="note" style="margin:6px 0 0">Your selection, order and page settings are remembered in this browser. Use ▲ ▼ to set the order. Page settings apply to Excel, Word, PDF and Print; CSV uses the order only. For PDF, choose “Save as PDF” in the print window, with Scale at 100%. Margins are set here, so leave the print window’s Margins at Default or None.</p>
+          <p class="note" style="margin:6px 0 0">Your selection, order and page settings are remembered in this browser. Use ▲ ▼ to set the order. Page settings apply to Excel, Word, PDF and Print; CSV uses the order only. “Wrap headings” splits headings of two or more words (single words such as “Available” stay on one line). “Orientation” on a row overrides the Orientation setting below for that abstract; a change of orientation starts a new page (a new sheet in Excel). For PDF, choose “Save as PDF” in the print window, with Scale at 100%. Margins are set here, so leave the print window’s Margins at Default or None.</p>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:10px"><button type="button" class="abtn ao" style="padding:4px 12px;font-size:12px" onclick="absAll(true)">▼ Expand all</button><button type="button" class="abtn ao" style="padding:4px 12px;font-size:12px" onclick="absAll(false)">▲ Collapse all</button></div>
         <div class="sum-grid" style="margin-bottom:10px">
@@ -798,6 +821,15 @@ function toggleLang(){
 
 let records=[],nextId=1,enquiries=[],eqId=1,charts={};
 function fmt(n){return Number(n).toLocaleString('en-IN');}
+// report figures: whole numbers, or lakhs with 3 decimals (chosen with the slider in Reports)
+let figLakh=false;try{figLakh=localStorage.getItem('nursery_fig_lakh')==='1';}catch(e){}
+function fq(n){return figLakh?(Number(n)/100000).toLocaleString('en-IN',{minimumFractionDigits:3,maximumFractionDigits:3}):fmt(n);}
+function figSync(){const c=document.getElementById('fig-lakh');if(!c)return;c.checked=figLakh;document.getElementById('fig-note').style.display=figLakh?'inline':'none';}
+function figSet(on){
+  figLakh=!!on;try{localStorage.setItem('nursery_fig_lakh',on?'1':'0');}catch(e){}
+  figSync();refreshWise();rhPreview();
+  if(rptRows.length)generateReport();
+}
 function statusBadge(bal,avail){
   const te=lang==='te';
   if(bal<=0)return'<span class="badge badge-out">'+(te?'స్టాక్ లేదు':'Out of Stock')+'</span>';
@@ -918,7 +950,7 @@ let tipRows=[]; // records behind the summary tables, used by the hover popups
   const FLAGS=[['Fruit','Fruit','పండ్లు','#e65100','#fff3e0'],['Flowering','Flower','పూలు','#ad1457','#fce4ec'],['Shade & Wood','Shade','నీడ','#1b5e20','#dcedc8']];
   // a flag is shown only when that category has balance in the given records
   const flags=(rs,te,withBal)=>FLAGS.map(f=>{const b=rs.reduce((a,r)=>r.category===f[0]?a+r.available-r.distributed:a,0);
-    return b>0?'<span style="display:inline-block;white-space:nowrap;margin-right:4px;padding:1px 6px;border-radius:9px;font-size:10px;font-weight:700;color:'+f[3]+';background:'+f[4]+'">'+(te?f[2]:f[1])+(withBal?': '+fmt(b):'')+'</span>':'';}).join('');
+    return b>0?'<span style="display:inline-block;white-space:nowrap;margin-right:4px;padding:1px 6px;border-radius:9px;font-size:10px;font-weight:700;color:'+f[3]+';background:'+f[4]+'">'+(te?f[2]:f[1])+(withBal?': '+fq(b):'')+'</span>':'';}).join('');
   let tip=null;
   const get=()=>tip||(tip=Object.assign(document.body.appendChild(document.createElement('div')),{className:'sp-tip'}));
   const place=e=>{const t=get(),pad=14;let x=e.clientX+pad,y=e.clientY+pad;
@@ -937,11 +969,11 @@ let tipRows=[]; // records behind the summary tables, used by the hover popups
       const l=Object.entries(m).sort((a,b)=>b[1]-a[1]||String(a[0]).localeCompare(String(b[0])));
       const rest=l.slice(max);
       return '<table style="align-self:flex-start"><tr><td><strong>'+NAMES[d][te?1:0]+' ('+l.length+')</strong></td><td class="num"><strong>'+(te?'నిల్వ':'Balance')+'</strong></td></tr>'
-        +l.slice(0,max).map(([n,b])=>{const f=withFlags?flags(rows.filter(r=>String(r[d]||'—')===n),te):'';return '<tr><td>'+esc(n)+(f?'<span style="margin-left:6px">'+f+'</span>':'')+'</td><td class="num">'+fmt(b)+'</td></tr>';}).join('')
-        +(rest.length?'<tr><td><em>+ '+rest.length+' '+(te?'ఇంకా':'more')+'</em></td><td class="num">'+fmt(rest.reduce((a,x)=>a+x[1],0))+'</td></tr>':'')+'</table>';
+        +l.slice(0,max).map(([n,b])=>{const f=withFlags?flags(rows.filter(r=>String(r[d]||'—')===n),te):'';return '<tr><td>'+esc(n)+(f?'<span style="margin-left:6px">'+f+'</span>':'')+'</td><td class="num">'+fq(b)+'</td></tr>';}).join('')
+        +(rest.length?'<tr><td><em>+ '+rest.length+' '+(te?'ఇంకా':'more')+'</em></td><td class="num">'+fq(rest.reduce((a,x)=>a+x[1],0))+'</td></tr>':'')+'</table>';
     };
     const t=get();
-    t.innerHTML='<h5>'+esc(val)+' — '+(te?'మొత్తం నిల్వ':'Total balance')+': '+fmt(rows.reduce((a,r)=>a+r.available-r.distributed,0))+'</h5>'+(flagged?'<div style="margin-bottom:6px">'+flags(rows,te,true)+'</div>':'')+'<div style="display:flex;gap:18px;flex-direction:'+(narrow?'column':'row')+'">'+dims.map(list).join('')+'</div>';
+    t.innerHTML='<h5>'+esc(val)+' — '+(te?'మొత్తం నిల్వ':'Total balance')+': '+fq(rows.reduce((a,r)=>a+r.available-r.distributed,0))+'</h5>'+(flagged?'<div style="margin-bottom:6px">'+flags(rows,te,true)+'</div>':'')+'<div style="display:flex;gap:18px;flex-direction:'+(narrow?'column':'row')+'">'+dims.map(list).join('')+'</div>';
     t.style.display='block';place(e);
   };
   const hide=()=>{if(tip)tip.style.display='none';};
@@ -958,7 +990,7 @@ function renderPairAbstract(data,te,k1,k2,id,hid,title){
   if(!data.length){el.innerHTML='<tr><td colspan="7" class="empty">No records found.</td></tr>';return;}
   const m={};data.forEach(r=>{const x=r[k1]||'—',y=r[k2]||'—',z=r.nursery||'—',g=m[x]||(m[x]={}),n=g[y]||(g[y]={}),o=n[z]||(n[z]={a:0,d:0});o.a+=r.available;o.d+=r.distributed;});
   const sort=o=>Object.keys(o).sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
-  const nums=(a,d)=>`<td class="num avail">${fmt(a)}</td><td class="num dist">${fmt(d)}</td><td class="num bal">${fmt(a-d)}</td>`;
+  const nums=(a,d)=>`<td class="num avail">${fq(a)}</td><td class="num dist">${fq(d)}</td><td class="num bal">${fq(a-d)}</td>`;
   const span=(v,n,bold)=>`<td rowspan="${n}" style="vertical-align:top${bold?';font-weight:600':''}">${esc(v)}</td>`;
   let ta=0,td=0,html='',sl=0;
   sort(m).forEach(x=>{
@@ -967,7 +999,7 @@ function renderPairAbstract(data,te,k1,k2,id,hid,title){
       html+=`<tr><td class="sl">${++sl}</td>`+(i||j?'':span(x,count,true))+(j?'':span(y,zs.length))+`<td>${esc(z)}</td>${nums(o.a,o.d)}</tr>`;});});
     html+=`<tr style="font-weight:700;background:#f1f8e9"><td colspan="4">${esc(x)} — ${te?'ఉప మొత్తం':'Subtotal'}</td>${nums(a,d)}</tr>`;ta+=a;td+=d;
   });
-  el.innerHTML=html+`<tr class="sum-tot" style="font-weight:700;background:#e8f5e9;border-top:2px solid #2d6a2d"><td colspan="4">${te?'మొత్తం':'Grand Total'}</td><td class="num">${fmt(ta)}</td><td class="num">${fmt(td)}</td><td class="num">${fmt(ta-td)}</td></tr>`;
+  el.innerHTML=html+`<tr class="sum-tot" style="font-weight:700;background:#e8f5e9;border-top:2px solid #2d6a2d"><td colspan="4">${te?'మొత్తం':'Grand Total'}</td><td class="num">${fq(ta)}</td><td class="num">${fq(td)}</td><td class="num">${fq(ta-td)}</td></tr>`;
 }
 function renderSchemeBag(data,te){
   renderPairAbstract(data,te,'scheme','bagSize','sum-schemebag','sw-sb-h',te?'పథకం & బ్యాగ్ సైజు వారీగా':'Scheme & Bag Size wise Abstract');
@@ -979,13 +1011,13 @@ function renderSpeciesGroups(data,te){
   const TE={'Fruit':'పండ్ల జాతులు','Flowering':'పూల జాతులు','Shade & Wood':'నీడ & కలప జాతులు','Unclassified':'వర్గీకరించనివి'};
   // the Unclassified box appears only when needed, so that no stock is left out
   const cats=SP_CATS.concat(data.some(r=>r.category===SP_OTHER)?[SP_OTHER]:[]);
-  const nums=(a,d)=>`<td class="num avail">${fmt(a)}</td><td class="num dist">${fmt(d)}</td><td class="num bal">${fmt(a-d)}</td>`;
+  const nums=(a,d)=>`<td class="num avail">${fq(a)}</td><td class="num dist">${fq(d)}</td><td class="num bal">${fq(a-d)}</td>`;
   box.innerHTML=cats.map(c=>{
     const m={};let ta=0,td=0;
     data.filter(r=>r.category===c).forEach(r=>{const k=r.species||'—',o=m[k]||(m[k]={a:0,d:0});o.a+=r.available;o.d+=r.distributed;ta+=r.available;td+=r.distributed;});
     const rows=Object.keys(m).sort((x,y)=>x.localeCompare(y)).map((k,i)=>`<tr data-k="${encodeURIComponent(k)}"><td class="sl">${i+1}</td><td>${esc(k)}</td>${nums(m[k].a,m[k].d)}</tr>`).join('');
     return `<div class="table-wrap"><table><thead><tr><th class="sl">Sl.No</th><th>${esc(te?TE[c]:c)} (${Object.keys(m).length})</th><th class="num">Available</th><th class="num">Distributed</th><th class="num">Balance</th></tr></thead><tbody>`
-      +(rows?rows+`<tr class="sum-tot"><td colspan="2">${te?'మొత్తం':'Total'}</td><td class="num">${fmt(ta)}</td><td class="num">${fmt(td)}</td><td class="num">${fmt(ta-td)}</td></tr>`:'<tr><td colspan="5" class="empty">No records found.</td></tr>')+'</tbody></table></div>';
+      +(rows?rows+`<tr class="sum-tot"><td colspan="2">${te?'మొత్తం':'Total'}</td><td class="num">${fq(ta)}</td><td class="num">${fq(td)}</td><td class="num">${fq(ta-td)}</td></tr>`:'<tr><td colspan="5" class="empty">No records found.</td></tr>')+'</tbody></table></div>';
   }).join('');
 }
 function renderWiseTotals(data){
@@ -996,8 +1028,8 @@ function renderWiseTotals(data){
     const el=document.getElementById(id);if(!el)return;
     if(!ks.length){el.innerHTML='<tr><td colspan="5" class="empty">No records found.</td></tr>';return;}
     let ta=0,td=0;
-    const rows=ks.map((k,i)=>{const a=m[k].a,d=m[k].d;ta+=a;td+=d;return `<tr data-k="${encodeURIComponent(k)}"><td class="sl">${i+1}</td><td>${esc(k)}</td><td class="num avail">${fmt(a)}</td><td class="num dist">${fmt(d)}</td><td class="num bal">${fmt(a-d)}</td></tr>`;}).join('');
-    el.innerHTML=rows+`<tr class="sum-tot"><td colspan="2">${te?'మొత్తం':'Total'}</td><td class="num">${fmt(ta)}</td><td class="num">${fmt(td)}</td><td class="num">${fmt(ta-td)}</td></tr>`;
+    const rows=ks.map((k,i)=>{const a=m[k].a,d=m[k].d;ta+=a;td+=d;return `<tr data-k="${encodeURIComponent(k)}"><td class="sl">${i+1}</td><td>${esc(k)}</td><td class="num avail">${fq(a)}</td><td class="num dist">${fq(d)}</td><td class="num bal">${fq(a-d)}</td></tr>`;}).join('');
+    el.innerHTML=rows+`<tr class="sum-tot"><td colspan="2">${te?'మొత్తం':'Total'}</td><td class="num">${fq(ta)}</td><td class="num">${fq(td)}</td><td class="num">${fq(ta-td)}</td></tr>`;
   };
   tipRows=data;
   renderSchemeBag(data,te);
@@ -1258,7 +1290,7 @@ function buildCharts(){
 }
 function showTab(tab,btn){
   if(tab==='report'&&!canReport()){tab='public';btn=document.querySelector('.tab');}
-  ['public-view','charts-view','report-view','contact-view','avenue-view','enquiry-view','admin-view','eq-admin-view','dist-entry-view'].forEach(id=>document.getElementById(id).style.display='none');
+  ['public-view','charts-view','plant-view','report-view','contact-view','avenue-view','enquiry-view','admin-view','eq-admin-view','dist-entry-view'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById(tab+'-view').style.display='block';
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
@@ -1270,6 +1302,7 @@ function showTab(tab,btn){
   document.body.classList.remove('printing-report');
   if(tab==='report'){initReport();mdLoad();}
   if(tab==='contact')initContacts();
+  if(tab==='plant')plInit();
   if(tab==='avenue')initAvenue();
 }
 </script>
@@ -2167,9 +2200,10 @@ function rptSumData(){
   const flt=RPT_DIMS.filter(d=>d[0]!=='distDate'&&byId('rf-'+d[0])&&byId('rf-'+d[0]).value).map(d=>[d,byId('rf-'+d[0]).value]);
   return records.filter(r=>flt.every(([d,v])=>String(r[d[0]])===v)&&(!from||r.distDate>=from)&&(!to||r.distDate<=to));
 }
-function refreshWise(){if(canReport()){renderWiseTotals(rptSumData());renderMonthDist();}}
+function refreshWise(){if(canReport()){renderWiseTotals(rptSumData());renderMonthDist();absWrapScreen();}}
 document.addEventListener('change',e=>{if(e.target&&/^rf-/.test(e.target.id||''))refreshWise();});
 function initReport(){
+  figSync();
   if(!initReport.prefs){initReport.prefs=true;absRestore();}
   spApply();spRenderMap();
   if(!initReport.loaded){initReport.loaded=true;spLoad().then(()=>{initReport();});}
@@ -2215,14 +2249,16 @@ function generateReport(){
   const tot=head.map((h,i)=>i<nd?'':rows.reduce((a,r)=>a+(Number(r[i])||0),0));
   if(type==='abstract'&&nd>0)tot[0]='Grand Total'; else if(nd>0)tot[0]='Total';
   rptHead=head;rptRows=rows.concat(rows.length?[tot]:[]);rptTitle=(type==='detailed'?'Detailed':'Abstract')+'_Report';
-  const fmtc=(v,i)=>i>=nd&&typeof v==='number'?fmt(v):esc(v);
+  const fmtc=(v,i)=>i>=nd&&typeof v==='number'?(head[i]==='Records'?fmt(v):fq(v)):esc(v);
   const metaTxt=[...flt.map(([d,v])=>d[1]+': '+v),from?'From: '+from:'',to?'To: '+to:''].filter(Boolean).join(' | ');
   const hdrHtml=rptHeaderHtml(type,metaTxt);byId('rpt-out').innerHTML=(rows.length?'<div class="table-wrap"><table><thead><tr class="rpt-hdr"><th colspan="'+head.length+'">'+hdrHtml+'</th></tr><tr>'+head.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((v,i)=>'<td'+(i>=nd?' class="num"':'')+'>'+fmtc(v,i)+'</td>').join('')+'</tr>').join('')+'</tbody><tfoot><tr>'+tot.map((v,i)=>'<td'+(i>=nd?' class="num"':'')+'>'+fmtc(v,i)+'</td>').join('')+'</tr></tfoot></table></div>':hdrHtml+'<p class="empty">No records match the selection.</p>');
 }
 function rptCSV(){
   if(!rptRows.length){alert('Generate a report first.');return;}
   const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
-  const csv=[rptHead,...rptRows].map(r=>r.map(q).join(',')).join('\n');
+  const nd=rptHead.findIndex(h=>['Records','Available','Distributed','Balance'].includes(h));
+  const val=(v,i)=>figLakh&&i>=nd&&typeof v==='number'&&rptHead[i]!=='Records'?(v/100000).toFixed(3):v;
+  const csv=[figLakh?rptHead.map(h=>['Available','Distributed','Balance'].includes(h)?h+' (lakhs)':h):rptHead,...rptRows.map(r=>r.map(val))].map(r=>r.map(q).join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download=rptTitle+'_'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();
 }
 
@@ -2375,6 +2411,7 @@ function rhStamp(h){
 function rhPreview(){const e=byId('rh-preview');if(e)e.innerHTML=rptHeaderHtml(byId('rpt-type').value,'Selected filters',byId('rh-title').value.trim()?'':undefined);}
 function rhOpen(){const b=byId('rh-box');b.open=true;rhPreview();b.scrollIntoView({behavior:'smooth',block:'center'});}
 function rptHeaderHtml(type,metaTxt,defTitle){
+  if(figLakh)metaTxt=(metaTxt?metaTxt+' | ':'')+'Figures in lakhs';
   const h=rhRead(),al=['left','center','right'].includes(h.align)?h.align:'center';
   const title=h.title||defTitle||((type==='detailed'?'Detailed':'Abstract')+' Report');
   return '<div style="text-align:'+al+';color:#111">'
@@ -2385,7 +2422,7 @@ function rptHeaderHtml(type,metaTxt,defTitle){
     +(h.l3?'<div style="font-size:12px">'+esc(h.l3)+'</div>':'')
     +'<div style="font-size:15px;font-weight:700;margin-top:4px;color:#2d6a2d">'+esc(title)+'</div>'
     +(h.dtpos==='below'&&rhStamp(h)?'<div style="font-size:11px;color:#333;margin-top:2px">'+esc(rhStamp(h))+'</div>':'')
-    +(h.meta?'<div style="font-size:11px;color:#555;margin-top:2px">'+esc(metaTxt)+'</div>':'')
+    +(h.meta||figLakh?'<div style="font-size:11px;color:#555;margin-top:2px">'+esc(h.meta?metaTxt:'Figures in lakhs')+'</div>':'')
     +'</div>';
 }
 function printReport(){
@@ -2446,7 +2483,8 @@ function renderMonthDist(){
     ...(flt.length?[]:[['Beneficiaries',o=>o.bens]]),
     ...(lineOk?[['Seedlings (Batch Entry)',o=>o.entry]]:[]),
     ...cats.map(c=>[c,o=>o.cat[c]||0]),['Total Selected',o=>o.sel]];
-  const cells=(vals)=>vals.map((v,i)=>'<td class="num'+(i===vals.length-1?' bal':'')+'">'+fmt(v)+'</td>').join('');
+  const counts=flt.length?1:2;
+  const cells=(vals)=>vals.map((v,i)=>'<td class="num'+(i===vals.length-1?' bal':'')+'">'+(i<counts?fmt(v):fq(v))+'</td>').join('');
   box.innerHTML='<table><thead><tr><th class="sl">Sl.No</th><th>Month</th>'+cols.map(c=>'<th class="num">'+esc(c[0])+'</th>').join('')+'</tr></thead><tbody>'
     +keys.map((k,i)=>'<tr><td class="sl">'+(i+1)+'</td><td>'+esc(deMonthLabel(k))+'</td>'+cells(cols.map(c=>c[1](m[k])))+'</tr>').join('')
     +'<tr class="sum-tot"><td colspan="2">Total</td>'+cells(cols.map(c=>keys.reduce((a,k)=>a+c[1](m[k]),0)))+'</tr></tbody></table>';
@@ -2458,8 +2496,12 @@ function absPicked(){
   if(!canReport())return null;
   refreshWise();
   const all=[...document.querySelectorAll('#rpt-sum-sec details.abs')];
-  const list=[...document.querySelectorAll('.abs-pick:checked')].map(c=>all[+c.value]).filter(Boolean)
-    .map(d=>({title:d.querySelector('summary').textContent.trim(),tables:[...d.querySelectorAll('table')]}));
+  const dflt=byId('ap-orient').value;
+  const list=[...document.querySelectorAll('.abs-pick:checked')].filter(c=>all[+c.value]).map(c=>{
+    const d=all[+c.value],li=c.closest('li');
+    return {title:d.querySelector('summary').textContent.trim(),tables:[...d.querySelectorAll('table')],
+      wrap:li.querySelector('.abs-wrap').checked,land:(li.querySelector('.abs-ori').value||dflt)==='landscape'};
+  });
   if(!list.length){alert('Select at least one abstract.');return null;}
   if(!mdBatches&&!mdError&&byId('sum-month')&&document.querySelector('.abs-pick[value="6"]').checked){alert('Distribution records are still loading. Please try again in a moment, or untick Month-wise Distribution.');mdLoad();return null;}
   return list;
@@ -2478,22 +2520,48 @@ function absMove(btn,dir){
 // remember the selected abstracts, their order and the page settings in this browser
 const ABS_KEY='nursery_abs_prefs',ABS_SET=['flow','paper','orient','margin','width','font','size'];
 function absSave(){
-  const o={items:[...document.querySelectorAll('.abs-pick')].map(c=>[c.value,c.checked]),set:Object.fromEntries(ABS_SET.map(k=>[k,byId('ap-'+k).value]))};
+  const o={items:[...document.querySelectorAll('.abs-pick')].map(c=>{const li=c.closest('li');return [c.value,c.checked,li.querySelector('.abs-wrap').checked,li.querySelector('.abs-ori').value];}),set:Object.fromEntries(ABS_SET.map(k=>[k,byId('ap-'+k).value]))};
   try{localStorage.setItem(ABS_KEY,JSON.stringify(o));}catch(e){}
 }
 function absRestore(){
   let o=null;try{o=JSON.parse(localStorage.getItem(ABS_KEY)||'null');}catch(e){}
   const list=document.querySelector('.abs-order');if(!o||!list)return;
-  (Array.isArray(o.items)?o.items:[]).forEach(([v,on])=>{
+  (Array.isArray(o.items)?o.items:[]).forEach(([v,on,wrap,ori])=>{
     const c=[...list.querySelectorAll('.abs-pick')].find(x=>x.value===String(v));
-    if(c){c.checked=!!on;list.appendChild(c.closest('li'));}
+    if(c){
+      const li=c.closest('li');c.checked=!!on;li.querySelector('.abs-wrap').checked=!!wrap;
+      li.querySelector('.abs-ori').value=ori==='portrait'||ori==='landscape'?ori:'';list.appendChild(li);
+    }
   });
   // abstracts added since the choices were saved go to the end
   const known=(Array.isArray(o.items)?o.items:[]).map(x=>String(x[0]));
   [...list.querySelectorAll('.abs-pick')].filter(c=>!known.includes(c.value)).forEach(c=>list.appendChild(c.closest('li')));
   ABS_SET.forEach(k=>{const e=byId('ap-'+k),v=o.set&&o.set[k];if(e&&[...e.options].some(x=>x.value===v))e.value=v;});
 }
-document.addEventListener('change',e=>{if(e.target.matches&&e.target.matches('.abs-pick,[id^="ap-"]'))absSave();});
+document.addEventListener('change',e=>{if(e.target.matches&&e.target.matches('.abs-pick,.abs-wrap,.abs-ori,[id^="ap-"]'))absSave();if(e.target.matches&&e.target.matches('.abs-wrap'))absWrapScreen();});
+function absWrapAll(on){document.querySelectorAll('.abs-wrap').forEach(c=>c.checked=on);absSave();absWrapScreen();}
+// a wrapped heading puts each word on its own line ("&" stays with the word before it)
+// (also breaks after a hyphen and after "Sl."); the pieces joined together give back the original text
+const absParts=t=>t.trim().replace(/\s+(?=&)/g,'\u00a0').match(/Sl\.|[^ -]+[ -]*|[ -]+/g)||[''];
+const absLines=t=>absParts(t).map(x=>x.trim());
+// show the wrapped headings on screen too, so the choice can be seen before exporting
+function absWrapScreen(){
+  const all=[...document.querySelectorAll('#rpt-sum-sec details.abs')];
+  document.querySelectorAll('.abs-pick').forEach(c=>{
+    const d=all[+c.value];if(!d)return;const on=c.closest('li').querySelector('.abs-wrap').checked;
+    d.querySelectorAll('thead th').forEach(th=>{
+      const t=th.textContent;
+      if(on)th.innerHTML=absParts(t).map(x=>'<span class="hw">'+esc(x)+'</span>').join('');
+      else if(th.querySelector('.hw'))th.textContent=t.replace(/\u00a0/g,' ');
+    });
+  });
+}
+// neighbouring abstracts with the same orientation share a page section
+function absGroups(list,each){
+  const g=[];
+  list.forEach(x=>{const last=g[g.length-1];if(!each&&last&&last[0].land===x.land)last.push(x);else g.push([x]);});
+  return g;
+}
 function absOpts(){
   const v=i=>byId('ap-'+i).value;
   return {each:v('flow')==='each',paper:v('paper'),land:v('orient')==='landscape',margin:+v('margin'),fit:v('width')==='fit',font:v('font'),size:+v('size')};
@@ -2502,14 +2570,14 @@ const absFont=o=>"'"+o.font+"','Nirmala UI','Noto Sans Telugu',Gautami,"+(/Times
 // print header, scaled with the chosen font size
 const absHeader=o=>'<div style="border-bottom:3px double #1b5e20;padding-bottom:6px;margin-bottom:4px">'+rptHeaderHtml('abstract',absMeta(),ABS_TITLE).replace(/font-size:(\d+)px/g,(m,n)=>'font-size:'+Math.round(n*o.size/10)+'px')+'</div>';
 // table → rows of values; merged (rowspan) cells are repeated so every row is complete
-function absGrid(table){
+function absGrid(table,keepDecimals){
   const grid=[];
   [...table.rows].forEach((tr,i)=>{
     grid[i]=grid[i]||[];let c=0;
     [...tr.cells].forEach(td=>{
       while(grid[i][c]!==undefined)c++;
       const text=td.textContent.trim(),n=Number(text.replace(/,/g,''));
-      const v=(td.classList.contains('num')||td.classList.contains('sl'))&&td.tagName==='TD'&&text!==''&&!isNaN(n)?n:text;
+      const v=(td.classList.contains('num')||td.classList.contains('sl'))&&td.tagName==='TD'&&text!==''&&!isNaN(n)?(keepDecimals&&text.includes('.')?text.replace(/,/g,''):n):text;
       for(let y=0;y<td.rowSpan;y++){grid[i+y]=grid[i+y]||[];for(let x=0;x<td.colSpan;x++)grid[i+y][c+x]=x?'':v;}
       c+=td.colSpan;
     });
@@ -2518,7 +2586,7 @@ function absGrid(table){
 }
 function absHeadLines(){
   const h=rhRead();
-  return [h.l1,h.l2,h.l3,h.title||ABS_TITLE,rhStamp(h),h.meta?absMeta():''].filter(Boolean);
+  return [h.l1,h.l2,h.l3,h.title||ABS_TITLE,rhStamp(h),h.meta?absMeta():'',figLakh?'Figures in lakhs':''].filter(Boolean);
 }
 // text beginning with = + - @ would be run as a formula by spreadsheet programs
 const absSafe=v=>typeof v==='string'&&/^[=+\-@\t\r]/.test(v)?"'"+v:v;
@@ -2530,7 +2598,7 @@ function absDownload(blob,name){
 function absCSV(){
   const list=absPicked();if(!list)return;
   const rows=absHeadLines().map(l=>[l]);
-  list.forEach(x=>{rows.push([],[x.title]);x.tables.forEach((t,i)=>{if(i)rows.push([]);rows.push(...absGrid(t));});});
+  list.forEach(x=>{rows.push([],[x.title]);x.tables.forEach((t,i)=>{if(i)rows.push([]);rows.push(...absGrid(t,true));});});
   const q=v=>'"'+String(absSafe(v)).replace(/"/g,'""')+'"';
   absDownload(new Blob(['﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),absName('csv'));
 }
@@ -2552,6 +2620,7 @@ async function absExcel(){
   const thin={style:'thin',color:{argb:'FF9AB89A'}},strong={style:'medium',color:{argb:'FF1B5E20'}};
   const NUM='[>=10000000]##\\,##\\,##\\,##0;[>=100000]##\\,##\\,##0;##,##0'; // Indian digit grouping
   const addSheet=(parts,name)=>{
+    const land=parts[0].land;
     const ws=wb.addWorksheet(name.replace(/[\[\]:*?\/\\]/g,' ').slice(0,31),{views:[{showGridLines:false}]});
     const cols=Math.max(...parts.flatMap(x=>x.tables.map(t=>absGrid(t)[0].length))),widths=Array(cols).fill(0);
     let r=0;
@@ -2566,7 +2635,7 @@ async function absExcel(){
     line(h.l1,{bold:true,size:o.size+6,color:{argb:'FF1B5E20'}});line(h.l2,{bold:true,size:o.size+2});line(h.l3,{});
     line(h.title||ABS_TITLE,{bold:true,size:o.size+3,color:{argb:'FF1B5E20'}});
     if(h.dtpos==='below')line(stamp,{size:o.size-1});
-    line(meta,{italic:true,size:o.size-1,color:{argb:'FF555555'}});
+    line(meta,{italic:true,size:o.size-1,color:{argb:'FF555555'}});line(figLakh?'Figures in lakhs':'',{italic:true,size:o.size-1});
     for(let c=1;c<=cols;c++)ws.getCell(r,c).border={bottom:strong};
     const topRows=r;let headRow=0;
     parts.forEach(x=>{
@@ -2583,7 +2652,7 @@ async function absExcel(){
           let col=0;
           [...tr.cells].forEach(td=>{
             used[i]=used[i]||[];while(used[i][col])col++;
-            const row=start+i,cs=Math.min(td.colSpan,cols-col),rs=td.rowSpan,text=td.textContent.trim(),n=Number(text.replace(/,/g,''));
+            const row=start+i,cs=Math.min(td.colSpan,cols-col),rs=td.rowSpan,text=isHead&&x.wrap?absLines(td.textContent).join('\n'):td.textContent.trim(),n=Number(text.replace(/,/g,''));
             const isNum=!isHead&&(td.classList.contains('num')||td.classList.contains('sl'))&&text!==''&&!isNaN(n);
             const color=isHead?'1B5E20':grand?'C8E6C9':sub?'E3F1E3':band%2?'FFFFFF':'F4F9F4';
             for(let y=0;y<rs;y++){used[i+y]=used[i+y]||[];for(let z=0;z<cs;z++){
@@ -2593,35 +2662,37 @@ async function absExcel(){
             }}
             const c=ws.getCell(row,col+1);
             c.value=isNum?n:text; // text values are never treated as formulas
-            if(isNum&&!td.classList.contains('sl'))c.numFmt=NUM;
+            if(isNum&&!td.classList.contains('sl'))c.numFmt=text.includes('.')?'#,##0.000':NUM;
             c.font=font({bold:isHead||grand||sub||td.classList.contains('bal'),color:{argb:isHead?'FFFFFFFF':'FF111111'}});
-            c.alignment={vertical:rs>1?'top':'middle',horizontal:td.classList.contains('sl')?'center':td.classList.contains('num')?'right':'left',wrapText:true,indent:td.classList.contains('sl')?0:1};
+            c.alignment={vertical:rs>1?'top':'middle',horizontal:td.classList.contains('sl')?'center':td.classList.contains('num')?'right':'left',wrapText:!isHead||x.wrap,indent:td.classList.contains('sl')?0:1};
             if(rs>1||cs>1)ws.mergeCells(row,col+1,row+rs-1,col+cs);
-            if(cs===1)widths[col]=Math.max(widths[col],(text.length+4)*Math.max(1,o.size/10));
+            if(cs===1)widths[col]=Math.max(widths[col],(Math.max(...text.split('\n').map(v=>v.length))+4)*Math.max(1,o.size/10));
             col+=cs;
           });
-          ws.getRow(start+i).height=o.size*(isHead?2.1:1.8);
+          const headLines=isHead&&x.wrap?Math.max(...[...tr.cells].map(td=>absLines(td.textContent).length)):1;
+          ws.getRow(start+i).height=isHead?o.size*Math.max(2.1,1.4*headLines+0.6):o.size*1.8;
         });
         r=start+t.rows.length-1;
       });
     });
     // fit columns to content; "full width" spreads them over the page
     let w=widths.map(v=>Math.min(50,Math.max(8,v)));
-    if(!o.fit){const mm={A4:[210,297],A3:[297,420],Letter:[216,279],Legal:[216,356]}[o.paper],page=((o.land?mm[1]:mm[0])-2*o.margin)/2.1,sum=w.reduce((a,v)=>a+v,0);if(page>sum)w=w.map((v,i)=>i?v+(page-sum)/(cols-1):v);}
+    if(!o.fit){const mm={A4:[210,297],A3:[297,420],Letter:[216,279],Legal:[216,356]}[o.paper],page=((land?mm[1]:mm[0])-2*o.margin)/2.1,sum=w.reduce((a,v)=>a+v,0);if(page>sum)w=w.map((v,i)=>i?v+(page-sum)/(cols-1):v);}
     w.forEach((v,i)=>ws.getColumn(i+1).width=v);
     if(img){
       const px=w.reduce((a,v)=>a+v*7+5,0),at=h.align==='left'?0:h.align==='right'?px-60:px/2-30;
       let x=Math.max(0,at),c=0;while(c<cols-1&&x>w[c]*7+5){x-=w[c]*7+5;c++;}
       ws.addImage(wb.addImage({base64:h.logo,extension:img[1]==='jpg'?'jpeg':img[1]}),{tl:{col:c+x/(w[c]*7+5),row:0.05},ext:{width:60,height:60}});
     }
-    ws.pageSetup={paperSize:{A4:9,A3:8,Letter:1,Legal:5}[o.paper],orientation:o.land?'landscape':'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0,horizontalCentered:true,
+    ws.pageSetup={paperSize:{A4:9,A3:8,Letter:1,Legal:5}[o.paper],orientation:land?'landscape':'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0,horizontalCentered:true,
       margins:{left:inch,right:inch,top:inch,bottom:Math.max(inch,0.55),header:0.2,footer:0.25},
       // repeat the heading rows on every printed page
       printTitlesRow:'1:'+(parts.length===1&&parts[0].tables.length===1&&headRow?headRow:topRows)};
     ws.headerFooter={oddFooter:'&C&9Page &P of &N'};
   };
   try{
-    if(o.each)list.forEach((x,k)=>addSheet([x],(k+1)+'. '+x.title));else addSheet(list,'Abstract');
+    const groups=absGroups(list,o.each);
+    groups.forEach((g,k)=>addSheet(g,o.each?(k+1)+'. '+g[0].title:groups.length>1?'Abstract '+(k+1):'Abstract'));
     const buf=await wb.xlsx.writeBuffer();
     absDownload(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),absName('xlsx'));
   }catch(e){alert('Could not create the Excel file: '+e.message);}
@@ -2653,7 +2724,8 @@ function absSections(list,o){
         tr.insertBefore(w.td.cloneNode(true),tr.cells[Math.min(before,tr.cells.length)]||null);
       }
     });
-    return '<table class="at" border="1" cellspacing="0" cellpadding="4"'+(o.fit?' align="center" style="width:auto;margin-left:auto;margin-right:auto"':' width="100%" style="width:100%"')+'>'+c.innerHTML+'</table>'+(o.fit?'<br clear="all">':'');
+    if(x.wrap)c.querySelectorAll('thead th').forEach(th=>{th.innerHTML=absLines(th.textContent).map(esc).join('<br>');});
+    return '<table class="at'+(x.wrap?'':' nw')+'" border="1" cellspacing="0" cellpadding="4"'+(o.fit?' align="center" style="width:auto;margin-left:auto;margin-right:auto"':' width="100%" style="width:100%"')+'>'+c.innerHTML+'</table>'+(o.fit?'<br clear="all">':'');
   }).join(''));
 }
 function absCss(o,scope){
@@ -2665,6 +2737,7 @@ function absCss(o,scope){
     +t+'td[rowspan]{vertical-align:top}'
     +t+'th{background:#1b5e20!important;color:#fff!important;border-color:#1b5e20!important;font-weight:700;text-transform:none!important}'
     +t+'th:nth-child(n){letter-spacing:0}'
+    +p+'table.at.nw th{white-space:nowrap!important}'
     +t+'th.num,'+t+'td.num{text-align:right;white-space:nowrap!important}'
     +t+'th.sl,'+t+'td.sl{'+(o.fit?'':'width:1%;')+'text-align:center;white-space:nowrap!important}'
     +t+'tr.alt td{background:#f4f9f4!important}'+t+'tr.alt td[rowspan]{background:#fff!important}'
@@ -2679,7 +2752,7 @@ function absWordCells(html,o){
   const mm={A4:[210,297],A3:[297,420],Letter:[216,279],Legal:[216,356]}[o.paper],page=Math.floor(((o.land?mm[1]:mm[0])-2*o.margin)*96/25.4);
   box.querySelectorAll('table').forEach(t=>{
     const grid=absGrid(t),cols=grid[0].length,body=[...t.rows].filter(r=>![...r.cells].some(c=>c.colSpan>1));
-    let w=Array.from({length:cols},(_,i)=>Math.max(5,...body.filter(r=>r.cells.length===cols).map(r=>r.cells[i].textContent.trim().length),String(grid[0][i]).length)*o.size*0.98+18);
+    let w=Array.from({length:cols},(_,i)=>Math.max(5,...body.filter(r=>r.cells.length===cols&&r.parentNode.tagName!=='THEAD').map(r=>r.cells[i].textContent.trim().length),...(t.rows[0].cells[i]?t.rows[0].cells[i].innerHTML.split(/<br[^>]*>/i):['']).map(x=>x.replace(/<[^>]+>|&\w+;/g,' ').trim().length))*o.size*0.98+18);
     const sum=()=>w.reduce((a,v)=>a+v,0);
     if(!o.fit||sum()>page){const k=page/sum();w=w.map(v=>v*k);}
     w=w.map(Math.floor);t.setAttribute('width',sum());t.style.width=sum()+'px';
@@ -2706,9 +2779,12 @@ function absWordCells(html,o){
 function absWord(){
   const list=absPicked();if(!list)return;
   const o=absOpts(),mm={A4:[210,297],A3:[297,420],Letter:[215.9,279.4],Legal:[215.9,355.6]}[o.paper],pt=n=>(n*72/25.4).toFixed(1)+'pt';
-  const size=(o.land?[mm[1],mm[0]]:mm).map(pt).join(' ');
   const brk=o.each?'<br clear="all" style="page-break-before:always">':'';
-  const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>@page S{size:'+size+';mso-page-orientation:'+(o.land?'landscape':'portrait')+';margin:'+pt(o.margin)+'}div.S{page:S}body{font-family:'+absFont(o)+';font-size:'+o.size+'pt}'+absCss(o)+'</style></head><body><div class="S"><div style="font-family:'+absFont(o)+'">'+rptHeaderHtml('abstract',absMeta(),ABS_TITLE).replace(/font-size:(\d+)px/g,(m,n)=>'font-size:'+Math.round(n*o.size/10)+'px').replace('<img ','<img height="56" ')+'</div><div style="border-bottom:double #1b5e20 2.25pt;font-size:2pt">&nbsp;</div>'+absWordCells(absSections(list,o).join(brk),o)+'</div></body></html>';
+  const groups=absGroups(list,false);
+  const pages=groups.map((g,i)=>{const land=g[0].land;return '@page S'+i+'{size:'+(land?[mm[1],mm[0]]:mm).map(pt).join(' ')+';mso-page-orientation:'+(land?'landscape':'portrait')+';margin:'+pt(o.margin)+'}div.S'+i+'{page:S'+i+'}';}).join('');
+  const header='<div style="font-family:'+absFont(o)+'">'+rptHeaderHtml('abstract',absMeta(),ABS_TITLE).replace(/font-size:(\d+)px/g,(m,n)=>'font-size:'+Math.round(n*o.size/10)+'px').replace('<img ','<img height="56" ')+'</div><div style="border-bottom:double #1b5e20 2.25pt;font-size:2pt">&nbsp;</div>';
+  const body=groups.map((g,i)=>'<div class="S'+i+'">'+(i?'':header)+absWordCells(absSections(g,o).join(brk),Object.assign({},o,{land:g[0].land}))+'</div>').join('<br clear="all" style="page-break-before:always;mso-break-type:section-break">');
+  const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>'+pages+'body{font-family:'+absFont(o)+';font-size:'+o.size+'pt}'+absCss(o)+'</style></head><body>'+body+'</body></html>';
   absDownload(new Blob(['﻿'+html],{type:'application/msword'}),absName('doc'));
 }
 function absClearPage(){const e=byId('abs-page');if(e)e.remove();}
@@ -2718,19 +2794,23 @@ function absPrint(){
   let box=byId('abs-print');if(!box){box=document.createElement('div');box.id='abs-print';document.body.appendChild(box);}
   absClearPage();
   const st=document.createElement('style');st.id='abs-page';
-  st.textContent='@page{size:'+o.paper+' '+(o.land?'landscape':'portrait')+';margin:0}'
-    +'@media print{html,body.printing-abs{margin:0!important;padding:0!important;background:#fff!important;min-height:0!important;height:auto!important}body.printing-abs>*:not(#abs-print){display:none!important}body.printing-abs #abs-print{display:block}'
-    +'#abs-print>table.abs-page{width:100%;table-layout:fixed;border-collapse:collapse;margin:0}#abs-print .abs-page>thead{display:table-header-group}#abs-print .abs-page>tfoot{display:table-footer-group}'
+  const groups=absGroups(list,o.each),mixed=list.some(x=>x.land!==list[0].land);
+  const paperMm={A4:[210,297],A3:[297,420],Letter:[215.9,279.4],Legal:[215.9,355.6]}[o.paper];
+  const page=land=>'size:'+o.paper+' '+(land?'landscape':'portrait')+';margin:0';
+  st.textContent='@page{'+page(mixed||list[0].land)+'}' /* widest page first, so landscape content is not cut off */
+    +(mixed?'@page apP{'+page(false)+'}@page apL{'+page(true)+'}@media print{#abs-print .ap-p{page:apP;width:'+paperMm[0]+'mm}#abs-print .ap-l{page:apL;width:'+paperMm[1]+'mm}}':'')
+    +'@media print{html,body.printing-abs{margin:0!important;padding:0!important;background:#fff!important;min-height:0!important;height:auto!important;overflow:visible!important;max-width:none!important}#abs-print,#abs-print>div{overflow:visible!important}body.printing-abs>*:not(#abs-print){display:none!important}body.printing-abs #abs-print{display:block}'
+    +'#abs-print table.abs-page{width:100%;table-layout:fixed;border-collapse:collapse;margin:0}#abs-print .abs-page>thead{display:table-header-group}#abs-print .abs-page>tfoot{display:table-footer-group}'
     +'#abs-print .abs-page>*>tr>td{border:none!important;background:#fff!important;padding:0 '+o.margin+'mm!important}#abs-print .abs-page>tbody>tr{page-break-inside:auto;break-inside:auto}'
     +'#abs-print .abs-gap{height:'+o.margin+'mm}'
     +'#abs-print .abs-doc>thead img{height:34px!important}#abs-print .abs-doc>thead div{line-height:1.2}'
     +'#abs-print *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}#abs-print table.abs-doc{width:100%;border-collapse:collapse;margin:0}#abs-print .abs-doc>thead{display:table-header-group}'
     +'#abs-print .abs-doc>thead>tr>th,#abs-print .abs-doc>tbody>tr>td{background:#fff!important;border:none!important;padding:0 1px 8px!important;text-transform:none!important;font-weight:400;white-space:normal!important;font-family:'+absFont(o)+'}'
-    +'#abs-print .abs-doc>tbody>tr{page-break-inside:auto;break-inside:auto}#abs-print br{display:none}#abs-print .ab-new{break-before:page;page-break-before:always}'
+    +'#abs-print .abs-doc>tbody>tr{page-break-inside:auto;break-inside:auto}#abs-print br[clear]{display:none}#abs-print .ab-new{break-before:page;page-break-before:always}'
     +absCss(o,'#abs-print')+'}#abs-print{display:none}';
   document.head.appendChild(st);
   // the outer table head makes the print header repeat on every page
-  box.innerHTML='<table class="abs-page"><thead><tr><td><div class="abs-gap"></div></td></tr></thead><tfoot><tr><td><div class="abs-gap"></div></td></tr></tfoot><tbody><tr><td><table class="abs-doc"><thead><tr><th>'+absHeader(o)+'</th></tr></thead><tbody><tr><td>'+absSections(list,o).map((h,i)=>'<div'+(o.each&&i?' class="ab-new"':'')+'>'+h+'</div>').join('')+'</td></tr></tbody></table></td></tr></tbody></table>';
+  box.innerHTML=groups.map((g,i)=>'<div class="'+(g[0].land?'ap-l':'ap-p')+(i?' ab-new':'')+'"><table class="abs-page"><thead><tr><td><div class="abs-gap"></div></td></tr></thead><tfoot><tr><td><div class="abs-gap"></div></td></tr></tfoot><tbody><tr><td><table class="abs-doc"><thead><tr><th>'+absHeader(o)+'</th></tr></thead><tbody><tr><td>'+absSections(g,o).join('')+'</td></tr></tbody></table></td></tr></tbody></table></div>').join('');
   const old=document.title;
   document.body.classList.remove('printing-report');document.body.classList.add('printing-abs');
   document.title=absName('pdf').replace('.pdf',''); // default file name for Save as PDF
@@ -3089,6 +3169,171 @@ setInterval(sendHeight,600);
 // Re-send when DOM changes (tab clicks, data load, etc.)
 if(window.MutationObserver){
   new MutationObserver(sendHeight).observe(document.body,{childList:true,subtree:true,attributes:true});
+}
+</script>
+<script>
+/* ── PLANT PROFILE ── */
+const PL_TABLE='nursery_plant_profile';
+const PL_TAX=['Kingdom','Clade','Order','Family','Genus','Species'];
+const PL_SEC=[['description','🌳 Description'],['uses','🛠 Uses'],['distribution','🗺 Native Range & Distribution'],['climate','☀️ Climate & Soil'],['season','📅 Flowering & Fruiting'],['propagation','🌱 Propagation & Nursery Practice'],['care','🐛 Pests, Diseases & Cautions'],['other','ℹ️ Other Information']];
+const plWiki=f=>({url:'https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(f)+'?width=800',link:'https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(f),credit:'Wikimedia Commons – see file page for author and licence'});
+const PL_NEEM={species:'Neem',aliases:['neem','vepa','neem vepa','vepa neem','azadirachta indica','వేప'],data:{
+  sci:'Azadirachta indica A.Juss.',
+  names:'English: Neem, Margosa, Indian Lilac | Telugu: వేప (Vepa) | Hindi: नीम (Neem) | Sanskrit: Nimba | Tamil: Vembu',
+  tax:{Kingdom:'Plantae',Clade:'Angiosperms → Eudicots → Rosids',Order:'Sapindales',Family:'Meliaceae (Mahogany family)',Genus:'Azadirachta',Species:'A. indica'},
+  synonyms:'Melia azadirachta L.; Melia indica (A.Juss.) Brandis',
+  photos:[
+    {...plWiki('Azadirachta indica-Neem tree.jpg'),caption:'Neem tree'},
+    {...plWiki('Neem tree leaves.JPG'),caption:'Leaves'},
+    {...plWiki('Neem Tree (Azadirachta indica) 1.jpg'),caption:'Neem tree'},
+    {...plWiki('Neem leaves Neem Leaves.jpg'),caption:'Leaves – closer view'}],
+  description:'Usually evergreen tree, commonly up to 15 m (maximum about 30 m), with a round crown.\nBark: dark grey, deeply fissured in old trees; reddish inside.\nLeaves: alternate, pinnate, 20–40 cm long, with 8–19 glossy, toothed leaflets.\nFlowers: small, white or pale yellow, sweet-scented, in clusters.\nFruit: oval drupe 1–2 cm long, green ripening to yellow or purple, usually with one seed.',
+  uses:'Shade and avenue planting, windbreaks, erosion control.\nSeed oil: soaps, cosmetics, pharmaceuticals and lamp oil.\nBio-pesticide: azadirachtin deters feeding and disrupts insect growth.\nNeem cake: organic manure; leaves used as mulch.\nWood: termite-resistant timber for furniture and posts; fuelwood and charcoal.\nBark yields tannin and the trunk yields gum.\nLeaves serve as dry-season fodder.\nWidely used in traditional medicine.',
+  distribution:'Native to the Indian subcontinent and parts of South-East Asia. Widely planted in Africa, the Americas and other tropical regions.',
+  climate:'Altitude: 0–1500 m.\nRainfall: about 400–1200 mm a year.\nTolerates high temperatures (annual mean up to 40 °C); seedlings are sensitive to frost.\nSoil: neutral to alkaline, including shallow, stony or sandy soils; best at pH 6.2–7.\nDoes not tolerate waterlogging.\nLight demanding; young plants tolerate some shade.',
+  season:'In South India, flowering is usually February–April and fruits ripen about June–August (varies with locality and rainfall).',
+  propagation:'Raised mainly from seed: about 4,000–4,500 seeds per kg.\nSow fresh seed, as viability falls quickly in storage.\nCoppices well.\nWeeding is important in dry areas. Fruiting may start at 4–5 years; good seed production from about 10–12 years.',
+  care:'Few serious pests; watch for scale insects, sap-sucking bugs, shoot borers and leaf spot.\nProtect young plants from rodents and waterlogging.\nCaution: neem oil should not be taken by mouth. Consult a qualified practitioner before any medicinal use.',
+  other:'Source for most botanical details: World Agroforestry (ICRAF) tree database – https://apps.worldagroforestry.org/treedb/AFTPDFS/Azadirachta_indica.PDF'}};
+const PL_RED={species:'Red Sanders',aliases:['red sanders','red sander','redsanders','redsander','red sandal','red sandalwood','red sanders yerra chandanam','yerra chandanam','erra chandanam','erra chandanamu','rakta chandanam','pterocarpus santalinus','ఎర్ర చందనం','ఎర్రచందనం'],data:{
+  sci:'Pterocarpus santalinus L.f.',
+  names:'English: Red Sanders, Red Sandalwood | Telugu: ఎర్ర చందనం (Erra / Yerra Chandanam), రక్త చందనం (Rakta Chandanam) | Hindi: लाल चंदन (Lal Chandan) | Marathi: रक्तचंदन (Raktachandan) | Tamil: சந்தன வேங்கை (Sandana Vengai)',
+  tax:{Kingdom:'Plantae',Clade:'Angiosperms → Eudicots → Rosids',Order:'Fabales',Family:'Fabaceae (Pea family), subfamily Faboideae',Genus:'Pterocarpus',Species:'P. santalinus'},
+  synonyms:'Lingoum santalinum (L.f.) Kuntze',
+  photos:[
+    {...plWiki('(Pterocarpus santalinus) red sandalwood tree at IG Zoo Park in Visakhapatnam 02.jpg'),caption:'Red Sanders tree, Visakhapatnam'},
+    {...plWiki('Pterocarpus santalinus L.f. (Red sanders) - Flickr - lalithamba.jpg'),caption:'Red Sanders'},
+    {...plWiki('Santali rubri lignum 050258.jpg'),caption:'Heartwood sample'},
+    {...plWiki('Red sandalwood logs at kapiltirtham0.jpg'),caption:'Red Sanders logs'}],
+  description:'Small to medium-sized deciduous tree, about 8–10 m tall under favourable conditions.\nBark: blackish-brown, deeply fissured like crocodile skin; a red sap oozes when the inner bark is cut.\nLeaves: alternate, usually with 3 (rarely 5) broad, almost round leaflets.\nFlowers: yellow, in clusters.\nFruit: flat, roundish winged pod, about 3–5 cm across, usually with one reddish-brown seed.\nWood: dark red heartwood, extremely hard and heavy.',
+  uses:'Highly valued timber for furniture and carving.\nUsed for parts of musical instruments, such as the neck of the Japanese shamisen.\nSource of the red dye santalin.\nHeartwood is used in traditional medicine.\nPlanted in forest restoration and tree plantations within its suitable range.',
+  distribution:'Endemic to India: occurs naturally in a restricted part of the southern Eastern Ghats in Andhra Pradesh, including the Chittoor, Kadapa, Nandyal, Nellore and Prakasam areas.',
+  climate:'Light-demanding species.\nSoil: stony or gravelly ground, lateritic loam, and soils over quartzite, shale and limestone.\nNeeds excellent drainage.\nNot frost tolerant.',
+  season:'Flowering: April–May, after leaf fall.\nPods ripen the following February–March.\nPod collection: February–May.',
+  propagation:'About 900–1,400 pods per kg; germination about 50–60%; about 270–560 seedlings per kg.\nSun-dry collected pods for 3 days and store in gunny bags; viable for about one year.\nPre-treatment: soak in cold water or cow-dung slurry for 72 hours.\nSowing: in April, 10–15 kg of treated seed per 12 × 1.2 m bed of sandy or loamy soil, lightly covered with soil or hay.\nAfter one year, prepare stumps and pot them in polybags in February–March; the sprouted stumps are ready after 4–5 months.\nPlantation: pits of 45 cm, spacing 4 × 4 m; weeding and watering for up to three years.',
+  care:'Avoid waterlogging in nursery beds and planting sites.\nProtect from frost.\nProtect young plants from grazing and fire.\nConsult a qualified practitioner before any medicinal use.',
+  other:'Conservation: assessed as Endangered on the IUCN Red List (2021 assessment).\nInternational trade: listed in CITES Appendix II. As reported in November 2023, India has set a zero export quota for wild-sourced wood; plantation wood forms a major part of legal exports.\nFelling, possession and transport are legally restricted. Confirm the current rules and permits with the Forest Department before cutting or moving any Red Sanders.\nSources: Telangana silviculture notes – http://harithaharam.telangana.gov.in/Silviculture%20of%20Species/Forest%20Seeds/077.htm\nTNAU – https://agritech.tnau.ac.in/forestry/forestry_Redsander.html\nPress Information Bureau – https://www.pib.gov.in/PressReleaseIframePage.aspx?PRID=1976624\nDown To Earth – https://www.downtoearth.org.in/wildlife-biodiversity/red-sanders-falls-back-in-iucn-s-endangered-category-81053\nWikipedia – https://en.wikipedia.org/wiki/Pterocarpus_santalinus'}};
+// built-in example profiles (an admin-saved profile of the same name takes priority)
+const PL_BUILTIN=[PL_NEEM,PL_RED];
+const plEx=k=>PL_BUILTIN.find(x=>x.aliases.some(a=>spNorm(a)===k));
+let plSaved={},plReady=false,plDbError='',plCurrent='',plPhotos=[],plOld='';
+const plKey=n=>spNorm(n);
+const plIsNeem=k=>plEx(k)===PL_NEEM;
+async function plInit(){
+  byId('pl-admin').style.display=currentRole==='admin'?'flex':'none';
+  if(currentRole!=='admin')byId('pl-editor').style.display='none';
+  plFill();plShow(byId('pl-select').value);
+  try{
+    const {data,error}=await sb.from(PL_TABLE).select('species_key,species');
+    if(error)throw error;
+    plSaved=Object.fromEntries((data||[]).map(r=>[r.species_key,{species:r.species}]));plReady=true;plDbError='';
+  }catch(e){plReady=false;plDbError=e.message||'unknown error';}
+  plFill();plShow(byId('pl-select').value);
+}
+function plFill(){
+  const m=new Map();
+  records.forEach(r=>{const k=r.species&&plKey(r.species);if(k&&!m.has(k))m.set(k,r.species);});
+  Object.keys(plSaved).forEach(k=>{if(!m.has(k))m.set(k,plSaved[k].species);});
+  PL_BUILTIN.forEach(x=>{if(![...m.keys()].some(k=>plEx(k)===x))m.set(plKey(x.species),x.species);});
+  const list=[...m].sort((a,b)=>a[1].localeCompare(b[1]));
+  const def=list.find(([k])=>plIsNeem(k));
+  if(!m.has(plCurrent))plCurrent=def?def[0]:list[0][0];
+  byId('pl-select').innerHTML=list.map(([k,n])=>'<option value="'+esc(k)+'"'+(k===plCurrent?' selected':'')+'>'+esc(n)+(plSaved[k]||plEx(k)?' ✔':'')+'</option>').join('');
+}
+const plName=k=>{const r=records.find(x=>x.species&&plKey(x.species)===k);return r?r.species:plSaved[k]?plSaved[k].species:plEx(k)?plEx(k).species:k;};
+const plSafeUrl=u=>/^(https:\/\/|data:image\/(jpeg|png|webp|gif);base64,)/i.test(u||'')?u:'';
+// plain text → bullet list (one point per line); web addresses become links
+function plText(t){
+  const link=x=>esc(x).replace(/https?:\/\/[^\s<]+/g,u=>'<a href="'+u+'" target="_blank" rel="noopener" style="word-break:break-all">'+u+'</a>');
+  const l=String(t||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  return l.length>1?'<ul>'+l.map(x=>'<li>'+link(x)+'</li>').join('')+'</ul>':'<p>'+link(l[0]||'')+'</p>';
+}
+async function plShow(k){
+  plCurrent=k;const body=byId('pl-body');if(!k)return;
+  let d=null;
+  if(plSaved[k]){
+    if(!plSaved[k].data){
+      body.innerHTML='<div class="section"><p class="note">Loading profile…</p></div>';
+      try{const {data}=await sb.from(PL_TABLE).select('data').eq('species_key',k).maybeSingle();if(data)plSaved[k].data=data.data;}catch(e){}
+      if(plCurrent!==k)return;
+    }
+    d=plSaved[k].data;
+  }
+  if(!d&&plEx(k))d=plEx(k).data;
+  plRender(k,d);
+}
+function plStock(k){
+  const m={};records.filter(r=>r.species&&(plKey(r.species)===k||(plEx(k)&&plEx(plKey(r.species))===plEx(k)))).forEach(r=>{const b=r.available-r.distributed;if(b>0){const key=(r.nursery||'—')+'|'+(r.mandal||'—')+'|'+(r.bagSize||'—');m[key]=(m[key]||0)+b;}});
+  const rows=Object.entries(m).sort((a,b)=>b[1]-a[1]);
+  return '<div class="section pl-card"><h3>🪴 Seedlings Available in Nurseries</h3>'+(rows.length?'<div class="table-wrap" style="max-height:300px;overflow:auto"><table><thead><tr><th>Nursery</th><th>Mandal</th><th>Bag Size</th><th class="num">Balance</th></tr></thead><tbody>'
+    +rows.map(([x,b])=>'<tr>'+x.split('|').map(v=>'<td>'+esc(v)+'</td>').join('')+'<td class="num">'+fmt(b)+'</td></tr>').join('')
+    +'<tr style="font-weight:700;background:#e8f5e9"><td colspan="3">Total</td><td class="num">'+fmt(rows.reduce((a,x)=>a+x[1],0))+'</td></tr></tbody></table></div>':'<p>No stock currently available.</p>')+'</div>';
+}
+function plRender(k,d){
+  const body=byId('pl-body'),name=plName(k);
+  if(!d){body.innerHTML='<div class="section"><h3 style="color:#2d6a2d">'+esc(name)+'</h3><p class="note">A profile has not been added for this species yet. Select Neem or Red Sanders to see an example.</p></div>'+plStock(k);return;}
+  const photos=(d.photos||[]).filter(p=>plSafeUrl(p.url));
+  const tax=PL_TAX.filter(t=>d.tax&&d.tax[t]);
+  body.innerHTML='<div class="section pl-card"><h2 style="color:#2d6a2d">'+esc(name)+'</h2><p><em>'+esc(d.sci||'')+'</em> &nbsp;<span class="badge" style="background:#e8f5e9;color:#1b5e20">'+esc(spClass(name))+'</span></p>'+(d.names?'<p>'+esc(d.names)+'</p>':'')+'</div>'
+    +(photos.length?'<div class="section pl-card"><h3>📷 Photos</h3><div class="pl-photos">'+photos.map(p=>'<figure><a href="'+esc(p.link&&/^https:/i.test(p.link)?p.link:/^https:/i.test(p.url)?p.url:'#')+'" target="_blank" rel="noopener"><img src="'+esc(p.url)+'" alt="'+esc(name+' – '+(p.caption||'photo'))+'" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.innerHTML=\'<div style=&quot;height:190px;display:flex;align-items:center;justify-content:center;font-size:12px;padding:10px;text-align:center&quot;>Photo could not be loaded. Tap to open the source.</div>\'"></a><figcaption><strong>'+esc(p.caption||'')+'</strong>'+(p.credit?'<br><span style="color:#667">'+esc(p.credit)+'</span>':'')+'</figcaption></figure>').join('')+'</div></div>':'')
+    +'<div class="pl-grid">'
+    +(tax.length||d.synonyms?'<div class="section pl-card"><h3>🔬 Taxonomy</h3><div class="table-wrap"><table><tbody>'+tax.map(t=>'<tr><th>'+t+'</th><td>'+esc(d.tax[t])+'</td></tr>').join('')+(d.synonyms?'<tr><th>Synonyms</th><td>'+esc(d.synonyms)+'</td></tr>':'')+'</tbody></table></div></div>':'')
+    +PL_SEC.filter(x=>d[x[0]]).map(x=>'<div class="section pl-card"><h3>'+x[1]+'</h3>'+plText(d[x[0]])+'</div>').join('')
+    +plStock(k)+'</div>';
+}
+/* editor (admin) */
+function plEdit(isNew){
+  if(currentRole!=='admin')return;
+  const k=isNew?'':plCurrent,d=isNew?{}:(plSaved[k]&&plSaved[k].data)||(plEx(k)?plEx(k).data:{});
+  if(!isNew&&plSaved[k]&&!plSaved[k].data){alert('This profile has not loaded yet. Please try again.');return;}
+  plOld=k;plPhotos=(d.photos||[]).map(p=>({...p}));
+  const inp=(id,label,v)=>'<div class="fg"><label>'+label+'</label><input id="pl-f-'+id+'" value="'+esc(v||'')+'"></div>';
+  const box=byId('pl-editor');
+  box.innerHTML='<h3 style="color:#2d6a2d;margin-bottom:8px">'+(isNew?'New species profile':'Edit profile')+'</h3><div class="form-grid">'
+    +'<div class="fg"><label>Species Name (as in stock) *</label><input id="pl-f-species" list="pl-list" value="'+esc(isNew?'':plName(k))+'"'+(isNew?'':' readonly')+'><datalist id="pl-list">'+[...new Set(records.map(r=>r.species).filter(Boolean))].map(n=>'<option value="'+esc(n)+'">').join('')+'</datalist></div>'
+    +inp('sci','Scientific Name',d.sci)+inp('names','Local / Common Names',d.names)+PL_TAX.map(t=>inp('tax-'+t,t,d.tax&&d.tax[t])).join('')+inp('synonyms','Synonyms',d.synonyms)+'</div>'
+    +PL_SEC.map(x=>'<div class="fg"><label>'+x[1]+' (one point per line)</label><textarea id="pl-f-'+x[0]+'" rows="3">'+esc(d[x[0]]||'')+'</textarea></div>').join('')
+    +'<h4 style="margin:8px 0">Photos (up to 6)</h4><div id="pl-ph"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0"><label class="abtn ab" style="cursor:pointer;margin:0">⬆ Upload photos<input type="file" accept="image/*" multiple style="display:none" onchange="plUpload(this)"></label><button class="abtn ao" onclick="plAddLink()">🔗 Add photo link</button></div>'
+    +'<p class="note">Use only your own photos or photos you are permitted to use, and give credit.</p>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="abtn ag" onclick="plSave()">💾 Save profile</button><button class="abtn ao" onclick="byId(\'pl-editor\').style.display=\'none\'">Cancel</button>'+(!isNew&&plSaved[k]?'<button class="abtn ao" style="color:#b00" onclick="plDelete()">🗑 Delete saved profile</button>':'')+'</div>'
+    +(plReady?'':'<p class="note" style="color:#b00">Saving is not available yet ('+esc(plDbError)+'). Run nursery_plant_profile.sql in the Supabase SQL editor first.</p>');
+  box.style.display='block';plPhotoRows();box.scrollIntoView({behavior:'smooth'});
+}
+function plPhotoRows(){
+  byId('pl-ph').innerHTML=plPhotos.map((p,i)=>'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px">'
+    +(String(p.url).startsWith('data:')?'<img src="'+esc(plSafeUrl(p.url))+'" alt="" style="width:64px;height:48px;object-fit:cover;border-radius:4px">':'<input placeholder="https://… photo address" value="'+esc(p.url||'')+'" oninput="plPhotos['+i+'].url=this.value.trim();plPhotos['+i+'].link=\'\'" style="flex:2;min-width:180px">')
+    +'<input placeholder="Caption" value="'+esc(p.caption||'')+'" oninput="plPhotos['+i+'].caption=this.value" style="flex:1;min-width:120px"><input placeholder="Photo credit" value="'+esc(p.credit||'')+'" oninput="plPhotos['+i+'].credit=this.value" style="flex:1;min-width:120px"><button class="abtn ao" style="padding:3px 10px" onclick="plPhotos.splice('+i+',1);plPhotoRows()">✕</button></div>').join('')||'<p class="note">No photos added.</p>';
+}
+function plAddLink(){if(plPhotos.length>=6)return alert('Up to 6 photos.');plPhotos.push({url:'',caption:'',credit:''});plPhotoRows();}
+// photos are shrunk to at most 1000 px before saving
+async function plUpload(input){
+  for(const f of [...input.files]){
+    if(plPhotos.length>=6){alert('Up to 6 photos.');break;}
+    try{
+      const img=await createImageBitmap(f),k=Math.min(1,1000/Math.max(img.width,img.height)),c=document.createElement('canvas');
+      c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);
+      plPhotos.push({url:c.toDataURL('image/jpeg',0.8),caption:'',credit:''});
+    }catch(e){alert('Could not read '+f.name);}
+  }
+  input.value='';plPhotoRows();
+}
+async function plSave(){
+  if(currentRole!=='admin'||!(await hasSession()))return;
+  const v=id=>byId('pl-f-'+id).value.trim(),species=v('species'),k=plOld||plKey(species);
+  if(!k)return alert('Enter the species name.');
+  if(!plOld&&plSaved[k])return alert('A profile for this species already exists. Select it and use Edit.');
+  const bad=plPhotos.find(p=>p.url&&!plSafeUrl(p.url));if(bad)return alert('Photo links must start with https://');
+  const data={sci:v('sci'),names:v('names'),synonyms:v('synonyms'),tax:Object.fromEntries(PL_TAX.map(t=>[t,v('tax-'+t)])),photos:plPhotos.filter(p=>p.url)};
+  PL_SEC.forEach(x=>data[x[0]]=v(x[0]));
+  const r=await sb.from(PL_TABLE).upsert({species_key:k,species,data,updated_at:new Date().toISOString()}).select('species_key');
+  if(r.error||!r.data||!r.data.length)return alert('Could not save the profile'+(r.error?': '+r.error.message:'.'));
+  plSaved[k]={species,data};plReady=true;plCurrent=k;byId('pl-editor').style.display='none';plFill();plShow(k);
+}
+async function plDelete(){
+  if(currentRole!=='admin'||!confirm('Delete the saved profile of '+plName(plOld)+'?'))return;
+  const r=await sb.from(PL_TABLE).delete().eq('species_key',plOld).select('species_key');
+  if(r.error||!r.data||!r.data.length)return alert('Could not delete'+(r.error?': '+r.error.message:'.'));
+  delete plSaved[plOld];byId('pl-editor').style.display='none';plFill();plShow(byId('pl-select').value);
 }
 </script>
 </body>
